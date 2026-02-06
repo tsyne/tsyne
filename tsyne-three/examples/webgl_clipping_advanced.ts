@@ -13,7 +13,7 @@
 
 import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
 import type { App, ITsyneWindow } from 'tsyne';
-import { initThreeJS } from '../integration/init';
+import { initThreeJS, enableThreeJSResize } from '../integration/init';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Types
@@ -38,8 +38,8 @@ export async function buildWebGLClippingAdvanced(
   win: ITsyneWindow,
   params: WebGLClippingAdvancedParams = {}
 ): Promise<WebGLClippingAdvancedDemo> {
-  const width = params.width ?? 800;
-  const height = params.height ?? 600;
+  let width = params.width ?? 800;
+  let height = params.height ?? 600;
 
   const { THREE } = await initThreeJS(a, win, { width, height });
 
@@ -174,6 +174,12 @@ export async function buildWebGLClippingAdvanced(
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(1);
   renderer.setSize(width, height);
+  await enableThreeJSResize(win, {
+    preferredWidth: width,
+    preferredHeight: height,
+    renderer,
+    camera,
+  });
   renderer.localClippingEnabled = true;
 
   // Global clipping planes

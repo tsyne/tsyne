@@ -10,7 +10,7 @@
 
 import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
 import type { App, ITsyneWindow } from 'tsyne';
-import { initThreeJS } from '../integration/init';
+import { initThreeJS, enableThreeJSResize } from '../integration/init';
 
 const vertexShader = `#version 300 es
 precision highp float;
@@ -72,8 +72,8 @@ export async function buildWebGLCustomAttributesPoints2(
   win: ITsyneWindow,
   params: WebGLCustomAttributesPoints2Params = {}
 ): Promise<WebGLCustomAttributesPoints2Demo> {
-  const width = params.width ?? 800;
-  const height = params.height ?? 600;
+  let width = params.width ?? 800;
+  let height = params.height ?? 600;
 
   const { THREE } = await initThreeJS(a, win, { width, height });
 
@@ -139,6 +139,12 @@ export async function buildWebGLCustomAttributesPoints2(
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(1);
   renderer.setSize(width, height);
+  await enableThreeJSResize(win, {
+    preferredWidth: width,
+    preferredHeight: height,
+    renderer,
+    camera,
+  });
 
   let running = true;
   const startTime = Date.now();

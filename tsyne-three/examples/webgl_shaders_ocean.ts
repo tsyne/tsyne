@@ -26,7 +26,7 @@
 import * as path from 'path';
 import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
 import type { App, ITsyneWindow } from 'tsyne';
-import { initThreeJS } from '../integration/init';
+import { initThreeJS, enableThreeJSResize } from '../integration/init';
 import { loadTexture } from '../integration/texture-loader';
 import { Water } from 'three/examples/jsm/objects/Water.js';
 import { Sky } from 'three/examples/jsm/objects/Sky.js';
@@ -61,8 +61,8 @@ export async function buildWebGLShadersOcean(
   win: ITsyneWindow,
   params: WebGLShadersOceanParams = {}
 ): Promise<WebGLShadersOceanDemo> {
-  const width = params.width ?? 800;
-  const height = params.height ?? 600;
+  let width = params.width ?? 800;
+  let height = params.height ?? 600;
 
   const { THREE } = await initThreeJS(a, win, { width, height });
 
@@ -84,6 +84,13 @@ export async function buildWebGLShadersOcean(
 
   const camera = new THREE.PerspectiveCamera(55, width / height, 1, 20000);
   camera.position.set(30, 30, 100);
+
+  await enableThreeJSResize(win, {
+    preferredWidth: width,
+    preferredHeight: height,
+    renderer,
+    camera,
+  });
 
   // --------------------------------------------------------------------------
   // Sun vector

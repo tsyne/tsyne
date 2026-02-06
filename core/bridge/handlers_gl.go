@@ -74,6 +74,25 @@ type MouseEvent struct {
 	Button int     `json:"button"` // 0=left, 1=middle, 2=right (DOM convention)
 }
 
+// centerNoMinLayout centers children like container.NewCenter but reports
+// MinSize as (1,1) so the window can shrink below the child's initial size.
+type centerNoMinLayout struct{}
+
+func (l *centerNoMinLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
+	for _, child := range objects {
+		childSize := child.MinSize()
+		child.Resize(childSize)
+		child.Move(fyne.NewPos(
+			(size.Width-childSize.Width)/2,
+			(size.Height-childSize.Height)/2,
+		))
+	}
+}
+
+func (l *centerNoMinLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
+	return fyne.NewSize(1, 1)
+}
+
 // shaderProgram represents a compiled shader program
 type shaderProgram struct {
 	id                 uint32
@@ -184,7 +203,7 @@ void main() {
 
 	// Wrap the shader in a container so it can be added to Fyne widget hierarchies
 	// The container will be added to the window's content
-	glContainer := container.NewWithoutLayout(shaderContainer)
+	glContainer := container.New(&centerNoMinLayout{}, shaderContainer)
 	// Resize must happen on main thread
 	fyne.DoAndWait(func() {
 		glContainer.Resize(fyne.NewSize(width, height))
@@ -285,6 +304,51 @@ void main() {
 			"widgetId": canvasID, // Can be used to reference this widget in Fyne containers
 		},
 	}
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Handler for resizing a GL canvas
+// ═══════════════════════════════════════════════════════════════
+
+func (b *Bridge) handleResizeGLCanvas(msg Message) Response {
+	payload := msg.Payload
+
+	canvasID, ok := payload["canvasId"].(string)
+	if !ok {
+		return Response{Error: "missing or invalid canvasId"}
+	}
+
+	canvas, exists := glCanvases[canvasID]
+	if !exists {
+		return Response{Error: fmt.Sprintf("canvas not found: %s", canvasID)}
+	}
+
+	widthVal, widthOk := payload["width"]
+	heightVal, heightOk := payload["height"]
+	if !widthOk || !heightOk {
+		return Response{Error: "missing width or height"}
+	}
+
+	width := toFloat32(widthVal)
+	height := toFloat32(heightVal)
+
+	canvas.Width = int(width)
+	canvas.Height = int(height)
+
+	// Update the shader's min size on the main thread.
+	// Don't Refresh the shader — that would trigger drawShader on the main
+	// thread while the animation loop's executeBatch goroutine may be writing
+	// to the shader's attribute maps (concurrent map access).
+	// The next animation frame's executeBatch already does a synchronized
+	// Refresh + WaitForPaint.  The Center layout will re-center the widget
+	// when Fyne re-lays-out the window at the new size.
+	fyne.DoAndWait(func() {
+		newSize := fyne.NewSize(width, height)
+		canvas.ShaderObject.SetMinSize(newSize)
+	})
+
+	log.Printf("[GL] Resized GL canvas %s to %dx%d", canvasID, int(width), int(height))
+	return Response{Success: true}
 }
 
 // ═══════════════════════════════════════════════════════════════

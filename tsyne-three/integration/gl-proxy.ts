@@ -1688,7 +1688,9 @@ export class TsyneGLProxy implements WebGL2RenderingContext {
   setSize(width: number, height: number): void {
     (this as any).drawingBufferWidth = width;
     (this as any).drawingBufferHeight = height;
-    this.canvas.setSize(width, height);
+    // Update canvas dimensions directly (don't call canvas.setSize to avoid recursion)
+    this.canvas.width = width;
+    this.canvas.height = height;
   }
 
   // Catch-all for unimplemented methods (prevents runtime errors)

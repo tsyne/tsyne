@@ -275,6 +275,28 @@ export class TsyneCanvas {
   }
 
   /**
+   * Get the bridge canvas ID (may be null if not yet created)
+   */
+  getBridgeId(): string | null {
+    return this.bridgeCanvasId;
+  }
+
+  /**
+   * Resize the canvas on both JS and Go sides
+   * Updates local dimensions, GL proxy drawing buffer, and tells Go to resize the shader widget
+   */
+  async resizeBridge(width: number, height: number): Promise<void> {
+    this.width = width;
+    this.height = height;
+    if (this.glProxy) {
+      this.glProxy.setSize(width, height);
+    }
+    if (this.bridgeCanvasId) {
+      await this.bridge.resizeGLCanvas(this.bridgeCanvasId, width, height);
+    }
+  }
+
+  /**
    * Set canvas size
    */
   setSize(width: number, height: number): void {

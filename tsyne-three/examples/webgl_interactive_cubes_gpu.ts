@@ -20,7 +20,7 @@
 
 import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
 import type { App, ITsyneWindow } from 'tsyne';
-import { initThreeJS } from '../integration/init';
+import { initThreeJS, enableThreeJSResize } from '../integration/init';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Types
@@ -46,8 +46,8 @@ export async function buildWebGLInteractiveCubesGpu(
   win: ITsyneWindow,
   params: WebGLInteractiveCubesGpuParams = {}
 ): Promise<WebGLInteractiveCubesGpuDemo> {
-  const width = params.width ?? 800;
-  const height = params.height ?? 600;
+  let width = params.width ?? 800;
+  let height = params.height ?? 600;
   const cubeCount = params.cubeCount ?? 500; // Reduced for Tsyne performance (original: 5000)
 
   const { THREE } = await initThreeJS(a, win, { width, height, interactive: true });
@@ -199,6 +199,12 @@ export async function buildWebGLInteractiveCubesGpu(
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(1);
   renderer.setSize(width, height);
+  await enableThreeJSResize(win, {
+    preferredWidth: width,
+    preferredHeight: height,
+    renderer,
+    camera,
+  });
 
   // ─────────────────────────────────────────────────────────────────────────
   // Pointer tracking

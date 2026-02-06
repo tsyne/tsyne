@@ -142,6 +142,14 @@ export class TsyneBridge {
   }
 
   /**
+   * Resize a GL canvas on the Go side
+   * The Center container will re-center the shader at the new size
+   */
+  async resizeGLCanvas(canvasId: string, width: number, height: number): Promise<void> {
+    await this.send('resizeGLCanvas', { canvasId, width, height });
+  }
+
+  /**
    * Get the latest GL error
    */
   async getError(canvasId: string): Promise<number> {

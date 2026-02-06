@@ -19,7 +19,7 @@
 
 import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
 import type { App, ITsyneWindow } from 'tsyne';
-import { initThreeJS } from '../integration/init';
+import { initThreeJS, enableThreeJSResize } from '../integration/init';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Types
@@ -45,8 +45,8 @@ export async function buildWebGLInteractiveCubes(
   win: ITsyneWindow,
   params: WebGLInteractiveCubesParams = {}
 ): Promise<WebGLInteractiveCubesDemo> {
-  const width = params.width ?? 800;
-  const height = params.height ?? 600;
+  let width = params.width ?? 800;
+  let height = params.height ?? 600;
   const cubeCount = params.cubeCount ?? 200; // Reduced for Tsyne performance (original: 2000)
 
   const { THREE } = await initThreeJS(a, win, { width, height, interactive: true });
@@ -90,6 +90,18 @@ export async function buildWebGLInteractiveCubes(
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(1);
   renderer.setSize(width, height);
+
+  // Enable aspect-ratio-preserving resize with gutters
+  await enableThreeJSResize(win, {
+    preferredWidth: width,
+    preferredHeight: height,
+    renderer,
+    camera,
+    onResize: (w, h) => {
+      width = w;
+      height = h;
+    },
+  });
 
   // ─────────────────────────────────────────────────────────────────────────
   // Raycasting setup

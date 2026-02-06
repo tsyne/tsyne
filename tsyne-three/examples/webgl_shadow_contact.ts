@@ -20,7 +20,7 @@
 
 import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
 import type { App, ITsyneWindow } from 'tsyne';
-import { initThreeJS } from '../integration/init';
+import { initThreeJS, enableThreeJSResize } from '../integration/init';
 
 // =============================================================================
 // Blur Shaders (inlined from three/examples/jsm/shaders/)
@@ -135,8 +135,8 @@ export async function buildWebGLShadowContact(
   win: ITsyneWindow,
   params: WebGLShadowContactParams = {}
 ): Promise<WebGLShadowContactDemo> {
-  const width = params.width ?? 800;
-  const height = params.height ?? 600;
+  let width = params.width ?? 800;
+  let height = params.height ?? 600;
 
   const { THREE } = await initThreeJS(a, win, { width, height });
 
@@ -284,6 +284,12 @@ export async function buildWebGLShadowContact(
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(1);
   renderer.setSize(width, height);
+  await enableThreeJSResize(win, {
+    preferredWidth: width,
+    preferredHeight: height,
+    renderer,
+    camera,
+  });
 
   // ---------------------------------------------------------------------------
   // Blur helper

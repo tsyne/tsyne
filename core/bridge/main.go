@@ -638,6 +638,8 @@ func (b *Bridge) handleMessage(msg Message) Response {
 		return b.handleCreateGLCanvas(msg)
 	case "executeBatch":
 		return b.handleExecuteBatch(msg)
+	case "resizeGLCanvas":
+		return b.handleResizeGLCanvas(msg)
 	case "getParameter":
 		return b.handleGetParameter(msg)
 	case "getError":

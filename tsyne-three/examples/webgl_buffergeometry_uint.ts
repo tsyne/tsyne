@@ -13,7 +13,7 @@
 
 import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
 import type { App, ITsyneWindow } from 'tsyne';
-import { initThreeJS } from '../integration/init';
+import { initThreeJS, enableThreeJSResize } from '../integration/init';
 
 export interface WebGLBufferGeometryUintParams {
   width?: number;
@@ -31,8 +31,8 @@ export async function buildWebGLBufferGeometryUint(
   win: ITsyneWindow,
   params: WebGLBufferGeometryUintParams = {}
 ): Promise<WebGLBufferGeometryUintDemo> {
-  const width = params.width ?? 800;
-  const height = params.height ?? 600;
+  let width = params.width ?? 800;
+  let height = params.height ?? 600;
   const triangleCount = params.triangleCount ?? 50000; // Reduced from 500k for performance
 
   const { THREE } = await initThreeJS(a, win, { width, height });
@@ -149,6 +149,12 @@ export async function buildWebGLBufferGeometryUint(
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(1);
   renderer.setSize(width, height);
+  await enableThreeJSResize(win, {
+    preferredWidth: width,
+    preferredHeight: height,
+    renderer,
+    camera,
+  });
 
   let running = true;
   const startTime = Date.now();

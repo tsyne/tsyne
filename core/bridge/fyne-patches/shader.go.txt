@@ -64,6 +64,7 @@ type Shader struct {
 
 	// Separate attribute buffers (for three.js style rendering)
 	AttributeBuffers map[string]*AttributeBuffer // Map of attribute name → buffer data
+	attrBuffersMu    sync.RWMutex                // Protects concurrent access to AttributeBuffers
 
 	// Time tracking for u_time uniform (only updates on Refresh, not every paint pass)
 	startTime       time.Time              // When the shader was created

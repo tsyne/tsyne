@@ -12,7 +12,7 @@
 
 import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
 import type { App, ITsyneWindow } from 'tsyne';
-import { initThreeJS } from '../integration/init';
+import { initThreeJS, enableThreeJSResize } from '../integration/init';
 
 // GLSL 300 ES shaders
 const vertexShader = `#version 300 es
@@ -67,8 +67,8 @@ export async function buildWebGLBufferGeometrySelectiveDraw(
   win: ITsyneWindow,
   params: WebGLBufferGeometrySelectiveDrawParams = {}
 ): Promise<WebGLBufferGeometrySelectiveDrawDemo> {
-  const width = params.width ?? 800;
-  const height = params.height ?? 600;
+  let width = params.width ?? 800;
+  let height = params.height ?? 600;
 
   const { THREE } = await initThreeJS(a, win, { width, height });
 
@@ -135,6 +135,12 @@ export async function buildWebGLBufferGeometrySelectiveDraw(
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(1);
   renderer.setSize(width, height);
+  await enableThreeJSResize(win, {
+    preferredWidth: width,
+    preferredHeight: height,
+    renderer,
+    camera,
+  });
 
   let running = true;
   const startTime = Date.now();

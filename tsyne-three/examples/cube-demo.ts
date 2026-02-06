@@ -6,7 +6,7 @@
  */
 
 import type { App, ITsyneWindow } from 'tsyne';
-import { initThreeJS } from '../integration/init';
+import { initThreeJS, enableThreeJSResize } from '../integration/init';
 
 export interface CubeDemo {
   stop: () => void;
@@ -20,8 +20,8 @@ export async function createCubeDemo(
   win: ITsyneWindow,
   options: { width?: number; height?: number } = {}
 ): Promise<CubeDemo> {
-  const width = options.width ?? 1024;
-  const height = options.height ?? 768;
+  let width = options.width ?? 1024;
+  let height = options.height ?? 768;
 
   const { THREE } = await initThreeJS(a, win, { width, height });
 
@@ -36,6 +36,12 @@ export async function createCubeDemo(
 
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(width, height);
+  await enableThreeJSResize(win, {
+    preferredWidth: width,
+    preferredHeight: height,
+    renderer,
+    camera,
+  });
 
   // Cube with colored faces
   const geometry = new THREE.BoxGeometry(1, 1, 1);

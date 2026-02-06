@@ -180,6 +180,8 @@ func (s *Shader) GetIBO() uint32 {
 // SetAttributeBuffer sets data for a named vertex attribute (e.g., "position", "normal", "uv").
 // size is the number of components per vertex (2 for vec2, 3 for vec3, 4 for vec4).
 func (s *Shader) SetAttributeBuffer(name string, data []float32, size int) {
+	s.attrBuffersMu.Lock()
+	defer s.attrBuffersMu.Unlock()
 	if s.AttributeBuffers == nil {
 		s.AttributeBuffers = make(map[string]*AttributeBuffer)
 	}
@@ -201,24 +203,40 @@ func (s *Shader) SetAttributeBuffer(name string, data []float32, size int) {
 
 // GetAttributeBuffer returns the buffer for a named attribute.
 func (s *Shader) GetAttributeBuffer(name string) *AttributeBuffer {
+	s.attrBuffersMu.RLock()
+	defer s.attrBuffersMu.RUnlock()
 	if s.AttributeBuffers == nil {
 		return nil
 	}
 	return s.AttributeBuffers[name]
 }
 
-// GetAttributeBuffers returns all attribute buffers.
+// GetAttributeBuffers returns a snapshot of all attribute buffers.
+// The returned map is a shallow copy safe to iterate without holding the lock.
 func (s *Shader) GetAttributeBuffers() map[string]*AttributeBuffer {
-	return s.AttributeBuffers
+	s.attrBuffersMu.RLock()
+	defer s.attrBuffersMu.RUnlock()
+	if s.AttributeBuffers == nil {
+		return nil
+	}
+	snapshot := make(map[string]*AttributeBuffer, len(s.AttributeBuffers))
+	for k, v := range s.AttributeBuffers {
+		snapshot[k] = v
+	}
+	return snapshot
 }
 
 // HasAttributeBuffers returns true if separate attribute buffers are set.
 func (s *Shader) HasAttributeBuffers() bool {
+	s.attrBuffersMu.RLock()
+	defer s.attrBuffersMu.RUnlock()
 	return s.AttributeBuffers != nil && len(s.AttributeBuffers) > 0
 }
 
 // ClearAttributeBufferVBOs clears VBO IDs (called on recompile to force re-upload).
 func (s *Shader) ClearAttributeBufferVBOs() {
+	s.attrBuffersMu.RLock()
+	defer s.attrBuffersMu.RUnlock()
 	for _, buf := range s.AttributeBuffers {
 		buf.VBO = 0
 	}

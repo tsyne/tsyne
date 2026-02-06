@@ -19,7 +19,7 @@
 import * as path from 'path';
 import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
 import type { App, ITsyneWindow } from 'tsyne';
-import { initThreeJS } from '../integration/init';
+import { initThreeJS, enableThreeJSResize } from '../integration/init';
 import { loadTexture } from '../integration/texture-loader';
 
 // ==========================================================================
@@ -53,8 +53,8 @@ export async function buildWebGLPointsBillboards(
   win: ITsyneWindow,
   params: WebGLPointsBillboardsParams = {}
 ): Promise<WebGLPointsBillboardsDemo> {
-  const width = params.width ?? 800;
-  const height = params.height ?? 600;
+  let width = params.width ?? 800;
+  let height = params.height ?? 600;
   const particleCount = params.particleCount ?? 10000;
 
   const { THREE } = await initThreeJS(a, win, { width, height });
@@ -107,6 +107,12 @@ export async function buildWebGLPointsBillboards(
   const renderer = new THREE.WebGLRenderer();
   renderer.setPixelRatio(1);
   renderer.setSize(width, height);
+  await enableThreeJSResize(win, {
+    preferredWidth: width,
+    preferredHeight: height,
+    renderer,
+    camera,
+  });
 
   // --------------------------------------------------------------------------
   // Animation loop

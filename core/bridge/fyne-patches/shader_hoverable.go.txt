@@ -25,7 +25,8 @@ func (s *Shader) QueueUniform(name string, value interface{}) {
 
 // QueueDrawElements queues a drawElements call with a snapshot of current geometry.
 func (s *Shader) QueueDrawElements(mode uint32, count int, offset int) {
-	// Capture snapshot of attribute buffers at draw time
+	// Capture snapshot of attribute buffers at draw time (under read lock)
+	s.attrBuffersMu.RLock()
 	attrSnapshot := make(map[string]*AttributeBuffer)
 	for name, buf := range s.AttributeBuffers {
 		if buf != nil && len(buf.Data) > 0 {
@@ -39,6 +40,7 @@ func (s *Shader) QueueDrawElements(mode uint32, count int, offset int) {
 			}
 		}
 	}
+	s.attrBuffersMu.RUnlock()
 
 	// Deep copy indices
 	var indicesCopy []uint16
@@ -61,7 +63,8 @@ func (s *Shader) QueueDrawElements(mode uint32, count int, offset int) {
 
 // QueueDrawArrays queues a drawArrays call with a snapshot of current geometry.
 func (s *Shader) QueueDrawArrays(mode uint32, first int, count int) {
-	// Capture snapshot of attribute buffers at draw time
+	// Capture snapshot of attribute buffers at draw time (under read lock)
+	s.attrBuffersMu.RLock()
 	attrSnapshot := make(map[string]*AttributeBuffer)
 	for name, buf := range s.AttributeBuffers {
 		if buf != nil && len(buf.Data) > 0 {
@@ -75,6 +78,7 @@ func (s *Shader) QueueDrawArrays(mode uint32, first int, count int) {
 			}
 		}
 	}
+	s.attrBuffersMu.RUnlock()
 
 	s.QueueRenderCommand(RenderCommand{
 		Type: "drawArrays",

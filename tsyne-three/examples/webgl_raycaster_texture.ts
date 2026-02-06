@@ -20,7 +20,7 @@
 
 import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
 import type { App, ITsyneWindow } from 'tsyne';
-import { initThreeJS } from '../integration/init';
+import { initThreeJS, enableThreeJSResize } from '../integration/init';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Types
@@ -129,8 +129,8 @@ export async function buildWebGLRaycasterTexture(
   win: ITsyneWindow,
   params: WebGLRaycasterTextureParams = {}
 ): Promise<WebGLRaycasterTextureDemo> {
-  const width = params.width ?? 800;
-  const height = params.height ?? 600;
+  let width = params.width ?? 800;
+  let height = params.height ?? 600;
 
   const { THREE } = await initThreeJS(a, win, { width, height, interactive: true });
 
@@ -180,6 +180,12 @@ export async function buildWebGLRaycasterTexture(
   const renderer = new THREE.WebGLRenderer();
   renderer.setPixelRatio(1);
   renderer.setSize(width, height);
+  await enableThreeJSResize(win, {
+    preferredWidth: width,
+    preferredHeight: height,
+    renderer,
+    camera,
+  });
 
   // ── Cube (center) ──────────────────────────────────────────────────────
 

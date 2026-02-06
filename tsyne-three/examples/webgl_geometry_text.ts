@@ -18,7 +18,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
 import type { App, ITsyneWindow } from 'tsyne';
-import { initThreeJS } from '../integration/init';
+import { initThreeJS, enableThreeJSResize } from '../integration/init';
 import { FontLoader, Font } from '../../three/examples/jsm/loaders/FontLoader.js';
 import { TextGeometry } from '../../three/examples/jsm/geometries/TextGeometry.js';
 
@@ -52,8 +52,8 @@ export async function buildWebGLGeometryText(
   win: ITsyneWindow,
   params: WebGLGeometryTextParams = {}
 ): Promise<WebGLGeometryTextDemo> {
-  const width = params.width ?? 800;
-  const height = params.height ?? 600;
+  let width = params.width ?? 800;
+  let height = params.height ?? 600;
 
   const { THREE } = await initThreeJS(a, win, { width, height });
 
@@ -172,6 +172,12 @@ export async function buildWebGLGeometryText(
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(1); // No window.devicePixelRatio in Node
   renderer.setSize(width, height);
+  await enableThreeJSResize(win, {
+    preferredWidth: width,
+    preferredHeight: height,
+    renderer,
+    camera,
+  });
 
   // ─────────────────────────────────────────────────────────────────────────
   // Animation loop

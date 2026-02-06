@@ -21,7 +21,7 @@
 
 import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
 import type { App, ITsyneWindow } from 'tsyne';
-import { initThreeJS } from '../integration/init';
+import { initThreeJS, enableThreeJSResize } from '../integration/init';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Shaders (inlined from HTML script tags)
@@ -101,8 +101,8 @@ export async function buildWebGLReadFloatBuffer(
   win: ITsyneWindow,
   params: WebGLReadFloatBufferParams = {}
 ): Promise<WebGLReadFloatBufferDemo> {
-  const width = params.width ?? 800;
-  const height = params.height ?? 600;
+  let width = params.width ?? 800;
+  let height = params.height ?? 600;
 
   const { THREE } = await initThreeJS(a, win, { width, height });
 
@@ -211,6 +211,12 @@ export async function buildWebGLReadFloatBuffer(
   const renderer = new THREE.WebGLRenderer();
   renderer.setPixelRatio(1);
   renderer.setSize(width, height);
+  await enableThreeJSResize(win, {
+    preferredWidth: width,
+    preferredHeight: height,
+    renderer,
+    camera: cameraRTT,
+  });
   renderer.autoClear = false;
 
   // ─────────────────────────────────────────────────────────────────────────

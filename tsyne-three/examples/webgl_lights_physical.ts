@@ -21,7 +21,7 @@
 import * as path from 'path';
 import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
 import type { App, ITsyneWindow } from 'tsyne';
-import { initThreeJS } from '../integration/init';
+import { initThreeJS, enableThreeJSResize } from '../integration/init';
 import { loadTexture } from '../integration/texture-loader';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -89,8 +89,8 @@ export async function buildWebGLLightsPhysical(
   win: ITsyneWindow,
   params: WebGLLightsPhysicalParams = {}
 ): Promise<WebGLLightsPhysicalDemo> {
-  const width = params.width ?? 800;
-  const height = params.height ?? 600;
+  let width = params.width ?? 800;
+  let height = params.height ?? 600;
 
   // Lighting parameters (defaults match original: 400 lm bulb, moonless night hemi)
   const bulbPower = params.bulbPower ?? 400;
@@ -248,6 +248,12 @@ export async function buildWebGLLightsPhysical(
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(1);
   renderer.setSize(width, height);
+  await enableThreeJSResize(win, {
+    preferredWidth: width,
+    preferredHeight: height,
+    renderer,
+    camera,
+  });
   renderer.shadowMap.enabled = false; // Shadows disabled (FBOs not supported)
   renderer.toneMapping = THREE.ReinhardToneMapping;
   renderer.toneMappingExposure = Math.pow(exposure, 5.0);

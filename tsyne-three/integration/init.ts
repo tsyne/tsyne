@@ -157,6 +157,9 @@ export async function initThreeJS(
   });
 }
 
+export { enableThreeJSResize } from './resize';
+export type { EnableThreeJSResizeOptions } from './resize';
+
 export default {
   setupTsyneThreeJS,
   setupTsyneThreeJSFull,

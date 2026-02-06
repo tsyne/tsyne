@@ -4,7 +4,7 @@
 
 import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
 import type { App, ITsyneWindow } from 'tsyne';
-import { initThreeJS } from '../integration/init';
+import { initThreeJS, enableThreeJSResize } from '../integration/init';
 
 export interface VertexColorsTestDemo {
   stop: () => void;
@@ -16,8 +16,8 @@ export async function buildVertexColorsTest(
   win: ITsyneWindow,
   params: { width?: number; height?: number } = {}
 ): Promise<VertexColorsTestDemo> {
-  const width = params.width ?? 400;
-  const height = params.height ?? 300;
+  let width = params.width ?? 400;
+  let height = params.height ?? 300;
 
   const { THREE } = await initThreeJS(a, win, { width, height });
 
@@ -63,6 +63,12 @@ export async function buildVertexColorsTest(
   // Renderer
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(width, height);
+  await enableThreeJSResize(win, {
+    preferredWidth: width,
+    preferredHeight: height,
+    renderer,
+    camera,
+  });
 
   let running = true;
   let time = 0;

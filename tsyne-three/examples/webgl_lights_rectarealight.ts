@@ -21,7 +21,7 @@
 
 import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
 import type { App, ITsyneWindow } from 'tsyne';
-import { initThreeJS } from '../integration/init';
+import { initThreeJS, enableThreeJSResize } from '../integration/init';
 import { RectAreaLightHelper } from '../../three/examples/jsm/helpers/RectAreaLightHelper.js';
 import { RectAreaLightUniformsLib } from '../../three/examples/jsm/lights/RectAreaLightUniformsLib.js';
 
@@ -56,8 +56,8 @@ export async function buildWebGLLightsRectAreaLight(
   win: ITsyneWindow,
   params: WebGLLightsRectAreaLightParams = {}
 ): Promise<WebGLLightsRectAreaLightDemo> {
-  const width = params.width ?? 800;
-  const height = params.height ?? 600;
+  let width = params.width ?? 800;
+  let height = params.height ?? 600;
 
   const { THREE } = await initThreeJS(a, win, { width, height });
 
@@ -151,6 +151,12 @@ export async function buildWebGLLightsRectAreaLight(
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(1); // No window.devicePixelRatio in Node
   renderer.setSize(width, height);
+  await enableThreeJSResize(win, {
+    preferredWidth: width,
+    preferredHeight: height,
+    renderer,
+    camera,
+  });
 
   // ─────────────────────────────────────────────────────────────────────────
   // Animation loop

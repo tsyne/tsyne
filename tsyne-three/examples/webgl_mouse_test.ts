@@ -10,11 +10,11 @@
 
 import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
 import type { App, ITsyneWindow } from 'tsyne';
-import { initThreeJS } from '../integration/init';
+import { initThreeJS, enableThreeJSResize } from '../integration/init';
 
 export async function buildMouseTest(a: App, win: ITsyneWindow) {
-  const width = 400;
-  const height = 300;
+  let width = 400;
+  let height = 300;
 
   const { THREE, canvasId } = await initThreeJS(a, win, { width, height, interactive: true });
   console.log('[MOUSE TEST] Canvas ID:', canvasId);
@@ -34,6 +34,12 @@ export async function buildMouseTest(a: App, win: ITsyneWindow) {
 
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(width, height);
+  await enableThreeJSResize(win, {
+    preferredWidth: width,
+    preferredHeight: height,
+    renderer,
+    camera,
+  });
 
   // ═══════════════════════════════════════════════════════════════════════════
   // MOUSE EVENT DEBUGGING
