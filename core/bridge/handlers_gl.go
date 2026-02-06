@@ -12,7 +12,7 @@ import (
 	"sync"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
+	canvasPkg "fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 )
 
@@ -26,8 +26,8 @@ type GLCanvas struct {
 
 	// Fyne integration - these are the widgets used to display the GL canvas
 	FyneCanvas        fyne.Canvas              // The Fyne canvas for rendering
-	ShaderObject      *canvas.Shader           // The underlying Fyne Shader primitive (set up by setup-fyne-fork.sh)
-	HoverableObject   *canvas.HoverableShader  // Optional: hoverable version for mouse events
+	ShaderObject      *canvasPkg.Shader           // The underlying Fyne Shader primitive (set up by setup-fyne-fork.sh)
+	HoverableObject   *canvasPkg.HoverableShader  // Optional: hoverable version for mouse events
 	Container         fyne.CanvasObject        // Container to hold the shader in the widget hierarchy
 	Interactive       bool                     // Whether this canvas receives mouse events
 
@@ -166,19 +166,19 @@ void main() {
 }
 `
 
-	var shaderObject *canvas.Shader
-	var hoverableObject *canvas.HoverableShader
+	var shaderObject *canvasPkg.Shader
+	var hoverableObject *canvasPkg.HoverableShader
 	var shaderContainer fyne.CanvasObject
 
 	if interactive {
 		// Create a hoverable shader for mouse events
-		hoverableObject = canvas.NewHoverableShader(width, height, minimalShader)
+		hoverableObject = canvasPkg.NewHoverableShader(width, height, minimalShader)
 		shaderObject = hoverableObject.Shader
 		shaderContainer = hoverableObject
 		log.Printf("[GL] Creating interactive GL canvas with mouse events")
 	} else {
 		// Create a regular shader (no mouse events)
-		shaderObject = canvas.NewShader(width, height, minimalShader)
+		shaderObject = canvasPkg.NewShader(width, height, minimalShader)
 		shaderContainer = shaderObject
 	}
 
@@ -563,16 +563,22 @@ func (b *Bridge) executeGLCommand(canvas *GLCanvas, cmd string, args map[string]
 		return nil // Color mask state - handled implicitly
 	case "viewport":
 		return b.glViewport(canvas, args)
-	case "enable", "disable":
-		return nil // State operations handled implicitly
+	case "enable":
+		return b.glEnable(canvas, args)
+	case "disable":
+		return b.glDisable(canvas, args)
 	case "depthFunc", "depthMask", "depthRange":
 		return nil // Depth operations - handled by painter
 	case "stencilFunc", "stencilOp", "stencilMask":
 		return nil // Stencil operations - handled by painter
-	case "frontFace", "cullFace":
-		return nil // Face culling - handled by painter
-	case "blendFunc", "blendFuncSeparate", "blendEquation", "blendEquationSeparate", "blendColor":
-		return nil // Blending - handled by painter
+	case "frontFace":
+		return nil // Front face - handled by painter
+	case "cullFace":
+		return b.glCullFace(canvas, args)
+	case "blendFunc":
+		return b.glBlendFunc(canvas, args)
+	case "blendFuncSeparate", "blendEquation", "blendEquationSeparate", "blendColor":
+		return nil // Advanced blending - handled by painter
 	case "polygonOffset", "lineWidth":
 		return nil // Polygon/line state - handled by painter
 	case "pixelStorei":
@@ -818,19 +824,31 @@ func (b *Bridge) glUseProgram(canvas *GLCanvas, args map[string]interface{}) err
 	}
 	programId := uint32(toFloat32(programIdVal))
 
-	// Only update shader sources if switching to a different program
-	if canvas.currentProgram != programId {
-		canvas.currentProgram = programId
+	prevProgram := canvas.currentProgram
+	canvas.currentProgram = programId
 
-		// Look up the program and update shader sources on the canvas
-		// This triggers recompilation on the next draw
-		if program, exists := canvas.programs[programId]; exists && program.linked {
-			if program.convertedVertexSrc != "" {
-				canvas.ShaderObject.SetVertexSource(program.convertedVertexSrc)
-			}
-			if program.convertedFragSrc != "" {
-				canvas.ShaderObject.SetSource(program.convertedFragSrc)
-			}
+	if program, exists := canvas.programs[programId]; exists && program.linked {
+		vertSrc := program.convertedVertexSrc
+		fragSrc := program.convertedFragSrc
+		// Update the shader object's sources only if they changed
+		if vertSrc != "" && vertSrc != canvas.ShaderObject.VertexSource {
+			canvas.ShaderObject.SetVertexSource(vertSrc)
+		}
+		if fragSrc != "" && fragSrc != canvas.ShaderObject.FragmentSource {
+			canvas.ShaderObject.SetSource(fragSrc)
+		}
+		// Queue useProgram render command only when switching between two real programs
+		// (prevProgram > 0 means we're switching FROM an actual program, not from initial state)
+		// The initial program is compiled at the top of drawShader; we only need useProgram
+		// for mid-frame program switches in multi-material scenes
+		if prevProgram > 0 && prevProgram != programId {
+			canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+				Type: "useProgram",
+				Value: canvasPkg.UseProgramParams{
+					VertexSource:   vertSrc,
+					FragmentSource: fragSrc,
+				},
+			})
 		}
 	}
 	return nil
@@ -1456,6 +1474,63 @@ func (b *Bridge) glTexStorage2D(canvas *GLCanvas, args map[string]interface{}) e
 // State Operations
 // ═══════════════════════════════════════════════════════════════
 
+func (b *Bridge) glEnable(canvas *GLCanvas, args map[string]interface{}) error {
+	capVal, ok := args["cap"]
+	if !ok {
+		return nil
+	}
+	cap := uint32(toFloat64(capVal))
+	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+		Type:  "enable",
+		Value: cap,
+	})
+	return nil
+}
+
+func (b *Bridge) glDisable(canvas *GLCanvas, args map[string]interface{}) error {
+	capVal, ok := args["cap"]
+	if !ok {
+		return nil
+	}
+	cap := uint32(toFloat64(capVal))
+	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+		Type:  "disable",
+		Value: cap,
+	})
+	return nil
+}
+
+func (b *Bridge) glCullFace(canvas *GLCanvas, args map[string]interface{}) error {
+	modeVal, ok := args["mode"]
+	if !ok {
+		return nil
+	}
+	mode := uint32(toFloat64(modeVal))
+	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+		Type:  "cullFace",
+		Value: mode,
+	})
+	return nil
+}
+
+func (b *Bridge) glBlendFunc(canvas *GLCanvas, args map[string]interface{}) error {
+	sfactorVal, ok := args["sfactor"]
+	if !ok {
+		return nil
+	}
+	dfactorVal, ok := args["dfactor"]
+	if !ok {
+		return nil
+	}
+	sfactor := uint32(toFloat64(sfactorVal))
+	dfactor := uint32(toFloat64(dfactorVal))
+	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+		Type:  "blendFunc",
+		Value: [2]uint32{sfactor, dfactor},
+	})
+	return nil
+}
+
 func (b *Bridge) glClear(canvas *GLCanvas, args map[string]interface{}) error {
 	// Queue clear command
 	canvas.ShaderObject.QueueClear()
@@ -1480,11 +1555,40 @@ func (b *Bridge) glViewport(canvas *GLCanvas, args map[string]interface{}) error
 // Drawing Operations
 // ═══════════════════════════════════════════════════════════════
 
+// pushAttribBuffersToShader updates the shader's attribute buffers from the current
+// attribBindings state. Called before QueueDrawArrays so the geometry snapshot
+// captures the correct buffers for each draw call (needed for multi-geometry scenes).
+func (b *Bridge) pushAttribBuffersToShader(canvas *GLCanvas) {
+	for location, binding := range canvas.attribBindings {
+		attrName, hasName := canvas.attribLocations[location]
+		if !hasName {
+			switch location {
+			case 0:
+				attrName = "position"
+			case 1:
+				attrName = "normal"
+			case 2:
+				attrName = "uv"
+			default:
+				attrName = fmt.Sprintf("attr_%d", location)
+			}
+		}
+		buffer, exists := canvas.buffers[binding.bufferId]
+		if !exists || len(buffer.data) == 0 {
+			continue
+		}
+		canvas.ShaderObject.SetAttributeBuffer(attrName, buffer.data, binding.size)
+	}
+}
+
 func (b *Bridge) glDrawArrays(canvas *GLCanvas, args map[string]interface{}) error {
 	// Queue the draw call to be executed in order with uniforms
 	mode := uint32(toFloat64(args["mode"]))
 	first := int(toFloat64(args["first"]))
 	count := int(toFloat64(args["count"]))
+	// Push current attribute buffers to shader before snapshotting
+	// so QueueDrawArrays captures the correct geometry for THIS draw call
+	b.pushAttribBuffersToShader(canvas)
 	canvas.ShaderObject.QueueDrawArrays(mode, first, count)
 	return nil
 }

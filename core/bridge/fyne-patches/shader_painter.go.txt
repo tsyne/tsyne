@@ -54,7 +54,7 @@ func parseVertexAttributes(vertexSrc string) []shaderAttribute {
 
 	// Match: attribute <type> <name>;
 	// Handles: attribute vec2 vert; attribute vec3 position; etc.
-	attrRegex := regexp.MustCompile(`(?m)^\s*attribute\s+(vec2|vec3|vec4|float|mat2|mat3|mat4)\s+(\w+)\s*;`)
+	attrRegex := regexp.MustCompile(`(?m)^\s*(?:attribute|in)\s+(vec2|vec3|vec4|float|mat2|mat3|mat4)\s+(\w+)\s*;`)
 
 	matches := attrRegex.FindAllStringSubmatch(vertexSrc, -1)
 	for _, match := range matches {
@@ -713,10 +713,10 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 							}
 							p.ctx.BindBuffer(elementArrayBuffer, Buffer(ibo))
 							p.ctx.BufferDataUint16(elementArrayBuffer, cmdIndices, dynamicDraw)
-							p.ctx.DrawElements(triangles, int32(params.Count), unsignedShort, params.Offset)
+							p.ctx.DrawElements(params.Mode, int32(params.Count), unsignedShort, params.Offset)
 						} else if useIndexedDrawing {
 							// Fall back to pre-uploaded indices
-							p.ctx.DrawElements(triangles, int32(params.Count), unsignedShort, params.Offset)
+							p.ctx.DrawElements(params.Mode, int32(params.Count), unsignedShort, params.Offset)
 						}
 					}
 				}
@@ -759,6 +759,41 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 				cc := shader.GetClearColor()
 				p.ctx.ClearColor(cc[0], cc[1], cc[2], cc[3])
 				p.ctx.Clear(colorBufferBit | depthBufferBit)
+			case "enable":
+				if cap, ok := cmd.Value.(uint32); ok {
+					p.ctx.Enable(cap)
+				}
+			case "disable":
+				if cap, ok := cmd.Value.(uint32); ok {
+					p.ctx.Disable(cap)
+				}
+			case "cullFace":
+				if mode, ok := cmd.Value.(uint32); ok {
+					p.ctx.CullFace(mode)
+				}
+			case "blendFunc":
+				if factors, ok := cmd.Value.([2]uint32); ok {
+					p.ctx.BlendFunc(factors[0], factors[1])
+				}
+			case "useProgram":
+				if params, ok := cmd.Value.(canvas.UseProgramParams); ok {
+					cacheKey := params.VertexSource + "|||" + params.FragmentSource
+					cachedProg, found := shader.GetProgramCache()[cacheKey]
+					if found && cachedProg != 0 {
+						prog = Program(cachedProg)
+					} else {
+						newProg := p.compileShaderProgram(params.VertexSource, params.FragmentSource)
+						if newProg != 0 {
+							shader.SetProgramCache(cacheKey, uint32(newProg))
+							prog = newProg
+						}
+					}
+					p.ctx.UseProgram(prog)
+					attrs = parseVertexAttributes(params.VertexSource)
+					for k := range shader.UniformLocs() {
+						delete(shader.UniformLocs(), k)
+					}
+				}
 			}
 		}
 

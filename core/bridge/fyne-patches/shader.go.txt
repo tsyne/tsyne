@@ -32,6 +32,12 @@ type DrawElementsParams struct {
 	Indices          []uint16                    // Snapshot of index buffer at draw time
 }
 
+// UseProgramParams holds parameters for a useProgram command
+type UseProgramParams struct {
+	VertexSource   string
+	FragmentSource string
+}
+
 // DrawArraysParams holds parameters for a drawArrays call
 type DrawArraysParams struct {
 	Mode             uint32
@@ -94,6 +100,19 @@ type Shader struct {
 	// still need to bind the data to the expected locations
 	attributeLocations map[string]int32
 	attribLocMu        sync.RWMutex
+
+	// Multi-program support for scenes with multiple shader programs
+	// Maps source key → compiled GL program ID
+	programCache    map[string]uint32
+	// Pending program sources (set by useProgram command for painter to compile)
+	pendingPrograms []PendingProgram
+	pendingProgMu   sync.Mutex
+}
+
+// PendingProgram holds shader sources queued for compilation by the painter
+type PendingProgram struct {
+	VertexSource   string
+	FragmentSource string
 }
 
 // NewShader creates a new shader canvas object with the given dimensions and fragment shader.
@@ -130,6 +149,7 @@ func NewShader(width, height float32, fragmentSrc string) *Shader {
 		vertexCount:        0,
 		indexCount:         0,
 		attributeLocations: make(map[string]int32),
+		programCache:       make(map[string]uint32),
 	}
 	s.size = fyne.NewSize(width, height)
 	return s
@@ -205,6 +225,8 @@ func (s *Shader) GetUniformsCopy() map[string]interface{} {
 // Note: Does NOT call Refresh() - caller should call Refresh() after all data is set up
 func (s *Shader) SetTextureUniform(name string, value interface{}) {
 	s.Textures[name] = value
+	// Invalidate cache so the texture gets re-uploaded on next paint
+	delete(s.textureCache, name)
 }
 
 // SetCubemapUniform sets a cubemap uniform value.
@@ -340,6 +362,13 @@ func (s *Shader) SetIndices(indices []uint16) {
 	s.Indices = indices
 	s.indexCount = len(indices)
 	s.Refresh()
+}
+
+// SetIndicesNoRefresh sets the index buffer without triggering a Refresh.
+// Use this when updating indices during command processing (before QueueDrawElements).
+func (s *Shader) SetIndicesNoRefresh(indices []uint16) {
+	s.Indices = indices
+	s.indexCount = len(indices)
 }
 
 // attributeCountForFormat returns the number of floats per vertex for a given format.
@@ -479,6 +508,38 @@ func (s *Shader) GetAttributeLocation(name string) int32 {
 		return -1
 	}
 	return loc
+}
+
+// GetProgramCache returns the program cache map (for painter use).
+func (s *Shader) GetProgramCache() map[string]uint32 {
+	return s.programCache
+}
+
+// SetProgramCache stores a compiled program in the cache (for painter use).
+func (s *Shader) SetProgramCache(key string, prog uint32) {
+	if s.programCache == nil {
+		s.programCache = make(map[string]uint32)
+	}
+	s.programCache[key] = prog
+}
+
+// AddPendingProgram queues shader sources for compilation by the painter.
+func (s *Shader) AddPendingProgram(vertexSrc, fragmentSrc string) {
+	s.pendingProgMu.Lock()
+	s.pendingPrograms = append(s.pendingPrograms, PendingProgram{
+		VertexSource:   vertexSrc,
+		FragmentSource: fragmentSrc,
+	})
+	s.pendingProgMu.Unlock()
+}
+
+// DrainPendingPrograms returns and clears pending programs for compilation.
+func (s *Shader) DrainPendingPrograms() []PendingProgram {
+	s.pendingProgMu.Lock()
+	defer s.pendingProgMu.Unlock()
+	progs := s.pendingPrograms
+	s.pendingPrograms = nil
+	return progs
 }
 
 // QueueRenderCommand adds a render command to the queue.

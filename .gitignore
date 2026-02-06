@@ -13,7 +13,6 @@ package-lock.json
 .idea/
 test-failures/
 test-output/
-examples/screenshots/visual-regression/
 pkg/
 .tsyne-dev/
 bookmarks-export.json
@@ -32,8 +31,8 @@ bridge/bridge
 *.so
 *.dylib
 
-## Patched Three.js
-tsyne-three/examples/screenshots/
+## screenshots generally
+**/screenshots/
 
 # iOS build artifacts
 forios/bundle/

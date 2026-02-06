@@ -4,8 +4,8 @@ module.exports = {
   testEnvironment: 'node',
   testMatch: ['**/*.test.ts'],
   transform: {
-    // Transform three.js ES modules using babel
-    '[\\\\/]three[\\\\/]src[\\\\/].+\\.js$': 'babel-jest',
+    // Transform three.js ES modules (src and examples/jsm) using babel
+    '[\\\\/]three[\\\\/](src|examples[\\\\/]jsm)[\\\\/].+\\.js$': 'babel-jest',
     '^.+\\.ts$': ['ts-jest', {
       diagnostics: false,
       isolatedModules: true,
