@@ -23,6 +23,9 @@ import { Window } from './window';
 import { Entry, Label, Button } from './widgets';
 import { setBrowserGlobals, TsyneLocation, TsyneHistory } from './globals';
 import { BridgeInterface } from './fynebridge';
+import { enableBrowserMode, disableBrowserMode } from './tsyne-window';
+import { loadAndExecuteApp } from './transpile-cache';
+import { parseGrabDirectives, resolveGrabDirectives, getGrabNodePath } from './grab';
 
 /**
  * Custom menu item that pages can define
@@ -147,7 +150,7 @@ export class Browser {
   private homeUrl: string = '';
   private pageTitle: string = '';
   private baseTitle: string = '';
-  private statusText: string = 'Ready';
+  private statusText: string = '';
   private statusBarLabel: Label | null = null;
   private pageCache: Map<string, CacheEntry> = new Map();
   private historyFilePath: string;
@@ -215,6 +218,18 @@ export class Browser {
       {
         label: 'File',
         items: [
+          {
+            label: 'Open File...',
+            onSelected: async () => {
+              const filePath = await this.window.showFileOpen();
+              if (filePath) {
+                await this.changePage(`file://${filePath}`);
+              }
+            }
+          },
+          {
+            isSeparator: true
+          },
           {
             label: 'Close Window',
             onSelected: () => {
@@ -361,9 +376,10 @@ export class Browser {
           {
             label: 'Import Bookmarks...',
             onSelected: async () => {
-              // For now, use a hardcoded path; in a real implementation, would show file dialog
-              const importPath = path.join(process.cwd(), 'bookmarks-export.json');
-              await this.importBookmarks(importPath, true).catch(err => console.error('Import bookmarks failed:', err));
+              const importPath = await this.window.showFileOpen();
+              if (importPath) {
+                await this.importBookmarks(importPath, true).catch(err => console.error('Import bookmarks failed:', err));
+              }
             }
           },
           {
@@ -512,13 +528,15 @@ export class Browser {
         });
       },
       bottom: () => {
-        // Status bar at bottom
-        vbox(() => {
-          separator();
-          hbox(() => {
-            this.statusBarLabel = label(this.statusText);
+        // Status bar at bottom — only visible when loading or showing transient status
+        if (this.statusText) {
+          vbox(() => {
+            separator();
+            hbox(() => {
+              this.statusBarLabel = label(this.statusText);
+            });
           });
-        });
+        }
       }
     });
   }
@@ -549,17 +567,19 @@ export class Browser {
     }
 
     const protocol = url.split('://')[0].toLowerCase();
-    if (protocol !== 'http' && protocol !== 'https') {
-      return { valid: false, error: `Unsupported protocol: ${protocol}:// (only http:// and https:// are supported)` };
+    if (protocol !== 'http' && protocol !== 'https' && protocol !== 'file') {
+      return { valid: false, error: `Unsupported protocol: ${protocol}:// (only http://, https://, and file:// are supported)` };
     }
 
     // Try parsing URL
     try {
       const urlObj = new URL(url);
 
-      // Check for valid hostname
-      if (!urlObj.hostname || urlObj.hostname.length === 0) {
-        return { valid: false, error: 'URL must include a hostname' };
+      // Skip hostname check for file:// URLs
+      if (protocol !== 'file') {
+        if (!urlObj.hostname || urlObj.hostname.length === 0) {
+          return { valid: false, error: 'URL must include a hostname' };
+        }
       }
 
       return { valid: true };
@@ -579,25 +599,36 @@ export class Browser {
       return;
     }
 
-    // Validate URL format
+    // Resolve relative URLs BEFORE validation so file:// relative paths work
+    if (url.startsWith('/') && this.currentUrl) {
+      try {
+        if (this.currentUrl.startsWith('file://')) {
+          const dir = path.dirname(new URL(this.currentUrl).pathname);
+          url = `file://${path.resolve(dir, url.substring(1))}`;
+        } else {
+          const currentUrlObj = new URL(this.currentUrl);
+          url = `${currentUrlObj.protocol}//${currentUrlObj.host}${url}`;
+        }
+      } catch (e) {
+        console.error('Failed to convert relative URL:', e);
+      }
+    } else if (!url.includes('://') && !url.startsWith('/') && this.currentUrl && this.currentUrl.startsWith('file://')) {
+      // Relative path without leading / for file:// — resolve against current file's directory
+      try {
+        const dir = path.dirname(new URL(this.currentUrl).pathname);
+        url = `file://${path.resolve(dir, url)}`;
+      } catch (e) {
+        console.error('Failed to convert relative file URL:', e);
+      }
+    }
+
+    // Validate URL format (after relative path resolution)
     const validation = this.validateUrl(url);
     if (!validation.valid) {
       console.error('Invalid URL:', validation.error);
       this.statusText = `Invalid URL: ${validation.error}`;
       await this.showError(url, new Error(validation.error || 'Invalid URL'));
       return;
-    }
-
-    // Handle relative URLs - convert to full URL using current URL's origin
-    if (url.startsWith('/') && this.currentUrl) {
-      try {
-        const currentUrlObj = new URL(this.currentUrl);
-        const fullUrl = `${currentUrlObj.protocol}//${currentUrlObj.host}${url}`;
-        // DEBUG: console.log('Converted relative URL to full URL:', fullUrl);
-        url = fullUrl;
-      } catch (e) {
-        console.error('Failed to convert relative URL:', e);
-      }
     }
 
     this.loading = true;
@@ -616,34 +647,40 @@ export class Browser {
       let pageCode: string;
       let fromCache = false;
 
-      // Check cache first
-      const cachedEntry = this.pageCache.get(url);
-      if (cachedEntry) {
-        // Cache hit - use cached page
-        // DEBUG: console.log('Cache hit for URL:', url);
-        pageCode = cachedEntry.pageCode;
-        fromCache = true;
-        this.statusText = `Loaded from cache: ${url}`;
-      } else {
-        // Cache miss - fetch from server
-        // DEBUG: console.log('Cache miss for URL:', url);
+      if (url.startsWith('file://')) {
+        // Local file — always re-read (no cache, supports dev workflow)
         this.statusText = `Loading ${url}...`;
-        pageCode = await this.fetchPage(url);
+        pageCode = this.loadLocalFile(url);
+      } else {
+        // Check cache first
+        const cachedEntry = this.pageCache.get(url);
+        if (cachedEntry) {
+          // Cache hit - use cached page
+          // DEBUG: console.log('Cache hit for URL:', url);
+          pageCode = cachedEntry.pageCode;
+          fromCache = true;
+          this.statusText = `Loaded from cache: ${url}`;
+        } else {
+          // Cache miss - fetch from server
+          // DEBUG: console.log('Cache miss for URL:', url);
+          this.statusText = `Loading ${url}...`;
+          pageCode = await this.fetchPage(url);
 
-        // Check if loading was cancelled
-        if (!this.loading) {
-          // DEBUG: console.log('Loading cancelled');
-          this.statusText = 'Ready';
-          return;
+          // Check if loading was cancelled
+          if (!this.loading) {
+            // DEBUG: console.log('Loading cancelled');
+            this.statusText = '';
+            return;
+          }
+
+          // Add to cache
+          this.pageCache.set(url, {
+            url,
+            pageCode,
+            fetchedAt: Date.now()
+          });
+          // DEBUG: console.log('Added to cache:', url);
         }
-
-        // Add to cache
-        this.pageCache.set(url, {
-          url,
-          pageCode,
-          fetchedAt: Date.now()
-        });
-        // DEBUG: console.log('Added to cache:', url);
       }
 
       // Add to history (clear forward history if navigating from middle)
@@ -668,8 +705,9 @@ export class Browser {
       // Page rendered successfully - stop loading and update status
       this.loading = false;
       this.currentRequest = null;
-      this.statusText = fromCache ? 'Loaded from cache' : 'Done';
+      this.statusText = '';
       await this.setupMenuBar();  // Update menu bar to reflect new history state
+      await this.updateUI();  // Clear loading indicator and status bar
 
       // Update browser globals
       this.updateBrowserGlobals();
@@ -745,7 +783,7 @@ export class Browser {
     // Save history to disk (preserves historyIndex)
     this.saveHistory();
 
-    this.statusText = 'Navigated back';
+    this.statusText = '';
     await this.renderPage(entry.pageCode);
 
     // Update browser globals
@@ -773,7 +811,7 @@ export class Browser {
     // Save history to disk (preserves historyIndex)
     this.saveHistory();
 
-    this.statusText = 'Navigated forward';
+    this.statusText = '';
     await this.renderPage(entry.pageCode);
 
     // Update browser globals
@@ -788,7 +826,7 @@ export class Browser {
       const entry = this.history[this.historyIndex];
       this.statusText = 'Reloading page...';
       await this.renderPage(entry.pageCode);
-      this.statusText = 'Done';
+      this.statusText = '';
 
       // Update browser globals
       this.updateBrowserGlobals();
@@ -916,6 +954,20 @@ export class Browser {
   }
 
   /**
+   * Load page code from a local file:// URL
+   */
+  private loadLocalFile(url: string): string {
+    const filePath = new URL(url).pathname;
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`File not found: ${filePath}`);
+    }
+    if (fs.statSync(filePath).isDirectory()) {
+      throw new Error(`Cannot load directory: ${filePath}`);
+    }
+    return fs.readFileSync(filePath, 'utf-8');
+  }
+
+  /**
    * Fetch page code from a URL
    */
   private async fetchPage(url: string): Promise<string> {
@@ -964,9 +1016,187 @@ export class Browser {
   }
 
   /**
+   * Detect whether page source is a module (has imports, exports, or @tsyne-app:builder)
+   * vs a raw code string that runs via new Function('browserContext', 'tsyne', code)
+   */
+  private isModulePage(source: string): boolean {
+    // Check for @tsyne-app:builder metadata
+    if (source.includes('@tsyne-app:builder')) return true;
+    // Check for export function build*/create* patterns
+    if (/export\s+(async\s+)?function\s+(build|create)\w+/.test(source)) return true;
+    // Check for import statements (ES module style)
+    if (/^import\s+/m.test(source)) return true;
+    // Check for @grab directives (implies a module/app)
+    if (/\/\/\s*@[Gg]rab\b/.test(source)) return true;
+    return false;
+  }
+
+  /**
+   * Render a module page (one with imports, exports, @tsyne-app metadata).
+   * Uses transpile-cache to execute the module, then extracts and calls the builder function.
+   */
+  private async renderModulePage(pageCode: string, filePath: string | null): Promise<void> {
+    // Reset page title
+    this.pageTitle = '';
+    this.updateWindowTitle();
+
+    try {
+      // Handle @grab directives for file:// pages
+      if (filePath) {
+        const grabDirectives = parseGrabDirectives(filePath);
+        if (grabDirectives.length > 0) {
+          const result = resolveGrabDirectives(grabDirectives, { verbose: false });
+          if (result.failed.length > 0) {
+            const failedPkgs = result.failed.map(f => `${f.directive.package}@${f.directive.version}`).join(', ');
+            console.error(`[Browser] Failed to install @grab packages: ${failedPkgs}`);
+          }
+          // Add grab cache to NODE_PATH so require() can find them
+          const grabNodePath = getGrabNodePath();
+          const existingNodePath = process.env.NODE_PATH || '';
+          if (!existingNodePath.includes(grabNodePath)) {
+            process.env.NODE_PATH = grabNodePath + path.delimiter + existingNodePath;
+            // Force Node.js to re-read NODE_PATH
+            require('module').Module._initPaths();
+          }
+        }
+      }
+
+      // Enable browser mode so app() returns our browser's App instance
+      // and captures the builder passed to app()
+      const browserCtxForExec = {
+        browserApp: this.app,
+        changePage: (url: string) => this.changePage(url),
+        capturedBuilder: null as ((a: any) => void | Promise<void>) | null,
+      };
+      enableBrowserMode(browserCtxForExec);
+
+      let builderFn: ((a: any) => void | Promise<void>) | null = null;
+
+      try {
+        // Transpile and execute the module
+        const sourcePath = filePath || 'browser-page.ts';
+        const { exports } = await loadAndExecuteApp(pageCode, sourcePath);
+
+        // Find builder function:
+        // 1. Check @tsyne-app:builder metadata
+        const builderMatch = pageCode.match(/\/\/\s*@tsyne-app:builder\s+(\w+)/);
+        if (builderMatch) {
+          const builderName = builderMatch[1];
+          if (typeof exports[builderName] === 'function') {
+            builderFn = exports[builderName];
+          }
+        }
+
+        // 2. Auto-detect export function build*/create*
+        if (!builderFn) {
+          for (const key of Object.keys(exports)) {
+            if ((key.startsWith('build') || key.startsWith('create')) && typeof exports[key] === 'function') {
+              builderFn = exports[key];
+              break;
+            }
+          }
+        }
+
+        // 3. App with inline builder passed to app() — these create their own
+        //    windows and can't be embedded in the browser. Spawn as a subprocess.
+        if (!builderFn && browserCtxForExec.capturedBuilder && filePath) {
+          disableBrowserMode();
+
+          const { spawn } = require('child_process');
+          const appName = path.basename(filePath);
+          const appDir = path.dirname(filePath);
+
+          spawn('npx', ['tsx', appName], {
+            cwd: appDir,
+            stdio: ['ignore', 'inherit', 'inherit'],
+            detached: false
+          });
+
+          // Show a message in the browser
+          this.currentPageBuilder = () => {
+            const { label } = require('./index');
+            label(`Launched ${appName} in a separate window.`);
+          };
+
+          await this.window.setContent(() => {
+            this.buildWindowContent();
+          });
+
+          if (!this.firstPageLoaded) {
+            await this.window.show();
+            this.firstPageLoaded = true;
+          }
+
+          return;
+        }
+      } finally {
+        disableBrowserMode();
+      }
+
+      if (!builderFn) {
+        throw new Error('Module page has no builder function (expected @tsyne-app:builder, export function build*/create*, or inline app() builder)');
+      }
+
+      // Set up current page builder that calls the module's builder with our app.
+      // Re-enable browser mode around the builder call so it can detect it.
+      const capturedBuilder = builderFn;
+      const browserCtx = {
+        browserApp: this.app,
+        changePage: (url: string) => this.changePage(url)
+      };
+      this.currentPageBuilder = () => {
+        enableBrowserMode(browserCtx);
+        try {
+          capturedBuilder(this.app);
+        } finally {
+          disableBrowserMode();
+        }
+      };
+
+      // Re-render the entire window (chrome + new content)
+      await this.window.setContent(() => {
+        this.buildWindowContent();
+      });
+
+      if (!this.firstPageLoaded) {
+        await this.window.show();
+        this.firstPageLoaded = true;
+      }
+
+      if (this.testMode) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
+      // Update history entry title
+      if (this.pageTitle && this.historyIndex >= 0) {
+        const entry = this.history[this.historyIndex];
+        if (entry && entry.title !== this.pageTitle) {
+          entry.title = this.pageTitle;
+          this.saveHistory();
+        }
+      }
+    } catch (error) {
+      console.error('[Error] Error in renderModulePage:', error);
+      await this.showError(this.currentUrl, error);
+    }
+  }
+
+  /**
    * Render a page from its code into the browser window
    */
   private async renderPage(pageCode: string): Promise<void> {
+    // Check if this is a module page (has imports/exports/@tsyne-app)
+    if (this.isModulePage(pageCode)) {
+      // For file:// URLs, pass the file path for @grab resolution
+      let filePath: string | null = null;
+      if (this.currentUrl.startsWith('file://')) {
+        try {
+          filePath = new URL(this.currentUrl).pathname;
+        } catch {}
+      }
+      return this.renderModulePage(pageCode, filePath);
+    }
+
     // Reset page title when loading new page
     this.pageTitle = '';
     this.updateWindowTitle();
@@ -1195,7 +1425,7 @@ export class Browser {
       }
 
       // Update status
-      this.statusText = 'History cleared';
+      this.statusText = '';
       // DEBUG: console.log('Browser history cleared');
 
       // Update menu bar to reflect empty history (disable back/forward)
@@ -1536,7 +1766,7 @@ export class Browser {
     this.findQuery = '';
     this.findMatches = [];
     this.findCurrentIndex = -1;
-    this.statusText = 'Find cleared';
+    this.statusText = '';
     // DEBUG: console.log('Find cleared');
   }
 

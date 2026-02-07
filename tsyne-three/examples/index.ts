@@ -25,7 +25,8 @@ const createExamplesLauncher = createAppLauncher('Three.js Examples', __dirname,
       label: 'Test',
       buttonFormat: 'run tests',
       command: 'npx',
-      args: ['jest', '{filepath}', '--maxWorkers=1']
+      args: ['jest', '{filepath}', '--maxWorkers=1'],
+      captureOutput: true
     },
     {
       pattern: '*.ts',
@@ -33,7 +34,16 @@ const createExamplesLauncher = createAppLauncher('Three.js Examples', __dirname,
       buttonFormat: 'show source',
       command: 'node',
       args: [require.resolve('tsyne/dist/src/show-source'), '{filepath}'],
-      excludePattern: '*.test.ts'  // Only show source for production code
+      excludePattern: '*.test.ts',  // Only show source for production code
+      captureOutput: true
+    },
+    {
+      pattern: '*.ts',
+      label: 'Original',
+      buttonFormat: 'threejs.org',
+      command: '', args: [],
+      excludePattern: '*.test.ts',
+      openUrl: 'https://threejs.org/examples/#{name}'
     }
   ],
   exclude: ['index.ts', 'index.test.ts'],

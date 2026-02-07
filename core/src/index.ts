@@ -2,7 +2,7 @@ import { App, AppOptions, BridgeMode, resolveTransport, TextGridStyle } from './
 import { Context } from './context';
 import { initResvg, Resvg } from './resvg-loader';
 import { SandboxedApp } from './sandboxed-app';
-import { isDesktopMode, getDesktopContext, isPhoneMode, getPhoneContext } from './tsyne-window';
+import { isDesktopMode, getDesktopContext, isPhoneMode, getPhoneContext, isBrowserMode, getBrowserPageContext } from './tsyne-window';
 import {
   // Inputs
   Button,
@@ -159,6 +159,15 @@ export function app(
       // Return the phone's App but DON'T call the builder
       // PhoneTop will call the builder itself via loadAppBuilder()
       return phoneCtx.phoneApp;
+    }
+  }
+
+  // In browser mode, capture the builder and return the browser's app
+  if (isBrowserMode()) {
+    const browserCtx = getBrowserPageContext();
+    if (browserCtx && browserCtx.browserApp) {
+      browserCtx.capturedBuilder = builder;
+      return browserCtx.browserApp;
     }
   }
 
@@ -1063,8 +1072,12 @@ export {
   isPhoneMode,
   getPhoneContext,
   StackPaneAdapter,
+  enableBrowserMode,
+  disableBrowserMode,
+  isBrowserMode,
+  getBrowserPageContext,
 } from './tsyne-window';
-export type { ITsyneWindow, IRenderTarget, DesktopContext, PhoneTopContext } from './tsyne-window';
+export type { ITsyneWindow, IRenderTarget, DesktopContext, PhoneTopContext, BrowserPageContext } from './tsyne-window';
 export { asRenderTarget, InlineRenderTarget } from './tsyne-window';
 
 // Export resource management

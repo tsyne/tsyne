@@ -22,7 +22,8 @@ const createDemosLauncher = createAppLauncher('Cosyne Demos', __dirname, {
       label: 'Test',
       buttonFormat: 'run tests',
       command: 'npx',
-      args: ['jest', '{filepath}', '--maxWorkers=1']
+      args: ['jest', '{filepath}', '--maxWorkers=1'],
+      captureOutput: true
     },
     {
       pattern: '*.ts',
@@ -30,7 +31,8 @@ const createDemosLauncher = createAppLauncher('Cosyne Demos', __dirname, {
       buttonFormat: 'show source',
       command: 'node',
       args: [require.resolve('tsyne/dist/src/show-source'), '{filepath}'],
-      excludePattern: '*.test.ts'  // Only show source for production code
+      excludePattern: '*.test.ts',  // Only show source for production code
+      captureOutput: true
     }
   ],
   exclude: ['index.ts', 'index.test.ts'],

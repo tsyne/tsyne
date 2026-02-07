@@ -32,6 +32,14 @@ vbox(() => {
     browserContext.changePage('/nav');
   } });
 
+  button('Go to Reactive List Demo', { onClick: () => {
+    browserContext.changePage('/reactive');
+  } });
+
+  button('Go to Cosyne Shapes Demo', { onClick: () => {
+    browserContext.changePage('/cosyne');
+  } });
+
   label('');
   label('Current URL: ' + browserContext.currentUrl);
 });
@@ -169,6 +177,91 @@ vbox(() => {
     browserContext.changePage('/');
   } });
 });
+  `,
+
+  '/reactive': `
+const { vbox, hbox, label, button, list, entry, ObservableState } = tsyne;
+
+// Reactive list demo using ObservableState
+const items = new ObservableState(['Apple', 'Banana', 'Cherry']);
+let itemEntry;
+let itemList;
+
+vbox(() => {
+  label('Reactive List Demo');
+  label('');
+  label('Add and remove items from a reactive list.');
+  label('');
+
+  hbox(() => {
+    itemEntry = entry('New item...');
+    button('Add', { onClick: async () => {
+      const text = await itemEntry.getText();
+      if (text && text.trim()) {
+        items.set([...items.get(), text.trim()]);
+        itemList.setItems(items.get());
+        itemEntry.setText('');
+      }
+    } });
+  });
+
+  label('');
+  itemList = list(items.get(), (index) => {
+    // Remove on select
+    const current = items.get();
+    current.splice(index, 1);
+    items.set(current);
+    itemList.setItems(items.get());
+  });
+
+  label('');
+  button('← Back to Home', { onClick: () => {
+    browserContext.changePage('/');
+  } });
+});
+  `,
+
+  '/cosyne': `
+const { vbox, label, button, CanvasRaster, requestAnimationFrame, cancelAnimationFrame, rgb, setPixel, createRenderTarget, copyToCanvas } = tsyne;
+
+let raster;
+let animId;
+let startTime = Date.now();
+
+vbox(() => {
+  label('Cosyne Shapes Demo');
+  label('');
+  label('Animated shapes using the Cosyne graphics API.');
+  label('');
+
+  raster = new tsyne.CanvasRaster(tsyne.__getContext(), 200, 200);
+
+  function render() {
+    const target = createRenderTarget(200, 200);
+    const t = (Date.now() - startTime) / 1000;
+
+    // Animated gradient background
+    for (let y = 0; y < 200; y++) {
+      for (let x = 0; x < 200; x++) {
+        const r = Math.floor(128 + 127 * Math.sin(x * 0.03 + t));
+        const g = Math.floor(128 + 127 * Math.sin(y * 0.03 + t * 0.7));
+        const b = Math.floor(128 + 127 * Math.sin((x + y) * 0.02 + t * 1.3));
+        setPixel(target, x, y, rgb(r, g, b));
+      }
+    }
+
+    copyToCanvas(target, raster);
+    animId = requestAnimationFrame(render);
+  }
+
+  animId = requestAnimationFrame(render);
+
+  label('');
+  button('← Back to Home', { onClick: () => {
+    if (animId) cancelAnimationFrame(animId);
+    browserContext.changePage('/');
+  } });
+});
   `
 };
 
@@ -251,10 +344,12 @@ To browse:
 The browser will start and you can type the URL in the address bar.
 
 Available pages:
-  • http://localhost:${PORT}/         - Home page
-  • http://localhost:${PORT}/counter  - Counter demo
-  • http://localhost:${PORT}/form     - Form demo
-  • http://localhost:${PORT}/nav      - Navigation demo
+  • http://localhost:${PORT}/          - Home page
+  • http://localhost:${PORT}/counter   - Counter demo
+  • http://localhost:${PORT}/form      - Form demo
+  • http://localhost:${PORT}/nav       - Navigation demo
+  • http://localhost:${PORT}/reactive  - Reactive list demo
+  • http://localhost:${PORT}/cosyne    - Cosyne shapes demo
 
 Press Ctrl+C to stop the server.
   `);

@@ -228,6 +228,12 @@ export function executeCompiledCode(
       const resolved = path.resolve(__dirname, '..', id.replace(/\.\.\/core\/src/g, 'src').replace('../', ''));
       return require(resolved);
     }
+    // Handle tsyne-three imports
+    if (id === 'tsyne-three' || id.startsWith('tsyne-three/')) {
+      const tsyneThreeDir = path.resolve(__dirname, '..', '..', 'tsyne-three');
+      const subPath = id === 'tsyne-three' ? '.' : id.replace('tsyne-three/', '');
+      return require(path.resolve(tsyneThreeDir, subPath));
+    }
     // Handle relative imports - resolve relative to the app's directory
     if (id.startsWith('./') || id.startsWith('../')) {
       const resolved = path.resolve(appDir, id);
@@ -235,6 +241,17 @@ export function executeCompiledCode(
     }
     // Allow node built-ins and installed packages
     return require(id);
+  };
+
+  // Add require.resolve so esbuild-compiled code works
+  (requireFn as any).resolve = (id: string): string => {
+    if (id === 'tsyne') {
+      return path.resolve(__dirname, 'index');
+    }
+    if (id.startsWith('./') || id.startsWith('../')) {
+      return require.resolve(path.resolve(appDir, id));
+    }
+    return require.resolve(id);
   };
 
   // Execute in function context

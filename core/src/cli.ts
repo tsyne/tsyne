@@ -115,6 +115,7 @@ Usage: tsyne [command] [options] [file]
 
 Commands:
   run <app.ts>      Run a Tsyne application
+  browse [target]   Open Tsyne Browser (file, URL, directory, or empty)
   dev <app.ts>      Run with hot reload and debugging (coming soon)
   build <app.ts>    Package for distribution (coming soon)
   test              Run tests (coming soon)
@@ -133,6 +134,10 @@ Options:
 Examples:
   tsyne app.ts              Run app.ts (infers 'run' command)
   tsyne run app.ts          Explicitly run app.ts
+  tsyne browse              Open empty browser
+  tsyne browse app.ts       Browse a local file
+  tsyne browse myapps/      Browse a directory (app launcher)
+  tsyne browse http://...   Browse a URL
   tsyne --version           Show all component versions
   tsyne --list-cache        Show cached packages
 `);
@@ -260,6 +265,116 @@ async function runApp(
 
   return new Promise((resolve) => {
     result.on('close', (code) => resolve(code || 0));
+  });
+}
+
+/**
+ * Launch the Tsyne Browser
+ *
+ * Target can be:
+ * - A .ts file → file:// URL
+ * - A URL (http://, https://, file://) → navigate directly
+ * - A directory → open app launcher for that directory
+ * - Nothing → open browser with welcome screen
+ */
+async function browseTarget(target?: string): Promise<number> {
+  // Resolve target to a URL or directory path
+  let initialUrl: string | undefined;
+  let dirPath: string | undefined;
+
+  if (target) {
+    if (target.startsWith('http://') || target.startsWith('https://') || target.startsWith('file://')) {
+      initialUrl = target;
+    } else {
+      const absolutePath = path.resolve(target);
+      if (!fs.existsSync(absolutePath)) {
+        logError(`Not found: ${target}`);
+        return 1;
+      }
+
+      if (fs.statSync(absolutePath).isDirectory()) {
+        dirPath = absolutePath;
+      } else {
+        initialUrl = `file://${absolutePath}`;
+      }
+    }
+  }
+
+  if (dirPath) {
+    log(`Browsing directory: ${dirPath}`);
+  } else if (initialUrl) {
+    log(`Browsing: ${initialUrl}`);
+  } else {
+    log('Starting Tsyne Browser...');
+  }
+
+  // The browser needs its own bridge/transport, so we spawn a child process.
+  // We write a small temp script that launches the browser, then run it via tsx.
+  const coreDist = __dirname; // core/dist/src — has index.js
+  const escCoreDist = JSON.stringify(coreDist);
+  const escUrl = initialUrl ? JSON.stringify(initialUrl) : 'undefined';
+  const escDir = dirPath ? JSON.stringify(dirPath) : 'undefined';
+
+  const script = `
+const tsyne = require(${escCoreDist});
+async function main() {
+  const dirPath = ${escDir};
+  if (dirPath) {
+    const launcherBuilder = tsyne.createAppLauncher('Tsyne Browser', dirPath);
+    const browser = new tsyne.Browser({ title: 'Tsyne Browser', width: 1000, height: 800 });
+    tsyne.enableBrowserMode({ browserApp: browser.getApp(), changePage: (url) => browser.changePage(url) });
+    browser.currentPageBuilder = () => { launcherBuilder(browser.getApp()); };
+    await browser.getWindow().setContent(() => { browser.buildWindowContent(); });
+    await browser.getWindow().show();
+    await browser.run();
+  } else {
+    const url = ${escUrl};
+    const browser = await tsyne.createBrowser(url, {
+      title: 'Tsyne Browser', width: 1000, height: 800,
+      homeUrl: url,
+    });
+    await browser.run();
+  }
+}
+main().catch(e => { console.error(e); process.exit(1); });
+`;
+
+  // Write temp script (tsx -e doesn't support require well)
+  const tmpDir = path.join(require('os').tmpdir(), 'tsyne-browse');
+  fs.mkdirSync(tmpDir, { recursive: true });
+  const tmpScript = path.join(tmpDir, 'browse.js');
+  fs.writeFileSync(tmpScript, script);
+
+  // Find tsx
+  const tsxPaths = [
+    path.join(__dirname, '..', '..', '..', 'node_modules', '.bin', 'tsx'),
+    path.join(__dirname, '..', '..', 'node_modules', '.bin', 'tsx'),
+    path.join(__dirname, '..', 'node_modules', '.bin', 'tsx'),
+  ];
+
+  let tsxPath: string | null = null;
+  for (const p of tsxPaths) {
+    if (fs.existsSync(p)) {
+      tsxPath = p;
+      break;
+    }
+  }
+
+  const runEnv = {
+    ...process.env,
+    TSYNE_BRIDGE_PATH: findBridgePath() || undefined,
+  };
+
+  const runner = tsxPath || 'npx';
+  const runnerArgs = tsxPath ? [tmpScript] : ['tsx', tmpScript];
+
+  const child = spawn(runner, runnerArgs, {
+    stdio: 'inherit',
+    env: runEnv,
+  });
+
+  return new Promise((resolve) => {
+    child.on('close', (code) => resolve(code || 0));
   });
 }
 
@@ -424,7 +539,7 @@ async function main(): Promise<void> {
   let appPath: string | undefined;
   let appArgs: string[];
 
-  if (firstArg === 'run' || firstArg === 'dev' || firstArg === 'build' || firstArg === 'test') {
+  if (firstArg === 'run' || firstArg === 'dev' || firstArg === 'build' || firstArg === 'test' || firstArg === 'browse') {
     command = firstArg;
     appPath = args[1];
     appArgs = args.slice(2);
@@ -448,6 +563,11 @@ async function main(): Promise<void> {
       }
       const exitCode = await runApp(appPath, appArgs, { ignoreVersion, guiErrors, dryRun, update, offline });
       process.exit(exitCode);
+      break;
+
+    case 'browse':
+      const browseCode = await browseTarget(appPath);
+      process.exit(browseCode);
       break;
 
     case 'dev':

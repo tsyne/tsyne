@@ -605,6 +605,51 @@ export function disablePhoneMode(): void {
 }
 
 /**
+ * Browser page context - for loading module pages in Tsyne Browser
+ */
+export interface BrowserPageContext {
+  /** The browser's App instance — module pages use this instead of creating new ones */
+  browserApp: any;  // Use 'any' to avoid circular import with App
+  /** Navigate to a URL (for page-initiated navigation) */
+  changePage?: (url: string) => Promise<void>;
+  /** Builder captured from app() call — set when a module calls app() in browser mode */
+  capturedBuilder?: ((app: any) => void | Promise<void>) | null;
+}
+
+/**
+ * Global browser page context - set when loading a module page in browser
+ */
+let browserPageContext: BrowserPageContext | null = null;
+
+/**
+ * Enable browser mode - app() calls return the browser's App instance
+ */
+export function enableBrowserMode(ctx: BrowserPageContext): void {
+  browserPageContext = ctx;
+}
+
+/**
+ * Disable browser mode
+ */
+export function disableBrowserMode(): void {
+  browserPageContext = null;
+}
+
+/**
+ * Check if currently in browser mode
+ */
+export function isBrowserMode(): boolean {
+  return browserPageContext !== null;
+}
+
+/**
+ * Get the current browser page context
+ */
+export function getBrowserPageContext(): BrowserPageContext | null {
+  return browserPageContext;
+}
+
+/**
  * Check if currently in desktop mode
  */
 export function isDesktopMode(): boolean {

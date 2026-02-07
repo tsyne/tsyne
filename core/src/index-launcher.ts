@@ -44,7 +44,9 @@
 import type { App } from './app';
 import fs from 'fs';
 import path from 'path';
-import { spawn } from 'child_process';
+import { spawn, exec } from 'child_process';
+import { isBrowserMode, getBrowserPageContext } from './tsyne-window';
+import { parseAnsi } from './ansi-parser';
 
 export interface AppFilePattern {
   /** Glob pattern to match files (e.g., '*.ts', '*.test.ts') */
@@ -59,6 +61,11 @@ export interface AppFilePattern {
   args: string[];
   /** Optional: pattern to exclude (e.g., '*.test.ts' to exclude test files) */
   excludePattern?: string;
+  /** If true, capture stdout/stderr and display in a window with ANSI colors */
+  captureOutput?: boolean;
+  /** URL template to open in default browser. {name} is replaced with the base name.
+   *  When set, command/args are ignored. */
+  openUrl?: string;
 }
 
 export interface LauncherOptions {
@@ -68,6 +75,86 @@ export interface LauncherOptions {
   exclude?: string[];
   /** Instructions to show at the bottom */
   instructions?: string;
+}
+
+/**
+ * Open a URL in the default web browser (cross-platform).
+ */
+function openInBrowser(url: string) {
+  const cmd = process.platform === 'darwin' ? 'open' :
+              process.platform === 'win32' ? 'start' : 'xdg-open';
+  exec(`${cmd} ${JSON.stringify(url)}`);
+}
+
+/**
+ * Launch a command and display its output in a TextGrid window with ANSI colors.
+ */
+function launchWithCapture(
+  a: App,
+  name: string,
+  command: string,
+  args: string[],
+  cwd: string,
+  onExit?: () => void
+) {
+  const child = spawn(command, args, {
+    cwd,
+    stdio: ['ignore', 'pipe', 'pipe'],
+    detached: false,
+    env: { ...process.env, FORCE_COLOR: '1' },
+  });
+
+  let accumulated = '';
+  let grid: any = null;
+  let updateTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const scheduleUpdate = () => {
+    if (updateTimer) return;
+    updateTimer = setTimeout(async () => {
+      updateTimer = null;
+      if (!grid) return;
+      const parsed = parseAnsi(accumulated);
+      await grid.setText(parsed.plainText);
+      for (const range of parsed.ranges) {
+        await grid.setStyleRange(
+          range.startRow, range.startCol,
+          range.endRow, range.endCol,
+          range.style
+        );
+      }
+    }, 50);
+  };
+
+  const onData = (chunk: Buffer) => {
+    accumulated += chunk.toString();
+    scheduleUpdate();
+  };
+
+  child.stdout?.on('data', onData);
+  child.stderr?.on('data', onData);
+
+  child.on('error', (error) => {
+    accumulated += `\n\x1b[31mError: ${error.message}\x1b[0m\n`;
+    scheduleUpdate();
+    onExit?.();
+  });
+
+  child.on('exit', (code) => {
+    if (code !== null && code !== 0) {
+      accumulated += `\n\x1b[33mProcess exited with code ${code}\x1b[0m\n`;
+    }
+    scheduleUpdate();
+    onExit?.();
+  });
+
+  a.window({ title: `${name} - Output`, width: 900, height: 600 }, (win: any) => {
+    win.setContent(() => {
+      a.scroll(() => {
+        grid = a.textgrid({ text: 'Running...\n' });
+      });
+    });
+    win.show();
+  });
 }
 
 /**
@@ -187,51 +274,68 @@ export function createAppLauncher(
 
     const runningApps = new Set<string>();
 
-    a.window({ title, width: 600, height: 600 }, (win: any) => {
-      win.setContent(() => {
-        a.border({
-          top: () => {
+    const buildContent = () => {
+      a.border({
+        top: () => {
+          a.vbox(() => {
+            a.label('Apps').when(() => sortedEntries.length > 0);
+            a.separator();
+          });
+        },
+        center: () => {
+          a.scroll(() => {
             a.vbox(() => {
-              a.label('Apps').when(() => sortedEntries.length > 0);
-              a.separator();
-            });
-          },
-          center: () => {
-            a.scroll(() => {
-              a.vbox(() => {
-                // Render one row per app entry with action buttons
-                for (const entry of sortedEntries) {
-                  a.hbox(() => {
-                    // App name takes up available space
-                    a.label(entry.baseName).withId(`app-label-${entry.baseName}`);
-                    a.spacer();
+              // Render one row per app entry with action buttons
+              for (const entry of sortedEntries) {
+                a.hbox(() => {
+                  // App name takes up available space
+                  a.label(entry.baseName).withId(`app-label-${entry.baseName}`);
+                  a.spacer();
 
-                    // Create handler with proper closure
-                    const makeClickHandler = (name: string, filePath: string, pat: AppFilePattern) => {
-                      return async () => {
-                        // Check if file exists
-                        if (!fs.existsSync(filePath)) {
-                          console.error(`File not found: ${path.basename(filePath)}`);
+                  // Create handler with proper closure
+                  const makeClickHandler = (name: string, filePath: string, pat: AppFilePattern) => {
+                    return async () => {
+                      // Open URL in browser instead of spawning
+                      if (pat.openUrl) {
+                        openInBrowser(pat.openUrl.replace('{name}', name));
+                        return;
+                      }
+
+                      // Check if file exists
+                      if (!fs.existsSync(filePath)) {
+                        console.error(`File not found: ${path.basename(filePath)}`);
+                        return;
+                      }
+
+                      // In browser mode, navigate to file:// URL instead of spawning
+                      if (isBrowserMode()) {
+                        const browserCtx = getBrowserPageContext();
+                        if (browserCtx?.changePage) {
+                          await browserCtx.changePage(`file://${filePath}`);
                           return;
                         }
+                      }
 
-                        // Prevent launching same app multiple times
-                        const key = `${name}-${pat.label}`;
-                        if (runningApps.has(key)) {
-                          return;
-                        }
+                      // Prevent launching same app multiple times
+                      const key = `${name}-${pat.label}`;
+                      if (runningApps.has(key)) {
+                        return;
+                      }
 
-                        runningApps.add(key);
+                      runningApps.add(key);
 
-                        try {
-                          // Use relative path (just filename) instead of full path
-                          const fileName = path.basename(filePath);
-                          const args = pat.args.map(arg => arg.replace('{filepath}', fileName));
+                      try {
+                        // Use relative path (just filename) instead of full path
+                        const fileName = path.basename(filePath);
+                        const args = pat.args.map(arg => arg.replace('{filepath}', fileName));
 
-                          // Spawn the app in its directory
-                          // Don't inherit stdin so Ctrl-C works in parent, but keep stdout/stderr inherited
+                        if (pat.captureOutput) {
+                          launchWithCapture(a, name, pat.command, args, directory, () => {
+                            runningApps.delete(key);
+                          });
+                        } else {
                           const child = spawn(pat.command, args, {
-                            cwd: directory,  // cd into the app directory
+                            cwd: directory,
                             stdio: ['ignore', 'inherit', 'inherit'],
                             detached: false
                           });
@@ -244,34 +348,85 @@ export function createAppLauncher(
                           child.on('exit', (code) => {
                             runningApps.delete(key);
                           });
-                        } catch (error) {
-                          console.error(`Exception spawning ${name}:`, error);
-                          runningApps.delete(key);
                         }
-                      };
+                      } catch (error) {
+                        console.error(`Exception spawning ${name}:`, error);
+                        runningApps.delete(key);
+                      }
                     };
+                  };
 
-                    // Show action buttons for each pattern
-                    for (const action of entry.actions) {
-                      const buttonText = action.pattern.buttonFormat.replace('{name}', '');
-                      a.button(buttonText, { onClick: makeClickHandler(entry.baseName, action.filePath, action.pattern) })
-                        .withId(`app-btn-${entry.baseName}-${action.pattern.label}`);
-                    }
-                  });
-                }
-              });
+                  // Show action buttons for each pattern
+                  for (const action of entry.actions) {
+                    const buttonText = action.pattern.buttonFormat.replace('{name}', '');
+                    a.button(buttonText, { onClick: makeClickHandler(entry.baseName, action.filePath, action.pattern) })
+                      .withId(`app-btn-${entry.baseName}-${action.pattern.label}`);
+                  }
+                });
+              }
             });
-          },
-          bottom: () => {
-            a.vbox(() => {
-              a.separator();
-              a.label('No apps found in this directory').when(() => sortedEntries.length === 0);
-              a.label(instructions).when(() => sortedEntries.length > 0);
-            });
+          });
+        },
+        bottom: () => {
+          a.vbox(() => {
+            a.separator();
+            a.label('No apps found in this directory').when(() => sortedEntries.length === 0);
+            a.label(instructions).when(() => sortedEntries.length > 0);
+          });
+        }
+      });
+    };
+
+    // In browser mode, output a flat list (browser provides scroll + window)
+    if (isBrowserMode()) {
+      // Capture context now — it won't be available at click time
+      const capturedCtx = getBrowserPageContext();
+      a.label('Apps').when(() => sortedEntries.length > 0);
+      if (sortedEntries.length > 0) a.separator();
+      for (const entry of sortedEntries) {
+        a.hbox(() => {
+          a.label(entry.baseName).withId(`app-label-${entry.baseName}`);
+          a.spacer();
+          for (const action of entry.actions) {
+            const buttonText = action.pattern.buttonFormat.replace('{name}', '');
+            const filePath = action.filePath;
+            const pat = action.pattern;
+            const name = entry.baseName;
+            a.button(buttonText, { onClick: async () => {
+              if (pat.openUrl) {
+                openInBrowser(pat.openUrl.replace('{name}', name));
+                return;
+              }
+              if (!fs.existsSync(filePath)) {
+                console.error(`File not found: ${path.basename(filePath)}`);
+                return;
+              }
+              const fileName = path.basename(filePath);
+              const args = pat.args.map(arg => arg.replace('{filepath}', fileName));
+              if (pat.captureOutput) {
+                launchWithCapture(a, name, pat.command, args, directory);
+              } else {
+                spawn(pat.command, args, {
+                  cwd: directory,
+                  stdio: ['ignore', 'inherit', 'inherit'],
+                  detached: false
+                });
+              }
+            } }).withId(`app-btn-${name}-${pat.label}`);
           }
         });
-      });
+      }
+      a.separator();
+      a.label('No apps found in this directory').when(() => sortedEntries.length === 0);
+      a.label(instructions).when(() => sortedEntries.length > 0);
+      return;
+    }
 
+    // Standalone mode: create a window and build content into it
+    a.window({ title, width: 600, height: 600 }, (win: any) => {
+      win.setContent(() => {
+        buildContent();
+      });
       win.show();
     });
   };
