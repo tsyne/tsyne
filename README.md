@@ -107,6 +107,10 @@ No, this is tied to Fyne. Someone else can do a pure TypeScript pseudo-declarati
 
 No, but demoing it is the price of admission for the long list of could-be 3rd phone operating systems. Be on the app, type in a single script "hello world" on the phone (like it is the 80's), save and press "run". I [whined about QML previously](https://paulhammant.com/2016/11/15/qmls-squandered-opportunity/)
 
+**Q: Why not QML or Flutter?**
+
+QML was a genuine inspiration — its declarative syntax with inline JavaScript was visionary and close to what I wanted. But it hit a glass ceiling: anything beyond simple UI required dropping into C++, a language most developers won't pick up casually. The tooling and examples never made it accessible enough, and Qt's licensing story kept changing. I [wrote about QML's squandered opportunity](https://paulhammant.com/2016/11/15/qmls-squandered-opportunity/) back in 2016. Flutter is impressive engineering but it's Google's walled garden — Dart never caught on outside Flutter, you can't leverage npm's 2M+ packages, and it's a compile-to-native approach that trades iteration speed for distribution simplicity. Tsyne chose the opposite trade-off: interpreted TypeScript for rapid iteration and access to the Node.js ecosystem, with compiled Go/Fyne for native rendering. You lose single-binary distribution but gain the ability to write a complete app in one `.ts` file, test it with Jest, pull in any npm package, and iterate without a compile step. The pseudo-declarative syntax is also more terse than either QML or Flutter's widget trees.
+
 **Q: Are APIs stable?**
 
 No, anything can be renamed at any moment. If you're making apps right now, you're promising to keep up with the renames/refactorings as if you were co-located in the same repo

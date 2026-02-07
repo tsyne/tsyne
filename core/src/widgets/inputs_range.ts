@@ -1,5 +1,5 @@
 import { Context } from '../context';
-import { Widget } from './base';
+import { Widget, registerGlobalBinding } from './base';
 
 /**
  * Slider widget
@@ -129,6 +129,27 @@ export class DateEntry extends Widget {
     await this.ctx.bridge.send('enableWidget', {
       widgetId: this.id
     });
+  }
+
+  /**
+   * Declarative disable/enable control - disable (ghost) widget when condition is true
+   * @param conditionFn Function that returns whether widget should be disabled
+   * @returns this for method chaining
+   */
+  ghostWhen(conditionFn: () => boolean): this {
+    const updateGhost = async () => {
+      if (conditionFn()) {
+        await this.disable();
+      } else {
+        await this.enable();
+      }
+    };
+
+    this.ghostCondition = updateGhost;
+    registerGlobalBinding(updateGhost);
+    updateGhost();
+
+    return this;
   }
 }
 

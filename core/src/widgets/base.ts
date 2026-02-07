@@ -77,6 +77,7 @@ export abstract class Widget {
   public id: string;
   private visibilityCondition?: () => Promise<void>;
   private styleCondition?: () => Promise<void>;
+  protected ghostCondition?: () => Promise<void>;
   private styleClass?: WidgetSelector;
   private bindings: ReactiveBinding[] = [];
 
@@ -586,6 +587,9 @@ export abstract class Widget {
     }
     if (this.styleCondition) {
       await this.styleCondition();
+    }
+    if (this.ghostCondition) {
+      await this.ghostCondition();
     }
   }
 

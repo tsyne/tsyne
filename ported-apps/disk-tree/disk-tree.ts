@@ -1,10 +1,11 @@
-import { standaloneShutdownStrategy } from 'tsyne';
+import { standaloneShutdownStrategy, refreshAllBindings } from 'tsyne';
 /**
  * Disk Tree App - Treemap Visualization of Disk Usage
  *
  * A cross-platform utility that visualizes disk space using an interactive
- * squarified treemap. Select a folder to scan and explore the results with
- * drill-down navigation, color schemes, and real-time hover feedback.
+ * squarified treemap with cushion shading. Select a folder to scan and
+ * explore the results with drill-down navigation, color schemes, and
+ * real-time hover feedback.
  *
  * Inspired by GrandPerspective and DiskInventoryX.
  *
@@ -21,7 +22,7 @@ import { standaloneShutdownStrategy } from 'tsyne';
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { cosyne, CosyneContext, enableEventHandling, EventRouter } from 'cosyne';
+import { cosyne, CosyneContext } from 'cosyne';
 
 // Type definitions for Tsyne (imported via the builder args pattern)
 type App = any;
@@ -83,11 +84,8 @@ export interface AppState {
 // CONSTANTS
 // ============================================================================
 
-const BEVEL_SIZE = 2;
 const MIN_LABEL_WIDTH = 60;
 const MIN_LABEL_HEIGHT = 20;
-const HEADER_HEIGHT = 80;
-const FOOTER_HEIGHT = 60;
 
 // File type to hue mapping for 'byType' color scheme
 const FILE_TYPE_HUES: Record<string, number> = {
@@ -298,7 +296,7 @@ export class DiskTreeStore {
     const padding = 4;
     const items = this.state.currentEntry.children.filter(c => c.size > 0);
 
-    this.state.allRects = layoutTreemap(
+    const topLevel = layoutTreemap(
       padding,
       padding,
       this.state.canvasWidth - padding * 2,
@@ -306,6 +304,9 @@ export class DiskTreeStore {
       items,
       this.state.minRectSize
     );
+
+    // Recursively subdivide directory rects into their children
+    this.state.allRects = subdivideRects(topLevel, this.state.minRectSize);
   }
 
   // ========== Navigation ==========
@@ -344,18 +345,41 @@ export class DiskTreeStore {
     this.notifyChange();
   }
 
+  navigateToPath(dirPath: string): void {
+    if (!this.state.rootEntry) return;
+
+    // Walk the tree to find the entry and build breadcrumb trail
+    const trail: FileEntry[] = [this.state.rootEntry];
+    let current = this.state.rootEntry;
+
+    if (dirPath !== current.path) {
+      const relativeParts = dirPath.slice(current.path.length)
+        .replace(/^\//, '').split('/').filter(p => p);
+
+      for (const part of relativeParts) {
+        const child = current.children.find(c => c.name === part && c.isDirectory);
+        if (!child) return; // Path not found
+        trail.push(child);
+        current = child;
+      }
+    }
+
+    this.state.breadcrumbs = trail;
+    this.state.currentEntry = current;
+    this.state.selectedId = null;
+    this.state.hoveredId = null;
+    this.recalculateLayout();
+    this.notifyChange();
+  }
+
   // ========== Selection ==========
-  // Note: These don't call notifyChange() to avoid triggering canvas rebuild
-  // The UI class handles updating labels directly
 
   setSelected(id: string | null): void {
     this.state.selectedId = id;
-    // Don't notify - UI handles this directly
   }
 
   setHovered(id: string | null): void {
     this.state.hoveredId = id;
-    // Don't notify - UI handles this directly
   }
 
   // ========== Color Scheme ==========
@@ -409,6 +433,49 @@ function layoutTreemap(
     .map(item => ({ entry: item, size: item.size }));
 
   return squarify(layoutItems, [], x, y, width, height, totalSize, minSize);
+}
+
+/**
+ * Recursively subdivide directory rects into their children.
+ * Files are kept as-is. Directories with children get replaced by
+ * recursive child rects (with a small inset for visual nesting).
+ * Stops when rects are too small to subdivide.
+ */
+function subdivideRects(rects: TreemapRect[], minSize: number): TreemapRect[] {
+  const result: TreemapRect[] = [];
+  const nestInset = 2; // pixels inset per nesting level
+
+  for (const rect of rects) {
+    if (!rect.entry.isDirectory || rect.entry.children.length === 0) {
+      // Leaf file or empty directory — keep as-is
+      result.push(rect);
+      continue;
+    }
+
+    const innerX = rect.x + nestInset;
+    const innerY = rect.y + nestInset;
+    const innerW = rect.width - nestInset * 2;
+    const innerH = rect.height - nestInset * 2;
+
+    if (innerW < minSize || innerH < minSize) {
+      // Too small to subdivide — keep directory as a single tile
+      result.push(rect);
+      continue;
+    }
+
+    const children = rect.entry.children.filter(c => c.size > 0);
+    const childRects = layoutTreemap(innerX, innerY, innerW, innerH, children, minSize);
+
+    if (childRects.length === 0) {
+      result.push(rect);
+      continue;
+    }
+
+    // Recurse into child rects
+    result.push(...subdivideRects(childRects, minSize));
+  }
+
+  return result;
 }
 
 function squarify(
@@ -578,74 +645,45 @@ function hslToRgb(h: number, s: number, l: number): { r: number; g: number; b: n
   };
 }
 
-function getColorForRect(rect: TreemapRect, state: AppState, isHovered: boolean): string {
-  const saturation = isHovered ? 85 : 65;
-  const lightness = isHovered ? 50 : 60;
+function getColorForRectRGB(rect: TreemapRect, state: AppState): { r: number; g: number; b: number } {
+  const saturation = 65;
+  const lightness = 55;
   let hue = 0;
 
   switch (state.colorScheme) {
     case 'bySize': {
-      // Logarithmic scale: red (large) -> green (small)
       const totalSize = state.currentEntry?.size || 1;
       const ratio = Math.log(rect.size + 1) / Math.log(totalSize + 1);
-      hue = (1 - ratio) * 120; // 0 = red, 120 = green
+      hue = (1 - ratio) * 120;
       break;
     }
     case 'byDepth': {
-      // Depth-based: cycle through hues
       hue = (rect.depth * 60) % 360;
       break;
     }
     case 'byType': {
-      // File extension based
       const ext = rect.entry.extension.toLowerCase();
-      hue = FILE_TYPE_HUES[ext] ?? 180; // Default to cyan
+      hue = FILE_TYPE_HUES[ext] ?? 180;
       if (rect.entry.isDirectory) {
-        hue = 45; // Yellow-ish for directories
+        hue = 45;
       }
       break;
     }
     case 'byAge': {
-      // Age-based: new files = green, old = red
       if (rect.entry.modifiedTime) {
         const now = Date.now();
         const age = now - rect.entry.modifiedTime.getTime();
         const dayMs = 24 * 60 * 60 * 1000;
         const ageInDays = age / dayMs;
-        // 0 days = green (120), 365+ days = red (0)
         hue = Math.max(0, 120 - (ageInDays / 365) * 120);
       } else {
-        hue = 180; // Cyan for unknown
+        hue = 180;
       }
       break;
     }
   }
 
-  const { r, g, b } = hslToRgb(hue, saturation, lightness);
-  // Use hex format for better compatibility
-  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-}
-
-function lightenColor(color: string, amount: number): string {
-  // Parse hex color
-  const match = color.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
-  if (!match) return color;
-
-  const r = Math.min(255, parseInt(match[1], 16) + amount);
-  const g = Math.min(255, parseInt(match[2], 16) + amount);
-  const b = Math.min(255, parseInt(match[3], 16) + amount);
-  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-}
-
-function darkenColor(color: string, amount: number): string {
-  // Parse hex color
-  const match = color.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
-  if (!match) return color;
-
-  const r = Math.max(0, parseInt(match[1], 16) - amount);
-  const g = Math.max(0, parseInt(match[2], 16) - amount);
-  const b = Math.max(0, parseInt(match[3], 16) - amount);
-  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+  return hslToRgb(hue, saturation, lightness);
 }
 
 // ============================================================================
@@ -665,21 +703,248 @@ function formatNumber(n: number): string {
 }
 
 // ============================================================================
+// EXTENSION SUMMARY
+// ============================================================================
+
+interface ExtensionTotal {
+  ext: string;
+  totalSize: number;
+  avgDepth: number;
+  avgAgeDays: number;  // average age in days, -1 if unknown
+  fileCount: number;
+}
+
+function computeExtensionTotals(entry: FileEntry): ExtensionTotal[] {
+  const totals = new Map<string, { size: number; depthSum: number; ageSum: number; ageCount: number; count: number }>();
+  const now = Date.now();
+  const dayMs = 24 * 60 * 60 * 1000;
+
+  function walk(e: FileEntry, depth: number): void {
+    if (!e.isDirectory) {
+      const ext = e.extension || '(no ext)';
+      const prev = totals.get(ext) || { size: 0, depthSum: 0, ageSum: 0, ageCount: 0, count: 0 };
+      prev.size += e.size;
+      prev.depthSum += depth;
+      prev.count++;
+      if (e.modifiedTime) {
+        prev.ageSum += (now - e.modifiedTime.getTime()) / dayMs;
+        prev.ageCount++;
+      }
+      totals.set(ext, prev);
+    }
+    for (const child of e.children) {
+      walk(child, depth + 1);
+    }
+  }
+
+  walk(entry, 0);
+
+  return Array.from(totals.entries())
+    .map(([ext, d]) => ({
+      ext,
+      totalSize: d.size,
+      avgDepth: d.count > 0 ? d.depthSum / d.count : 0,
+      avgAgeDays: d.ageCount > 0 ? d.ageSum / d.ageCount : -1,
+      fileCount: d.count,
+    }))
+    .sort((a, b) => b.totalSize - a.totalSize);
+}
+
+// ============================================================================
+// CUSHION TREEMAP RENDERER
+// ============================================================================
+
+function renderCushionBuffer(
+  width: number,
+  height: number,
+  rects: TreemapRect[],
+  state: AppState,
+  hoveredId: string | null,
+  selectedId: string | null,
+  highlightDirPath: string | null
+): Uint8Array {
+  const buf = new Uint8Array(width * height * 4);
+
+  // Fill background (dark blue-grey)
+  for (let i = 0; i < width * height; i++) {
+    buf[i * 4] = 26;      // R
+    buf[i * 4 + 1] = 26;  // G
+    buf[i * 4 + 2] = 46;  // B
+    buf[i * 4 + 3] = 255; // A
+  }
+
+  // Render each rect with cushion shading
+  for (const rect of rects) {
+    const rx = Math.round(rect.x);
+    const ry = Math.round(rect.y);
+    const rw = Math.round(rect.x + rect.width) - rx;
+    const rh = Math.round(rect.y + rect.height) - ry;
+
+    if (rw < 2 || rh < 2) continue;
+
+    const baseColor = getColorForRectRGB(rect, state);
+    const isHovered = hoveredId === rect.id;
+    const isSelected = selectedId === rect.id;
+    const isHighlighted = highlightDirPath !== null &&
+      rect.entry.path.startsWith(highlightDirPath + '/');
+
+    const halfW = rw / 2;
+    const halfH = rh / 2;
+    const centerX = rx + halfW;
+    const centerY = ry + halfH;
+
+    // Inner area (skip 1px border)
+    const x0 = Math.max(0, rx + 1);
+    const y0 = Math.max(0, ry + 1);
+    const x1 = Math.min(width, rx + rw - 1);
+    const y1 = Math.min(height, ry + rh - 1);
+
+    for (let py = y0; py < y1; py++) {
+      const ny = (py - centerY) / halfH;
+      const ny2 = ny * ny;
+      const rowOffset = py * width;
+
+      for (let px = x0; px < x1; px++) {
+        const nx = (px - centerX) / halfW;
+
+        // Cushion height (parabolic surface)
+        let cushion = 1.0 - nx * nx - ny2;
+        if (cushion < 0) cushion = 0;
+
+        // Lighting: ambient + diffuse from top-left
+        let intensity = 0.35 + 0.65 * cushion;
+
+        // Brighten hovered rect
+        if (isHovered) {
+          intensity = Math.min(1.0, intensity + 0.15);
+        }
+
+        const idx = (rowOffset + px) * 4;
+        buf[idx] = Math.min(255, (baseColor.r * intensity) | 0);
+        buf[idx + 1] = Math.min(255, (baseColor.g * intensity) | 0);
+        buf[idx + 2] = Math.min(255, (baseColor.b * intensity) | 0);
+        buf[idx + 3] = 255;
+      }
+    }
+
+    // Draw 1px borders (dark)
+    const borderR = 15, borderG = 15, borderB = 30;
+    // Top edge
+    if (ry >= 0 && ry < height) {
+      for (let px = Math.max(0, rx); px < Math.min(width, rx + rw); px++) {
+        const idx = (ry * width + px) * 4;
+        buf[idx] = borderR; buf[idx + 1] = borderG; buf[idx + 2] = borderB; buf[idx + 3] = 255;
+      }
+    }
+    // Bottom edge
+    const by = ry + rh - 1;
+    if (by >= 0 && by < height) {
+      for (let px = Math.max(0, rx); px < Math.min(width, rx + rw); px++) {
+        const idx = (by * width + px) * 4;
+        buf[idx] = borderR; buf[idx + 1] = borderG; buf[idx + 2] = borderB; buf[idx + 3] = 255;
+      }
+    }
+    // Left edge
+    if (rx >= 0 && rx < width) {
+      for (let py = Math.max(0, ry); py < Math.min(height, ry + rh); py++) {
+        const idx = (py * width + rx) * 4;
+        buf[idx] = borderR; buf[idx + 1] = borderG; buf[idx + 2] = borderB; buf[idx + 3] = 255;
+      }
+    }
+    // Right edge
+    const bx = rx + rw - 1;
+    if (bx >= 0 && bx < width) {
+      for (let py = Math.max(0, ry); py < Math.min(height, ry + rh); py++) {
+        const idx = (py * width + bx) * 4;
+        buf[idx] = borderR; buf[idx + 1] = borderG; buf[idx + 2] = borderB; buf[idx + 3] = 255;
+      }
+    }
+
+    // Draw selection/highlight border (2px bright border)
+    if (isSelected || isHighlighted) {
+      const sr = 255, sg = 80, sb = 80;
+      for (let t = 0; t < 2; t++) {
+        // Top
+        const sty = ry + t;
+        if (sty >= 0 && sty < height) {
+          for (let px = Math.max(0, rx); px < Math.min(width, rx + rw); px++) {
+            const idx = (sty * width + px) * 4;
+            buf[idx] = sr; buf[idx + 1] = sg; buf[idx + 2] = sb; buf[idx + 3] = 255;
+          }
+        }
+        // Bottom
+        const sby = ry + rh - 1 - t;
+        if (sby >= 0 && sby < height) {
+          for (let px = Math.max(0, rx); px < Math.min(width, rx + rw); px++) {
+            const idx = (sby * width + px) * 4;
+            buf[idx] = sr; buf[idx + 1] = sg; buf[idx + 2] = sb; buf[idx + 3] = 255;
+          }
+        }
+        // Left
+        const slx = rx + t;
+        if (slx >= 0 && slx < width) {
+          for (let py = Math.max(0, ry); py < Math.min(height, ry + rh); py++) {
+            const idx = (py * width + slx) * 4;
+            buf[idx] = sr; buf[idx + 1] = sg; buf[idx + 2] = sb; buf[idx + 3] = 255;
+          }
+        }
+        // Right
+        const srx = rx + rw - 1 - t;
+        if (srx >= 0 && srx < width) {
+          for (let py = Math.max(0, ry); py < Math.min(height, ry + rh); py++) {
+            const idx = (py * width + srx) * 4;
+            buf[idx] = sr; buf[idx + 1] = sg; buf[idx + 2] = sb; buf[idx + 3] = 255;
+          }
+        }
+      }
+    }
+  }
+
+  return buf;
+}
+
+// ============================================================================
+// HIT TESTING
+// ============================================================================
+
+function hitTestRects(x: number, y: number, rects: TreemapRect[]): TreemapRect | null {
+  // Iterate in reverse so later (smaller/on-top) rects take priority
+  for (let i = rects.length - 1; i >= 0; i--) {
+    const r = rects[i];
+    if (x >= r.x && x < r.x + r.width && y >= r.y && y < r.y + r.height) {
+      return r;
+    }
+  }
+  return null;
+}
+
+// ============================================================================
 // DISK TREE UI
 // ============================================================================
 
 export class DiskTreeUI {
   private store: DiskTreeStore;
   private window: Window | null = null;
-  private cosyneCtx: CosyneContext | null = null;
-  private eventRouter: EventRouter | null = null;
-  private canvasStack: any = null;  // Reference to the CanvasStack for rebuilding
+  private rasterCanvas: any = null;  // TappableCanvasRaster
+  private canvasStack: any = null;
 
   // Widget references
+  private titleLabel: Label | null = null;
   private statusLabel: Label | null = null;
   private statsLabel: Label | null = null;
   private infoLabel: Label | null = null;
+  private infoBar: any = null;  // HBox for info bar (supports removeAll + add)
   private breadcrumbLabel: Label | null = null;
+  private extListBox: any = null;  // VBox for extension summary (removeAll + add)
+  private upBtn: any = null;
+  private rootBtn: any = null;
+
+  // Directory highlight (set when clicking a path segment in the info bar)
+  private highlightDirPath: string | null = null;
+
+  // Double-tap detection
+  private lastTapTime = 0;
+  private lastTapId: string | null = null;
 
   // Canvas dimensions
   private canvasWidth = 800;
@@ -695,6 +960,13 @@ export class DiskTreeUI {
 
   private updateStatusLabel(): void {
     const state = this.store.getState();
+    if (this.titleLabel) {
+      if (state.rootEntry) {
+        this.titleLabel.setText(`Disk Tree - ${state.rootEntry.path}`);
+      } else {
+        this.titleLabel.setText('Disk Tree - Treemap Visualization');
+      }
+    }
     if (this.statusLabel) {
       if (state.scanProgress.isScanning) {
         const truncatedPath = state.scanProgress.currentPath.length > 50
@@ -722,20 +994,103 @@ export class DiskTreeUI {
   }
 
   private updateInfoLabel(): void {
-    const state = this.store.getState();
+    // When segmented bar is showing (selected file with clickable path),
+    // don't touch it — hover highlight on the canvas is enough feedback.
+    if (this.infoBarIsSegmented) return;
+
     const entry = this.store.getHoveredEntry() || this.store.getSelectedEntry();
 
     if (this.infoLabel) {
       if (entry) {
         const type = entry.isDirectory ? 'Folder' : 'File';
         const ext = entry.extension ? ` (${entry.extension})` : '';
+        const state = this.store.getState();
+        const rootPath = state.rootEntry?.path || '';
+        const relativePath = rootPath && entry.path.startsWith(rootPath)
+          ? entry.path.slice(rootPath.length).replace(/^\//, '')
+          : entry.name;
         this.infoLabel.setText(
-          `${type}${ext}: ${entry.name} - ${formatBytes(entry.size)}`
+          `${type}${ext}: ${relativePath} - ${formatBytes(entry.size)}`
         );
       } else {
         this.infoLabel.setText('Hover over an item for details');
       }
     }
+  }
+
+  private infoBarIsSegmented = false;
+
+  private restoreSimpleInfoBar(): void {
+    if (!this.infoBarIsSegmented || !this.infoBar) return;
+    this.infoBarIsSegmented = false;
+    const state = this.store.getState();
+
+    this.infoBar.removeAll();
+    this.infoBar.add(() => {
+      this.infoLabel = this.a.label('').withId('info');
+      this.a.spacer();
+      this.statsLabel = this.a.label(
+        `Files: ${formatNumber(state.scanProgress.filesScanned)} | ` +
+        `Folders: ${formatNumber(state.scanProgress.directoriesScanned)} | ` +
+        `Total: ${formatBytes(state.scanProgress.totalSize)}`
+      ).withId('stats');
+    });
+  }
+
+  private rebuildInfoBar(entry: FileEntry): void {
+    if (!this.infoBar) return;
+
+    const state = this.store.getState();
+    const rootPath = state.rootEntry?.path || '';
+
+    // Compute relative path segments
+    const relativePath = rootPath && entry.path.startsWith(rootPath)
+      ? entry.path.slice(rootPath.length).replace(/^\//, '')
+      : entry.name;
+    const segments = relativePath.split('/');
+
+    this.infoBarIsSegmented = true;
+    this.infoBar.removeAll();
+    this.infoBar.add(() => {
+      const type = entry.isDirectory ? 'Folder' : 'File';
+      const ext = entry.extension ? ` (${entry.extension})` : '';
+      this.infoLabel = this.a.label(`${type}${ext}: `);
+
+      // Each directory segment as a clickable button → navigates into that dir
+      for (let i = 0; i < segments.length - 1; i++) {
+        const dirPath = rootPath + '/' + segments.slice(0, i + 1).join('/');
+        this.a.button(segments[i] + '/', { onClick: () => {
+          this.highlightDirPath = null;
+          this.store.navigateToPath(dirPath);
+          this.updateUI(true);
+        }});
+      }
+
+      // Final segment (the file/leaf itself) as plain label
+      this.a.label(segments[segments.length - 1]);
+      this.a.label(` - ${formatBytes(entry.size)}`);
+      this.a.spacer();
+      this.statsLabel = this.a.label(
+        `Files: ${formatNumber(state.scanProgress.filesScanned)} | ` +
+        `Folders: ${formatNumber(state.scanProgress.directoriesScanned)} | ` +
+        `Total: ${formatBytes(state.scanProgress.totalSize)}`
+      ).withId('stats');
+    });
+  }
+
+  private refreshPixelBuffer(): void {
+    if (!this.rasterCanvas) return;
+    const st = this.store.getState();
+    const buf = renderCushionBuffer(
+      this.canvasWidth,
+      this.canvasHeight,
+      st.allRects,
+      st,
+      st.hoveredId,
+      st.selectedId,
+      this.highlightDirPath
+    );
+    this.rasterCanvas.setPixelBuffer(buf);
   }
 
   private updateBreadcrumbLabel(): void {
@@ -746,150 +1101,357 @@ export class DiskTreeUI {
     }
   }
 
+  private getExtSwatchColor(et: ExtensionTotal, state: AppState): string {
+    const saturation = 65;
+    const lightness = 55;
+    let hue = 0;
+
+    switch (state.colorScheme) {
+      case 'byType': {
+        hue = FILE_TYPE_HUES[et.ext.toLowerCase()] ?? 180;
+        break;
+      }
+      case 'bySize': {
+        const totalSize = state.currentEntry?.size || 1;
+        const ratio = Math.log(et.totalSize + 1) / Math.log(totalSize + 1);
+        hue = (1 - ratio) * 120;
+        break;
+      }
+      case 'byDepth': {
+        hue = (et.avgDepth * 60) % 360;
+        break;
+      }
+      case 'byAge': {
+        if (et.avgAgeDays >= 0) {
+          hue = Math.max(0, 120 - (et.avgAgeDays / 365) * 120);
+        } else {
+          hue = 180;
+        }
+        break;
+      }
+    }
+
+    const { r, g, b } = hslToRgb(hue, saturation, lightness);
+    return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
+  }
+
+  private updateExtensionList(): void {
+    if (!this.extListBox) return;
+    const state = this.store.getState();
+
+    this.extListBox.removeAll();
+    if (!state.currentEntry) return;
+
+    switch (state.colorScheme) {
+      case 'bySize':
+        this.updateSizeLegend(state);
+        break;
+      case 'byDepth':
+        this.updateDepthLegend(state);
+        break;
+      case 'byAge':
+        this.updateAgeLegend(state);
+        break;
+      default:
+        this.updateExtensionColorList(state);
+        break;
+    }
+  }
+
+  private updateSizeLegend(state: AppState): void {
+    const totalSize = state.currentEntry?.size || 1;
+
+    // Size break thresholds (descending)
+    const breaks: { label: string; min: number; max: number }[] = [
+      { label: '> 1 GB',     min: 1024 * 1024 * 1024, max: Infinity },
+      { label: '> 100 MB',   min: 100 * 1024 * 1024,  max: 1024 * 1024 * 1024 },
+      { label: '> 10 MB',    min: 10 * 1024 * 1024,   max: 100 * 1024 * 1024 },
+      { label: '> 1 MB',     min: 1024 * 1024,         max: 10 * 1024 * 1024 },
+      { label: '> 100 KB',   min: 100 * 1024,          max: 1024 * 1024 },
+      { label: '> 10 KB',    min: 10 * 1024,           max: 100 * 1024 },
+      { label: '> 1 KB',     min: 1024,                max: 10 * 1024 },
+      { label: '< 1 KB',     min: 0,                   max: 1024 },
+    ];
+
+    // Count files and total bytes per bucket
+    const buckets = breaks.map(b => ({ ...b, fileCount: 0, bucketSize: 0 }));
+    function walk(e: FileEntry): void {
+      if (!e.isDirectory) {
+        for (const bucket of buckets) {
+          if (e.size >= bucket.min && e.size < bucket.max) {
+            bucket.fileCount++;
+            bucket.bucketSize += e.size;
+            break;
+          }
+        }
+      }
+      for (const child of e.children) walk(child);
+    }
+    walk(state.currentEntry!);
+
+    // Only show buckets that have files
+    const populated = buckets.filter(b => b.fileCount > 0);
+
+    this.extListBox.add(() => {
+      for (const bucket of populated) {
+        // Use the geometric midpoint of the bucket for the representative color
+        const repSize = bucket.min > 0 ? Math.sqrt(bucket.min * Math.min(bucket.max, totalSize)) : 1;
+        const ratio = Math.log(repSize + 1) / Math.log(totalSize + 1);
+        const hue = (1 - ratio) * 120;
+        const { r, g, b } = hslToRgb(hue, 65, 55);
+        const hex = `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
+        this.a.hbox(() => {
+          this.a.canvasRectangle({ width: 12, height: 12, fillColor: hex });
+          this.a.label(`${bucket.label}  ${bucket.fileCount} files  ${formatBytes(bucket.bucketSize)}`);
+        });
+      }
+    });
+  }
+
+  private updateDepthLegend(state: AppState): void {
+    // Gather files per depth level
+    const depthBuckets = new Map<number, { fileCount: number; totalSize: number }>();
+    function walk(e: FileEntry): void {
+      if (!e.isDirectory) {
+        const prev = depthBuckets.get(e.depth) || { fileCount: 0, totalSize: 0 };
+        prev.fileCount++;
+        prev.totalSize += e.size;
+        depthBuckets.set(e.depth, prev);
+      }
+      for (const child of e.children) walk(child);
+    }
+    walk(state.currentEntry!);
+
+    const sorted = Array.from(depthBuckets.entries()).sort((a, b) => a[0] - b[0]);
+
+    this.extListBox.add(() => {
+      for (const [depth, bucket] of sorted) {
+        const hue = (depth * 60) % 360;
+        const { r, g, b } = hslToRgb(hue, 65, 55);
+        const hex = `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
+        this.a.hbox(() => {
+          this.a.canvasRectangle({ width: 12, height: 12, fillColor: hex });
+          this.a.label(`Depth ${depth}  ${bucket.fileCount} files  ${formatBytes(bucket.totalSize)}`);
+        });
+      }
+    });
+  }
+
+  private updateAgeLegend(state: AppState): void {
+    const now = Date.now();
+    const dayMs = 24 * 60 * 60 * 1000;
+
+    const breaks: { label: string; minDays: number; maxDays: number }[] = [
+      { label: '< 1 week',    minDays: 0,    maxDays: 7 },
+      { label: '< 1 month',   minDays: 7,    maxDays: 30 },
+      { label: '< 3 months',  minDays: 30,   maxDays: 90 },
+      { label: '< 6 months',  minDays: 90,   maxDays: 180 },
+      { label: '< 1 year',    minDays: 180,  maxDays: 365 },
+      { label: '< 2 years',   minDays: 365,  maxDays: 730 },
+      { label: '> 2 years',   minDays: 730,  maxDays: Infinity },
+    ];
+
+    const buckets = breaks.map(b => ({ ...b, fileCount: 0, totalSize: 0 }));
+
+    function walk(e: FileEntry): void {
+      if (!e.isDirectory) {
+        const ageDays = e.modifiedTime ? (now - e.modifiedTime.getTime()) / dayMs : Infinity;
+        for (const bucket of buckets) {
+          if (ageDays >= bucket.minDays && ageDays < bucket.maxDays) {
+            bucket.fileCount++;
+            bucket.totalSize += e.size;
+            break;
+          }
+        }
+      }
+      for (const child of e.children) walk(child);
+    }
+    walk(state.currentEntry!);
+
+    const populated = buckets.filter(b => b.fileCount > 0);
+
+    this.extListBox.add(() => {
+      for (const bucket of populated) {
+        // Use midpoint age for representative color — same formula as tiles
+        const midDays = (bucket.minDays + Math.min(bucket.maxDays, 365 * 3)) / 2;
+        const hue = Math.max(0, 120 - (midDays / 365) * 120);
+        const { r, g, b } = hslToRgb(hue, 65, 55);
+        const hex = `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
+        this.a.hbox(() => {
+          this.a.canvasRectangle({ width: 12, height: 12, fillColor: hex });
+          this.a.label(`${bucket.label}  ${bucket.fileCount} files  ${formatBytes(bucket.totalSize)}`);
+        });
+      }
+    });
+  }
+
+  private updateExtensionColorList(state: AppState): void {
+    const totals = computeExtensionTotals(state.currentEntry!);
+    this.extListBox.add(() => {
+      for (const et of totals) {
+        const hex = this.getExtSwatchColor(et, state);
+        this.a.hbox(() => {
+          this.a.canvasRectangle({ width: 12, height: 12, fillColor: hex });
+          this.a.label(`${et.ext}  ${formatBytes(et.totalSize)}`);
+        });
+      }
+    });
+  }
+
   private async updateUI(rebuildCanvas: boolean = false): Promise<void> {
     this.updateStatusLabel();
     this.updateStatsLabel();
     this.updateInfoLabel();
     this.updateBreadcrumbLabel();
-    // Only rebuild canvas when treemap structure changes (scan, drill-down)
-    // Not on hover - that causes flickering
+    await refreshAllBindings();
     if (rebuildCanvas) {
-      await this.rebuildCanvas();
+      await this.renderToPixelBuffer();
     }
   }
 
   private rebuildInProgress = false;
 
-  private async rebuildCanvas(): Promise<void> {
-    if (!this.canvasStack) {
-      return;
-    }
-
-    // If a rebuild is already in progress, skip - the in-progress one will use latest state
-    if (this.rebuildInProgress) {
-      return;
-    }
+  private async renderToPixelBuffer(): Promise<void> {
+    if (!this.canvasStack) return;
+    if (this.rebuildInProgress) return;
 
     this.rebuildInProgress = true;
-
     try {
-      await this.canvasStack.rebuild(() => {
-        cosyne(this.a, (c: CosyneContext) => {
-          this.cosyneCtx = c;
-          this.eventRouter = enableEventHandling(c, this.a, {
-            width: this.canvasWidth,
-            height: this.canvasHeight,
-          });
-          this.renderTreemap(c);
-        });
-      });
+      // Reset info bar to simple mode on structural changes
+      this.highlightDirPath = null;
+      this.restoreSimpleInfoBar();
+
+      // Wait a tick to let removeAll settle on Go side before next mutation
+      await new Promise(resolve => setImmediate(resolve));
+
+      await this.rebuildTextOverlay();
+
+      // Update extension list after canvas rebuild completes
+      await new Promise(resolve => setImmediate(resolve));
+      this.updateExtensionList();
     } finally {
       this.rebuildInProgress = false;
     }
   }
 
-  private renderShadedRect(
-    c: CosyneContext,
-    rect: TreemapRect,
-    baseColor: string,
-    isSelected: boolean,
-    isHovered: boolean
-  ): void {
-    const { x, y, width, height } = rect;
+  private async rebuildTextOverlay(): Promise<void> {
+    if (!this.canvasStack) return;
 
-    if (width < 2 || height < 2) return;
+    await this.canvasStack.rebuild(() => {
+      // Re-create the raster canvas (it's the base layer)
+      this.rasterCanvas = this.a.tappableCanvasRaster(this.canvasWidth, this.canvasHeight, {
+        onTap: (x: number, y: number) => this.handleTap(x, y),
+        onMouseMove: (x: number, y: number) => this.handleMouseMove(x, y),
+      });
 
-    // Simple rect without bevels for debugging
-    const strokeColor = isSelected ? '#ff0000' : (isHovered ? '#ffffff' : undefined);
-    const strokeWidth = isSelected ? 2 : (isHovered ? 1 : 0);
+      // Add Cosyne text overlay for labels on large cells
+      const state = this.store.getState();
+      cosyne(this.a, (c: CosyneContext) => {
+        for (const rect of state.allRects) {
+          if (rect.width >= MIN_LABEL_WIDTH && rect.height >= MIN_LABEL_HEIGHT) {
+            const label = rect.entry.name.length > 15
+              ? rect.entry.name.slice(0, 12) + '...'
+              : rect.entry.name;
 
-    c.rect(x, y, width, height, {
-      fillColor: baseColor,
-      strokeColor,
-      strokeWidth,
-    }).withId(`rect-main-${rect.id}`);
+            c.text(rect.x + 4, rect.y + 14, label)
+              .fill('#ffffff')
+              .stroke('none', 0)
+              .withId(`label-${rect.id}`);
+
+            if (rect.height >= MIN_LABEL_HEIGHT * 2) {
+              c.text(rect.x + 4, rect.y + 28, formatBytes(rect.size))
+                .fill('#cccccc')
+                .stroke('none', 0)
+                .withId(`size-${rect.id}`);
+            }
+          }
+        }
+
+        // Show message if no content
+        if (state.allRects.length === 0 && !state.scanProgress.isScanning) {
+          if (state.rootEntry) {
+            c.text(state.canvasWidth / 2 - 80, state.canvasHeight / 2, 'Empty folder')
+              .fill('#ffffff')
+              .stroke('none', 0)
+              .withId('empty-message');
+          } else {
+            c.text(state.canvasWidth / 2 - 100, state.canvasHeight / 2, 'Click "Open Folder" to start')
+              .fill('#ffffff')
+              .stroke('none', 0)
+              .withId('start-message');
+          }
+        }
+      });
+
+      // Now send the pixel buffer to the newly created raster
+      const st = this.store.getState();
+      const buf = renderCushionBuffer(
+        this.canvasWidth,
+        this.canvasHeight,
+        st.allRects,
+        st,
+        st.hoveredId,
+        st.selectedId,
+        this.highlightDirPath
+      );
+      this.rasterCanvas.setPixelBuffer(buf);
+    });
   }
 
-  private renderTreemap(c: CosyneContext): void {
+  private handleTap(x: number, y: number): void {
+    if (this.rebuildInProgress) return;  // Don't mutate during rebuild
+
     const state = this.store.getState();
+    const hit = hitTestRects(x, y, state.allRects);
+    if (!hit) return;
 
-    console.log(`[renderTreemap] Rendering ${state.allRects.length} rects, colorScheme=${state.colorScheme}`);
+    const now = Date.now();
+    const isDoubleTap = (now - this.lastTapTime < 400) && this.lastTapId === hit.id;
+    this.lastTapTime = now;
+    this.lastTapId = hit.id;
 
-    // Background
-    c.rect(0, 0, state.canvasWidth, state.canvasHeight, {
-      fillColor: '#1a1a2e',
-    }).withId('background');
-
-    // Render all rectangles
-    for (let i = 0; i < state.allRects.length; i++) {
-      const rect = state.allRects[i];
-      const isHovered = state.hoveredId === rect.id;
-      const isSelected = state.selectedId === rect.id;
-      const baseColor = getColorForRect(rect, state, isHovered);
-
-      // Debug: log all rects with full details
-      console.log(`[DiskTree] rect ${i}: ${rect.entry.name}, x=${rect.x.toFixed(1)}, y=${rect.y.toFixed(1)}, w=${rect.width.toFixed(1)}, h=${rect.height.toFixed(1)}, color=${baseColor}`);
-
-      this.renderShadedRect(c, rect, baseColor, isSelected, isHovered);
-
-      // Add label if rect is large enough
-      if (rect.width >= MIN_LABEL_WIDTH && rect.height >= MIN_LABEL_HEIGHT) {
-        const label = rect.entry.name.length > 15
-          ? rect.entry.name.slice(0, 12) + '...'
-          : rect.entry.name;
-
-        c.text(rect.x + 4, rect.y + 14, label)
-          .fill('#ffffff')
-          .stroke('none', 0)
-          .withId(`label-${rect.id}`);
-
-        // Size label on second line if tall enough
-        if (rect.height >= MIN_LABEL_HEIGHT * 2) {
-          c.text(rect.x + 4, rect.y + 28, formatBytes(rect.size))
-            .fill('#cccccc')
-            .stroke('none', 0)
-            .withId(`size-${rect.id}`);
-        }
-      }
-
-      // Invisible hit-test rectangle for events
-      const hitRect = c.rect(rect.x, rect.y, rect.width, rect.height, {
-        fillColor: 'transparent',
-      }).withId(`hit-${rect.id}`);
-
-      hitRect.onClick(() => {
-        this.store.setSelected(rect.id);
-        if (rect.entry.isDirectory) {
-          this.store.drillDown(rect.id);
-          this.updateUI(true); // Rebuild for drill-down
-        } else {
-          this.updateUI(false); // Just update labels for selection
-        }
-      });
-
-      hitRect.onMouseEnter(() => {
-        this.store.setHovered(rect.id);
-        this.updateUI(false); // Don't rebuild on hover - prevents flickering
-      });
-
-      hitRect.onMouseLeave(() => {
-        this.store.setHovered(null);
-        this.updateUI(false); // Don't rebuild on hover
-      });
+    if (isDoubleTap) {
+      // Double-tap: drill into directory
+      const dirPath = hit.entry.isDirectory
+        ? hit.entry.path
+        : path.dirname(hit.entry.path);
+      this.highlightDirPath = null;
+      this.store.navigateToPath(dirPath);
+      this.updateUI(true);
+    } else {
+      // Single tap: select + show clickable path
+      this.highlightDirPath = null;
+      this.store.setSelected(hit.id);
+      this.updateUI(false);
+      this.rebuildInfoBar(hit.entry);
+      this.refreshPixelBuffer();
     }
+  }
 
-    // Show message if no content
-    if (state.allRects.length === 0 && !state.scanProgress.isScanning) {
-      if (state.rootEntry) {
-        c.text(state.canvasWidth / 2 - 80, state.canvasHeight / 2, 'Empty folder')
-          .fill('#ffffff')
-          .stroke('none', 0)
-          .withId('empty-message');
-      } else {
-        c.text(state.canvasWidth / 2 - 100, state.canvasHeight / 2, 'Click "Open Folder" to start')
-          .fill('#ffffff')
-          .stroke('none', 0)
-          .withId('start-message');
+  private handleMouseMove(x: number, y: number): void {
+    if (this.rebuildInProgress) return;  // Don't mutate during rebuild
+
+    const state = this.store.getState();
+    const hit = hitTestRects(x, y, state.allRects);
+    const newId = hit ? hit.id : null;
+
+    if (newId !== state.hoveredId) {
+      this.store.setHovered(newId);
+      this.updateInfoLabel();
+
+      // Re-render pixel buffer for hover highlight (but don't rebuild text overlay)
+      if (this.rasterCanvas) {
+        const st = this.store.getState();
+        const buf = renderCushionBuffer(
+          this.canvasWidth,
+          this.canvasHeight,
+          st.allRects,
+          st,
+          st.hoveredId,
+          st.selectedId,
+          this.highlightDirPath
+        );
+        this.rasterCanvas.setPixelBuffer(buf);
       }
     }
   }
@@ -897,13 +1459,10 @@ export class DiskTreeUI {
   buildUI(win: Window): void {
     this.window = win;
 
-    // Note: subscriptions are set up AFTER canvasStack is created (below)
-    // to avoid triggering rebuilds before the canvas exists
-
     this.a.vbox(() => {
       // Title bar
       this.a.hbox(() => {
-        this.a.label('Disk Tree - Treemap Visualization').withId('title');
+        this.titleLabel = this.a.label('Disk Tree - Treemap Visualization').withId('title');
         this.a.spacer();
         this.statusLabel = this.a.label('Select a folder to analyze').withId('status');
       });
@@ -927,15 +1486,17 @@ export class DiskTreeUI {
             }
           } }).withId('openBtn');
 
-        this.a.button('Up', { onClick: () => {
+        this.upBtn = this.a.button('Up', { onClick: () => {
             this.store.drillUp();
             this.updateUI(true);
-          } }).withId('upBtn');
+          } }).withId('upBtn')
+            .ghostWhen(() => this.store.getState().breadcrumbs.length <= 1);
 
-        this.a.button('Root', { onClick: () => {
+        this.rootBtn = this.a.button('Root', { onClick: () => {
             this.store.goToRoot();
             this.updateUI(true);
-          } }).withId('rootBtn');
+          } }).withId('rootBtn')
+            .ghostWhen(() => this.store.getState().breadcrumbs.length <= 1);
 
         this.a.spacer();
 
@@ -971,22 +1532,36 @@ export class DiskTreeUI {
 
       this.a.separator();
 
-      // Canvas for treemap - store reference for rebuilding
-      this.canvasStack = this.a.canvasStack(() => {
-        cosyne(this.a, (c: CosyneContext) => {
-          this.cosyneCtx = c;
-          this.eventRouter = enableEventHandling(c, this.a, {
-            width: this.canvasWidth,
-            height: this.canvasHeight,
+      // Canvas + extension summary side by side
+      this.a.hbox(() => {
+        // Canvas for treemap - canvasStack layers raster + text overlay
+        this.canvasStack = this.a.canvasStack(() => {
+          this.rasterCanvas = this.a.tappableCanvasRaster(this.canvasWidth, this.canvasHeight, {
+            onTap: (x: number, y: number) => this.handleTap(x, y),
+            onMouseMove: (x: number, y: number) => this.handleMouseMove(x, y),
           });
-          this.renderTreemap(c);
+
+          // Initial text overlay (empty - will be populated after scan)
+          cosyne(this.a, (c: CosyneContext) => {
+            c.text(this.canvasWidth / 2 - 100, this.canvasHeight / 2, 'Click "Open Folder" to start')
+              .fill('#ffffff')
+              .stroke('none', 0)
+              .withId('start-message');
+          });
         });
-      }, this.canvasWidth, this.canvasHeight);
+
+        // Extension summary panel (scrollable)
+        this.a.scroll(() => {
+          this.extListBox = this.a.vbox(() => {
+            this.a.label('Extensions');
+          });
+        }).withMinSize(160, this.canvasHeight);
+      });
 
       this.a.separator();
 
-      // Info bar
-      this.a.hbox(() => {
+      // Info bar (stored for dynamic rebuild with clickable path segments)
+      this.infoBar = this.a.hbox(() => {
         this.infoLabel = this.a.label('Hover over an item for details').withId('info');
         this.a.spacer();
         this.statsLabel = this.a.label('Files: 0 | Folders: 0 | Total: 0 B').withId('stats');
@@ -1039,8 +1614,7 @@ if (require.main === module) {
   const appInstance = app(resolveTransport(), { title: 'Disk Tree', width: 900, height: 700 }, (a: App) => {
     a.window({ title: 'Disk Tree', width: 900, height: 700 }, (win: Window) => {
       const ui = buildDiskTreeApp(a, win);
-
-  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));      win.show();
+      win.show();
 
       // Auto-scan if folder provided via command line
       if (initialFolder) {
@@ -1049,4 +1623,5 @@ if (require.main === module) {
       }
     });
   });
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));
 }
