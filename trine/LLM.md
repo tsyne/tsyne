@@ -5,12 +5,12 @@ Optional module for running three.js through Tsyne's native OpenGL backend.
 ## Setup
 
 ```bash
-# From repo root, or from tsyne-three/
-./tsyne-three/setup-three.sh
+# From repo root, or from trine/
+./trine/setup-three.sh
 ```
 
 This clones three.js to `three/` and applies the canvas factory patch.
-The integration code stays in `tsyne-three/integration/` - it's not copied.
+The integration code stays in `trine/integration/` - it's not copied.
 
 ## Architecture
 
@@ -18,7 +18,7 @@ The integration code stays in `tsyne-three/integration/` - it's not copied.
 three.js (TS) → TsyneBridge → MessagePack → Go Bridge → Fyne Shader → OpenGL
 ```
 
-Key files in `tsyne-three/integration/`:
+Key files in `trine/integration/`:
 - `init.ts` - Entry point, exports `setupTsyneThreeJS()`
 - `bridge.ts` - TsyneBridge for message passing
 - `gl-proxy.ts` - WebGL2 API proxy that batches commands
@@ -28,7 +28,7 @@ Key files in `tsyne-three/integration/`:
 ## Usage
 
 ```typescript
-import { setupTsyneThreeJS } from '../tsyne-three/integration/init';
+import { setupTsyneThreeJS } from '../trine/integration/init';
 
 // Inside your Tsyne app window:
 const sendFn = async (msg: any) => {
@@ -73,7 +73,7 @@ describe('Three.js Demo', () => {
   });
 
   test('renders scene', async () => {
-    const { setupTsyneThreeJS } = require('../tsyne-three/integration/init');
+    const { setupTsyneThreeJS } = require('../trine/integration/init');
     // ... setup and test
   });
 });
@@ -113,13 +113,13 @@ so three.js gets a TsyneCanvas instead of a browser canvas.
 - Wrong windowId passed
 
 ### "Cannot find module"
-- Run `./tsyne-three/setup-three.sh` to clone three.js
+- Run `./trine/setup-three.sh` to clone three.js
 - Check import paths
 
 ## File Structure
 
 ```
-tsyne-three/
+trine/
   integration/     # Integration code (canonical location)
   examples/        # Three.js demos
   patches/         # utils.js.patch

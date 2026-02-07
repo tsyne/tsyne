@@ -549,31 +549,31 @@ fi
 # STEP 2.6: Tsyne-Three - Three.js Integration
 # ============================================================================
 if [ "$UNIT_ONLY" = true ]; then
-  echo "⏭️  Tsyne-Three - Skipping (--unit-only mode)"
+  echo "⏭️  Trine - Skipping (--unit-only mode)"
 else
-  echo "--- :three: Tsyne-Three - Setup & Test"
-  time_section "Tsyne-Three Setup"
-  cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/tsyne-three
+  echo "--- :three: Trine - Setup & Test"
+  time_section "Trine Setup"
+  cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/trine
   pnpm install --ignore-scripts
 
   # Setup three.js (clone and apply patch)
   echo "Setting up three.js..."
   ./setup-three.sh
-  report_section_time "Tsyne-Three Setup"
+  report_section_time "Trine Setup"
 
   if [ "$SKIP_TESTS" = false ]; then
-    echo "--- :test_tube: Tsyne-Three - Tests"
-    time_section "Tsyne-Three Tests"
-    timeout 300 pnpm test --json --outputFile=/tmp/tsyne-three-test-results.json || {
+    echo "--- :test_tube: Trine - Tests"
+    time_section "Trine Tests"
+    timeout 300 pnpm test --json --outputFile=/tmp/trine-test-results.json || {
       EXIT_CODE=$?
       if [ $EXIT_CODE -eq 124 ]; then
-        echo "❌ Tsyne-Three tests timed out after 300 seconds"
+        echo "❌ Trine tests timed out after 300 seconds"
       else
-        echo "❌ Tsyne-Three tests failed (exit code: $EXIT_CODE)"
+        echo "❌ Trine tests failed (exit code: $EXIT_CODE)"
       fi
     }
-    capture_test_results "Tsyne-Three" "/tmp/tsyne-three-test-results.json" || true
-    report_section_time "Tsyne-Three Tests"
+    capture_test_results "Trine" "/tmp/trine-test-results.json" || true
+    report_section_time "Trine Tests"
   fi
 fi
 

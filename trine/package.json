@@ -1,5 +1,5 @@
 {
-  "name": "tsyne-three",
+  "name": "trine",
   "version": "0.1.0",
   "description": "Three.js integration for Tsyne - renders three.js through native OpenGL",
   "main": "integration/index.ts",

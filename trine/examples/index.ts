@@ -5,7 +5,7 @@
  * - Regular examples run with `npx tsx`
  * - Test files run with `npm test` (jest)
  *
- * Run: npx tsx tsyne-three/examples/index.ts
+ * Run: npx tsx trine/examples/index.ts
  */
 
 import { app, resolveTransport, createAppLauncher } from 'tsyne';

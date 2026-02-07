@@ -228,10 +228,10 @@ export function executeCompiledCode(
       const resolved = path.resolve(__dirname, '..', id.replace(/\.\.\/core\/src/g, 'src').replace('../', ''));
       return require(resolved);
     }
-    // Handle tsyne-three imports
-    if (id === 'tsyne-three' || id.startsWith('tsyne-three/')) {
-      const tsyneThreeDir = path.resolve(__dirname, '..', '..', 'tsyne-three');
-      const subPath = id === 'tsyne-three' ? '.' : id.replace('tsyne-three/', '');
+    // Handle trine imports
+    if (id === 'trine' || id.startsWith('trine/')) {
+      const tsyneThreeDir = path.resolve(__dirname, '..', '..', 'trine');
+      const subPath = id === 'trine' ? '.' : id.replace('trine/', '');
       return require(path.resolve(tsyneThreeDir, subPath));
     }
     // Handle relative imports - resolve relative to the app's directory
