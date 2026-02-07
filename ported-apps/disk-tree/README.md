@@ -1,111 +1,94 @@
 # Disk Tree App
 
-A cross-platform utility to visually show the disk space used by folders, subfolders and files.
+A cross-platform disk usage visualizer using an interactive squarified cushion treemap. Inspired by GrandPerspective and WinDirStat.
 
 ## Features
 
-- **Tree-based visualization** - Display folder hierarchy with sizes
-- **Real-time scanning** - Progressive results as directories are processed
-- **Sorting options** - Sort by name (alphabetical) or by size (largest first)
-- **Formatted output** - Sizes displayed in B, KB, MB, GB, or TB
-- **Error handling** - Gracefully skips inaccessible files and directories
-- **Detailed statistics** - Track files scanned, directories scanned, and total size
+- **Cushion treemap rendering** - Pixel-buffer shaded rectangles with 3D pillow appearance via `TappableCanvasRaster.setPixelBuffer()`
+- **Recursive subdivision** - Directories subdivide into their children with nesting insets, drilling as deep as screen space allows
+- **Four color schemes** - Type (by file extension), Size (by file size ratio), Depth (by nesting level), Age (by modification date)
+- **Scheme-aware legend panel** - Right-hand panel shows extensions (Type), size ranges (Size), depth levels (Depth), or age ranges (Age) with matching color swatches
+- **Drill-down navigation** - Double-click directories to zoom in, clickable breadcrumb path segments, Up/Root buttons
+- **Hover and selection** - Hover highlights tiles, click selects with red border, info bar shows relative path
+- **Ghost buttons** - Up and Root buttons disable via `.ghostWhen()` when already at root
+- **Cosyne text overlay** - File names and sizes rendered on large-enough tiles via `canvasStack` layering
 
 ## How to Use
 
-### Scanning a Folder
-1. Launch the Disk Tree app
-2. Click "Open Folder" to select a directory
-3. The app scans the folder tree and displays results
-4. Results show in a hierarchical tree with file/folder icons and sizes
-
-### Viewing Results
-- **File icon (📄)** - Indicates a file with its size
-- **Folder icon (📁)** - Indicates a directory with total size (including contents)
-- **Indentation** - Shows folder nesting levels
-
-### Sorting
-- Click "Sort by Size" to organize by file/folder size (largest first)
-- Click "Sort by Name" to alphabetically organize by name
-
-### Statistics
-The status bar shows:
-- **Files**: Total number of files scanned
-- **Dirs**: Total number of directories scanned
-- **Total**: Combined size of all files and directories
+1. Launch the app: `./scripts/tsyne ported-apps/disk-tree/disk-tree.ts`
+2. Click **Open Folder** to select a directory to scan
+3. Explore the treemap: hover for details, click to select, double-click directories to drill in
+4. Switch color schemes with the **Type** / **Size** / **Depth** / **Age** buttons
+5. Navigate with **Up** (parent directory), **Root** (back to scan root), or click path segments in the info bar
 
 ## Architecture
 
-The Disk Tree app uses Tsyne's declarative MVC pattern:
+1,627 lines. Observable store (MVC) with pixel-buffer rendering.
 
-- **Model**: `DiskTreeNode` tree structure with `ScanStats` for progress tracking
-- **View**: Widgets display tree hierarchy, buttons for actions, labels for stats
-- **Controller**: Button handlers manage folder selection and sorting
+- **Model**: `DiskTreeStore` — observable store with `subscribe()`, holds `FileEntry` tree, `TreemapRect[]` layout, navigation breadcrumbs, color scheme
+- **View**: `DiskTreeUI` — builds Tsyne widget tree, renders cushion treemap to `Uint8Array` pixel buffer, manages Cosyne text overlay via `canvasStack`
+- **Rendering**: `renderCushionBuffer()` — pure function computing RGBA pixels with parabolic cushion shading per rect
+- **Layout**: `computeSquarifiedLayout()` + `subdivideRects()` — squarified treemap algorithm with recursive directory subdivision
+- **Hit testing**: `hitTestRects()` — coordinate-based reverse iteration (no Cosyne event routing needed)
 
-### File System Operations
-- Uses Node.js `fs` module for directory traversal
-- Recursive directory scanning for accurate size calculation
-- Error handling for permission-denied and missing files
-- Efficient path joining with `path` module
+## Pseudo-Declarative Scorecard
 
-### Tree Rendering
-- Hierarchical display with indentation for nesting
-- Dynamic sorting (by name or size) with node reordering
-- Lazy loading compatible (can be extended for very large trees)
+How well does this app follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
 
-## Code Example
+The core win of pseudo-declarative UI is that code structure IS UI structure — `vbox(() => { hbox(() => { label(); button(); }) })` reads as a layout spec, not a construction sequence. Unlike HTML, there's no paradigm cliff when you need a loop or a condition — a `for` inside a `vbox` closure is still declarative. You never leave TypeScript, never switch from markup to code. That's why the builder pattern is weighted most heavily here.
 
-```typescript
-import { buildDiskTreeApp } from './disk-tree';
-import { app } from './src';
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 8/10 | Clean `vbox > hbox > canvasStack` nesting. `buildUI()` reads as a layout spec. Loses a point for `canvasStack.rebuild()` imperatively tearing down/recreating the overlay |
+| **Core declarative** | Fluent method chaining | 8/10 | `.withId()` (20 uses), `.onClick()`, `.ghostWhen()`, `.withMinSize()` — widget configuration without leaving the declaration |
+| **Core declarative** | Programmatic generation | 7/10 | Color scheme buttons and extension list items generated in loops. Treemap labels generated from data. Not as strong as clock's `for` loop for hour markers |
+| **State architecture** | Observable store | 7/10 | `DiskTreeStore` with `subscribe()`/`notifyChange()` and unsubscriber. But mutates in-place rather than replacing immutably |
+| **State architecture** | Store-driven updates | 6/10 | Button handlers call store methods, store notifies → `updateUI()`. But `updateUI()` then does 9x imperative `setText()` — the reactive chain stops at the store boundary |
+| **State architecture** | Defensive copying | 2/10 | `getState()` returns `Readonly<AppState>` — TypeScript annotation only, no runtime copy. State mutated in-place |
+| **Declarative updates** | `.ghostWhen()` / `.when()` | 4/10 | 2x `.ghostWhen()` (new framework primitive debuted here). Zero `.when()`. Extension panel scheme-switching is done imperatively |
+| **Declarative updates** | Reactive bindings | 1/10 | Zero `.bindText()`, `.bindTo()`, `.bindFillColor()`. Labels updated via `setText()`, lists via `removeAll()`/`add()` |
+| **Anti-declarative** | `removeAll()`/`add()` | -2 | 6x `removeAll()` — tears down widget trees and rebuilds from scratch. This is the opposite of declarative: the framework can't diff, can't optimize, can't reason about what changed. Extension list and info bar should use `.bindTo()` |
+| **Testing** | `.withId()` coverage | 9/10 | 20 IDs across all interactive widgets — enables 16 TsyneTest tests. Among the best in the repo |
+| **Testing** | Counter-based IDs | 10/10 | `this.nextId++` — exactly the recommended pattern |
+| **Design** | Separation of concerns | 8/10 | Pure functions (`renderCushionBuffer`, `hitTestRects`, `computeExtensionTotals`) cleanly separated from UI and state |
+| | **Overall** | **5/10** | Strong declarative structure at the layout level — `buildUI()` genuinely reads as a spec. Falls apart at the update level: `setText()`, `removeAll()`/`add()`, and in-place mutation mean the app escapes to imperative for every state change. The layout is declared once well; it's the ongoing updates where declarative discipline is lost |
 
-app({ title: 'Disk Tree' }, (a) => {
-  a.window({ title: 'Disk Tree', width: 800, height: 600 }, (win) => {
-    buildDiskTreeApp(a, win);
-  });
-});
-```
+### Context: repo-wide adherence
+
+No app in the repo scores 10/10. Across 51 ported apps: 89% use `setText()` over `.bindText()`, only 17% use `.bindTo()` or `.when()`, zero do defensive state copying. The closest to the documented ideal are **ebooks**, **expense-tracker**, **element**, **wikipedia**, and **sokol-arcade** (~7/10) which combine `bindTo()` + `.when()` + `subscribe()`.
+
+### Where disk-tree excels
+
+- **Builder nesting** in `buildUI()` reads as a visual layout spec — the core pseudo-declarative win
+- **`.withId()` coverage** is among the best in the repo — 20 IDs, 16 passing tests
+- **`.ghostWhen()`** is a new framework primitive that debuted in this app
+- **Pure rendering functions** (`renderCushionBuffer`, `hitTestRects`) are cleanly separated from UI state
+
+### Where it breaks declarative
+
+- 9x `setText()` where `.bindText()` should be used — every label update is an imperative escape
+- 6x `removeAll()`/`add()` where `.bindTo()` + `trackBy` should be used — tears down and rebuilds widget trees, the anti-pattern the framework was designed to prevent
+- State mutated in-place rather than replaced immutably — prevents the framework from detecting changes
 
 ## Testing
 
-### Jest Tests
-Unit tests for tree logic, byte formatting, and sorting:
+16 TsyneTest integration tests covering:
+
 ```bash
-cd phone-apps
-npm test -- disk-tree.test.ts
+cd ported-apps/disk-tree
+npx jest
 ```
 
-Coverage includes:
-- Byte formatting (B, KB, MB, GB, TB)
-- Tree node creation and structure
-- Sorting (by name and size)
-- Statistics tracking
-- Path handling
-
-### TsyneTest Tests
-UI interaction tests:
-```bash
-cd core
-npm test -- disk-tree-tsyne
-```
-
-Coverage includes:
-- Initial UI rendering
-- Control button functionality
-- Status display
-- Tree placeholder when no folder selected
-
-## Performance Considerations
-
-- **Large directories**: The app recursively scans all subdirectories. Very large directory trees may take time to complete.
-- **Permission errors**: Files and directories the user cannot access are skipped silently.
-- **Real-time updates**: The current implementation loads the full tree before display. Can be extended with progressive updates during scanning.
+- Initial UI state (controls rendered, buttons ghosted)
+- Directory scanning (treemap rects generated, title/stats updated)
+- Navigation (drill-down unghosts buttons, drillUp, goToRoot, navigateToPath)
+- Color schemes (all four switchable via button clicks)
+- Store logic (tree structure, selection/hover, breadcrumb trail)
 
 ## Files
 
-- `disk-tree.ts` - Main implementation (phone-apps and core/src)
-- `disk-tree.test.ts` - Jest unit tests (phone-apps)
-- `disk-tree-tsyne.test.ts` - Tsyne UI tests (phone-apps and core/src)
+- `disk-tree.ts` — Main implementation (1,627 lines)
+- `disk-tree-tsyne.test.ts` — TsyneTest integration tests (311 lines, 16 tests)
 
 ## License
 
@@ -113,4 +96,4 @@ MIT License
 
 Portions copyright original team and portions copyright Paul Hammant 2025
 
-This is a port of the Disk Tree application (https://github.com/Roemer/disk-tree) to Tsyne.
+This is a port of the Disk Tree application (https://github.com/Roemer/disk-tree) to Tsyne, substantially rewritten with cushion treemap rendering.
