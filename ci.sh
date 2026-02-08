@@ -718,6 +718,7 @@ if [ "$SKIP_TESTS" = false ] && [ "$UNIT_ONLY" = false ] && [ "$QUICK_MODE" = fa
   test_ported_app "boing" || true
   test_ported_app "calcudoku" || true
   test_ported_app "chess" || true
+  test_ported_app "connect4" || true
   test_ported_app "falling-blocks" || true
   test_ported_app "falling-letters" || true
   test_ported_app "find-pairs" || true
@@ -820,6 +821,10 @@ elif [ "$UNIT_ONLY" = true ] || [ "$QUICK_MODE" = true ]; then
 fi
 
 if [ "$SKIP_TESTS" = false ] && [ "$UNIT_ONLY" = false ] && [ "$QUICK_MODE" = false ]; then
+
+  # Install shared launcher dependencies
+  cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/launchers
+  pnpm install --ignore-scripts
 
   # Helper function to build and test a launcher
   test_launcher() {

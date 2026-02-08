@@ -260,14 +260,25 @@ echo "[setup-fyne-fork] Disabling thread safety warnings..."
 if [ -f "$FORK_DIR/internal/driver/glfw/window.go" ]; then
     sed -i 's/fyne\.LogError(".*thread.*"/\/\/ DISABLED: fyne.LogError("thread warning"/' "$FORK_DIR/internal/driver/glfw/window.go" 2>/dev/null || true
 fi
+# NOTE: Do NOT set DisableThreadChecks = true — it is incorrect - always solve wrong-thread issues correctly
 
-# 12. Fix preferences.go EOF handling
-echo "[setup-fyne-fork] Patching preferences.go for EOF handling..."
-if [ -f "$FORK_DIR/preferences.go" ]; then
-    sed -i 's/return err/if err == io.EOF { return nil }; return err/' "$FORK_DIR/preferences.go" 2>/dev/null || true
+# 12. Fix Canvas.Capture() alpha on modern Linux compositors
+# The default framebuffer may have near-zero alpha on Wayland/newer compositors,
+# causing screenshots to appear transparent. Force alpha=255 since Fyne windows are opaque.
+echo "[setup-fyne-fork] Patching capture.go for opaque alpha..."
+CAPTURE_FILE="$FORK_DIR/internal/painter/gl/capture.go"
+if [ -f "$CAPTURE_FILE" ]; then
+    sed -i 's/A: c\.pix\[start+3\]/A: 255/' "$CAPTURE_FILE"
 fi
 
-# 13. Final tidy
+# 13. Fix preferences EOF handling (suppress EOF errors from empty/truncated prefs file)
+echo "[setup-fyne-fork] Patching app/preferences.go for EOF handling..."
+PREFS_FILE="$FORK_DIR/app/preferences.go"
+if [ -f "$PREFS_FILE" ]; then
+    sed -i 's/if err != nil && err != errEmptyPreferencesStore {/if err != nil \&\& err != errEmptyPreferencesStore \&\& err != io.EOF {/' "$PREFS_FILE"
+fi
+
+# 14. Final tidy
 echo "[setup-fyne-fork] Final tidying..."
 cd "$FORK_DIR"
 go mod tidy

@@ -393,6 +393,8 @@ export class Window {
     options?: {
       confirmText?: string;
       dismissText?: string;
+      confirmImportance?: 'high' | 'danger' | 'success' | 'warning';
+      dismissImportance?: 'high' | 'danger' | 'success' | 'warning';
     }
   ): Promise<{ submitted: boolean; values: Record<string, string | boolean> }> {
     return new Promise((resolve) => {
@@ -410,6 +412,8 @@ export class Window {
         title,
         confirmText: options?.confirmText || 'Submit',
         dismissText: options?.dismissText || 'Cancel',
+        confirmImportance: options?.confirmImportance || '',
+        dismissImportance: options?.dismissImportance || '',
         callbackId,
         fields
       });

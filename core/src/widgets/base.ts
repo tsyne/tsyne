@@ -723,13 +723,17 @@ export abstract class Widget {
    */
   makeDraggable(options: {
     dragData: string;
+    dragLabel?: string;
     onDragStart?: () => void;
     onDragEnd?: () => void;
+    onDoubleTap?: (dragData: string) => void;
+    onTap?: (dragData: string) => void;
   }): this {
     const payload: any = {
       widgetId: this.id,
       dragData: options.dragData
     };
+    if (options.dragLabel) payload.dragLabel = options.dragLabel;
 
     if (options.onDragStart) {
       const callbackId = this.ctx.generateId('callback');
@@ -741,6 +745,18 @@ export abstract class Widget {
       const callbackId = this.ctx.generateId('callback');
       payload.onDragEndCallbackId = callbackId;
       this.ctx.bridge.registerEventHandler(callbackId, () => options.onDragEnd!());
+    }
+
+    if (options.onDoubleTap) {
+      const callbackId = this.ctx.generateId('callback');
+      payload.onDoubleTapCallbackId = callbackId;
+      this.ctx.bridge.registerEventHandler(callbackId, (data: any) => options.onDoubleTap!(data.dragData));
+    }
+
+    if (options.onTap) {
+      const callbackId = this.ctx.generateId('callback');
+      payload.onTapCallbackId = callbackId;
+      this.ctx.bridge.registerEventHandler(callbackId, (data: any) => options.onTap!(data.dragData));
     }
 
     this.ctx.bridge.send('setDraggable', payload);
@@ -759,7 +775,7 @@ export abstract class Widget {
    * });
    */
   makeDroppable(options: {
-    onDrop?: (dragData: string, sourceId: string) => void;
+    onDrop?: (dragData: string, sourceId: string, dropIndex: number) => void;
     onDragEnter?: (dragData: string, sourceId: string) => void;
     onDragLeave?: () => void;
   }): this {
@@ -771,7 +787,7 @@ export abstract class Widget {
       const callbackId = this.ctx.generateId('callback');
       payload.onDropCallbackId = callbackId;
       this.ctx.bridge.registerEventHandler(callbackId, (data: any) => {
-        options.onDrop!(data.dragData, data.sourceId);
+        options.onDrop!(data.dragData, data.sourceId, data.dropIndex ?? -1);
       });
     }
 

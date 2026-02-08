@@ -469,9 +469,10 @@ describe('Widget Mode - Time Display', () => {
 
     await ctx.getById('statusLabel').within(2000).shouldBe('Ready to play');
 
-    // Play for 2 seconds (same as passing canvas test)
+    // Play for 1 second (widget mode has more bridge overhead than canvas,
+    // so use shorter waits to stay within the 5s clip duration)
     await ctx.getById('playBtn').click();
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     const pos1 = await ctx.getById('positionLabel').getText();
     const time1 = parseInt(pos1.split(':')[1], 10);

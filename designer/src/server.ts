@@ -669,7 +669,7 @@ const designer = {
   // Input widgets
   // Support both OLD API: button(text, onClick?, className?)
   // and NEW API: button(text, { className: className?, onClick: handler })
-  button(text: string, onClickOrClassName?: (() => void) | string, className?: string): any {
+  button(text: string, onClickOrClassName?: (() => void) | string | { className?: string; onClick?: () => void }, className?: string): any {
     // Detect which API is being used
     let actualClassName: string | undefined;
     let onClickHandler: (() => void) | undefined;
@@ -679,8 +679,12 @@ const designer = {
       onClickHandler = onClickOrClassName;
       actualClassName = className;
     } else if (typeof onClickOrClassName === 'string') {
-      // NEW API: button(text, { className: className?, onClick: handler })
+      // OLD API: button(text, className)
       actualClassName = onClickOrClassName;
+    } else if (typeof onClickOrClassName === 'object' && onClickOrClassName !== null) {
+      // NEW API: button(text, { className: className?, onClick: handler })
+      actualClassName = onClickOrClassName.className;
+      onClickHandler = onClickOrClassName.onClick;
     }
 
     const result = captureWidget('button', { text, className: actualClassName });

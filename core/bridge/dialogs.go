@@ -7,6 +7,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -27,7 +28,9 @@ func (b *Bridge) handleShowInfo(msg Message) Response {
 		}
 	}
 
-	dialog.ShowInformation(title, message, win)
+	fyne.Do(func() {
+		dialog.ShowInformation(title, message, win)
+	})
 
 	return Response{
 		ID:      msg.ID,
@@ -52,7 +55,9 @@ func (b *Bridge) handleShowError(msg Message) Response {
 		}
 	}
 
-	dialog.ShowError(fmt.Errorf("%s", message), win)
+	fyne.Do(func() {
+		dialog.ShowError(fmt.Errorf("%s", message), win)
+	})
 
 	return Response{
 		ID:      msg.ID,
@@ -78,12 +83,14 @@ func (b *Bridge) handleShowConfirm(msg Message) Response {
 		}
 	}
 
-	dialog.ShowConfirm(title, message, func(confirmed bool) {
-		b.sendEvent(Event{
-			Type: "callback",
-			Data: map[string]interface{}{"callbackId": callbackID, "confirmed": confirmed},
-		})
-	}, win)
+	fyne.Do(func() {
+		dialog.ShowConfirm(title, message, func(confirmed bool) {
+			b.sendEvent(Event{
+				Type: "callback",
+				Data: map[string]interface{}{"callbackId": callbackID, "confirmed": confirmed},
+			})
+		}, win)
+	})
 
 	return Response{
 		ID:      msg.ID,
@@ -107,22 +114,24 @@ func (b *Bridge) handleShowFileOpen(msg Message) Response {
 		}
 	}
 
-	dialog.ShowFileOpen(func(reader fyne.URIReadCloser, err error) {
-		var filePath string
-		if reader != nil {
-			filePath = reader.URI().Path()
-			reader.Close()
-		}
+	fyne.Do(func() {
+		dialog.ShowFileOpen(func(reader fyne.URIReadCloser, err error) {
+			var filePath string
+			if reader != nil {
+				filePath = reader.URI().Path()
+				reader.Close()
+			}
 
-		b.sendEvent(Event{
-			Type: "callback",
-			Data: map[string]interface{}{
-				"callbackId": callbackID,
-				"filePath":   filePath,
-				"error":      err != nil,
-			},
-		})
-	}, win)
+			b.sendEvent(Event{
+				Type: "callback",
+				Data: map[string]interface{}{
+					"callbackId": callbackID,
+					"filePath":   filePath,
+					"error":      err != nil,
+				},
+			})
+		}, win)
+	})
 
 	return Response{
 		ID:      msg.ID,
@@ -133,7 +142,7 @@ func (b *Bridge) handleShowFileOpen(msg Message) Response {
 func (b *Bridge) handleShowFileSave(msg Message) Response {
 	windowID := msg.Payload["windowId"].(string)
 	callbackID := msg.Payload["callbackId"].(string)
-	fileName, _ := msg.Payload["fileName"].(string)
+	_, _ = msg.Payload["fileName"].(string)
 
 	b.mu.RLock()
 	win, exists := b.windows[windowID]
@@ -147,28 +156,24 @@ func (b *Bridge) handleShowFileSave(msg Message) Response {
 		}
 	}
 
-	dialog.ShowFileSave(func(writer fyne.URIWriteCloser, err error) {
-		var filePath string
-		if writer != nil {
-			filePath = writer.URI().Path()
-			writer.Close()
-		}
+	fyne.Do(func() {
+		dialog.ShowFileSave(func(writer fyne.URIWriteCloser, err error) {
+			var filePath string
+			if writer != nil {
+				filePath = writer.URI().Path()
+				writer.Close()
+			}
 
-		b.sendEvent(Event{
-			Type: "callback",
-			Data: map[string]interface{}{
-				"callbackId": callbackID,
-				"filePath":   filePath,
-				"error":      err != nil,
-			},
-		})
-	}, win)
-
-	// Set default filename if provided
-	if fileName != "" {
-		// Note: Fyne doesn't have a direct API to set default filename in ShowFileSave
-		// This would need to be enhanced with NewFileSave and SetFileName
-	}
+			b.sendEvent(Event{
+				Type: "callback",
+				Data: map[string]interface{}{
+					"callbackId": callbackID,
+					"filePath":   filePath,
+					"error":      err != nil,
+				},
+			})
+		}, win)
+	})
 
 	return Response{
 		ID:      msg.ID,
@@ -192,21 +197,23 @@ func (b *Bridge) handleShowFolderOpen(msg Message) Response {
 		}
 	}
 
-	dialog.ShowFolderOpen(func(uri fyne.ListableURI, err error) {
-		var folderPath string
-		if uri != nil {
-			folderPath = uri.Path()
-		}
+	fyne.Do(func() {
+		dialog.ShowFolderOpen(func(uri fyne.ListableURI, err error) {
+			var folderPath string
+			if uri != nil {
+				folderPath = uri.Path()
+			}
 
-		b.sendEvent(Event{
-			Type: "callback",
-			Data: map[string]interface{}{
-				"callbackId": callbackID,
-				"folderPath": folderPath,
-				"error":      err != nil,
-			},
-		})
-	}, win)
+			b.sendEvent(Event{
+				Type: "callback",
+				Data: map[string]interface{}{
+					"callbackId": callbackID,
+					"folderPath": folderPath,
+					"error":      err != nil,
+				},
+			})
+		}, win)
+	})
 
 	return Response{
 		ID:      msg.ID,
@@ -221,6 +228,8 @@ func (b *Bridge) handleShowForm(msg Message) Response {
 	dismissText := msg.Payload["dismissText"].(string)
 	callbackID := msg.Payload["callbackId"].(string)
 	fieldsRaw := msg.Payload["fields"].([]interface{})
+	confirmImportance, _ := msg.Payload["confirmImportance"].(string)
+	dismissImportance, _ := msg.Payload["dismissImportance"].(string)
 
 	b.mu.RLock()
 	win, exists := b.windows[windowID]
@@ -296,11 +305,8 @@ func (b *Bridge) handleShowForm(msg Message) Response {
 		formItems = append(formItems, formItem)
 	}
 
-	// Show the form dialog
-	dialog.ShowForm(title, confirmText, dismissText, formItems, func(submitted bool) {
-		// Collect values from all fields
+	collectValues := func(submitted bool) {
 		values := make(map[string]interface{})
-
 		if submitted {
 			for name, w := range entryWidgets {
 				switch typedWidget := w.(type) {
@@ -313,7 +319,6 @@ func (b *Bridge) handleShowForm(msg Message) Response {
 				}
 			}
 		}
-
 		b.sendEvent(Event{
 			Type: "callback",
 			Data: map[string]interface{}{
@@ -322,7 +327,47 @@ func (b *Bridge) handleShowForm(msg Message) Response {
 				"values":     values,
 			},
 		})
-	}, win)
+	}
+
+	// If button importance is specified, build a custom dialog with styled buttons
+	if confirmImportance != "" || dismissImportance != "" {
+		fyne.Do(func() {
+			form := widget.NewForm(formItems...)
+
+			// Give multiline entries a reasonable minimum size
+			for _, w := range entryWidgets {
+				if mle, ok := w.(*widget.Entry); ok && mle.MultiLine {
+					mle.SetMinRowsVisible(6)
+				}
+			}
+
+			var d *dialog.CustomDialog
+			confirmBtn := widget.NewButton(confirmText, func() {
+				d.Hide()
+				collectValues(true)
+			})
+			confirmBtn.Importance = importanceFromString(confirmImportance)
+
+			dismissBtn := widget.NewButton(dismissText, func() {
+				d.Hide()
+				collectValues(false)
+			})
+			dismissBtn.Importance = importanceFromString(dismissImportance)
+
+			buttons := container.NewHBox(dismissBtn, layout.NewSpacer(), confirmBtn)
+			content := container.NewVBox(form, buttons)
+			d = dialog.NewCustomWithoutButtons(title, content, win)
+			d.Resize(fyne.NewSize(500, 300))
+			d.Show()
+		})
+	} else {
+		// Standard form dialog
+		fyne.Do(func() {
+			dialog.ShowForm(title, confirmText, dismissText, formItems, func(submitted bool) {
+				collectValues(submitted)
+			}, win)
+		})
+	}
 
 	return Response{
 		ID:      msg.ID,
@@ -363,20 +408,22 @@ func (b *Bridge) handleShowCustom(msg Message) Response {
 		dismissText = "Close"
 	}
 
-	// Create the custom dialog
-	customDialog := dialog.NewCustom(title, dismissText, content, win)
+	// Create and show the custom dialog on the main thread
+	fyne.Do(func() {
+		customDialog := dialog.NewCustom(title, dismissText, content, win)
 
-	// Set callback for when dialog is closed
-	if hasCallback {
-		customDialog.SetOnClosed(func() {
-			b.sendEvent(Event{
-				Type: "callback",
-				Data: map[string]interface{}{"callbackId": callbackID, "closed": true},
+		// Set callback for when dialog is closed
+		if hasCallback {
+			customDialog.SetOnClosed(func() {
+				b.sendEvent(Event{
+					Type: "callback",
+					Data: map[string]interface{}{"callbackId": callbackID, "closed": true},
+				})
 			})
-		})
-	}
+		}
 
-	customDialog.Show()
+		customDialog.Show()
+	})
 
 	return Response{
 		ID:      msg.ID,
@@ -421,15 +468,17 @@ func (b *Bridge) handleShowCustomConfirm(msg Message) Response {
 		dismissText = "Cancel"
 	}
 
-	// Create the custom confirm dialog
-	customDialog := dialog.NewCustomConfirm(title, confirmText, dismissText, content, func(confirmed bool) {
-		b.sendEvent(Event{
-			Type: "callback",
-			Data: map[string]interface{}{"callbackId": callbackID, "confirmed": confirmed},
-		})
-	}, win)
+	// Create and show the custom confirm dialog on the main thread
+	fyne.Do(func() {
+		customDialog := dialog.NewCustomConfirm(title, confirmText, dismissText, content, func(confirmed bool) {
+			b.sendEvent(Event{
+				Type: "callback",
+				Data: map[string]interface{}{"callbackId": callbackID, "confirmed": confirmed},
+			})
+		}, win)
 
-	customDialog.Show()
+		customDialog.Show()
+	})
 
 	return Response{
 		ID:      msg.ID,
@@ -477,32 +526,34 @@ func (b *Bridge) handleShowProgressDialog(msg Message) Response {
 		progressWidget,
 	)
 
-	d := dialog.NewCustom(title, "Cancel", content, win)
-	d.SetOnClosed(func() {
-		// Clean up the dialog reference
+	fyne.DoAndWait(func() {
+		d := dialog.NewCustom(title, "Cancel", content, win)
+		d.SetOnClosed(func() {
+			// Clean up the dialog reference
+			b.mu.Lock()
+			delete(b.progressDialogs, dialogID)
+			b.mu.Unlock()
+
+			// Send callback if provided
+			if callbackID != "" {
+				b.sendEvent(Event{
+					Type: "callback",
+					Data: map[string]interface{}{"callbackId": callbackID, "cancelled": true},
+				})
+			}
+		})
+
+		// Store the dialog info
 		b.mu.Lock()
-		delete(b.progressDialogs, dialogID)
+		b.progressDialogs[dialogID] = &ProgressDialogInfo{
+			Dialog:      d,
+			ProgressBar: progressBar,
+			IsInfinite:  infinite,
+		}
 		b.mu.Unlock()
 
-		// Send callback if provided
-		if callbackID != "" {
-			b.sendEvent(Event{
-				Type: "callback",
-				Data: map[string]interface{}{"callbackId": callbackID, "cancelled": true},
-			})
-		}
+		d.Show()
 	})
-
-	// Store the dialog info
-	b.mu.Lock()
-	b.progressDialogs[dialogID] = &ProgressDialogInfo{
-		Dialog:      d,
-		ProgressBar: progressBar,
-		IsInfinite:  infinite,
-	}
-	b.mu.Unlock()
-
-	d.Show()
 
 	return Response{
 		ID:      msg.ID,
@@ -527,21 +578,15 @@ func (b *Bridge) handleUpdateProgressDialog(msg Message) Response {
 		}
 	}
 
-	// Update the progress bar value (only for non-infinite progress bars with valid reference)
-	if info.ProgressBar != nil {
-		info.ProgressBar.SetValue(value)
-	}
-
-	// Update the message label if a new message is provided
-	if hasMessage {
-		// Get the dialog content and update the label
-		if d, ok := info.Dialog.(*dialog.CustomDialog); ok {
-			// Access the content through the dialog
-			_ = d // The label is embedded in the content, but we can't easily update it
-			// For now, just note that the message update is requested
-			_ = newMessage
+	// Update the progress bar value on the main thread
+	fyne.Do(func() {
+		if info.ProgressBar != nil {
+			info.ProgressBar.SetValue(value)
 		}
-	}
+	})
+
+	_ = hasMessage
+	_ = newMessage
 
 	return Response{
 		ID:      msg.ID,
@@ -564,10 +609,12 @@ func (b *Bridge) handleHideProgressDialog(msg Message) Response {
 		}
 	}
 
-	// Hide/close the dialog
-	if d, ok := info.Dialog.(*dialog.CustomDialog); ok {
-		d.Hide()
-	}
+	// Hide/close the dialog on the main thread
+	fyne.DoAndWait(func() {
+		if d, ok := info.Dialog.(*dialog.CustomDialog); ok {
+			d.Hide()
+		}
+	})
 
 	// Clean up
 	b.mu.Lock()
@@ -680,16 +727,18 @@ func (b *Bridge) handleShowEntryDialog(msg Message) Response {
 		}
 	}
 
-	dialog.ShowEntryDialog(title, message, func(text string) {
-		b.sendEvent(Event{
-			Type: "callback",
-			Data: map[string]interface{}{
-				"callbackId": callbackID,
-				"text":       text,
-				"cancelled":  text == "",
-			},
-		})
-	}, win)
+	fyne.Do(func() {
+		dialog.ShowEntryDialog(title, message, func(text string) {
+			b.sendEvent(Event{
+				Type: "callback",
+				Data: map[string]interface{}{
+					"callbackId": callbackID,
+					"text":       text,
+					"cancelled":  text == "",
+				},
+			})
+		}, win)
+	})
 
 	return Response{
 		ID:      msg.ID,
@@ -724,18 +773,20 @@ func (b *Bridge) handleShowCustomWithoutButtons(msg Message) Response {
 		}
 	}
 
-	// Create a custom dialog without buttons using NewCustomWithoutButtons
-	customDialog := dialog.NewCustomWithoutButtons(title, content, win)
+	// Create and show the custom dialog on the main thread
+	fyne.DoAndWait(func() {
+		customDialog := dialog.NewCustomWithoutButtons(title, content, win)
 
-	// Store the dialog for later hiding
-	b.mu.Lock()
-	if b.customDialogs == nil {
-		b.customDialogs = make(map[string]interface{})
-	}
-	b.customDialogs[dialogID] = customDialog
-	b.mu.Unlock()
+		// Store the dialog for later hiding
+		b.mu.Lock()
+		if b.customDialogs == nil {
+			b.customDialogs = make(map[string]interface{})
+		}
+		b.customDialogs[dialogID] = customDialog
+		b.mu.Unlock()
 
-	customDialog.Show()
+		customDialog.Show()
+	})
 
 	return Response{
 		ID:      msg.ID,
@@ -758,9 +809,11 @@ func (b *Bridge) handleHideCustomDialog(msg Message) Response {
 		}
 	}
 
-	if customDialog, ok := d.(*dialog.CustomDialog); ok {
-		customDialog.Hide()
-	}
+	fyne.DoAndWait(func() {
+		if customDialog, ok := d.(*dialog.CustomDialog); ok {
+			customDialog.Hide()
+		}
+	})
 
 	// Clean up
 	b.mu.Lock()
@@ -911,22 +964,30 @@ func (b *Bridge) handleDismissActiveDialog(msg Message) Response {
 		}
 	}
 
-	// Get the top overlay
-	topOverlay := win.Canvas().Overlays().Top()
-	if topOverlay == nil {
+	var noDialog bool
+	fyne.DoAndWait(func() {
+		// Get the top overlay
+		topOverlay := win.Canvas().Overlays().Top()
+		if topOverlay == nil {
+			noDialog = true
+			return
+		}
+
+		// Try to find and tap a dismiss/OK button in the overlay
+		dismissed := b.tapDialogButton(topOverlay, []string{"OK", "Close", "Dismiss", "Cancel"})
+
+		if !dismissed {
+			// Fallback: remove the overlay directly
+			win.Canvas().Overlays().Remove(topOverlay)
+		}
+	})
+
+	if noDialog {
 		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "No active dialog",
 		}
-	}
-
-	// Try to find and tap a dismiss/OK button in the overlay
-	dismissed := b.tapDialogButton(topOverlay, []string{"OK", "Close", "Dismiss", "Cancel"})
-
-	if !dismissed {
-		// Fallback: remove the overlay directly
-		win.Canvas().Overlays().Remove(topOverlay)
 	}
 
 	return Response{

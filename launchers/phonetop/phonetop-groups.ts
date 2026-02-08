@@ -80,6 +80,26 @@ export const CATEGORY_CONFIG: Record<string, { displayName: string; icon: string
     displayName: 'Development',
     icon: `<svg viewBox="0 0 64 64" fill="none" stroke="#666" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20l-12 12 12 12M44 20l12 12-12 12M38 12l-12 40"/></svg>`
   },
+  'internet': {
+    displayName: 'Internet',
+    icon: `<svg viewBox="0 0 64 64" fill="none" stroke="#666" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="32" cy="32" r="24"/><ellipse cx="32" cy="32" rx="12" ry="24"/><path d="M8 32h48M10 20h44M10 44h44"/></svg>`
+  },
+  'communication': {
+    displayName: 'Communication',
+    icon: `<svg viewBox="0 0 64 64" fill="none" stroke="#666" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 16h48v28H28l-12 8v-8H8z" fill="#444"/><circle cx="24" cy="30" r="3" fill="#666"/><circle cx="36" cy="30" r="3" fill="#666"/></svg>`
+  },
+  'finance': {
+    displayName: 'Finance',
+    icon: `<svg viewBox="0 0 64 64" fill="none" stroke="#666" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="32" cy="32" r="24" fill="#444"/><path d="M32 16v32M24 24h12c4 0 4 8 0 8H24h14c4 0 4 8 0 8H24" stroke="#999"/></svg>`
+  },
+  'network': {
+    displayName: 'Network',
+    icon: `<svg viewBox="0 0 64 64" fill="none" stroke="#666" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="32" cy="16" r="6" fill="#444"/><circle cx="16" cy="48" r="6" fill="#444"/><circle cx="48" cy="48" r="6" fill="#444"/><path d="M32 22v10M26 42l-4-10M38 42l4-10"/></svg>`
+  },
+  'reference': {
+    displayName: 'Reference',
+    icon: `<svg viewBox="0 0 64 64" fill="none" stroke="#666" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="12" y="8" width="40" height="48" rx="4" fill="#444"/><path d="M20 20h24M20 30h20M20 40h16" stroke="#999"/></svg>`
+  },
   'native': {
     displayName: 'Native',
     icon: `<svg viewBox="0 0 64 64" fill="none" stroke="#666" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="48" height="48" rx="4" fill="#444"/><path d="M20 32h24M32 20v24" stroke="#999" stroke-width="2"/><circle cx="20" cy="20" r="3" fill="#81C784"/></svg>`
@@ -128,7 +148,7 @@ export class FolderManager {
     const uncategorized: GridIcon[] = [];
 
     for (const icon of icons) {
-      const category = icon.metadata.category;
+      const category = icon.metadata.category?.toLowerCase();
       if (category && CATEGORY_CONFIG[category]) {
         if (!appsByCategory.has(category)) {
           appsByCategory.set(category, []);

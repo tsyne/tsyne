@@ -237,8 +237,7 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 	// Upload texture data and bind to sampler uniforms
 	textureUnit := 0
 	for texName, texData := range shader.GetTextures() {
-		if textureUnit >= 8 {
-			log.Printf("[drawShader] Warning: too many textures (max 8 for regular textures), skipping %s", texName)
+		if textureUnit >= 16 {
 			break
 		}
 
@@ -577,9 +576,6 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 
 	// Process render command queue (immediate-mode: set uniform → draw → set uniform → draw)
 	renderCommands := shader.GetRenderCommands()
-	if shaderDebug {
-		log.Printf("[drawShader] Got %d render commands", len(renderCommands))
-	}
 	if len(renderCommands) > 0 {
 		// Set up GL state for 3D rendering (three.js style)
 		p.ctx.Enable(depthTest)

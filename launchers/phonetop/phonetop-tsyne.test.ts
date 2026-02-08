@@ -37,7 +37,7 @@ function groupAppsByCategory(apps: AppMetadata[]): Map<string, AppMetadata[]> {
   const groups = new Map<string, AppMetadata[]>();
 
   for (const app of apps) {
-    const category = app.category || 'uncategorized';
+    const category = (app.category || 'uncategorized').toLowerCase();
     if (!groups.has(category)) {
       groups.set(category, []);
     }
@@ -81,7 +81,7 @@ describe('PhoneTop App Launcher', () => {
     await testApp.run();
 
     // Check for known category folders
-    const knownCategories = ['utilities', 'graphics', 'games', 'media', 'phone', 'system', 'fun', 'productivity', 'creativity', 'development'];
+    const knownCategories = ['utilities', 'graphics', 'games', 'media', 'phone', 'system', 'fun', 'productivity', 'creativity', 'development', 'internet'];
     const apps = getAppList();
     const groups = groupAppsByCategory(apps);
 
@@ -140,7 +140,7 @@ describe('PhoneTop App Launch Tests', () => {
         await testApp.run();
 
         // Find which folder contains this app (if categorized)
-        const category = appMeta.category;
+        const category = appMeta.category?.toLowerCase();
 
         if (category) {
           // Open the folder first

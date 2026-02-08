@@ -174,8 +174,15 @@ export class AppLauncher {
         return win;
       };
 
-      // Build argument array based on @tsyne-app:args metadata (poor man's reflection)
-      // 'app' now maps to sandboxedApp, not ctx.app
+      // Build argument array based on @tsyne-app:args metadata (poor man's reflection).
+      // 'app' now maps to sandboxedApp, not ctx.app.
+      //
+      // IoC CONTRACT: This argMap is the composition root. It must NOT be extracted
+      // into a public/importable service locator. Apps receive dependencies via
+      // constructor injection only — they must never be able to require() this
+      // registry and pull dependencies on demand. When sandbox-runtime.ts (vm /
+      // isolated-vm) is enabled, the module boundary enforces this; until then,
+      // it's a convention enforced by code review.
       const argMap: Record<string, any> = {
         'app': sandboxedApp,
         'resources': scopedResources,
@@ -273,6 +280,10 @@ export class AppLauncher {
           } else if (argName === 'modem') {
             // Modem is phone-only, provide NotAvailable
             argMap['modem'] = { isAvailable: () => false, getUnavailableReason: () => 'Modem is not available on desktop' };
+          } else if (argName === 'pouchdb') {
+            const PouchDB = require('pouchdb');
+            const dbPath = require('path').join(require('os').homedir(), '.tsyne', 'data', metadata.name.toLowerCase().replace(/\s+/g, '-'));
+            argMap['pouchdb'] = new PouchDB(dbPath);
           } else if (argName === 'win') {
             // Apps that require 'win' expect someone else to create the window
             // This is not supported in desktop mode - they should use a.window() instead

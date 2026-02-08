@@ -25,7 +25,9 @@
  */
 
 import { app, resolveTransport , standaloneShutdownStrategy } from 'tsyne';
-import type { App, Window, ColorCell } from 'tsyne';
+import type { App, Window } from 'tsyne';
+import { cosyne, enableEventHandling, refreshAllCosyneContexts } from 'cosyne';
+import type { CosyneContext } from 'cosyne';
 
 // ============================================================================
 // Constants
@@ -35,6 +37,21 @@ const GRID_W = 5;
 const GRID_H = 5;
 const TILE_COUNT = GRID_W * GRID_H;
 const BLANK = TILE_COUNT - 1;
+
+// Layout
+const TILE_SIZE = 64;
+const TILE_GAP = 3;
+const TILE_RADIUS = 6;
+const CANVAS_PAD = 8;
+const GRID_PX = GRID_W * (TILE_SIZE + TILE_GAP) - TILE_GAP;
+const CANVAS_W = GRID_PX + CANVAS_PAD * 2;
+const CANVAS_H = GRID_PX + CANVAS_PAD * 2;
+
+// Colors
+const TILE_COLOR = '#4488CC';
+const BLANK_COLOR = '#444444';
+const BG_COLOR = '#222222';
+const TEXT_COLOR = '#FFFFFF';
 
 // ============================================================================
 // Game Logic
@@ -109,20 +126,32 @@ export class SliderPuzzle {
 }
 
 // ============================================================================
-// UI
+// UI (Cosyne canvas)
 // ============================================================================
 
 export class SliderPuzzleUI {
   private puzzle = new SliderPuzzle();
-  private cells: ColorCell[] = [];
   private statusLabel: any = null;
   private a: App;
   private win: Window | null = null;
 
   constructor(a: App) {
     this.a = a;
-    this.puzzle.setOnUpdate(() => this.updateDisplay());
+    this.puzzle.setOnUpdate(() => {
+      refreshAllCosyneContexts();
+      this.updateStatus();
+    });
   }
+
+  getPuzzle(): SliderPuzzle { return this.puzzle; }
+
+  private tileFill = (i: number): string => {
+    return this.puzzle.getValue(i) === BLANK ? BLANK_COLOR : TILE_COLOR;
+  };
+
+  private tileLabel = (i: number): string => {
+    return this.puzzle.getLabel(this.puzzle.getValue(i));
+  };
 
   setupWindow = (win: Window): void => {
     this.win = win;
@@ -139,6 +168,36 @@ export class SliderPuzzleUI {
     ]);
   };
 
+  private buildGrid(c: CosyneContext): void {
+    // Background
+    c.rect(0, 0, CANVAS_W, CANVAS_H, { fillColor: BG_COLOR, cornerRadius: 8 });
+
+    for (let row = 0; row < GRID_H; row++) {
+      for (let col = 0; col < GRID_W; col++) {
+        const i = row * GRID_W + col;
+        const x = CANVAS_PAD + col * (TILE_SIZE + TILE_GAP);
+        const y = CANVAS_PAD + row * (TILE_SIZE + TILE_GAP);
+
+        // Tile background
+        c.rect(x, y, TILE_SIZE, TILE_SIZE, {
+          fillColor: TILE_COLOR,
+          cornerRadius: TILE_RADIUS,
+        })
+          .withId(`tile-${i}`)
+          .bindFill(() => this.tileFill(i))
+          .onClick(() => { this.puzzle.tryMove(i); });
+
+        // Tile letter (centered in tile)
+        c.text(x + TILE_SIZE / 2 - 8, y + TILE_SIZE / 2 - 10, '', {
+          fontSize: 22,
+          fillColor: TEXT_COLOR,
+        })
+          .bindText(() => this.tileLabel(i))
+          .passthrough();
+      }
+    }
+  }
+
   buildContent = (): void => {
     this.a.vbox(() => {
       this.a.hbox(() => {
@@ -148,40 +207,28 @@ export class SliderPuzzleUI {
 
       this.a.separator();
 
-      this.a.grid(GRID_W, () => {
-        for (let i = 0; i < TILE_COUNT; i++) {
-          const v = this.puzzle.getValue(i);
-          const cell = this.a.colorCell({
-            width: 60, height: 60,
-            text: this.puzzle.getLabel(v),
-            fillColor: v === BLANK ? '#666666' : '#4488CC',
-            textColor: '#FFFFFF',
-            borderColor: '#333333',
-            borderWidth: 2,
-            centerText: true,
-            onClick: () => this.puzzle.tryMove(i),
-          }).withId(`tile-${i}`);
-          this.cells.push(cell);
-        }
-      }, { cellSize: 60, spacing: 2 });
+      this.a.canvasStack(() => {
+        const ctx = cosyne(this.a, (c) => {
+          this.buildGrid(c);
+        });
+        enableEventHandling(ctx, this.a, { width: CANVAS_W, height: CANVAS_H });
+      });
 
       this.a.separator();
       this.statusLabel = this.a.label(' ').withId('statusLabel');
     });
   };
 
-  private updateDisplay = async (): Promise<void> => {
-    for (let i = 0; i < TILE_COUNT; i++) {
-      const v = this.puzzle.getValue(i);
-      await this.cells[i]?.setText(this.puzzle.getLabel(v));
-      await this.cells[i]?.setFillColor(v === BLANK ? '#666666' : '#4488CC');
-    }
+  private updateStatus = async (): Promise<void> => {
     if (this.statusLabel) {
       await this.statusLabel.setText(this.puzzle.isSolved() ? 'SOLVED!' : ' ');
     }
   };
 
-  initialize = async (): Promise<void> => { await this.updateDisplay(); };
+  initialize = async (): Promise<void> => {
+    refreshAllCosyneContexts();
+    await this.updateStatus();
+  };
 }
 
 // ============================================================================

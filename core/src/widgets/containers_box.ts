@@ -1,6 +1,101 @@
 import { Context } from '../context';
 import { refreshAllBindings, registerGlobalBinding } from './base';
 
+// ============================================================================
+// Shared container interaction helpers
+// These bridge commands work on any Fyne CanvasObject by widgetId,
+// including containers (VBox, HBox, Stack) — not just Widget subclasses.
+// ============================================================================
+
+interface HasCtxAndId { ctx: Context; id: string; }
+
+function _onMouseIn<T extends HasCtxAndId>(self: T, callback: (event: { position: { x: number, y: number } }) => void): T {
+  const callbackId = self.ctx.generateId('callback');
+  self.ctx.bridge.registerEventHandler(callbackId, (data: unknown) => {
+    callback(data as { position: { x: number, y: number } });
+  });
+  self.ctx.bridge.send('setWidgetHoverable', {
+    widgetId: self.id,
+    onMouseInCallbackId: callbackId,
+    enabled: true
+  });
+  return self;
+}
+
+function _onMouseOut<T extends HasCtxAndId>(self: T, callback: () => void): T {
+  const callbackId = self.ctx.generateId('callback');
+  self.ctx.bridge.registerEventHandler(callbackId, callback);
+  self.ctx.bridge.send('setWidgetHoverable', {
+    widgetId: self.id,
+    onMouseOutCallbackId: callbackId,
+    enabled: true
+  });
+  return self;
+}
+
+function _makeDraggable<T extends HasCtxAndId>(self: T, options: {
+  dragData: string;
+  dragLabel?: string;
+  onDragStart?: () => void;
+  onDragEnd?: () => void;
+  onDoubleTap?: (dragData: string) => void;
+  onTap?: (dragData: string) => void;
+}): T {
+  const payload: any = { widgetId: self.id, dragData: options.dragData };
+  if (options.dragLabel) payload.dragLabel = options.dragLabel;
+  if (options.onDragStart) {
+    const callbackId = self.ctx.generateId('callback');
+    payload.onDragStartCallbackId = callbackId;
+    self.ctx.bridge.registerEventHandler(callbackId, () => options.onDragStart!());
+  }
+  if (options.onDragEnd) {
+    const callbackId = self.ctx.generateId('callback');
+    payload.onDragEndCallbackId = callbackId;
+    self.ctx.bridge.registerEventHandler(callbackId, () => options.onDragEnd!());
+  }
+  if (options.onDoubleTap) {
+    const callbackId = self.ctx.generateId('callback');
+    payload.onDoubleTapCallbackId = callbackId;
+    self.ctx.bridge.registerEventHandler(callbackId, (data: any) => options.onDoubleTap!(data.dragData));
+  }
+  if (options.onTap) {
+    const callbackId = self.ctx.generateId('callback');
+    payload.onTapCallbackId = callbackId;
+    self.ctx.bridge.registerEventHandler(callbackId, (data: any) => options.onTap!(data.dragData));
+  }
+  self.ctx.bridge.send('setDraggable', payload);
+  return self;
+}
+
+function _makeDroppable<T extends HasCtxAndId>(self: T, options: {
+  onDrop?: (dragData: string, sourceId: string, dropIndex: number) => void;
+  onDragEnter?: (dragData: string, sourceId: string) => void;
+  onDragLeave?: () => void;
+}): T {
+  const payload: any = { widgetId: self.id };
+  if (options.onDrop) {
+    const callbackId = self.ctx.generateId('callback');
+    payload.onDropCallbackId = callbackId;
+    self.ctx.bridge.registerEventHandler(callbackId, (data: any) => {
+      options.onDrop!(data.dragData, data.sourceId, data.dropIndex ?? -1);
+    });
+  }
+  if (options.onDragEnter) {
+    const callbackId = self.ctx.generateId('callback');
+    payload.onDragEnterCallbackId = callbackId;
+    self.ctx.bridge.registerEventHandler(callbackId, (data: any) => {
+      options.onDragEnter!(data.dragData, data.sourceId);
+    });
+  }
+  if (options.onDragLeave) {
+    const callbackId = self.ctx.generateId('callback');
+    payload.onDragLeaveCallbackId = callbackId;
+    self.ctx.bridge.registerEventHandler(callbackId, () => options.onDragLeave!());
+  }
+  self.ctx.bridge.send('setDroppable', payload);
+  return self;
+}
+
 /**
  * ModelBoundList - Smart list binding for containers (inspired by AngularJS ng-repeat)
  * Efficiently manages a list of items with intelligent diffing to avoid full rebuilds
@@ -111,7 +206,7 @@ export interface VBoxOptions {
  * VBox container (vertical box layout)
  */
 export class VBox {
-  private ctx: Context;
+  ctx: Context;
   public id: string;
   private visibilityCondition?: () => Promise<void>;
   private childWidgets: any[] = [];
@@ -302,6 +397,11 @@ export class VBox {
     });
     return this;
   }
+
+  onMouseIn(callback: (event: { position: { x: number, y: number } }) => void): this { return _onMouseIn(this, callback); }
+  onMouseOut(callback: () => void): this { return _onMouseOut(this, callback); }
+  makeDraggable(options: { dragData: string; dragLabel?: string; onDragStart?: () => void; onDragEnd?: () => void; onDoubleTap?: (dragData: string) => void; onTap?: (dragData: string) => void }): this { return _makeDraggable(this, options); }
+  makeDroppable(options: { onDrop?: (dragData: string, sourceId: string, dropIndex: number) => void; onDragEnter?: (dragData: string, sourceId: string) => void; onDragLeave?: () => void }): this { return _makeDroppable(this, options); }
 }
 
 /**
@@ -316,7 +416,7 @@ export interface HBoxOptions {
  * HBox container (horizontal box layout)
  */
 export class HBox {
-  private ctx: Context;
+  ctx: Context;
   public id: string;
   private visibilityCondition?: () => Promise<void>;
   private childWidgets: any[] = [];
@@ -488,6 +588,11 @@ export class HBox {
     // Positional args API (backward compatible)
     return new BoundList(this.ctx, this, optionsOrGetItems, renderItem!, onDelete, trackBy);
   }
+
+  onMouseIn(callback: (event: { position: { x: number, y: number } }) => void): this { return _onMouseIn(this, callback); }
+  onMouseOut(callback: () => void): this { return _onMouseOut(this, callback); }
+  makeDraggable(options: { dragData: string; dragLabel?: string; onDragStart?: () => void; onDragEnd?: () => void; onDoubleTap?: (dragData: string) => void; onTap?: (dragData: string) => void }): this { return _makeDraggable(this, options); }
+  makeDroppable(options: { onDrop?: (dragData: string, sourceId: string, dropIndex: number) => void; onDragEnter?: (dragData: string, sourceId: string) => void; onDragLeave?: () => void }): this { return _makeDroppable(this, options); }
 }
 
 /**

@@ -2,12 +2,51 @@ import { Context } from '../context';
 import { AccessibilityOptions, registerGlobalBinding } from './base';
 import { BoundList } from './containers_box';
 
+// Shared container interaction helpers (same bridge commands work on any CanvasObject by ID)
+interface HasCtxAndId { ctx: Context; id: string; }
+
+function _onMouseIn<T extends HasCtxAndId>(self: T, callback: (event: { position: { x: number, y: number } }) => void): T {
+  const callbackId = self.ctx.generateId('callback');
+  self.ctx.bridge.registerEventHandler(callbackId, (data: unknown) => {
+    callback(data as { position: { x: number, y: number } });
+  });
+  self.ctx.bridge.send('setWidgetHoverable', { widgetId: self.id, onMouseInCallbackId: callbackId, enabled: true });
+  return self;
+}
+
+function _onMouseOut<T extends HasCtxAndId>(self: T, callback: () => void): T {
+  const callbackId = self.ctx.generateId('callback');
+  self.ctx.bridge.registerEventHandler(callbackId, callback);
+  self.ctx.bridge.send('setWidgetHoverable', { widgetId: self.id, onMouseOutCallbackId: callbackId, enabled: true });
+  return self;
+}
+
+function _makeDraggable<T extends HasCtxAndId>(self: T, options: { dragData: string; dragLabel?: string; onDragStart?: () => void; onDragEnd?: () => void; onDoubleTap?: (dragData: string) => void; onTap?: (dragData: string) => void }): T {
+  const payload: any = { widgetId: self.id, dragData: options.dragData };
+  if (options.dragLabel) payload.dragLabel = options.dragLabel;
+  if (options.onDragStart) { const cbId = self.ctx.generateId('callback'); payload.onDragStartCallbackId = cbId; self.ctx.bridge.registerEventHandler(cbId, () => options.onDragStart!()); }
+  if (options.onDragEnd) { const cbId = self.ctx.generateId('callback'); payload.onDragEndCallbackId = cbId; self.ctx.bridge.registerEventHandler(cbId, () => options.onDragEnd!()); }
+  if (options.onDoubleTap) { const cbId = self.ctx.generateId('callback'); payload.onDoubleTapCallbackId = cbId; self.ctx.bridge.registerEventHandler(cbId, (data: any) => options.onDoubleTap!(data.dragData)); }
+  if (options.onTap) { const cbId = self.ctx.generateId('callback'); payload.onTapCallbackId = cbId; self.ctx.bridge.registerEventHandler(cbId, (data: any) => options.onTap!(data.dragData)); }
+  self.ctx.bridge.send('setDraggable', payload);
+  return self;
+}
+
+function _makeDroppable<T extends HasCtxAndId>(self: T, options: { onDrop?: (dragData: string, sourceId: string, dropIndex: number) => void; onDragEnter?: (dragData: string, sourceId: string) => void; onDragLeave?: () => void }): T {
+  const payload: any = { widgetId: self.id };
+  if (options.onDrop) { const cbId = self.ctx.generateId('callback'); payload.onDropCallbackId = cbId; self.ctx.bridge.registerEventHandler(cbId, (data: any) => { options.onDrop!(data.dragData, data.sourceId, data.dropIndex ?? -1); }); }
+  if (options.onDragEnter) { const cbId = self.ctx.generateId('callback'); payload.onDragEnterCallbackId = cbId; self.ctx.bridge.registerEventHandler(cbId, (data: any) => { options.onDragEnter!(data.dragData, data.sourceId); }); }
+  if (options.onDragLeave) { const cbId = self.ctx.generateId('callback'); payload.onDragLeaveCallbackId = cbId; self.ctx.bridge.registerEventHandler(cbId, () => options.onDragLeave!()); }
+  self.ctx.bridge.send('setDroppable', payload);
+  return self;
+}
+
 /**
  * Stack container - stacks widgets on top of each other
  * Useful for creating overlapping UI elements
  */
 export class Stack {
-  private ctx: Context;
+  ctx: Context;
   public id: string;
 
   constructor(ctx: Context, builder: () => void) {
@@ -27,6 +66,23 @@ export class Stack {
     ctx.bridge.send('createStack', { id: this.id, childIds });
     ctx.addToCurrentContainer(this.id);
   }
+
+  withId(customId: string): this {
+    const registrationPromise = this.ctx.bridge.send('registerCustomId', {
+      widgetId: this.id,
+      customId
+    }).then(() => {}).catch(err => { console.error('Failed to register custom ID:', err); });
+    this.ctx.trackRegistration(registrationPromise);
+    return this;
+  }
+
+  async hide(): Promise<void> { await this.ctx.bridge.send('hideWidget', { widgetId: this.id }); }
+  async show(): Promise<void> { await this.ctx.bridge.send('showWidget', { widgetId: this.id }); }
+
+  onMouseIn(callback: (event: { position: { x: number, y: number } }) => void): this { return _onMouseIn(this, callback); }
+  onMouseOut(callback: () => void): this { return _onMouseOut(this, callback); }
+  makeDraggable(options: { dragData: string; dragLabel?: string; onDragStart?: () => void; onDragEnd?: () => void; onDoubleTap?: (dragData: string) => void; onTap?: (dragData: string) => void }): this { return _makeDraggable(this, options); }
+  makeDroppable(options: { onDrop?: (dragData: string, sourceId: string, dropIndex: number) => void; onDragEnter?: (dragData: string, sourceId: string) => void; onDragLeave?: () => void }): this { return _makeDroppable(this, options); }
 }
 
 /**

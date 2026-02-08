@@ -437,11 +437,14 @@ export class MinefieldUI {
     const color = getCellTextColor(config);
 
     if (config.state === 'hidden') {
-      // Hidden cell - clickable button
+      // Hidden cell - tap reveals, long-press flags
       this.a
-        .button('', { onClick: () => this.handleCellClick(index, false) }).withId(`cell-${index}`);
+        .button('', {
+          onClick: () => this.handleCellClick(index, false),
+          onLongPress: () => this.handleCellClick(index, true),
+        }).withId(`cell-${index}`);
     } else if (config.state === 'flagged') {
-      // Flagged cell - click to unflag
+      // Flagged cell - tap to unflag (regardless of mode)
       this.a
         .button(text, { onClick: () => this.handleCellClick(index, true) }).withId(`cell-${index}`);
     } else {
@@ -506,7 +509,7 @@ export class MinefieldUI {
       this.a.hbox(() => {
         this.a.button('New Game', { onClick: () => this.newGame() }).withId('newGameBtn');
         this.a.spacer();
-        this.a.label('Long-press to flag', undefined, undefined, undefined, { italic: true });
+        this.a.label('Long-press to flag').withId('flagHintLabel');
       });
     });
   }
@@ -547,6 +550,7 @@ export { MinefieldGame as Game };
 if (require.main === module) {
   const appInstance = app(resolveTransport(), { title: 'Minefield' }, async (a: App) => {
     createMinefieldApp(a);
-  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));    await a.run();
+    await a.run();
   });
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));
 }

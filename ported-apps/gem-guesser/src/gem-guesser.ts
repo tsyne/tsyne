@@ -53,9 +53,14 @@ const GHOST_ALPHA_HEX = '66'; // ~40% opacity suffix
 class GemGuesserGame {
   private game: GameState;
   private statusLabel: any = null;
+  private win: any = null;
 
   constructor(private a: App) {
     this.game = createGameState('easy');
+  }
+
+  setWin(win: any): void {
+    this.win = win;
   }
 
   private getCellFill(index: number): string {
@@ -91,8 +96,9 @@ class GemGuesserGame {
 
   private newGame(difficulty?: Difficulty): void {
     this.game = createGameState(difficulty || this.game.difficulty);
-    refreshAllCosyneContexts();
-    this.updateStatus();
+    if (this.win) {
+      this.win.setContent(this.buildUI());
+    }
   }
 
   private updateStatus(): void {
@@ -138,6 +144,23 @@ class GemGuesserGame {
     const gridOffsetX = COUNT_AREA_W;
     const gridOffsetY = COUNT_AREA_H;
 
+    // Lives display (top-left corner, matching original layout)
+    c.rect(4, 4, COUNT_AREA_W - 8, COUNT_AREA_H - 8, {
+      fillColor: '#2a2a4e',
+      cornerRadius: 8,
+    });
+    c.text(COUNT_AREA_W / 2 - 8, COUNT_AREA_H / 2 - 10, '', {
+      fontSize: 18,
+      fillColor: '#e74c3c',
+    })
+      .bindText(() => `${this.game.lives}`)
+      .bindFill(() => this.game.lives > 1 ? '#e74c3c' : this.game.lives === 1 ? '#f39c12' : '#666666')
+      .passthrough();
+    c.text(COUNT_AREA_W / 2 - 16, COUNT_AREA_H / 2 + 8, 'lives', {
+      fontSize: 9,
+      fillColor: '#888888',
+    }).passthrough();
+
     // Grid background
     c.rect(gridOffsetX, gridOffsetY, GRID_PX, GRID_PX, {
       fillColor: BACKGROUND_COLOR,
@@ -167,15 +190,17 @@ class GemGuesserGame {
       this.buildCountText(c, sequences, x, 2, true);
     }
 
-    // Row counts (right of grid)
+    // Row counts (left of grid, matching original layout)
     const rowCounts = calculateRowCounts(this.game.grid);
     for (let row = 0; row < GRID_SIZE; row++) {
       const sequences = rowCounts[row];
       const y = gridOffsetY + row * CELL_SIZE + CELL_SIZE / 2 - 6;
-      // Row counts go horizontally to the right of the grid
+      // Right-align against the grid edge
+      const totalWidth = sequences.length * 14;
+      const startX = COUNT_AREA_W - 4 - totalWidth;
       let offset = 0;
       for (const seq of sequences) {
-        const tx = gridOffsetX + GRID_PX + 4 + offset;
+        const tx = startX + offset;
         c.text(tx, y, `${seq.count}`, {
           fontSize: 11,
           fillColor: '#000000',
@@ -282,6 +307,7 @@ export function createGemGuesserApp(a: App): void {
       height: CANVAS_H + 140,
     },
     (win: any) => {
+      game.setWin(win);
       win.setContent(game.buildUI());
       win.show();
     }

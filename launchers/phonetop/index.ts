@@ -37,9 +37,12 @@ import {
   PhoneServices,
   MockContactsService,
   MockTelephonyService,
-  MockSMSService
+  MockSMSService,
+  MockClockService,
+  MockNotificationService
 } from '../../phone-apps/services';
 import { MockRecordingService } from '../../phone-apps/audio-recorder/recording-service';
+import { MockBatteryService } from '../../phone-apps/battery/battery-service';
 
 // Build timestamp - updated at bundle time for debugging APK versions
 const BUILD_DATE = new Date();
@@ -503,7 +506,7 @@ class PhoneTop {
     const uncategorizedApps: GridIcon[] = [];
 
     for (const icon of this.icons) {
-      const category = icon.metadata.category;
+      const category = icon.metadata.category?.toLowerCase();
       if (category && CATEGORY_CONFIG[category]) {
         if (!appsByCategory.has(category)) {
           appsByCategory.set(category, []);
@@ -1574,9 +1577,17 @@ class PhoneTop {
       this.a.getContext().setResourceScope(appScope);
       this.a.getContext().setLayoutScale(this.getLayoutScale());
 
-      // Build argument map based on @tsyne-app:args metadata
-      // Services are injected via constructor (IoC) - no service locator
+      // Build argument map based on @tsyne-app:args metadata.
+      // Services are injected via constructor (IoC) - no service locator.
+      //
+      // IoC CONTRACT: This argMap is the composition root. It must NOT be extracted
+      // into a public/importable service locator. Apps receive dependencies via
+      // constructor injection only — they must never be able to require() this
+      // registry and pull dependencies on demand. When sandbox-runtime.ts (vm /
+      // isolated-vm) is enabled, the module boundary enforces this; until then,
+      // it's a convention enforced by code review.
       const mockRecording = new MockRecordingService();
+      const mockBattery = new MockBatteryService();
 
       const argMap: Record<string, any> = {
         'app': this.a,
@@ -1588,7 +1599,18 @@ class PhoneTop {
         'modem': this.services.telephony,  // alias for telephony
         'sms': this.services.sms,
         'recording': mockRecording,
+        'battery': mockBattery,
+        'clock': new MockClockService(),
+        'notifications': new MockNotificationService(),
+        'lifecycle': { requestClose: () => {} },
       };
+
+      // Lazily provide PouchDB if app declares 'pouchdb' arg
+      if (metadata.args.includes('pouchdb') && argMap['pouchdb'] === undefined) {
+        const PouchDB = require('pouchdb');
+        const dbPath = require('path').join(require('os').homedir(), '.tsyne', 'data', metadata.name.toLowerCase().replace(/\s+/g, '-'));
+        argMap['pouchdb'] = new PouchDB(dbPath);
+      }
 
       // Map metadata.args to actual values (default is ['app'])
       const args = (metadata.args || ['app']).map(name => argMap[name]);

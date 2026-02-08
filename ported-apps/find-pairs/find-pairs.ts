@@ -23,8 +23,10 @@
  * @tsyne-app:args app,windowWidth,windowHeight
  */
 
-import { app, resolveTransport , standaloneShutdownStrategy } from 'tsyne';
-import type { App, Window, ColorCell } from 'tsyne';
+import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
+import type { App, Window } from 'tsyne';
+import { cosyne, enableEventHandling, refreshAllCosyneContexts } from 'cosyne';
+import type { CosyneContext } from 'cosyne';
 
 // ============================================================================
 // Constants
@@ -41,6 +43,25 @@ const REVEAL_DELAY = 1000;
 
 type TileState = 'hidden' | 'revealed' | 'matched';
 
+// Layout
+const TILE_SIZE = 52;
+const TILE_GAP = 3;
+const TILE_RADIUS = 6;
+const CANVAS_PAD = 8;
+const GRID_PX_W = GRID_W * (TILE_SIZE + TILE_GAP) - TILE_GAP;
+const GRID_PX_H = GRID_H * (TILE_SIZE + TILE_GAP) - TILE_GAP;
+const CANVAS_W = GRID_PX_W + CANVAS_PAD * 2;
+const CANVAS_H = GRID_PX_H + CANVAS_PAD * 2;
+
+// Colors
+const BG_COLOR = '#1a1a2e';
+const HIDDEN_COLOR = '#555566';
+const REVEALED_COLOR = '#ffffff';
+const MATCHED_COLOR = '#338833';
+const HIDDEN_TEXT_COLOR = '#aaaaaa';
+const REVEALED_TEXT_COLOR = '#000000';
+const MATCHED_TEXT_COLOR = '#ffffff';
+
 // ============================================================================
 // Game Logic
 // ============================================================================
@@ -51,6 +72,7 @@ export class FindPairsGame {
   private score = 0;
   private firstPick: number | null = null;
   private locked = false;
+  private mismatchTimer: ReturnType<typeof setTimeout> | null = null;
   private onUpdate?: () => void;
   private onWin?: () => void;
 
@@ -66,6 +88,7 @@ export class FindPairsGame {
   };
 
   scramble = (): void => {
+    this.clearTimer();
     const chars = this.shuffle([...CHAR_POOL]).slice(0, PAIR_COUNT);
     this.values = this.shuffle([...chars, ...chars]);
     this.states = Array(TILE_COUNT).fill('hidden');
@@ -107,42 +130,72 @@ export class FindPairsGame {
         this.score -= MISMATCH_PENALTY;
         this.locked = true;
         this.onUpdate?.();
-        setTimeout(() => {
-          this.states[this.firstPick!] = 'hidden';
-          this.states[index] = 'hidden';
-          this.firstPick = null;
-          this.locked = false;
-          this.onUpdate?.();
+        this.mismatchTimer = setTimeout(() => {
+          this.mismatchTimer = null;
+          this.hideMismatched();
         }, REVEAL_DELAY);
       }
     }
   };
 
-  peek = (): void => {
-    this.states = this.states.map(() => 'matched');
+  /** For testing: immediately resolve the mismatch timer */
+  flushMismatchTimer = (): void => {
+    if (this.mismatchTimer !== null) {
+      this.clearTimer();
+      this.hideMismatched();
+    }
+  };
+
+  private hideMismatched = (): void => {
+    for (let i = 0; i < TILE_COUNT; i++) {
+      if (this.states[i] === 'revealed') this.states[i] = 'hidden';
+    }
+    this.firstPick = null;
+    this.locked = false;
     this.onUpdate?.();
   };
+
+  private clearTimer = (): void => {
+    if (this.mismatchTimer !== null) {
+      clearTimeout(this.mismatchTimer);
+      this.mismatchTimer = null;
+    }
+  };
+
+  peek = (): void => {
+    this.clearTimer();
+    this.states = this.states.map(() => 'matched');
+    this.firstPick = null;
+    this.locked = false;
+    this.onUpdate?.();
+  };
+
+  cleanup = (): void => { this.clearTimer(); };
 
   setOnUpdate = (cb: () => void): void => { this.onUpdate = cb; };
   setOnWin = (cb: () => void): void => { this.onWin = cb; };
 }
 
 // ============================================================================
-// UI
+// UI (Cosyne canvas)
 // ============================================================================
 
 export class FindPairsUI {
   private game = new FindPairsGame();
-  private cells: ColorCell[] = [];
   private statusLabel: any = null;
   private a: App;
   private win: Window | null = null;
 
   constructor(a: App) {
     this.a = a;
-    this.game.setOnUpdate(() => this.updateDisplay());
+    this.game.setOnUpdate(() => {
+      refreshAllCosyneContexts();
+      this.updateStatus();
+    });
     this.game.setOnWin(() => this.handleWin());
   }
+
+  getPuzzle(): FindPairsGame { return this.game; }
 
   setupWindow = (win: Window): void => {
     this.win = win;
@@ -157,6 +210,54 @@ export class FindPairsUI {
     }]);
   };
 
+  private tileFill = (i: number): string => {
+    const s = this.game.getState(i);
+    if (s === 'matched') return MATCHED_COLOR;
+    if (s === 'revealed') return REVEALED_COLOR;
+    return HIDDEN_COLOR;
+  };
+
+  private tileText = (i: number): string => {
+    const s = this.game.getState(i);
+    if (s === 'hidden') return '?';
+    return this.game.getValue(i);
+  };
+
+  private tileTextColor = (i: number): string => {
+    const s = this.game.getState(i);
+    if (s === 'matched') return MATCHED_TEXT_COLOR;
+    if (s === 'revealed') return REVEALED_TEXT_COLOR;
+    return HIDDEN_TEXT_COLOR;
+  };
+
+  private buildGrid(c: CosyneContext): void {
+    c.rect(0, 0, CANVAS_W, CANVAS_H, { fillColor: BG_COLOR, cornerRadius: 8 });
+
+    for (let row = 0; row < GRID_H; row++) {
+      for (let col = 0; col < GRID_W; col++) {
+        const i = row * GRID_W + col;
+        const x = CANVAS_PAD + col * (TILE_SIZE + TILE_GAP);
+        const y = CANVAS_PAD + row * (TILE_SIZE + TILE_GAP);
+
+        c.rect(x, y, TILE_SIZE, TILE_SIZE, {
+          fillColor: HIDDEN_COLOR,
+          cornerRadius: TILE_RADIUS,
+        })
+          .withId(`tile-${i}`)
+          .bindFill(() => this.tileFill(i))
+          .onClick(() => { this.game.tryClick(i); });
+
+        c.text(x + TILE_SIZE / 2 - 7, y + TILE_SIZE / 2 - 9, '?', {
+          fontSize: 20,
+          fillColor: HIDDEN_TEXT_COLOR,
+        })
+          .bindText(() => this.tileText(i))
+          .bindFill(() => this.tileTextColor(i))
+          .passthrough();
+      }
+    }
+  }
+
   buildContent = (): void => {
     this.a.vbox(() => {
       this.a.hbox(() => {
@@ -166,51 +267,26 @@ export class FindPairsUI {
 
       this.a.separator();
 
-      this.a.grid(GRID_W, () => {
-        for (let i = 0; i < TILE_COUNT; i++) {
-          const cell = this.a.colorCell({
-            width: 50, height: 50,
-            text: '',
-            fillColor: '#666666',
-            textColor: '#FFFFFF',
-            borderColor: '#333333',
-            borderWidth: 1,
-            centerText: true,
-            onClick: () => this.game.tryClick(i),
-          }).withId(`tile-${i}`);
-          this.cells.push(cell);
-        }
-      }, { cellSize: 50, spacing: 2 });
+      this.a.canvasStack(() => {
+        const ctx = cosyne(this.a, (c) => {
+          this.buildGrid(c);
+        });
+        enableEventHandling(ctx, this.a, { width: CANVAS_W, height: CANVAS_H });
+      });
 
       this.a.separator();
       this.statusLabel = this.a.label('Score: 0').withId('statusLabel');
     });
   };
 
-  private updateDisplay = async (): Promise<void> => {
-    for (let i = 0; i < TILE_COUNT; i++) {
-      const state = this.game.getState(i);
-      const value = this.game.getValue(i);
-      const cell = this.cells[i];
-      if (!cell) continue;
-
-      if (state === 'hidden') {
-        await cell.setText('');
-        await cell.setFillColor('#666666');
-      } else if (state === 'revealed') {
-        await cell.setText(value);
-        await cell.setFillColor('#FFFFFF');
-        await cell.setTextColor('#000000');
-      } else {
-        await cell.setText(value);
-        await cell.setFillColor('#44AA44');
-        await cell.setTextColor('#FFFFFF');
-      }
-    }
-
+  private updateStatus = async (): Promise<void> => {
+    if (!this.statusLabel) return;
     const score = this.game.getScore();
-    const status = this.game.isWon() ? `WINNER! Score: ${score}` : `Score: ${score}`;
-    await this.statusLabel?.setText(status);
+    if (this.game.isWon()) {
+      await this.statusLabel.setText(`WINNER! Score: ${score}`);
+    } else {
+      await this.statusLabel.setText(`Score: ${score}`);
+    }
   };
 
   private handleWin = async (): Promise<void> => {
@@ -219,7 +295,14 @@ export class FindPairsUI {
     }
   };
 
-  initialize = async (): Promise<void> => { await this.updateDisplay(); };
+  initialize = async (): Promise<void> => {
+    refreshAllCosyneContexts();
+    await this.updateStatus();
+  };
+
+  cleanup(): void {
+    this.game.cleanup();
+  }
 }
 
 // ============================================================================
@@ -228,9 +311,9 @@ export class FindPairsUI {
 
 export function createFindPairsApp(a: App, windowWidth?: number, windowHeight?: number): FindPairsUI {
   const ui = new FindPairsUI(a);
+  a.registerCleanup(() => ui.cleanup());
 
-  // Always create a window - PhoneTop intercepts this to create a StackPaneAdapter
-  a.window({ title: 'Find Pairs', width: 560, height: 380 }, (win: Window) => {
+  a.window({ title: 'Find Pairs', width: windowWidth ?? 600, height: windowHeight ?? 400 }, (win: Window) => {
     ui.setupWindow(win);
     win.setContent(() => ui.buildContent());
     win.show();
@@ -249,7 +332,8 @@ export { GRID_W, GRID_H, TILE_COUNT, PAIR_COUNT, MATCH_SCORE, MISMATCH_PENALTY }
 if (require.main === module) {
   const appInstance = app(resolveTransport(), { title: 'Find Pairs' }, async (a: App) => {
     const ui = createFindPairsApp(a);
-  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));    await a.run();
+    appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));
+    await a.run();
     await ui.initialize();
   });
 }

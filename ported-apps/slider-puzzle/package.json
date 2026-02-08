@@ -15,6 +15,7 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "tsyne": "workspace:*"
+    "tsyne": "workspace:*",
+    "cosyne": "workspace:*"
   }
 }

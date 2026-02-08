@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"math"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -527,8 +528,19 @@ func (b *Bridge) handleCreateSlider(msg Message) Response {
 	callbackID, hasCallback := msg.Payload["callbackId"].(string)
 
 	slider := widget.NewSlider(min, max)
-	// Auto-calculate step for fine-grained control (100 steps across range)
-	slider.Step = (max - min) / 100
+	// Use explicit step if provided, otherwise auto-calculate
+	if explicitStep, ok := getFloat64(msg.Payload["step"]); ok && explicitStep > 0 {
+		slider.Step = explicitStep
+	} else {
+		// Auto-calculate step: use 1 when min/max are integers (avoids fractional
+		// snapping, e.g. range -180..180 giving step 3.6), otherwise 100 steps.
+		autoStep := (max - min) / 100
+		if min == math.Floor(min) && max == math.Floor(max) && autoStep != math.Floor(autoStep) {
+			slider.Step = 1
+		} else {
+			slider.Step = autoStep
+		}
+	}
 
 	// Set initial value if provided
 	if initialValue, ok := getFloat64(msg.Payload["value"]); ok {

@@ -38,12 +38,15 @@ interface TileSource {
 interface MapViewport {
   center: { lng: number; lat: number };
   zoom: number;
+  width: number;
+  height: number;
 }
 
 // Placeholder class until tsyne exports it
 class TileMapRenderer {
   constructor(_source: TileSource, _options?: { cachePath?: string }) {}
-  async renderToTarget(_target: RenderTarget, _viewport: MapViewport): Promise<void> {}
+  async render(_target: RenderTarget, _viewport: MapViewport): Promise<void> {}
+  clearCache(): void {}
 }
 
 // Placeholder tile sources

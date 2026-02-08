@@ -1,0 +1,11 @@
+{
+  "name": "tsyne-launchers",
+  "version": "0.1.0",
+  "description": "Tsyne launchers - desktop, phone, and tablet environments",
+  "private": true,
+  "dependencies": {
+    "tsyne": "workspace:*",
+    "@resvg/resvg-wasm": "^2.6.2",
+    "pouchdb": "^9.0.0"
+  }
+}

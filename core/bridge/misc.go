@@ -442,6 +442,8 @@ func importanceFromString(importance string) widget.Importance {
 		return widget.MediumImportance
 	case "high":
 		return widget.HighImportance
+	case "danger":
+		return widget.DangerImportance
 	case "warning":
 		return widget.WarningImportance
 	case "success":

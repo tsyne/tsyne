@@ -176,8 +176,7 @@ describe('FindPairsGame', () => {
       expect(game.isLocked()).toBe(true);
     });
 
-    test('mismatch hides tiles after delay', async () => {
-      jest.useFakeTimers();
+    test('mismatch hides tiles after flush', () => {
       const game = new FindPairsGame();
       const val0 = game.getValue(0);
       let mismatchIdx = -1;
@@ -193,12 +192,12 @@ describe('FindPairsGame', () => {
       expect(game.getState(0)).toBe('revealed');
       expect(game.getState(mismatchIdx)).toBe('revealed');
 
-      jest.advanceTimersByTime(1000);
+      game.flushMismatchTimer();
 
       expect(game.getState(0)).toBe('hidden');
       expect(game.getState(mismatchIdx)).toBe('hidden');
       expect(game.isLocked()).toBe(false);
-      jest.useRealTimers();
+      game.cleanup();
     });
 
     test('cannot click while locked', () => {

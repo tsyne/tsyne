@@ -11,6 +11,8 @@ export interface ButtonOptions {
   textSize?: number;
   /** Click handler - can also be set via fluent .onClick() */
   onClick?: (btn: Button) => void | Promise<void>;
+  /** Long-press handler (500ms hold). Suppresses onClick when fired. */
+  onLongPress?: (btn: Button) => void | Promise<void>;
 }
 
 /**
@@ -67,17 +69,54 @@ export class Button extends Widget {
       payload.textSize = options.textSize;
     }
 
+    // Long-press state (shared between onClick wrapper and timer callbacks)
+    let longPressFired = false;
+    let longPressTimer: ReturnType<typeof setTimeout> | null = null;
+
     // Handle onClick at instantiation time (consistent with Entry, Checkbox, etc.)
     if (options.onClick) {
       const callbackId = ctx.generateId('callback');
       payload.callbackId = callbackId;
       ctx.bridge.registerEventHandler(callbackId, async () => {
+        if (longPressFired) {
+          longPressFired = false;
+          return; // Suppress click after long-press
+        }
         await options.onClick!(this);
       });
     }
 
     ctx.bridge.send('createButton', payload);
     ctx.addToCurrentContainer(id, this);
+
+    // Set up long-press via mouseDown/mouseUp (requires setWidgetHoverable)
+    if (options.onLongPress) {
+      const mouseDownId = ctx.generateId('callback');
+      const mouseUpId = ctx.generateId('callback');
+
+      ctx.bridge.registerEventHandler(mouseDownId, () => {
+        longPressFired = false;
+        longPressTimer = setTimeout(async () => {
+          longPressTimer = null;
+          longPressFired = true;
+          await options.onLongPress!(this);
+        }, 500);
+      });
+
+      ctx.bridge.registerEventHandler(mouseUpId, () => {
+        if (longPressTimer !== null) {
+          clearTimeout(longPressTimer);
+          longPressTimer = null;
+        }
+      });
+
+      ctx.bridge.send('setWidgetHoverable', {
+        widgetId: id,
+        onMouseDownCallbackId: mouseDownId,
+        onMouseUpCallbackId: mouseUpId,
+        enabled: true,
+      });
+    }
 
     if (options.className) {
       this.applyStyles(options.className).catch(() => {});

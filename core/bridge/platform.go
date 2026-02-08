@@ -250,6 +250,10 @@ func (b *Bridge) handleSetDraggable(msg Message) Response {
 	if dd, ok := msg.Payload["dragData"].(string); ok {
 		dragData = dd
 	}
+	dragLabel := ""
+	if dl, ok := msg.Payload["dragLabel"].(string); ok {
+		dragLabel = dl
+	}
 
 	b.mu.Lock()
 	obj, exists := b.widgets[widgetID]
@@ -265,15 +269,23 @@ func (b *Bridge) handleSetDraggable(msg Message) Response {
 	// Get callbacks if provided
 	onDragStartCallbackID := ""
 	onDragEndCallbackID := ""
+	onDoubleTapCallbackID := ""
+	onTapCallbackID := ""
 	if cb, ok := msg.Payload["onDragStartCallbackId"].(string); ok {
 		onDragStartCallbackID = cb
 	}
 	if cb, ok := msg.Payload["onDragEndCallbackId"].(string); ok {
 		onDragEndCallbackID = cb
 	}
+	if cb, ok := msg.Payload["onDoubleTapCallbackId"].(string); ok {
+		onDoubleTapCallbackID = cb
+	}
+	if cb, ok := msg.Payload["onTapCallbackId"].(string); ok {
+		onTapCallbackID = cb
+	}
 
 	// Wrap the widget in a draggable container
-	draggable := NewDraggableWidget(obj, dragData, b, widgetID, onDragStartCallbackID, onDragEndCallbackID)
+	draggable := NewDraggableWidget(obj, dragData, dragLabel, b, widgetID, onDragStartCallbackID, onDragEndCallbackID, onDoubleTapCallbackID, onTapCallbackID)
 	b.widgets[widgetID] = draggable
 	b.mu.Unlock()
 

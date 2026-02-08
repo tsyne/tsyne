@@ -53,6 +53,22 @@ func (r *ResizableLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
 	return r.wrapped.MinSize(objects)
 }
 
+// resolveContainer unwraps DraggableWidget/DroppableWidget wrappers to find the inner *fyne.Container.
+// This is needed because setDraggable/setDroppable replace widgets[id] with a wrapper,
+// but container operations need the original *fyne.Container inside.
+func (b *Bridge) resolveContainer(obj fyne.CanvasObject) (*fyne.Container, bool) {
+	if cont, ok := obj.(*fyne.Container); ok {
+		return cont, true
+	}
+	if drag, ok := obj.(*DraggableWidget); ok {
+		return b.resolveContainer(drag.content)
+	}
+	if drop, ok := obj.(*DroppableWidget); ok {
+		return b.resolveContainer(drop.content)
+	}
+	return nil, false
+}
+
 func (b *Bridge) handleSetContent(msg Message) Response {
 	windowID := msg.Payload["windowId"].(string)
 	widgetID := msg.Payload["widgetId"].(string)
@@ -113,8 +129,8 @@ func (b *Bridge) removeWidgetTree(widgetID string) {
 		return // Already removed or never existed
 	}
 
-	// If it's a container, recursively remove all children
-	if container, ok := obj.(*fyne.Container); ok {
+	// If it's a container (possibly wrapped in draggable/droppable), recursively remove all children
+	if container, ok := b.resolveContainer(obj); ok {
 		// Collect child IDs first (don't modify map while iterating)
 		var childIDs []string
 		for _, childObj := range container.Objects {
@@ -174,8 +190,8 @@ func (b *Bridge) handleContainerAdd(msg Message) Response {
 		}
 	}
 
-	// Cast to container and add the child
-	if cont, ok := containerObj.(*fyne.Container); ok {
+	// Cast to container (unwrapping drag/drop wrappers if needed) and add the child
+	if cont, ok := b.resolveContainer(containerObj); ok {
 		// UI updates must happen on the main thread
 		fyne.DoAndWait(func() {
 			cont.Add(childObj)
@@ -226,8 +242,8 @@ func (b *Bridge) handleContainerRemoveAll(msg Message) Response {
 		}
 	}
 
-	// Cast to container and remove all children
-	if cont, ok := containerObj.(*fyne.Container); ok {
+	// Cast to container (unwrapping drag/drop wrappers if needed) and remove all children
+	if cont, ok := b.resolveContainer(containerObj); ok {
 		// UI updates must happen on the main thread
 		fyne.DoAndWait(func() {
 			cont.RemoveAll() // Use Fyne's RemoveAll which handles refresh internally
@@ -261,8 +277,8 @@ func (b *Bridge) handleContainerRefresh(msg Message) Response {
 		}
 	}
 
-	// Cast to container and refresh
-	if cont, ok := containerObj.(*fyne.Container); ok {
+	// Cast to container (unwrapping drag/drop wrappers if needed) and refresh
+	if cont, ok := b.resolveContainer(containerObj); ok {
 		// UI updates must happen on the main thread
 		fyne.DoAndWait(func() {
 			cont.Refresh()

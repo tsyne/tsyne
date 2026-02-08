@@ -59,7 +59,7 @@ describe('Desktop Environment Tests', () => {
 
     // Launch bar should be visible
     await ctx.getById('showDesktopBtn').shouldExist();
-    await ctx.getById('allAppsBtn').shouldExist();
+    await ctx.getById('appSearch').shouldExist();
   }, 5000); // Desktop initialization can take longer due to app scanning
 
   test('should launch calculator via double-click on icon', async () => {
@@ -157,7 +157,7 @@ describe('Desktop Dock Integration Tests', () => {
 
     // The launch bar should exist with its components
     await ctx.getById('showDesktopBtn').shouldExist();
-    await ctx.getById('allAppsBtn').shouldExist();
+    await ctx.getById('appSearch').shouldExist();
     await ctx.getById('runningAppsLabel').shouldExist();
   }, 5000);
 
