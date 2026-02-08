@@ -23,9 +23,12 @@ docs/api
 .server-pid
 # CI test results are committed manually, not auto-generated
 # .CI_TEST_RESULTS_SUMMARY.txt
-# Compiled Go binary (use bin/tsyne-bridge instead)
+# Compiled Go binaries (use bin/tsyne-bridge instead)
 bridge/bridge
-bridge/bridge
+**/tsyne-bridge
+
+# Go tarballs
+go*.linux-amd64.tar.gz
 
 # Compiled shared libraries (build from source)
 *.so
