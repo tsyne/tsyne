@@ -49,6 +49,8 @@ export interface SvgOptions {
   viewBox?: string | ViewBox;
   width?: number;
   height?: number;
+  /** Attributes from root <svg> element to cascade as initial inherited style */
+  rootAttrs?: Record<string, string>;
 }
 
 /** Attributes passed to grammar element methods */

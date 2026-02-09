@@ -38,10 +38,22 @@ export function transpileSvgToModule(
   const viewBox = root.attrs.viewBox || root.attrs.viewbox || '0 0 100 100';
   const lines: string[] = [];
 
+  // Collect style-relevant attributes from root <svg> for inheritance
+  const STYLE_ATTRS = ['fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'font-size', 'font-family'];
+  const rootStyleEntries: string[] = [];
+  for (const key of STYLE_ATTRS) {
+    if (root.attrs[key]) {
+      rootStyleEntries.push(`'${key}': '${escapeStr(root.attrs[key])}'`);
+    }
+  }
+  const rootAttrsStr = rootStyleEntries.length > 0
+    ? `, rootAttrs: { ${rootStyleEntries.join(', ')} }`
+    : '';
+
   lines.push(`import { svg } from 'cosyne/svg';`);
   lines.push('');
   lines.push(`export function ${fnName}(app: any, width = 400, height = 400) {`);
-  lines.push(`  return svg(app, { viewBox: '${escapeStr(viewBox)}', width, height }, (s) => {`);
+  lines.push(`  return svg(app, { viewBox: '${escapeStr(viewBox)}', width, height${rootAttrsStr} }, (s) => {`);
 
   for (const child of root.children) {
     emitNode(lines, child, 2);

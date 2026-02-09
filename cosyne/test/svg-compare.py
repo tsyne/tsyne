@@ -180,6 +180,19 @@ def generate_html(results: list[dict], html_path: Path):
             svg_source_link = ' <a href="#" class="src-link" onclick="toggleSource(this,\'svg\');return false">show source</a>'
             svg_source_block = f'<div class="source-pane" data-source="svg"><pre><code class="language-xml">{svg_source_escaped}</code></pre></div>'
 
+        # Scrubber panel (only if cosyne rendered)
+        if r.get('cosyne_uri'):
+            scrubber_panel = f'''<div class="panel">
+          <div class="label scrub-label">Scrub (drag to compare)</div>
+          <div class="scrubber" data-active="false">
+            <img class="scrub-back" src="{r['ref_uri']}" width="300" height="300" draggable="false">
+            <div class="scrub-clip"><img class="scrub-front" src="{r['cosyne_uri']}" width="300" height="300" draggable="false"></div>
+            <div class="scrub-handle"><div class="scrub-line"></div><div class="scrub-knob"></div></div>
+          </div>
+        </div>'''
+        else:
+            scrubber_panel = ''
+
         rows_html.append(f'''
     <div class="comparison">
       <div class="row-header">
@@ -200,6 +213,7 @@ def generate_html(results: list[dict], html_path: Path):
             {cosyne_img}
           </div>
         </div>
+        {scrubber_panel}
       </div>
       {svg_source_block}
       {cosyne_source_block}
@@ -239,6 +253,14 @@ def generate_html(results: list[dict], html_path: Path):
   .ref-label {{ color: #2a2; }}
   .cosyne-label {{ color: #a2a; }}
   .no-screenshot {{ width: 300px; height: 300px; border: 1px dashed #ccc; display: flex; align-items: center; justify-content: center; color: #aaa; font-size: 13px; }}
+  .scrub-label {{ color: #07a; }}
+  .scrubber {{ position: relative; width: 300px; height: 300px; border: 1px solid #ddd; cursor: ew-resize; user-select: none; -webkit-user-select: none; overflow: hidden; background: white; }}
+  .scrub-back {{ display: block; width: 300px; height: 300px; }}
+  .scrub-clip {{ position: absolute; top: 0; left: 0; width: 50%; height: 100%; overflow: hidden; }}
+  .scrub-front {{ display: block; width: 300px; height: 300px; }}
+  .scrub-handle {{ position: absolute; top: 0; left: 50%; width: 0; height: 100%; pointer-events: none; }}
+  .scrub-line {{ position: absolute; left: -1px; top: 0; width: 2px; height: 100%; background: #07a; }}
+  .scrub-knob {{ position: absolute; left: -8px; top: 50%; margin-top: -8px; width: 16px; height: 16px; border-radius: 50%; background: #07a; border: 2px solid white; box-shadow: 0 0 3px rgba(0,0,0,0.4); }}
   .src-link {{ font-size: 11px; color: #888; text-decoration: none; margin-left: 4px; }}
   .src-link:hover {{ color: #333; text-decoration: underline; }}
   .source-pane {{ display: none; text-align: left; background: #282c34; border-radius: 6px; padding: 14px; margin-top: 12px; max-height: 500px; overflow: auto; }}
@@ -313,6 +335,55 @@ function toggleSource(link, kind) {{
 document.addEventListener('click', function(e) {{
   if (!e.target.closest('.source-pane') && !e.target.closest('.src-link')) closeAllSources();
 }});
+
+// ─── Scrubber drag logic ──────────────────────────────────────
+(function() {{
+  var active = null; // the .scrubber element being dragged
+
+  function updateScrub(scrubber, clientX) {{
+    var rect = scrubber.getBoundingClientRect();
+    var x = Math.max(0, Math.min(clientX - rect.left, rect.width));
+    var pct = (x / rect.width) * 100;
+    scrubber.querySelector('.scrub-clip').style.width = pct + '%';
+    scrubber.querySelector('.scrub-handle').style.left = pct + '%';
+  }}
+
+  document.addEventListener('mousedown', function(e) {{
+    var scrubber = e.target.closest('.scrubber');
+    if (!scrubber) return;
+    e.preventDefault();
+    active = scrubber;
+    updateScrub(scrubber, e.clientX);
+  }});
+
+  document.addEventListener('mousemove', function(e) {{
+    if (!active) return;
+    e.preventDefault();
+    updateScrub(active, e.clientX);
+  }});
+
+  document.addEventListener('mouseup', function() {{
+    active = null;
+  }});
+
+  // Touch support
+  document.addEventListener('touchstart', function(e) {{
+    var scrubber = e.target.closest('.scrubber');
+    if (!scrubber) return;
+    active = scrubber;
+    updateScrub(scrubber, e.touches[0].clientX);
+  }}, {{ passive: true }});
+
+  document.addEventListener('touchmove', function(e) {{
+    if (!active) return;
+    e.preventDefault();
+    updateScrub(active, e.touches[0].clientX);
+  }}, {{ passive: false }});
+
+  document.addEventListener('touchend', function() {{
+    active = null;
+  }});
+}})();
 </script>
 </body>
 </html>'''

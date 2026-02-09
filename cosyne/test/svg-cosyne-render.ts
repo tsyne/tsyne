@@ -20,7 +20,7 @@ const svgContent = fs.readFileSync(svgPath, 'utf-8');
 (async () => {
   const test = new CosyneTest({ headed: true });
   const app = await test.createApp((a: App) => {
-    a.window({ title: 'SVG', width: 400, height: 400 }, (win: any) => {
+    a.window({ title: 'SVG', width: 400, height: 400, padded: false }, (win: any) => {
       win.setContent(() => {
         a.canvasStack(() => {
           loadSvg(a, svgContent, { width: 400, height: 400 });

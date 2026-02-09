@@ -35,6 +35,7 @@ export function loadSvg(
       viewBox,
       width: options?.width ?? parseNumAttr(root.attrs.width) ?? 400,
       height: options?.height ?? parseNumAttr(root.attrs.height) ?? 400,
+      rootAttrs: root.attrs,
     },
     (s) => {
       for (const child of root.children) {

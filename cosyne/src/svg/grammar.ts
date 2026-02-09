@@ -95,9 +95,10 @@ export class SvgContext {
   private transformStack: AffineMatrix[] = [AffineMatrix.identity()];
   private gradients: Map<string, GradientDef> = new Map();
 
-  constructor(app: any, mapping: ViewBoxMapping) {
+  constructor(app: any, mapping: ViewBoxMapping, rootStyle?: SvgStyle) {
     this.app = app;
     this.mapping = mapping;
+    if (rootStyle) this.styleStack[0] = rootStyle;
   }
 
   // ─── Style stack ─────────────────────────────────────────────
@@ -199,6 +200,11 @@ export class SvgContext {
     return l * this.mapping.scale;
   }
 
+  /** Map a stroke-width value through viewBox scaling + current transform. */
+  private mapStrokeWidth(raw: number): number {
+    return this.mapLength(raw) * this.currentTransform().averageScale();
+  }
+
   /** Map all coordinate args in a normalized path string, applying current transform. */
   private mapPathCoords(pathStr: string): string {
     return pathStr.replace(
@@ -239,11 +245,13 @@ export class SvgContext {
     const normalized = normalizePath(attrs.d);
     const mapped = this.mapPathCoords(normalized);
     const bounds = computePathBounds(mapped);
-    const width = Math.max(bounds.maxX + 10, 10);
-    const height = Math.max(bounds.maxY + 10, 10);
     const gradDef = resolveGradientFill(style.fill, this);
     const fillColor = gradDef ? undefined : resolveFillColor(style.fill, this);
     const strokeColor = style.stroke && style.stroke !== 'none' ? style.stroke : undefined;
+    const sw = strokeColor ? this.mapStrokeWidth(style.strokeWidth ?? 1) : 0;
+    const margin = Math.ceil(sw / 2) + 2;
+    const width = Math.max(bounds.maxX + margin, 10);
+    const height = Math.max(bounds.maxY + margin, 10);
 
     const opts: any = {
       path: mapped,
@@ -251,7 +259,9 @@ export class SvgContext {
       height,
       fillColor,
       strokeColor,
-      strokeWidth: strokeColor ? (style.strokeWidth ?? 1) : 0,
+      strokeWidth: sw,
+      lineCap: style.strokeLinecap || 'butt',
+      lineJoin: style.strokeLinejoin === 'miter' ? 'bevel' : (style.strokeLinejoin || 'bevel'),
     };
     if (gradDef) {
       opts.fillGradient = {
@@ -276,14 +286,16 @@ export class SvgContext {
     const fillColor = resolveFillColor(style.fill, this);
     const strokeColor = style.stroke && style.stroke !== 'none' ? style.stroke : undefined;
 
+    const sw = strokeColor ? this.mapStrokeWidth(style.strokeWidth ?? 1) : 0;
+    const halfSw = sw / 2;
     const underlying = this.app.canvasCircle({
-      x: cx - r,
-      y: cy - r,
-      x2: cx + r,
-      y2: cy + r,
+      x: cx - r - halfSw,
+      y: cy - r - halfSw,
+      x2: cx + r + halfSw,
+      y2: cy + r + halfSw,
       fillColor,
       strokeColor,
-      strokeWidth: strokeColor ? (style.strokeWidth ?? 1) : 0,
+      strokeWidth: sw,
     });
     if (attrs.transform) this.popTransform();
     return new SvgElement(underlying);
@@ -337,7 +349,7 @@ export class SvgContext {
       y2: maxY,
       fillColor,
       strokeColor,
-      strokeWidth: strokeColor ? (style.strokeWidth ?? 1) : 0,
+      strokeWidth: strokeColor ? this.mapStrokeWidth(style.strokeWidth ?? 1) : 0,
     });
     if (attrs.transform) this.popTransform();
     return new SvgElement(underlying);
@@ -352,7 +364,7 @@ export class SvgContext {
 
     const underlying = this.app.canvasLine(x1, y1, x2, y2, {
       strokeColor: style.stroke || 'black',
-      strokeWidth: style.strokeWidth ?? 1,
+      strokeWidth: this.mapStrokeWidth(style.strokeWidth ?? 1),
     });
     if (attrs.transform) this.popTransform();
     return new SvgElement(underlying);
@@ -498,16 +510,21 @@ export class SvgContext {
   ): any {
     const mapped = this.mapPathCoords(commands);
     const bounds = computePathBounds(mapped);
-    const width = Math.max(bounds.maxX + 10, 10);
-    const height = Math.max(bounds.maxY + 10, 10);
+    const strokeColor = style.stroke && style.stroke !== 'none' ? style.stroke : undefined;
+    const sw = this.mapStrokeWidth(style.strokeWidth ?? 1);
+    const margin = Math.ceil(sw / 2) + 2;
+    const width = Math.max(bounds.maxX + margin, 10);
+    const height = Math.max(bounds.maxY + margin, 10);
 
     return this.app.canvasPath({
       path: mapped,
       width,
       height,
       fillColor: resolveFillColor(style.fill, this),
-      strokeColor: style.stroke && style.stroke !== 'none' ? style.stroke : undefined,
-      strokeWidth: style.strokeWidth ?? 1,
+      strokeColor,
+      strokeWidth: sw,
+      lineCap: 'butt',
+      lineJoin: 'bevel',
     });
   }
 }
@@ -740,7 +757,22 @@ function createSvgContext(app: any, options: SvgOptions): SvgContext {
   const offsetY = (canvasHeight - vb.height * scale) / 2;
 
   const mapping: ViewBoxMapping = { vb, canvasWidth, canvasHeight, scale, offsetX, offsetY };
-  return new SvgContext(app, mapping);
+
+  // Build initial inherited style from root <svg> attributes
+  let rootStyle: SvgStyle | undefined;
+  const ra = options.rootAttrs;
+  if (ra) {
+    rootStyle = {};
+    if (ra.fill) rootStyle.fill = ra.fill;
+    if (ra.stroke) rootStyle.stroke = ra.stroke;
+    if (ra['stroke-width']) rootStyle.strokeWidth = parseNum(ra['stroke-width']);
+    if (ra['stroke-linecap']) rootStyle.strokeLinecap = ra['stroke-linecap'] as any;
+    if (ra['stroke-linejoin']) rootStyle.strokeLinejoin = ra['stroke-linejoin'] as any;
+    if (ra['font-size']) rootStyle.fontSize = parseNum(ra['font-size']);
+    if (ra['font-family']) rootStyle.fontFamily = ra['font-family'];
+  }
+
+  return new SvgContext(app, mapping, rootStyle);
 }
 
 // ─── Helpers ───────────────────────────────────────────────────
