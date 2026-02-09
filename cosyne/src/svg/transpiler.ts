@@ -9,6 +9,7 @@
 import { SvgNode } from './types';
 import { parseSvg } from './parser';
 import { normalizePath } from './normalizer';
+import { parseTransform } from './transform';
 
 /** Attributes to omit from generated code (not meaningful for rendering). */
 const OMIT_ATTRS = new Set(['xmlns', 'xmlns:xlink', 'version', 'xml:space', 'id']);
@@ -97,15 +98,38 @@ function emitNode(lines: string[], node: SvgNode, indent: number): void {
 
     case 'linearGradient':
     case 'radialGradient': {
-      // Emit as a comment showing the gradient definition
-      const id = node.attrs.id || '?';
+      const id = node.attrs.id;
+      if (!id) break;
       const stops = node.children.filter(c => c.tag === 'stop');
-      const stopDescs = stops.map(c => {
-        const color = c.attrs['stop-color'] || '?';
-        const offset = c.attrs.offset || '0';
-        return `${offset}: ${color}`;
+      const stopLiterals = stops.map(c => {
+        const color = resolveStopColor(c.attrs);
+        const offsetStr = c.attrs.offset ?? '0';
+        const offset = offsetStr.endsWith('%')
+          ? parseFloat(offsetStr) / 100
+          : parseFloat(offsetStr);
+        return `{ offset: ${isNaN(offset) ? 0 : offset}, color: '${escapeStr(color)}' }`;
       });
-      lines.push(`${pad}// gradient #${id}: ${stopDescs.join(', ')}`);
+
+      // Parse gradient geometry
+      const type = node.tag === 'radialGradient' ? 'radial' : 'linear';
+      let x1 = parseNumAttr(node.attrs.x1, 0);
+      let y1 = parseNumAttr(node.attrs.y1, 0);
+      let x2 = parseNumAttr(node.attrs.x2, 1);
+      let y2 = parseNumAttr(node.attrs.y2, 0);
+      // Handle percentage values
+      if (typeof node.attrs.x1 === 'string' && node.attrs.x1.endsWith('%')) x1 = parseFloat(node.attrs.x1) / 100;
+      if (typeof node.attrs.y1 === 'string' && node.attrs.y1.endsWith('%')) y1 = parseFloat(node.attrs.y1) / 100;
+      if (typeof node.attrs.x2 === 'string' && node.attrs.x2.endsWith('%')) x2 = parseFloat(node.attrs.x2) / 100;
+      if (typeof node.attrs.y2 === 'string' && node.attrs.y2.endsWith('%')) y2 = parseFloat(node.attrs.y2) / 100;
+      // Apply gradientTransform
+      if (node.attrs.gradientTransform) {
+        const m = parseTransform(node.attrs.gradientTransform);
+        [x1, y1] = m.apply(x1, y1);
+        [x2, y2] = m.apply(x2, y2);
+      }
+      const r = (n: number) => Math.round(n * 10000) / 10000;
+
+      lines.push(`${pad}s.registerGradient('${escapeStr(id)}', { type: '${type}', x1: ${r(x1)}, y1: ${r(y1)}, x2: ${r(x2)}, y2: ${r(y2)}, stops: [${stopLiterals.join(', ')}] });`);
       break;
     }
 
@@ -207,10 +231,26 @@ function formatAttrs(attrs: Record<string, string>, normalizePaths = false): str
   return `{ ${entries.join(', ')} }`;
 }
 
+function parseNumAttr(v: string | undefined, fallback: number): number {
+  if (v === undefined) return fallback;
+  const n = parseFloat(v);
+  return isNaN(n) ? fallback : n;
+}
+
 function isNumeric(s: string): boolean {
   return /^-?\d+(\.\d+)?$/.test(s.trim());
 }
 
 function escapeStr(s: string): string {
   return s.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+
+/** Extract stop-color from a <stop> element's attributes or inline style. */
+function resolveStopColor(attrs: Record<string, string>): string {
+  if (attrs['stop-color']) return attrs['stop-color'];
+  if (attrs.style) {
+    const m = attrs.style.match(/stop-color\s*:\s*([^;]+)/);
+    if (m) return m[1].trim();
+  }
+  return 'black';
 }

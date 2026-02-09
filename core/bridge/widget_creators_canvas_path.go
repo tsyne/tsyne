@@ -43,6 +43,11 @@ func (b *Bridge) handleCreateCanvasPath(msg Message) Response {
 		pr.SetFillColor(parseHexColorSimple(fillHex))
 	}
 
+	// Set fill gradient if provided (overrides fillColor)
+	if gradData, ok := msg.Payload["fillGradient"].(map[string]interface{}); ok {
+		pr.SetFillGradient(parseFillGradient(gradData))
+	}
+
 	// Set line cap if provided
 	if capStr, ok := msg.Payload["lineCap"].(string); ok {
 		pr.SetLineCap(stringToLineCap(capStr))
@@ -106,6 +111,11 @@ func (b *Bridge) handleUpdateCanvasPath(msg Message) Response {
 		pr.SetFillColor(parseHexColorSimple(fillHex))
 	}
 
+	// Update fill gradient if provided
+	if gradData, ok := msg.Payload["fillGradient"].(map[string]interface{}); ok {
+		pr.SetFillGradient(parseFillGradient(gradData))
+	}
+
 	// Update line cap if provided
 	if capStr, ok := msg.Payload["lineCap"].(string); ok {
 		pr.SetLineCap(stringToLineCap(capStr))
@@ -151,3 +161,45 @@ func stringToLineJoin(s string) gg.LineJoin {
 		return gg.LineJoinRound
 	}
 }
+
+// parseFillGradient parses a fillGradient map from JS into a FillGradient struct.
+func parseFillGradient(data map[string]interface{}) *FillGradient {
+	grad := &FillGradient{
+		Type: "linear",
+	}
+	if t, ok := data["type"].(string); ok {
+		grad.Type = t
+	}
+	if v, ok := getFloat64(data["x1"]); ok {
+		grad.X1 = v
+	}
+	if v, ok := getFloat64(data["y1"]); ok {
+		grad.Y1 = v
+	}
+	if v, ok := getFloat64(data["x2"]); ok {
+		grad.X2 = v
+	}
+	if v, ok := getFloat64(data["y2"]); ok {
+		grad.Y2 = v
+	}
+	if stopsRaw, ok := data["stops"].([]interface{}); ok {
+		for _, s := range stopsRaw {
+			if stopMap, ok := s.(map[string]interface{}); ok {
+				offset := 0.0
+				if v, ok := getFloat64(stopMap["offset"]); ok {
+					offset = v
+				}
+				colorStr := "black"
+				if c, ok := stopMap["color"].(string); ok {
+					colorStr = c
+				}
+				grad.Stops = append(grad.Stops, GradientStop{
+					Offset: offset,
+					Color:  parseHexColorSimple(colorStr),
+				})
+			}
+		}
+	}
+	return grad
+}
+

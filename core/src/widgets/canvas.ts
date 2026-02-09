@@ -1402,6 +1402,11 @@ export interface CanvasPathOptions {
   strokeColor?: string;    // Stroke color (hex)
   strokeWidth?: number;    // Stroke width in pixels
   fillColor?: string;      // Fill color (hex, or undefined for no fill)
+  fillGradient?: {         // Linear gradient fill (overrides fillColor)
+    type: 'linear';
+    x1: number; y1: number; x2: number; y2: number;  // bbox-relative 0-1
+    stops: { offset: number; color: string }[];
+  };
   lineCap?: 'butt' | 'round' | 'square';   // Line cap style
   lineJoin?: 'round' | 'bevel';            // Line join style (no miter in gg library)
 }
@@ -1429,6 +1434,7 @@ export class CanvasPath {
     if (options.strokeColor) payload.strokeColor = options.strokeColor;
     if (options.strokeWidth !== undefined) payload.strokeWidth = options.strokeWidth;
     if (options.fillColor) payload.fillColor = options.fillColor;
+    if (options.fillGradient) payload.fillGradient = options.fillGradient;
     if (options.lineCap) payload.lineCap = options.lineCap;
     if (options.lineJoin) payload.lineJoin = options.lineJoin;
 

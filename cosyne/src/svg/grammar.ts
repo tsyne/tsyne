@@ -27,9 +27,11 @@ import { normalizePath } from './normalizer';
 import { parseViewBox } from './parser';
 import { AffineMatrix, parseTransform } from './transform';
 
-/** Gradient definition — stores stop colors for url(#id) resolution. */
-interface GradientDef {
+/** Gradient definition — stores stop colors and geometry for url(#id) resolution. */
+export interface GradientDef {
+  type: 'linear' | 'radial';
   stops: { offset: number; color: string }[];
+  x1: number; y1: number; x2: number; y2: number;  // gradient line (bbox-relative 0-1)
 }
 
 /** Resolved viewBox mapping for coordinate transforms */
@@ -239,17 +241,28 @@ export class SvgContext {
     const bounds = computePathBounds(mapped);
     const width = Math.max(bounds.maxX + 10, 10);
     const height = Math.max(bounds.maxY + 10, 10);
-    const fillColor = resolveFillColor(style.fill, this);
+    const gradDef = resolveGradientFill(style.fill, this);
+    const fillColor = gradDef ? undefined : resolveFillColor(style.fill, this);
     const strokeColor = style.stroke && style.stroke !== 'none' ? style.stroke : undefined;
 
-    const underlying = this.app.canvasPath({
+    const opts: any = {
       path: mapped,
       width,
       height,
       fillColor,
       strokeColor,
       strokeWidth: strokeColor ? (style.strokeWidth ?? 1) : 0,
-    });
+    };
+    if (gradDef) {
+      opts.fillGradient = {
+        type: gradDef.type,
+        x1: gradDef.x1, y1: gradDef.y1,
+        x2: gradDef.x2, y2: gradDef.y2,
+        stops: gradDef.stops,
+      };
+    }
+
+    const underlying = this.app.canvasPath(opts);
     if (attrs.transform) this.popTransform();
     return new SvgElement(underlying);
   }
@@ -378,7 +391,7 @@ export class SvgContext {
     return this.gradients.get(id);
   }
 
-  /** Parse a linearGradient or radialGradient node and register its stops. */
+  /** Parse a linearGradient or radialGradient node and register its stops + geometry. */
   linearGradient(node: SvgNode): void {
     const id = node.attrs.id;
     if (!id) return;
@@ -393,7 +406,28 @@ export class SvgContext {
           : parseFloat(offsetStr);
         return { offset: isNaN(offset) ? 0 : offset, color };
       });
-    this.registerGradient(id, { stops });
+
+    // Parse gradient geometry (SVG defaults: left-to-right, objectBoundingBox)
+    let x1 = parseNum(node.attrs.x1 ?? 0);
+    let y1 = parseNum(node.attrs.y1 ?? 0);
+    let x2 = parseNum(node.attrs.x2 ?? 1);
+    let y2 = parseNum(node.attrs.y2 ?? 0);
+
+    // Handle percentage values (e.g. "0%", "100%")
+    if (typeof node.attrs.x1 === 'string' && node.attrs.x1.endsWith('%')) x1 = parseFloat(node.attrs.x1) / 100;
+    if (typeof node.attrs.y1 === 'string' && node.attrs.y1.endsWith('%')) y1 = parseFloat(node.attrs.y1) / 100;
+    if (typeof node.attrs.x2 === 'string' && node.attrs.x2.endsWith('%')) x2 = parseFloat(node.attrs.x2) / 100;
+    if (typeof node.attrs.y2 === 'string' && node.attrs.y2.endsWith('%')) y2 = parseFloat(node.attrs.y2) / 100;
+
+    // Apply gradientTransform to gradient endpoints
+    if (node.attrs.gradientTransform) {
+      const m = parseTransform(node.attrs.gradientTransform);
+      [x1, y1] = m.apply(x1, y1);
+      [x2, y2] = m.apply(x2, y2);
+    }
+
+    const type = node.tag === 'radialGradient' ? 'radial' : 'linear';
+    this.registerGradient(id, { type, stops, x1, y1, x2, y2 });
   }
 
   /** Text element — renders text using canvasText. */
@@ -742,6 +776,14 @@ function resolveFillColor(fill: string | undefined, ctx?: SvgContext): string | 
     }
   }
   return fill ?? 'black';
+}
+
+/** Resolve a fill value to a GradientDef if it references a gradient, undefined otherwise. */
+function resolveGradientFill(fill: string | undefined, ctx?: SvgContext): GradientDef | undefined {
+  if (!fill || fill === 'none') return undefined;
+  const urlMatch = fill.match(/^url\(#([^)]+)\)$/);
+  if (!urlMatch) return undefined;
+  return ctx?.getGradient(urlMatch[1]);
 }
 
 function pointsToPath(points: string, closed: boolean): string {
