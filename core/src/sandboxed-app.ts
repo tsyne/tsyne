@@ -116,7 +116,7 @@ export interface IApp {
   canvasCircle(options?: { x?: number; y?: number; x2?: number; y2?: number; fillColor?: string; strokeColor?: string; strokeWidth?: number }): CanvasCircle;
   canvasRectangle(options?: { width?: number; height?: number; fillColor?: string; strokeColor?: string; strokeWidth?: number; cornerRadius?: number; onClick?: (x: number, y: number) => void }): CanvasRectangle;
   canvasText(text: string, options?: { color?: string; textSize?: number; bold?: boolean; italic?: boolean; monospace?: boolean; alignment?: 'leading' | 'center' | 'trailing' }): CanvasText;
-  canvasRaster(width: number, height: number, pixels?: Array<[number, number, number, number]>): CanvasRaster;
+  canvasRaster(width: number, height: number, pixels?: Array<[number, number, number, number]>, blendMode?: 'normal' | 'additive' | 'multiply' | 'screen', rasterOptions?: { x?: number; y?: number; rawPixels?: string }): CanvasRaster;
   tappableCanvasRaster(width: number, height: number, options?: TappableCanvasRasterOptions): TappableCanvasRaster;
   canvasLinearGradient(options?: { startColor?: string; endColor?: string; angle?: number; width?: number; height?: number }): CanvasLinearGradient;
   canvasArc(options?: { x?: number; y?: number; x2?: number; y2?: number; startAngle?: number; endAngle?: number; fillColor?: string; strokeColor?: string; strokeWidth?: number }): CanvasArc;
@@ -459,8 +459,8 @@ export class SandboxedApp implements IApp {
     return new CanvasText(this.ctx, text, options);
   }
 
-  canvasRaster(width: number, height: number, pixels?: Array<[number, number, number, number]>): CanvasRaster {
-    return new CanvasRaster(this.ctx, width, height, pixels);
+  canvasRaster(width: number, height: number, pixels?: Array<[number, number, number, number]>, blendMode?: 'normal' | 'additive' | 'multiply' | 'screen', rasterOptions?: { x?: number; y?: number; rawPixels?: string }): CanvasRaster {
+    return new CanvasRaster(this.ctx, width, height, pixels, blendMode, rasterOptions);
   }
 
   tappableCanvasRaster(width: number, height: number, options?: TappableCanvasRasterOptions): TappableCanvasRaster {

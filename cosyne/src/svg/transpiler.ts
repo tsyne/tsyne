@@ -35,7 +35,11 @@ export function transpileSvgToModule(
   const root = parseSvg(svgString);
   const fnName = opts?.functionName ?? 'renderSvg';
 
-  const viewBox = root.attrs.viewBox || root.attrs.viewbox || '0 0 100 100';
+  // Per SVG spec: when viewBox is absent, use width/height as the coordinate system
+  const svgW = parseFloat(root.attrs.width);
+  const svgH = parseFloat(root.attrs.height);
+  const viewBox = root.attrs.viewBox || root.attrs.viewbox
+    || (svgW && svgH ? `0 0 ${svgW} ${svgH}` : '0 0 100 100');
   const lines: string[] = [];
 
   // Collect style-relevant attributes from root <svg> for inheritance

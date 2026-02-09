@@ -17,11 +17,39 @@ export interface SvgStyle {
   strokeWidth?: number;
   strokeLinecap?: 'butt' | 'round' | 'square';
   strokeLinejoin?: 'miter' | 'round' | 'bevel';
+  opacity?: number;
+  fillOpacity?: number;
+  strokeOpacity?: number;
   fontSize?: number;
   fontFamily?: string;
   fontWeight?: string;
   fontStyle?: string;
   textAnchor?: string;
+  filterId?: string;
+  clipPathId?: string;
+}
+
+/** Filter definition — stores blur parameters for url(#id) resolution. */
+export interface FilterDef {
+  id: string;
+  regionX: number;
+  regionY: number;
+  regionWidth: number;
+  regionHeight: number;
+  blur?: { stdDeviationX: number; stdDeviationY: number };
+}
+
+/** Shape inside a clipPath definition. */
+export interface ClipPathShape {
+  type: 'rect' | 'circle';
+  x?: number; y?: number; width?: number; height?: number;  // rect
+  cx?: number; cy?: number; r?: number;                      // circle
+}
+
+/** ClipPath definition — stores shapes for clipping. */
+export interface ClipPathDef {
+  id: string;
+  shapes: ClipPathShape[];
 }
 
 /** Raw parsed SVG path command */

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"image"
 	"image/color"
@@ -19,18 +20,36 @@ func (b *Bridge) handleCreateCanvasRaster(msg Message) Response {
 	width := toInt(msg.Payload["width"])
 	height := toInt(msg.Payload["height"])
 
+	// Check for rawPixels (base64-encoded RGBA buffer) — much faster for large buffers
+	var rawBytes []byte
+	if rawB64, ok := msg.Payload["rawPixels"].(string); ok && rawB64 != "" {
+		var err error
+		rawBytes, err = base64.StdEncoding.DecodeString(rawB64)
+		if err != nil {
+			rawBytes = nil
+		}
+	}
+
 	// Get the initial pixel data if provided (format: [[r,g,b,a], ...])
 	var pixelData [][]uint8
-	if pixels, ok := msg.Payload["pixels"].([]interface{}); ok {
-		for _, p := range pixels {
-			if pArr, ok := p.([]interface{}); ok {
-				pixel := make([]uint8, 4)
-				for i := 0; i < 4 && i < len(pArr); i++ {
-					pixel[i] = uint8(toInt(pArr[i]))
+	if rawBytes == nil {
+		if pixels, ok := msg.Payload["pixels"].([]interface{}); ok {
+			for _, p := range pixels {
+				if pArr, ok := p.([]interface{}); ok {
+					pixel := make([]uint8, 4)
+					for i := 0; i < 4 && i < len(pArr); i++ {
+						pixel[i] = uint8(toInt(pArr[i]))
+					}
+					pixelData = append(pixelData, pixel)
 				}
-				pixelData = append(pixelData, pixel)
 			}
 		}
+	}
+
+	// Determine default color: transparent for rawPixels, white otherwise
+	defaultColor := color.RGBA{R: 255, G: 255, B: 255, A: 255}
+	if rawBytes != nil {
+		defaultColor = color.RGBA{R: 0, G: 0, B: 0, A: 0}
 	}
 
 	// Create pixel buffer
@@ -39,11 +58,23 @@ func (b *Bridge) handleCreateCanvasRaster(msg Message) Response {
 		pixelBuffer[y] = make([]color.Color, width)
 		for x := 0; x < width; x++ {
 			pixelIdx := y*width + x
-			if pixelIdx < len(pixelData) {
+			if rawBytes != nil {
+				byteIdx := pixelIdx * 4
+				if byteIdx+3 < len(rawBytes) {
+					pixelBuffer[y][x] = color.RGBA{
+						R: rawBytes[byteIdx],
+						G: rawBytes[byteIdx+1],
+						B: rawBytes[byteIdx+2],
+						A: rawBytes[byteIdx+3],
+					}
+				} else {
+					pixelBuffer[y][x] = defaultColor
+				}
+			} else if pixelIdx < len(pixelData) {
 				p := pixelData[pixelIdx]
 				pixelBuffer[y][x] = color.RGBA{R: p[0], G: p[1], B: p[2], A: p[3]}
 			} else {
-				pixelBuffer[y][x] = color.RGBA{R: 255, G: 255, B: 255, A: 255} // Default white
+				pixelBuffer[y][x] = defaultColor
 			}
 		}
 	}
@@ -82,6 +113,14 @@ func (b *Bridge) handleCreateCanvasRaster(msg Message) Response {
 	})
 
 	raster.SetMinSize(fyne.NewSize(float32(width), float32(height)))
+
+	// Position the raster if x/y are provided
+	if xVal, ok := getFloat64(msg.Payload["x"]); ok {
+		if yVal, ok := getFloat64(msg.Payload["y"]); ok {
+			raster.Move(fyne.NewPos(float32(xVal), float32(yVal)))
+			raster.Resize(fyne.NewSize(float32(width), float32(height)))
+		}
+	}
 
 	// Set blend mode if provided
 	if blendMode, ok := msg.Payload["blendMode"].(string); ok {

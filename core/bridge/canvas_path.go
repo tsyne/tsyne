@@ -3,6 +3,7 @@ package main
 import (
 	"image"
 	"image/color"
+	"math"
 	"regexp"
 	"strconv"
 	"strings"
@@ -19,10 +20,13 @@ type GradientStop struct {
 	Color  color.Color
 }
 
-// FillGradient stores linear gradient data for rendering.
+// FillGradient stores gradient data for rendering.
 type FillGradient struct {
-	Type           string  // "linear"
-	X1, Y1, X2, Y2 float64 // bbox-relative (0-1)
+	Type           string  // "linear" or "radial"
+	X1, Y1, X2, Y2 float64 // linear: gradient line (bbox-relative 0-1, or pixel-space if PixelSpace)
+	Cx, Cy, R      float64 // radial: center + radius (bbox-relative 0-1)
+	Rx, Ry         float64 // radial: separate x/y radii for elliptical gradients
+	PixelSpace     bool    // true = coords are in pixel space (userSpaceOnUse)
 	Stops          []GradientStop
 }
 
@@ -130,24 +134,63 @@ func (pr *PathRaster) render(w, h int) image.Image {
 		if bh < 1 {
 			bh = 1
 		}
-		// Use custom bbox-space gradient that projects in normalized (0-1)
-		// coordinates. gg.NewLinearGradient projects in pixel space, which
-		// distorts the angle when the bbox isn't square.
-		grad := &bboxLinearGradient{
-			x1: pr.fillGradient.X1, y1: pr.fillGradient.Y1,
-			x2: pr.fillGradient.X2, y2: pr.fillGradient.Y2,
-			minX: minX, minY: minY, bw: bw, bh: bh,
-		}
 		// Pad stops to cover 0-1 range — prevent extrapolation artifacts
 		stops := pr.fillGradient.Stops
+		paddedStops := make([]GradientStop, 0, len(stops)+2)
 		if stops[0].Offset > 0 {
-			grad.stops = append(grad.stops, GradientStop{Offset: 0, Color: stops[0].Color})
+			paddedStops = append(paddedStops, GradientStop{Offset: 0, Color: stops[0].Color})
 		}
-		grad.stops = append(grad.stops, stops...)
+		paddedStops = append(paddedStops, stops...)
 		if stops[len(stops)-1].Offset < 1 {
-			grad.stops = append(grad.stops, GradientStop{Offset: 1, Color: stops[len(stops)-1].Color})
+			paddedStops = append(paddedStops, GradientStop{Offset: 1, Color: stops[len(stops)-1].Color})
 		}
-		dc.SetFillStyle(grad)
+
+		if pr.fillGradient.Type == "radial" {
+			rx := pr.fillGradient.Rx
+			ry := pr.fillGradient.Ry
+			if rx < 1e-10 {
+				rx = 0.5
+			}
+			if ry < 1e-10 {
+				ry = 0.5
+			}
+			if pr.fillGradient.PixelSpace {
+				// userSpaceOnUse: cx/cy/rx/ry in pixel coords
+				rg := &bboxRadialGradient{
+					cx: pr.fillGradient.Cx,
+					cy: pr.fillGradient.Cy,
+					rx: rx, ry: ry,
+					minX: 0, minY: 0, bw: 1, bh: 1, // identity: bx = px
+					stops: paddedStops,
+				}
+				dc.SetFillStyle(rg)
+			} else {
+				rg := &bboxRadialGradient{
+					cx: pr.fillGradient.Cx,
+					cy: pr.fillGradient.Cy,
+					rx: rx, ry: ry,
+					minX: minX, minY: minY, bw: bw, bh: bh,
+					stops: paddedStops,
+				}
+				dc.SetFillStyle(rg)
+			}
+		} else if pr.fillGradient.PixelSpace {
+			// userSpaceOnUse: project in pixel space to preserve gradient angle
+			grad := &pixelLinearGradient{
+				x1: pr.fillGradient.X1, y1: pr.fillGradient.Y1,
+				x2: pr.fillGradient.X2, y2: pr.fillGradient.Y2,
+				stops: paddedStops,
+			}
+			dc.SetFillStyle(grad)
+		} else {
+			grad := &bboxLinearGradient{
+				x1: pr.fillGradient.X1, y1: pr.fillGradient.Y1,
+				x2: pr.fillGradient.X2, y2: pr.fillGradient.Y2,
+				minX: minX, minY: minY, bw: bw, bh: bh,
+				stops: paddedStops,
+			}
+			dc.SetFillStyle(grad)
+		}
 		dc.FillPreserve()
 	} else if pr.fillColor != nil {
 		dc.SetColor(pr.fillColor)
@@ -190,6 +233,90 @@ func (g *bboxLinearGradient) ColorAt(x, y int) color.Color {
 		return color.Transparent
 	}
 	t := ((bx-g.x1)*dx + (by-g.y1)*dy) / lenSq
+
+	// Interpolate color from stops
+	if len(g.stops) == 0 {
+		return color.Transparent
+	}
+	if t <= g.stops[0].Offset {
+		return g.stops[0].Color
+	}
+	last := g.stops[len(g.stops)-1]
+	if t >= last.Offset {
+		return last.Color
+	}
+	for i := 1; i < len(g.stops); i++ {
+		s0 := g.stops[i-1]
+		s1 := g.stops[i]
+		if t <= s1.Offset {
+			frac := (t - s0.Offset) / (s1.Offset - s0.Offset)
+			return lerpColor(s0.Color, s1.Color, frac)
+		}
+	}
+	return last.Color
+}
+
+// pixelLinearGradient implements gg.Pattern for userSpaceOnUse linear gradients.
+// Projects directly in pixel space so gradient angles are preserved.
+type pixelLinearGradient struct {
+	x1, y1, x2, y2 float64 // gradient line in pixel coordinates
+	stops           []GradientStop
+}
+
+func (g *pixelLinearGradient) ColorAt(x, y int) color.Color {
+	px := float64(x)
+	py := float64(y)
+
+	dx := g.x2 - g.x1
+	dy := g.y2 - g.y1
+	lenSq := dx*dx + dy*dy
+	if lenSq < 1e-10 {
+		if len(g.stops) > 0 {
+			return g.stops[0].Color
+		}
+		return color.Transparent
+	}
+	t := ((px-g.x1)*dx + (py-g.y1)*dy) / lenSq
+
+	if len(g.stops) == 0 {
+		return color.Transparent
+	}
+	if t <= g.stops[0].Offset {
+		return g.stops[0].Color
+	}
+	last := g.stops[len(g.stops)-1]
+	if t >= last.Offset {
+		return last.Color
+	}
+	for i := 1; i < len(g.stops); i++ {
+		s0 := g.stops[i-1]
+		s1 := g.stops[i]
+		if t <= s1.Offset {
+			frac := (t - s0.Offset) / (s1.Offset - s0.Offset)
+			return lerpColor(s0.Color, s1.Color, frac)
+		}
+	}
+	return last.Color
+}
+
+// bboxRadialGradient implements gg.Pattern for radial gradients in bbox space.
+type bboxRadialGradient struct {
+	cx, cy         float64 // center in bbox space (0-1)
+	rx, ry         float64 // radii in bbox space (separate for elliptical)
+	minX, minY     float64 // bbox origin in pixels
+	bw, bh         float64 // bbox size in pixels
+	stops          []GradientStop
+}
+
+func (g *bboxRadialGradient) ColorAt(x, y int) color.Color {
+	// Convert pixel coords to bbox-normalized space (0-1)
+	bx := (float64(x) - g.minX) / g.bw
+	by := (float64(y) - g.minY) / g.bh
+
+	// Elliptical distance from center, normalized by rx/ry
+	dx := (bx - g.cx) / g.rx
+	dy := (by - g.cy) / g.ry
+	t := math.Sqrt(dx*dx + dy*dy)
 
 	// Interpolate color from stops
 	if len(g.stops) == 0 {

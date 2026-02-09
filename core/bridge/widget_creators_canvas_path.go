@@ -182,6 +182,24 @@ func parseFillGradient(data map[string]interface{}) *FillGradient {
 	if v, ok := getFloat64(data["y2"]); ok {
 		grad.Y2 = v
 	}
+	if v, ok := getFloat64(data["cx"]); ok {
+		grad.Cx = v
+	}
+	if v, ok := getFloat64(data["cy"]); ok {
+		grad.Cy = v
+	}
+	if v, ok := getFloat64(data["r"]); ok {
+		grad.R = v
+	}
+	if v, ok := getFloat64(data["rx"]); ok {
+		grad.Rx = v
+	}
+	if v, ok := getFloat64(data["ry"]); ok {
+		grad.Ry = v
+	}
+	if v, ok := data["pixelSpace"].(bool); ok {
+		grad.PixelSpace = v
+	}
 	if stopsRaw, ok := data["stops"].([]interface{}); ok {
 		for _, s := range stopsRaw {
 			if stopMap, ok := s.(map[string]interface{}); ok {

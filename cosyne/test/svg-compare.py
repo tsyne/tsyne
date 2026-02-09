@@ -402,7 +402,7 @@ def main():
     output_dir.mkdir(parents=True, exist_ok=True)
 
     if args.files:
-        svg_files = [SVG_DIR / f for f in args.files]
+        svg_files = [SVG_DIR / (f if f.endswith('.svg') else f + '.svg') for f in args.files]
     else:
         svg_files = sorted(SVG_DIR.glob('*.svg'))
 
@@ -463,6 +463,18 @@ def main():
     # Generate HTML
     html_path = output_dir / 'comparison.html'
     generate_html(results, html_path)
+
+    # Write CSV
+    csv_path = output_dir / 'results.csv'
+    with open(csv_path, 'w') as f:
+        f.write('file,mae,status,bytes\n')
+        for r in results:
+            mae = r['mae']
+            status = 'none' if mae < 0 else 'good' if mae < 20 else 'ok' if mae < 40 else 'diff'
+            svg_file = SVG_DIR / r['name']
+            size = svg_file.stat().st_size if svg_file.exists() else 0
+            f.write(f'{r["name"]},{mae:.1f},{status},{size}\n')
+    print(f'CSV: {csv_path}')
 
     # Summary
     print(f'\n{"="*50}')

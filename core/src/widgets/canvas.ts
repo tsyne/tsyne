@@ -610,7 +610,14 @@ export class CanvasRaster {
   private _height: number;
   private _sprites: Map<string, Sprite> = new Map();
 
-  constructor(ctx: Context, width: number, height: number, pixels?: Array<[number, number, number, number]>, blendMode?: 'normal' | 'additive' | 'multiply' | 'screen') {
+  constructor(
+    ctx: Context,
+    width: number,
+    height: number,
+    pixels?: Array<[number, number, number, number]>,
+    blendMode?: 'normal' | 'additive' | 'multiply' | 'screen',
+    rasterOptions?: { x?: number; y?: number; rawPixels?: string },
+  ) {
     this.ctx = ctx;
     this.id = ctx.generateId('canvasraster');
     this._width = width;
@@ -624,6 +631,9 @@ export class CanvasRaster {
     if (blendMode) {
       payload.blendMode = blendMode;
     }
+    if (rasterOptions?.x !== undefined) payload.x = rasterOptions.x;
+    if (rasterOptions?.y !== undefined) payload.y = rasterOptions.y;
+    if (rasterOptions?.rawPixels) payload.rawPixels = rasterOptions.rawPixels;
 
     ctx.bridge.send('createCanvasRaster', payload);
     ctx.addToCurrentContainer(this.id);
@@ -1402,9 +1412,10 @@ export interface CanvasPathOptions {
   strokeColor?: string;    // Stroke color (hex)
   strokeWidth?: number;    // Stroke width in pixels
   fillColor?: string;      // Fill color (hex, or undefined for no fill)
-  fillGradient?: {         // Linear gradient fill (overrides fillColor)
-    type: 'linear';
-    x1: number; y1: number; x2: number; y2: number;  // bbox-relative 0-1
+  fillGradient?: {         // Gradient fill (overrides fillColor)
+    type: 'linear' | 'radial';
+    x1?: number; y1?: number; x2?: number; y2?: number;  // linear: bbox-relative 0-1
+    cx?: number; cy?: number; r?: number;                 // radial: bbox-relative 0-1
     stops: { offset: number; color: string }[];
   };
   lineCap?: 'butt' | 'round' | 'square';   // Line cap style

@@ -989,9 +989,10 @@ export class App {
     width: number,
     height: number,
     pixels?: Array<[number, number, number, number]>,
-    blendMode?: 'normal' | 'additive' | 'multiply' | 'screen'
+    blendMode?: 'normal' | 'additive' | 'multiply' | 'screen',
+    rasterOptions?: { x?: number; y?: number; rawPixels?: string },
   ): CanvasRaster {
-    return new CanvasRaster(this.ctx, width, height, pixels, blendMode);
+    return new CanvasRaster(this.ctx, width, height, pixels, blendMode, rasterOptions);
   }
 
   tappableCanvasRaster(

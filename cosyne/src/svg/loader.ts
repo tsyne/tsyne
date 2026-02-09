@@ -26,8 +26,11 @@ export function loadSvg(
   const root = parseSvg(svgString);
 
   // Extract viewBox from root svg element
+  // Per SVG spec: when viewBox is absent, use width/height as the coordinate system
   const viewBoxStr = root.attrs.viewBox || root.attrs.viewbox;
-  const viewBox = viewBoxStr || '0 0 100 100';
+  const svgW = parseNumAttr(root.attrs.width);
+  const svgH = parseNumAttr(root.attrs.height);
+  const viewBox = viewBoxStr || (svgW && svgH ? `0 0 ${svgW} ${svgH}` : '0 0 100 100');
 
   return svg(
     app,
@@ -38,6 +41,8 @@ export function loadSvg(
       rootAttrs: root.attrs,
     },
     (s) => {
+      s.indexNodes(root);
+      s.setWalkNode(walkNode);
       for (const child of root.children) {
         walkNode(s, child);
       }
@@ -92,8 +97,20 @@ function walkNode(s: SvgContext, node: SvgNode): void {
     case 'radialGradient':
       s.linearGradient(node);
       break;
+    case 'filter':
+      s.filter(node);
+      break;
+    case 'clipPath':
+      s.clipPath(node);
+      break;
+    case 'feGaussianBlur':
+      // Handled as child of <filter>, no-op here
+      break;
     case 'text':
       s.text(attrs, node.text);
+      break;
+    case 'use':
+      s.use(attrs);
       break;
     case 'svg':
       // Nested svg — just walk children
