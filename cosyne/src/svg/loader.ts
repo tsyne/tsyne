@@ -1,0 +1,116 @@
+/**
+ * Dynamic SVG Loader
+ *
+ * Parses SVG strings at runtime and renders them using the SVG grammar.
+ * Uses parseSvg() → walkNode() → SvgContext methods.
+ */
+
+import { SvgNode } from './types';
+import { parseSvg, parseViewBox } from './parser';
+import { SvgContext, svg } from './grammar';
+
+/**
+ * Load and render an SVG string into a Tsyne canvas.
+ *
+ * ```ts
+ * a.canvasStack(() => {
+ *   loadSvg(a, '<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40"/></svg>');
+ * });
+ * ```
+ */
+export function loadSvg(
+  app: any,
+  svgString: string,
+  options?: { width?: number; height?: number },
+): SvgContext {
+  const root = parseSvg(svgString);
+
+  // Extract viewBox from root svg element
+  const viewBoxStr = root.attrs.viewBox || root.attrs.viewbox;
+  const viewBox = viewBoxStr || '0 0 100 100';
+
+  return svg(
+    app,
+    {
+      viewBox,
+      width: options?.width ?? parseNumAttr(root.attrs.width) ?? 400,
+      height: options?.height ?? parseNumAttr(root.attrs.height) ?? 400,
+    },
+    (s) => {
+      for (const child of root.children) {
+        walkNode(s, child);
+      }
+    },
+  );
+}
+
+/** Recursively walk an SvgNode tree and call SvgContext methods. */
+function walkNode(s: SvgContext, node: SvgNode): void {
+  const attrs = node.attrs;
+
+  switch (node.tag) {
+    case 'g':
+      s.g(attrs, () => {
+        for (const child of node.children) {
+          walkNode(s, child);
+        }
+      });
+      break;
+    case 'path':
+      s.path(attrs);
+      break;
+    case 'circle':
+      s.circle(attrs);
+      break;
+    case 'ellipse':
+      s.ellipse(attrs);
+      break;
+    case 'rect':
+      s.rect(attrs);
+      break;
+    case 'line':
+      s.line(attrs);
+      break;
+    case 'polyline':
+      s.polyline(attrs);
+      break;
+    case 'polygon':
+      s.polygon(attrs);
+      break;
+    case 'desc':
+      s.desc(attrs);
+      break;
+    case 'defs':
+      s.defs(attrs, () => {
+        for (const child of node.children) {
+          walkNode(s, child);
+        }
+      });
+      break;
+    case 'linearGradient':
+    case 'radialGradient':
+      s.linearGradient(node);
+      break;
+    case 'text':
+      s.text(attrs, node.text);
+      break;
+    case 'svg':
+      // Nested svg — just walk children
+      for (const child of node.children) {
+        walkNode(s, child);
+      }
+      break;
+    default:
+      // Unknown element — try walking children
+      for (const child of node.children) {
+        walkNode(s, child);
+      }
+      break;
+  }
+}
+
+function parseNumAttr(v: string | undefined): number | undefined {
+  if (v === undefined) return undefined;
+  const n = parseFloat(v);
+  return isNaN(n) ? undefined : n;
+}

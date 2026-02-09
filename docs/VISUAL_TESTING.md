@@ -168,6 +168,23 @@ Fyne uses OpenGL for rendering, which requires GPU acceleration. Virtual framebu
 
 **Note for LLM assistants:** When working in containerized/cloud environments (Claude Code, Codespaces, etc.), expect blank screenshots even with proper Xvfb setup. This is not a bug - it's a rendering limitation.
 
+### Running over SSH to a machine with a real GPU
+
+If you SSH into a machine that has a physical display and GPU, you can take real screenshots — but you need two environment variables that aren't set in an SSH session:
+
+```bash
+# 1. Point at the local X display
+export DISPLAY=:0
+
+# 2. Provide the Xwayland auth cookie (needed on Wayland/Mutter desktops)
+export XAUTHORITY=$(ls /run/user/$(id -u)/.mutter-Xwaylandauth.* | head -1)
+
+# Now headed tests will render on the attached monitor
+TSYNE_HEADED=1 npx jest my-test.test.ts
+```
+
+Without `DISPLAY`, the bridge fails with "The DISPLAY environment variable is missing". Without `XAUTHORITY`, it fails with "Authorization required, but no authorization protocol specified".
+
 ### "No windows available to screenshot"
 Ensure you've created and shown at least one window before taking a screenshot.
 

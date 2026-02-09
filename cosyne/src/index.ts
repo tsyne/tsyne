@@ -156,6 +156,9 @@ export {
   type ColorTrailPoint,
 } from './trails';
 
+// SVG pipeline
+export * from './svg';
+
 // Cosyne 3D exports
 export * from './index3d';
 

@@ -269,6 +269,10 @@ echo "[setup-fyne-fork] Patching capture.go for opaque alpha..."
 CAPTURE_FILE="$FORK_DIR/internal/painter/gl/capture.go"
 if [ -f "$CAPTURE_FILE" ]; then
     sed -i 's/A: c\.pix\[start+3\]/A: 255/' "$CAPTURE_FILE"
+    # Remove ReadBuffer(front) — on Xwayland the compositor consumes the front buffer,
+    # causing a checkerboard pattern. Default read buffer (GL_BACK) works correctly.
+    sed -i '/p\.ctx\.ReadBuffer(front)/d' "$CAPTURE_FILE"
+    sed -i '/p\.ctx\.ReadBuffer(backFace)/d' "$CAPTURE_FILE"
 fi
 
 # 13. Fix preferences EOF handling (suppress EOF errors from empty/truncated prefs file)
