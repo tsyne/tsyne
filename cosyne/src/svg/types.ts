@@ -25,6 +25,7 @@ export interface SvgStyle {
   fontWeight?: string;
   fontStyle?: string;
   textAnchor?: string;
+  fillRule?: 'nonzero' | 'evenodd';
   filterId?: string;
   clipPathId?: string;
 }

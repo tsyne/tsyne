@@ -48,6 +48,11 @@ func (b *Bridge) handleCreateCanvasPath(msg Message) Response {
 		pr.SetFillGradient(parseFillGradient(gradData))
 	}
 
+	// Set stroke gradient if provided (overrides strokeColor)
+	if gradData, ok := msg.Payload["strokeGradient"].(map[string]interface{}); ok {
+		pr.SetStrokeGradient(parseFillGradient(gradData))
+	}
+
 	// Set line cap if provided
 	if capStr, ok := msg.Payload["lineCap"].(string); ok {
 		pr.SetLineCap(stringToLineCap(capStr))
@@ -56,6 +61,11 @@ func (b *Bridge) handleCreateCanvasPath(msg Message) Response {
 	// Set line join if provided
 	if joinStr, ok := msg.Payload["lineJoin"].(string); ok {
 		pr.SetLineJoin(stringToLineJoin(joinStr))
+	}
+
+	// Set fill rule if provided
+	if ruleStr, ok := msg.Payload["fillRule"].(string); ok {
+		pr.SetFillRule(stringToFillRule(ruleStr))
 	}
 
 	// Store the path raster for updates
@@ -116,6 +126,11 @@ func (b *Bridge) handleUpdateCanvasPath(msg Message) Response {
 		pr.SetFillGradient(parseFillGradient(gradData))
 	}
 
+	// Update stroke gradient if provided
+	if gradData, ok := msg.Payload["strokeGradient"].(map[string]interface{}); ok {
+		pr.SetStrokeGradient(parseFillGradient(gradData))
+	}
+
 	// Update line cap if provided
 	if capStr, ok := msg.Payload["lineCap"].(string); ok {
 		pr.SetLineCap(stringToLineCap(capStr))
@@ -124,6 +139,11 @@ func (b *Bridge) handleUpdateCanvasPath(msg Message) Response {
 	// Update line join if provided
 	if joinStr, ok := msg.Payload["lineJoin"].(string); ok {
 		pr.SetLineJoin(stringToLineJoin(joinStr))
+	}
+
+	// Update fill rule if provided
+	if ruleStr, ok := msg.Payload["fillRule"].(string); ok {
+		pr.SetFillRule(stringToFillRule(ruleStr))
 	}
 
 	// Refresh the raster to show updates (Refresh handles fyne.Do internally)
@@ -162,6 +182,16 @@ func stringToLineJoin(s string) gg.LineJoin {
 	}
 }
 
+// stringToFillRule converts a string to gg.FillRule
+func stringToFillRule(s string) gg.FillRule {
+	switch s {
+	case "evenodd":
+		return gg.FillRuleEvenOdd
+	default:
+		return gg.FillRuleWinding
+	}
+}
+
 // parseFillGradient parses a fillGradient map from JS into a FillGradient struct.
 func parseFillGradient(data map[string]interface{}) *FillGradient {
 	grad := &FillGradient{
@@ -197,8 +227,19 @@ func parseFillGradient(data map[string]interface{}) *FillGradient {
 	if v, ok := getFloat64(data["ry"]); ok {
 		grad.Ry = v
 	}
+	if v, ok := getFloat64(data["fx"]); ok {
+		grad.Fx = v
+		grad.HasFocal = true
+	}
+	if v, ok := getFloat64(data["fy"]); ok {
+		grad.Fy = v
+		grad.HasFocal = true
+	}
 	if v, ok := data["pixelSpace"].(bool); ok {
 		grad.PixelSpace = v
+	}
+	if v, ok := data["spreadMethod"].(string); ok {
+		grad.SpreadMethod = v
 	}
 	if stopsRaw, ok := data["stops"].([]interface{}); ok {
 		for _, s := range stopsRaw {

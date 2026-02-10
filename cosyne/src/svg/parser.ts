@@ -11,12 +11,23 @@ import { SvgNode } from './types';
  * Parse an SVG string into an SvgNode tree.
  */
 export function parseSvg(svgString: string): SvgNode {
+  // Extract XML entities from DOCTYPE internal subset before stripping
+  const entities = extractEntities(svgString);
+
   // Strip XML declaration, DOCTYPE, and comments
   let s = svgString
     .replace(/<\?xml[^?]*\?>/g, '')
     .replace(/<!DOCTYPE[^[>]*(\[[\s\S]*?\])?[^>]*>/gi, '')
     .replace(/<!--[\s\S]*?-->/g, '')
     .trim();
+
+  // Expand entity references (&Name;) — skip standard XML entities
+  if (entities.size > 0) {
+    s = s.replace(/&(\w+);/g, (match, name) => {
+      const value = entities.get(name);
+      return value !== undefined ? value : match;
+    });
+  }
 
   const tokens = tokenize(s);
   const root = buildTree(tokens);
@@ -45,6 +56,18 @@ function tokenize(s: string): Token[] {
   while (pos < s.length) {
     // Skip whitespace between tags (but not within text content)
     if (s[pos] === '<') {
+      // CDATA section — extract as text
+      if (s.startsWith('<![CDATA[', pos)) {
+        const cdataEnd = s.indexOf(']]>', pos + 9);
+        if (cdataEnd === -1) break;
+        const text = s.substring(pos + 9, cdataEnd);
+        if (text) {
+          tokens.push({ type: 'text', text });
+        }
+        pos = cdataEnd + 3;
+        continue;
+      }
+
       // Closing tag
       if (s[pos + 1] === '/') {
         const end = s.indexOf('>', pos);
@@ -194,6 +217,22 @@ function buildTree(tokens: Token[]): SvgNode | null {
   }
 
   return root;
+}
+
+/**
+ * Extract <!ENTITY name "value"> declarations from a DOCTYPE internal subset.
+ */
+function extractEntities(svgString: string): Map<string, string> {
+  const entities = new Map<string, string>();
+  const dtdMatch = svgString.match(/<!DOCTYPE[^[>]*\[([\s\S]*?)\]/i);
+  if (!dtdMatch) return entities;
+  const subset = dtdMatch[1];
+  const entityRe = /<!ENTITY\s+(\w+)\s+(?:"([\s\S]*?)"|'([\s\S]*?)')\s*>/gi;
+  let m;
+  while ((m = entityRe.exec(subset)) !== null) {
+    entities.set(m[1], m[2] !== undefined ? m[2] : m[3]);
+  }
+  return entities;
 }
 
 /**

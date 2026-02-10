@@ -27,7 +27,7 @@ import { normalizePath } from './normalizer';
 import { parseViewBox } from './parser';
 import { AffineMatrix, parseTransform } from './transform';
 import { gaussianBlur } from './blur';
-import { fillRectInBuffer, fillCircleInBuffer, applyClipMask, parseColorToRGBA } from './rasterize';
+import { fillRectInBuffer, fillCircleInBuffer, fillPathInBuffer, applyClipMask, parseColorToRGBA } from './rasterize';
 
 /** Gradient definition — stores stop colors and geometry for url(#id) resolution. */
 export interface GradientDef {
@@ -35,7 +35,9 @@ export interface GradientDef {
   stops: { offset: number; color: string }[];
   x1: number; y1: number; x2: number; y2: number;  // linear: gradient line
   cx?: number; cy?: number; r?: number;              // radial: center + radius (bbox 0-1)
+  fx?: number; fy?: number;                          // radial: focal point (defaults to cx,cy)
   units?: 'userSpaceOnUse' | 'objectBoundingBox';   // default objectBoundingBox
+  spreadMethod?: 'pad' | 'reflect' | 'repeat';      // default pad (clamp)
 }
 
 /** Resolved viewBox mapping for coordinate transforms */
@@ -102,11 +104,51 @@ export class SvgContext {
   private clipPaths: Map<string, ClipPathDef> = new Map();
   private nodesById: Map<string, SvgNode> = new Map();
   private walkNodeFn?: (s: SvgContext, node: SvgNode) => void;
+  private cssRules: Map<string, Record<string, string>> = new Map(); // selector → properties
 
   constructor(app: any, mapping: ViewBoxMapping, rootStyle?: SvgStyle) {
     this.app = app;
     this.mapping = mapping;
     if (rootStyle) this.styleStack[0] = rootStyle;
+  }
+
+  /** Parse a CSS <style> block and register rules for class/element selectors. */
+  registerCssStyle(cssText: string): void {
+    // Simple CSS parser: extract rules like "selector { prop: value; ... }"
+    const ruleRe = /([^{}]+)\{([^}]*)\}/g;
+    let m;
+    while ((m = ruleRe.exec(cssText)) !== null) {
+      const selectors = m[1].trim().split(/\s*,\s*/);
+      const body = m[2].trim();
+      const props: Record<string, string> = {};
+      for (const decl of body.split(';')) {
+        const colonIdx = decl.indexOf(':');
+        if (colonIdx < 0) continue;
+        const prop = decl.slice(0, colonIdx).trim();
+        const val = decl.slice(colonIdx + 1).trim();
+        if (prop && val) props[prop] = val;
+      }
+      for (const sel of selectors) {
+        const existing = this.cssRules.get(sel) || {};
+        this.cssRules.set(sel, { ...existing, ...props });
+      }
+    }
+  }
+
+  /** Get CSS properties that apply to an element with given tag and class attribute. */
+  private getCssProps(tag: string, className?: string): Record<string, string> {
+    const result: Record<string, string> = {};
+    // Element selector (e.g. "text")
+    const tagRules = this.cssRules.get(tag);
+    if (tagRules) Object.assign(result, tagRules);
+    // Class selectors
+    if (className) {
+      for (const cls of className.trim().split(/\s+/)) {
+        const classRules = this.cssRules.get('.' + cls);
+        if (classRules) Object.assign(result, classRules);
+      }
+    }
+    return result;
   }
 
   /** Register the walkNode callback for <use> element support. */
@@ -133,25 +175,37 @@ export class SvgContext {
     const parent = this.currentStyle();
     const merged: SvgStyle = { ...parent };
     const style = parseStyleAttr(attrs.style);
+    const css = this.getCssProps((attrs as any)._tag ?? '', attrs.class);
     if (attrs.fill !== undefined) merged.fill = attrs.fill;
     else if (style.fill) merged.fill = style.fill;
+    else if (css.fill) merged.fill = css.fill;
     if (attrs.stroke !== undefined) merged.stroke = attrs.stroke;
     else if (style.stroke) merged.stroke = style.stroke;
+    else if (css.stroke) merged.stroke = css.stroke;
     if (attrs['stroke-width'] !== undefined) merged.strokeWidth = parseNum(attrs['stroke-width']);
     else if (style['stroke-width']) merged.strokeWidth = parseNum(style['stroke-width']);
+    else if (css['stroke-width']) merged.strokeWidth = parseNum(css['stroke-width']);
     if (attrs['stroke-linecap'] !== undefined) merged.strokeLinecap = attrs['stroke-linecap'] as any;
     if (attrs['stroke-linejoin'] !== undefined) merged.strokeLinejoin = attrs['stroke-linejoin'] as any;
     // Text properties
-    const fontSize = attrs['font-size'] ?? style['font-size'];
-    if (fontSize !== undefined) merged.fontSize = parseNum(fontSize);
-    const fontFamily = attrs['font-family'] ?? style['font-family'];
+    const fontSize = attrs['font-size'] ?? style['font-size'] ?? css['font-size'];
+    if (fontSize !== undefined) merged.fontSize = parseFontSize(fontSize);
+    const fontFamily = attrs['font-family'] ?? style['font-family'] ?? css['font-family'];
     if (fontFamily !== undefined) merged.fontFamily = fontFamily;
-    const fontWeight = attrs['font-weight'] ?? style['font-weight'];
+    const fontWeight = attrs['font-weight'] ?? style['font-weight'] ?? css['font-weight'];
     if (fontWeight !== undefined) merged.fontWeight = fontWeight;
-    const fontStyle = attrs['font-style'] ?? style['font-style'];
+    const fontStyle = attrs['font-style'] ?? style['font-style'] ?? css['font-style'];
     if (fontStyle !== undefined) merged.fontStyle = fontStyle;
-    const textAnchor = attrs['text-anchor'] ?? style['text-anchor'];
+    const textAnchor = attrs['text-anchor'] ?? style['text-anchor'] ?? css['text-anchor'];
     if (textAnchor !== undefined) merged.textAnchor = textAnchor;
+    const fillRule = attrs['fill-rule'] ?? style['fill-rule'] ?? css['fill-rule'];
+    if (fillRule !== undefined) merged.fillRule = fillRule as any;
+    const fillOpacity = attrs['fill-opacity'] ?? style['fill-opacity'] ?? css['fill-opacity'];
+    if (fillOpacity !== undefined) merged.fillOpacity = parseNum(fillOpacity);
+    const strokeOpacity = attrs['stroke-opacity'] ?? style['stroke-opacity'] ?? css['stroke-opacity'];
+    if (strokeOpacity !== undefined) merged.strokeOpacity = parseNum(strokeOpacity);
+    const opacity = attrs.opacity ?? style.opacity ?? css.opacity;
+    if (opacity !== undefined) merged.opacity = parseNum(opacity);
     this.styleStack.push(merged);
   }
 
@@ -185,21 +239,25 @@ export class SvgContext {
     return [this.mapX(tx), this.mapY(ty)];
   }
 
-  /** Resolve final style: element attrs override inherited group style. */
+  /** Resolve final style: element attrs override inline style override CSS class override inherited. */
   private resolveStyle(attrs: SvgElementAttrs): SvgStyle {
     const inherited = this.currentStyle();
     const style = parseStyleAttr(attrs.style);
-    const fontSize = attrs['font-size'] ?? style['font-size'];
-    const fontFamily = attrs['font-family'] ?? style['font-family'];
-    const fontWeight = attrs['font-weight'] ?? style['font-weight'];
-    const fontStyleVal = attrs['font-style'] ?? style['font-style'];
-    const textAnchor = attrs['text-anchor'] ?? style['text-anchor'];
-    const strokeWidth = attrs['stroke-width'] ?? style['stroke-width'];
-    const strokeLinecap = attrs['stroke-linecap'] ?? style['stroke-linecap'];
-    const strokeLinejoin = attrs['stroke-linejoin'] ?? style['stroke-linejoin'];
-    const opacity = attrs.opacity ?? style.opacity;
-    const fillOpacity = attrs['fill-opacity'] ?? style['fill-opacity'];
-    const strokeOpacity = attrs['stroke-opacity'] ?? style['stroke-opacity'];
+    // CSS class/tag rules (lower priority than inline style and element attrs)
+    const tag = (attrs as any)._tag ?? '';
+    const css = this.getCssProps(tag, attrs.class);
+    const fontSize = attrs['font-size'] ?? style['font-size'] ?? css['font-size'];
+    const fontFamily = attrs['font-family'] ?? style['font-family'] ?? css['font-family'];
+    const fontWeight = attrs['font-weight'] ?? style['font-weight'] ?? css['font-weight'];
+    const fontStyleVal = attrs['font-style'] ?? style['font-style'] ?? css['font-style'];
+    const textAnchor = attrs['text-anchor'] ?? style['text-anchor'] ?? css['text-anchor'];
+    const strokeWidth = attrs['stroke-width'] ?? style['stroke-width'] ?? css['stroke-width'];
+    const strokeLinecap = attrs['stroke-linecap'] ?? style['stroke-linecap'] ?? css['stroke-linecap'];
+    const strokeLinejoin = attrs['stroke-linejoin'] ?? style['stroke-linejoin'] ?? css['stroke-linejoin'];
+    const fillRule = attrs['fill-rule'] ?? style['fill-rule'] ?? css['fill-rule'];
+    const opacity = attrs.opacity ?? style.opacity ?? css.opacity;
+    const fillOpacity = attrs['fill-opacity'] ?? style['fill-opacity'] ?? css['fill-opacity'];
+    const strokeOpacity = attrs['stroke-opacity'] ?? style['stroke-opacity'] ?? css['stroke-opacity'];
     // Extract filter and clip-path references
     const filterStr = attrs.filter ?? style.filter;
     const clipPathStr = attrs['clip-path'] ?? style['clip-path'];
@@ -207,19 +265,20 @@ export class SvgContext {
     const clipPathId = clipPathStr ? extractUrlId(clipPathStr) : undefined;
 
     return {
-      fill: attrs.fill !== undefined ? attrs.fill : (style.fill ?? inherited.fill),
-      stroke: attrs.stroke !== undefined ? attrs.stroke : (style.stroke ?? inherited.stroke),
+      fill: attrs.fill !== undefined ? attrs.fill : (style.fill ?? css.fill ?? inherited.fill),
+      stroke: attrs.stroke !== undefined ? attrs.stroke : (style.stroke ?? css.stroke ?? inherited.stroke),
       strokeWidth: strokeWidth !== undefined ? parseNum(strokeWidth) : inherited.strokeWidth,
       strokeLinecap: (strokeLinecap as any) || inherited.strokeLinecap,
       strokeLinejoin: (strokeLinejoin as any) || inherited.strokeLinejoin,
       opacity: opacity !== undefined ? parseNum(opacity) : inherited.opacity,
       fillOpacity: fillOpacity !== undefined ? parseNum(fillOpacity) : inherited.fillOpacity,
       strokeOpacity: strokeOpacity !== undefined ? parseNum(strokeOpacity) : inherited.strokeOpacity,
-      fontSize: fontSize !== undefined ? parseNum(fontSize) : inherited.fontSize,
+      fontSize: fontSize !== undefined ? parseFontSize(fontSize) : inherited.fontSize,
       fontFamily: fontFamily !== undefined ? fontFamily : inherited.fontFamily,
       fontWeight: fontWeight !== undefined ? fontWeight : inherited.fontWeight,
       fontStyle: fontStyleVal !== undefined ? fontStyleVal : inherited.fontStyle,
       textAnchor: textAnchor !== undefined ? textAnchor : inherited.textAnchor,
+      fillRule: (fillRule as any) || inherited.fillRule,
       filterId,
       clipPathId,
     };
@@ -239,31 +298,59 @@ export class SvgContext {
     return l * this.mapping.scale;
   }
 
-  /** Map a stroke-width value through viewBox scaling + current transform. */
-  private mapStrokeWidth(raw: number): number {
-    return this.mapLength(raw) * this.currentTransform().averageScale();
+  /** Parse a length value, resolving percentages against the viewBox width. */
+  parseLenX(v: any): number {
+    if (typeof v === 'string' && v.endsWith('%')) {
+      return (parseFloat(v) / 100) * this.mapping.vb.width;
+    }
+    return parseNum(v);
+  }
+
+  /** Parse a length value, resolving percentages against the viewBox height. */
+  parseLenY(v: any): number {
+    if (typeof v === 'string' && v.endsWith('%')) {
+      return (parseFloat(v) / 100) * this.mapping.vb.height;
+    }
+    return parseNum(v);
+  }
+
+  /** Map a stroke-width value through viewBox scaling + current transform.
+   *  Returns [width, opacityFactor]: sub-pixel strokes are rendered at 1px
+   *  with proportionally reduced opacity (matching browser anti-aliasing). */
+  private mapStrokeWidth(raw: number): [number, number] {
+    const w = this.mapLength(raw) * this.currentTransform().averageScale();
+    if (w < 1) return [1, w];  // e.g. 0.38px → 1px at 38% opacity
+    return [w, 1];
   }
 
   /** Build a fillGradient object for canvasPath, converting units as needed. */
   private buildFillGradient(
     gradDef: GradientDef,
     bounds: { minX: number; minY: number; maxX: number; maxY: number },
+    alpha?: number,
   ): any {
     const bw = bounds.maxX - bounds.minX || 1;
     const bh = bounds.maxY - bounds.minY || 1;
+    // Apply element opacity to gradient stop colors
+    const stops = (alpha !== undefined && alpha < 1)
+      ? gradDef.stops.map(s => ({ offset: s.offset, color: applyOpacityToColor(s.color, alpha) }))
+      : gradDef.stops;
 
     if (gradDef.type === 'radial') {
       let cx = gradDef.cx ?? 0.5;
       let cy = gradDef.cy ?? 0.5;
       let r = gradDef.r ?? 0.5;
+      let fx = gradDef.fx ?? cx;
+      let fy = gradDef.fy ?? cy;
       if (gradDef.units === 'userSpaceOnUse') {
         // Pass pixel-space center + radius to preserve circular shape
         const [mcx, mcy] = this.mapPoint(cx, cy);
-        const rPx = this.mapLength(r);
-        return { type: 'radial', cx: mcx, cy: mcy, rx: rPx, ry: rPx, pixelSpace: true, stops: gradDef.stops };
+        const [mfx, mfy] = this.mapPoint(fx, fy);
+        const rPx = this.mapLength(r) * this.currentTransform().averageScale();
+        return { type: 'radial', cx: mcx, cy: mcy, rx: rPx, ry: rPx, fx: mfx, fy: mfy, pixelSpace: true, stops, spreadMethod: gradDef.spreadMethod };
       }
       // objectBoundingBox: r is same in both axes (circle in bbox space)
-      return { type: 'radial', cx, cy, rx: r, ry: r, stops: gradDef.stops };
+      return { type: 'radial', cx, cy, rx: r, ry: r, fx, fy, stops, spreadMethod: gradDef.spreadMethod };
     }
 
     // Linear gradient
@@ -276,6 +363,7 @@ export class SvgContext {
         x1: gx1, y1: gy1, x2: gx2, y2: gy2,
         pixelSpace: true,
         stops: gradDef.stops,
+        spreadMethod: gradDef.spreadMethod,
       };
     }
     return {
@@ -283,6 +371,7 @@ export class SvgContext {
       x1: gradDef.x1, y1: gradDef.y1,
       x2: gradDef.x2, y2: gradDef.y2,
       stops: gradDef.stops,
+      spreadMethod: gradDef.spreadMethod,
     };
   }
 
@@ -318,6 +407,197 @@ export class SvgContext {
     this.popStyle();
   }
 
+  /** Nested <svg> element — applies viewport transform with preserveAspectRatio. */
+  nestedSvg(attrs: SvgElementAttrs, children: SvgNode[], builder: () => void): void {
+    const viewBoxStr = attrs.viewBox || attrs.viewbox;
+    const width = parseNum(attrs.width);
+    const height = parseNum(attrs.height);
+
+    if (!viewBoxStr || !width || !height) {
+      builder();
+      return;
+    }
+    const vb = parseViewBox(viewBoxStr);
+    if (!vb) { builder(); return; }
+
+    const par = parsePreserveAspectRatio(
+      attrs.preserveAspectRatio || 'xMidYMid meet',
+    );
+
+    const scaleX = width / vb.width;
+    const scaleY = height / vb.height;
+    const scale = par.meetOrSlice === 'slice'
+      ? Math.max(scaleX, scaleY)
+      : Math.min(scaleX, scaleY);
+
+    const scaledW = vb.width * scale;
+    const scaledH = vb.height * scale;
+    let tx = 0, ty = 0;
+    if (par.alignX === 'Mid') tx = (width - scaledW) / 2;
+    else if (par.alignX === 'Max') tx = width - scaledW;
+    if (par.alignY === 'Mid') ty = (height - scaledH) / 2;
+    else if (par.alignY === 'Max') ty = height - scaledH;
+
+    // Optional x/y offset of the nested viewport in parent space
+    const svgX = parseNum(attrs.x ?? 0);
+    const svgY = parseNum(attrs.y ?? 0);
+
+    // PAR transform: translate(svgX+tx, svgY+ty) * scale(s) * translate(-vb.minX, -vb.minY)
+    const parMatrix = AffineMatrix.translate(svgX + tx, svgY + ty)
+      .multiply(AffineMatrix.scale(scale))
+      .multiply(AffineMatrix.translate(-vb.minX, -vb.minY));
+
+    if (par.meetOrSlice === 'slice') {
+      // Slice mode: render into a viewport-clipped raster buffer
+      this.renderSlicedNestedSvg(svgX, svgY, width, height, parMatrix, children);
+      return;
+    }
+
+    // Meet mode: no clipping needed, push transform and render normally
+    const parent = this.currentTransform();
+    this.transformStack.push(parent.multiply(parMatrix));
+    builder();
+    this.popTransform();
+  }
+
+  /** Render a nested SVG in slice mode as a clipped raster buffer. */
+  private renderSlicedNestedSvg(
+    svgX: number,
+    svgY: number,
+    vpWidth: number,
+    vpHeight: number,
+    parMatrix: AffineMatrix,
+    children: SvgNode[],
+  ): void {
+    // Compute viewport pixel bounds using parent transform (without PAR)
+    const [px0, py0] = this.mapPoint(svgX, svgY);
+    const [px1, py1] = this.mapPoint(svgX + vpWidth, svgY + vpHeight);
+    const bufW = Math.max(Math.round(px1 - px0), 1);
+    const bufH = Math.max(Math.round(py1 - py0), 1);
+
+    // Combined transform: parent * PAR (maps viewBox coords to root SVG coords)
+    const fullXform = this.currentTransform().multiply(parMatrix);
+
+    const pixels = new Uint8Array(bufW * bufH * 4);
+
+    // Rasterize each child into the clipped buffer
+    for (const child of children) {
+      this.rasterizeNode(child, fullXform, pixels, bufW, bufH, px0, py0);
+    }
+
+    // Encode and display as canvasRaster
+    const rawPixels = uint8ArrayToBase64(pixels);
+    this.app.canvasRaster(
+      bufW, bufH,
+      undefined,
+      undefined,
+      { x: Math.round(px0), y: Math.round(py0), rawPixels },
+    );
+  }
+
+  /** Recursively rasterize an SvgNode tree into a pixel buffer for slice clipping. */
+  private rasterizeNode(
+    node: SvgNode,
+    xform: AffineMatrix,
+    buf: Uint8Array,
+    bufW: number,
+    bufH: number,
+    px0: number,
+    py0: number,
+  ): void {
+    const attrs = node.attrs;
+
+    // Apply any transform on this node
+    let localXform = xform;
+    if (attrs.transform) {
+      localXform = xform.multiply(parseTransform(attrs.transform));
+    }
+
+    // Resolve fill color
+    const style = parseStyleAttr(attrs.style);
+    const fillStr = attrs.fill ?? style.fill;
+    const hasFill = fillStr !== 'none' && fillStr !== undefined;
+    const fillColor = fillStr === 'none' ? undefined : (fillStr || 'black');
+
+    switch (node.tag) {
+      case 'g':
+        for (const child of node.children) {
+          this.rasterizeNode(child, localXform, buf, bufW, bufH, px0, py0);
+        }
+        break;
+      case 'rect': {
+        const rx = parseNum(attrs.x ?? 0);
+        const ry = parseNum(attrs.y ?? 0);
+        const rw = parseNum(attrs.width ?? 0);
+        const rh = parseNum(attrs.height ?? 0);
+        const strokeStr = attrs.stroke ?? style.stroke;
+        const hasStroke = strokeStr && strokeStr !== 'none';
+        if (hasStroke) {
+          // Draw stroke outer rect, then inset fill for symmetry
+          const sw = parseNum(attrs['stroke-width'] ?? style['stroke-width'] ?? 1);
+          const [sr, sg, sb, sa] = parseColorToRGBA(normalizeColor(strokeStr));
+          const half = sw / 2;
+          const [stx1, sty1] = localXform.apply(rx - half, ry - half);
+          const [stx2, sty2] = localXform.apply(rx + rw + half, ry + rh + half);
+          const sbx1 = this.mapX(stx1) - px0;
+          const sby1 = this.mapY(sty1) - py0;
+          const sbx2 = this.mapX(stx2) - px0;
+          const sby2 = this.mapY(sty2) - py0;
+          fillRectInBuffer(buf, bufW, bufH, sbx1, sby1, sbx2 - sbx1, sby2 - sby1, sr, sg, sb, sa);
+          // Fill as symmetric inset from stroke outer (avoids rounding asymmetry)
+          if (fillColor) {
+            const [cr, cg, cb, ca] = parseColorToRGBA(normalizeColor(fillColor));
+            const pxSW = Math.max(Math.round(this.mapLength(sw) * localXform.averageScale()), 1);
+            fillRectInBuffer(buf, bufW, bufH,
+              sbx1 + pxSW, sby1 + pxSW,
+              (sbx2 - sbx1) - 2 * pxSW, (sby2 - sby1) - 2 * pxSW,
+              cr, cg, cb, ca);
+          }
+        } else if (fillColor) {
+          const [cr, cg, cb, ca] = parseColorToRGBA(normalizeColor(fillColor));
+          const [tx1, ty1] = localXform.apply(rx, ry);
+          const [tx2, ty2] = localXform.apply(rx + rw, ry + rh);
+          const bx1 = this.mapX(tx1) - px0;
+          const by1 = this.mapY(ty1) - py0;
+          const bx2 = this.mapX(tx2) - px0;
+          const by2 = this.mapY(ty2) - py0;
+          fillRectInBuffer(buf, bufW, bufH, bx1, by1, bx2 - bx1, by2 - by1, cr, cg, cb, ca);
+        }
+        break;
+      }
+      case 'circle': {
+        if (!fillColor) break;
+        const [cr, cg, cb, ca] = parseColorToRGBA(normalizeColor(fillColor));
+        const cx = parseNum(attrs.cx ?? 0);
+        const cy = parseNum(attrs.cy ?? 0);
+        const r = parseNum(attrs.r ?? 0);
+        const [tcx, tcy] = localXform.apply(cx, cy);
+        const bcx = this.mapX(tcx) - px0;
+        const bcy = this.mapY(tcy) - py0;
+        const br = this.mapLength(r) * localXform.averageScale();
+        fillCircleInBuffer(buf, bufW, bufH, bcx, bcy, br, cr, cg, cb, ca);
+        break;
+      }
+      case 'path': {
+        if (!fillColor || !attrs.d) break;
+        const [cr, cg, cb, ca] = parseColorToRGBA(normalizeColor(fillColor));
+        // Normalize path, then transform all coordinates to buffer space
+        const nd = normalizePath(attrs.d);
+        const transformed = transformPathToBuffer(nd, localXform, this, px0, py0);
+        if (transformed) {
+          fillPathInBuffer(buf, bufW, bufH, transformed, 0, 0, cr, cg, cb, ca);
+        }
+        break;
+      }
+      default:
+        // Recurse into children of unknown elements
+        for (const child of node.children) {
+          this.rasterizeNode(child, localXform, buf, bufW, bufH, px0, py0);
+        }
+        break;
+    }
+  }
+
   /** Path element — normalizes d, maps coords, renders via canvasPath. */
   path(attrs: SvgElementAttrs): SvgElement {
     if (!attrs.d) return new SvgElement(null);
@@ -329,8 +609,14 @@ export class SvgContext {
     const alpha = effectiveAlpha(style);
     const gradDef = resolveGradientFill(style.fill, this);
     const fillColor = gradDef ? undefined : resolveFillColor(style.fill, this, alpha);
-    const strokeColor = resolveStrokeColor(style);
-    const sw = strokeColor ? this.mapStrokeWidth(style.strokeWidth ?? 1) : 0;
+    let strokeColor = resolveStrokeColor(style);
+    const strokeGradDef = resolveGradientStroke(style.stroke, this);
+    let sw = 0;
+    if (strokeColor || strokeGradDef) {
+      const [w, opacity] = this.mapStrokeWidth(style.strokeWidth ?? 1);
+      sw = w;
+      if (strokeColor && opacity < 1) strokeColor = applyOpacityToColor(strokeColor, opacity);
+    }
     const margin = Math.ceil(sw / 2) + 2;
     const width = Math.max(bounds.maxX + margin, 10);
     const height = Math.max(bounds.maxY + margin, 10);
@@ -344,9 +630,13 @@ export class SvgContext {
       strokeWidth: sw,
       lineCap: style.strokeLinecap || 'butt',
       lineJoin: style.strokeLinejoin === 'miter' ? 'bevel' : (style.strokeLinejoin || 'bevel'),
+      fillRule: style.fillRule || undefined,
     };
     if (gradDef) {
-      opts.fillGradient = this.buildFillGradient(gradDef, bounds);
+      opts.fillGradient = this.buildFillGradient(gradDef, bounds, alpha);
+    }
+    if (strokeGradDef) {
+      opts.strokeGradient = this.buildFillGradient(strokeGradDef, bounds);
     }
 
     const underlying = this.app.canvasPath(opts);
@@ -361,9 +651,9 @@ export class SvgContext {
 
     // If filter or clipPath, render as raster
     if (style.filterId || style.clipPathId) {
-      const ccx = parseNum(attrs.cx ?? 0);
-      const ccy = parseNum(attrs.cy ?? 0);
-      const cr = parseNum(attrs.r ?? 0);
+      const ccx = this.parseLenX(attrs.cx ?? 0);
+      const ccy = this.parseLenY(attrs.cy ?? 0);
+      const cr = this.parseLenX(attrs.r ?? 0);
       const fillStr = resolveFillColor(style.fill, this) ?? 'black';
       const result = this.renderAsRaster(
         { x: ccx - cr, y: ccy - cr, w: cr * 2, h: cr * 2 },
@@ -378,13 +668,17 @@ export class SvgContext {
       return result;
     }
 
-    const [cx, cy] = this.mapPoint(parseNum(attrs.cx ?? 0), parseNum(attrs.cy ?? 0));
-    const r = this.mapLength(parseNum(attrs.r ?? 0)) * this.currentTransform().averageScale();
+    const [cx, cy] = this.mapPoint(this.parseLenX(attrs.cx ?? 0), this.parseLenY(attrs.cy ?? 0));
+    const r = this.mapLength(this.parseLenX(attrs.r ?? 0)) * this.currentTransform().averageScale();
     const alpha = effectiveAlpha(style);
     const fillColor = resolveFillColor(style.fill, this, alpha);
-    const strokeColor = resolveStrokeColor(style);
-
-    const sw = strokeColor ? this.mapStrokeWidth(style.strokeWidth ?? 1) : 0;
+    let strokeColor = resolveStrokeColor(style);
+    let sw = 0;
+    if (strokeColor) {
+      const [w, opacity] = this.mapStrokeWidth(style.strokeWidth ?? 1);
+      sw = w;
+      if (opacity < 1) strokeColor = applyOpacityToColor(strokeColor, opacity);
+    }
     const halfSw = sw / 2;
     const underlying = this.app.canvasCircle({
       x: cx - r - halfSw,
@@ -402,10 +696,10 @@ export class SvgContext {
   /** Ellipse element — renders as a path for full stroke/fill support. */
   ellipse(attrs: SvgElementAttrs): SvgElement {
     // Approximate ellipse as cubic Bezier path (4 arcs)
-    const ecx = parseNum(attrs.cx ?? 0);
-    const ecy = parseNum(attrs.cy ?? 0);
-    const erx = parseNum(attrs.rx ?? 0);
-    const ery = parseNum(attrs.ry ?? 0);
+    const ecx = this.parseLenX(attrs.cx ?? 0);
+    const ecy = this.parseLenY(attrs.cy ?? 0);
+    const erx = this.parseLenX(attrs.rx ?? 0);
+    const ery = this.parseLenY(attrs.ry ?? 0);
     // kappa = 4*(sqrt(2)-1)/3 ≈ 0.5522847498
     const k = 0.5522847498;
     const kx = erx * k;
@@ -428,10 +722,10 @@ export class SvgContext {
 
     // If filter or clipPath, render as raster
     if (style.filterId || style.clipPathId) {
-      const px = parseNum(attrs.x ?? 0);
-      const py = parseNum(attrs.y ?? 0);
-      const pw = parseNum(attrs.width ?? 0);
-      const ph = parseNum(attrs.height ?? 0);
+      const px = this.parseLenX(attrs.x ?? 0);
+      const py = this.parseLenY(attrs.y ?? 0);
+      const pw = this.parseLenX(attrs.width ?? 0);
+      const ph = this.parseLenY(attrs.height ?? 0);
       const fillStr = resolveFillColor(style.fill, this) ?? 'black';
       const result = this.renderAsRaster(
         { x: px, y: py, w: pw, h: ph },
@@ -458,12 +752,12 @@ export class SvgContext {
 
     // If gradient fill, rotation, or rounded corners, render as path
     if (gradDef || hasRotation || hasRoundedCorners) {
-      const px = parseNum(attrs.x ?? 0);
-      const py = parseNum(attrs.y ?? 0);
-      const pw = parseNum(attrs.width ?? 0);
-      const ph = parseNum(attrs.height ?? 0);
-      const crx = Math.min(parseNum(attrs.rx ?? 0), pw / 2);
-      const cry = Math.min(parseNum(attrs.ry ?? 0), ph / 2);
+      const px = this.parseLenX(attrs.x ?? 0);
+      const py = this.parseLenY(attrs.y ?? 0);
+      const pw = this.parseLenX(attrs.width ?? 0);
+      const ph = this.parseLenY(attrs.height ?? 0);
+      const crx = Math.min(this.parseLenX(attrs.rx ?? 0), pw / 2);
+      const cry = Math.min(this.parseLenY(attrs.ry ?? 0), ph / 2);
       let rectPath: string;
       if (crx > 0 || cry > 0) {
         // Rounded rect — use arc commands for corners
@@ -489,10 +783,10 @@ export class SvgContext {
       return result;
     }
 
-    const px = parseNum(attrs.x ?? 0);
-    const py = parseNum(attrs.y ?? 0);
-    const pw = parseNum(attrs.width ?? 0);
-    const ph = parseNum(attrs.height ?? 0);
+    const px = this.parseLenX(attrs.x ?? 0);
+    const py = this.parseLenY(attrs.y ?? 0);
+    const pw = this.parseLenX(attrs.width ?? 0);
+    const ph = this.parseLenY(attrs.height ?? 0);
     // Transform all four corners and compute axis-aligned bounding box
     const [x1, y1] = this.mapPoint(px, py);
     const [x2, y2] = this.mapPoint(px + pw, py);
@@ -503,16 +797,25 @@ export class SvgContext {
     const maxX = Math.max(x1, x2, x3, x4);
     const maxY = Math.max(y1, y2, y3, y4);
     const fillColor = resolveFillColor(style.fill, this, effectiveAlpha(style));
-    const strokeColor = resolveStrokeColor(style);
+    let strokeColor = resolveStrokeColor(style);
+    let sw = 0;
+    if (strokeColor) {
+      const [w, opacity] = this.mapStrokeWidth(style.strokeWidth ?? 1);
+      sw = w;
+      if (opacity < 1) strokeColor = applyOpacityToColor(strokeColor, opacity);
+    }
+    // SVG strokes are centered on the boundary — expand by half stroke width
+    // so the outer portion remains visible when a fill rect is layered on top
+    const halfSw = sw / 2;
 
     const underlying = this.app.canvasRectangle({
-      x: minX,
-      y: minY,
-      x2: maxX,
-      y2: maxY,
+      x: minX - halfSw,
+      y: minY - halfSw,
+      x2: maxX + halfSw,
+      y2: maxY + halfSw,
       fillColor,
       strokeColor,
-      strokeWidth: strokeColor ? this.mapStrokeWidth(style.strokeWidth ?? 1) : 0,
+      strokeWidth: sw,
     });
     if (attrs.transform) this.popTransform();
     return new SvgElement(underlying);
@@ -525,9 +828,12 @@ export class SvgContext {
     const [x2, y2] = this.mapPoint(parseNum(attrs.x2 ?? 0), parseNum(attrs.y2 ?? 0));
     const style = this.resolveStyle(attrs);
 
+    let lineStroke = resolveStrokeColor(style) || 'black';
+    const [lineSw, lineSwOp] = this.mapStrokeWidth(style.strokeWidth ?? 1);
+    if (lineSwOp < 1) lineStroke = applyOpacityToColor(lineStroke, lineSwOp);
     const underlying = this.app.canvasLine(x1, y1, x2, y2, {
-      strokeColor: resolveStrokeColor(style) || 'black',
-      strokeWidth: this.mapStrokeWidth(style.strokeWidth ?? 1),
+      strokeColor: lineStroke,
+      strokeWidth: lineSw,
     });
     if (attrs.transform) this.popTransform();
     return new SvgElement(underlying);
@@ -702,7 +1008,14 @@ export class SvgContext {
       gaussianBlur(pixels, bufW, bufH, pxSigmaX, pxSigmaY);
     }
 
-    // Clip to filter region (SVG spec: filter output is clipped to the filter region)
+    // Crop to filter region (SVG spec: filter output is clipped to the filter region)
+    // Instead of hard-clipping alpha, crop the buffer to the filter region extent.
+    // This gives a natural blur falloff at the boundary (matching librsvg behavior).
+    let outPixels = pixels;
+    let outW = bufW;
+    let outH = bufH;
+    let outPxX = pxBufX;
+    let outPxY = pxBufY;
     if (filterDef) {
       const frSvgX = elemBounds.x + filterDef.regionX * elemBounds.w;
       const frSvgY = elemBounds.y + filterDef.regionY * elemBounds.h;
@@ -710,48 +1023,52 @@ export class SvgContext {
       const frSvgH = filterDef.regionHeight * elemBounds.h;
       const [frPxX, frPxY] = this.mapPoint(frSvgX, frSvgY);
       const [frPxX2, frPxY2] = this.mapPoint(frSvgX + frSvgW, frSvgY + frSvgH);
-      // Zero out pixels outside the filter region
-      const frX0 = Math.round(frPxX - pxBufX);
-      const frY0 = Math.round(frPxY - pxBufY);
-      const frX1 = Math.round(frPxX2 - pxBufX);
-      const frY1 = Math.round(frPxY2 - pxBufY);
-      for (let py = 0; py < bufH; py++) {
-        for (let px = 0; px < bufW; px++) {
-          if (px < frX0 || px >= frX1 || py < frY0 || py >= frY1) {
-            const idx = (py * bufW + px) * 4;
-            pixels[idx + 3] = 0; // zero alpha
-          }
-        }
+      const cropX0 = Math.max(Math.round(frPxX - pxBufX), 0);
+      const cropY0 = Math.max(Math.round(frPxY - pxBufY), 0);
+      const cropX1 = Math.min(Math.round(frPxX2 - pxBufX), bufW);
+      const cropY1 = Math.min(Math.round(frPxY2 - pxBufY), bufH);
+      const cropW = Math.max(cropX1 - cropX0, 1);
+      const cropH = Math.max(cropY1 - cropY0, 1);
+      const cropped = new Uint8Array(cropW * cropH * 4);
+      for (let y = 0; y < cropH; y++) {
+        const srcOff = ((cropY0 + y) * bufW + cropX0) * 4;
+        const dstOff = y * cropW * 4;
+        cropped.set(pixels.subarray(srcOff, srcOff + cropW * 4), dstOff);
       }
+      outPixels = cropped;
+      outW = cropW;
+      outH = cropH;
+      outPxX = pxBufX + cropX0;
+      outPxY = pxBufY + cropY0;
     }
 
     // Apply clip mask
     if (clipDef) {
-      const mask = new Uint8Array(bufW * bufH * 4);
+      const mask = new Uint8Array(outW * outH * 4);
       for (const shape of clipDef.shapes) {
         if (shape.type === 'rect') {
           const [rx, ry] = this.mapPoint(shape.x ?? 0, shape.y ?? 0);
           const rw = this.mapLength(shape.width ?? 0) * this.currentTransform().averageScale();
           const rh = this.mapLength(shape.height ?? 0) * this.currentTransform().averageScale();
-          fillRectInBuffer(mask, bufW, bufH, rx - pxBufX, ry - pxBufY, rw, rh, 255, 255, 255, 255);
+          fillRectInBuffer(mask, outW, outH, rx - outPxX, ry - outPxY, rw, rh, 255, 255, 255, 255);
         } else if (shape.type === 'circle') {
           const [ccx, ccy] = this.mapPoint(shape.cx ?? 0, shape.cy ?? 0);
           const cr2 = this.mapLength(shape.r ?? 0) * this.currentTransform().averageScale();
-          fillCircleInBuffer(mask, bufW, bufH, ccx - pxBufX, ccy - pxBufY, cr2, 255, 255, 255, 255);
+          fillCircleInBuffer(mask, outW, outH, ccx - outPxX, ccy - outPxY, cr2, 255, 255, 255, 255);
         }
       }
-      applyClipMask(pixels, mask, bufW * bufH);
+      applyClipMask(outPixels, mask, outW * outH);
     }
 
     // Encode as base64
-    const rawPixels = uint8ArrayToBase64(pixels);
+    const rawPixels = uint8ArrayToBase64(outPixels);
 
     // Create canvasRaster at the correct position
     const underlying = this.app.canvasRaster(
-      bufW, bufH,
+      outW, outH,
       undefined, // no pixel tuples
       undefined, // no blend mode
-      { x: Math.round(pxBufX), y: Math.round(pxBufY), rawPixels },
+      { x: Math.round(outPxX), y: Math.round(outPxY), rawPixels },
     );
     return new SvgElement(underlying);
   }
@@ -789,6 +1106,7 @@ export class SvgContext {
 
     const type = node.tag === 'radialGradient' ? 'radial' : 'linear';
     const units = (node.attrs.gradientUnits ?? ref?.units) as GradientDef['units'];
+    const spreadMethod = (node.attrs.spreadMethod ?? ref?.spreadMethod) as GradientDef['spreadMethod'];
 
     if (type === 'radial') {
       // Radial gradient: cx, cy, r (default 0.5 in objectBoundingBox)
@@ -800,13 +1118,17 @@ export class SvgContext {
       let cx = node.attrs.cx !== undefined ? pctOrNum(node.attrs.cx, 0.5) : ref?.cx ?? 0.5;
       let cy = node.attrs.cy !== undefined ? pctOrNum(node.attrs.cy, 0.5) : ref?.cy ?? 0.5;
       let r = node.attrs.r !== undefined ? pctOrNum(node.attrs.r, 0.5) : ref?.r ?? 0.5;
+      // Focal point defaults to (cx, cy) when not specified
+      let fx = node.attrs.fx !== undefined ? pctOrNum(node.attrs.fx, cx) : ref?.fx ?? cx;
+      let fy = node.attrs.fy !== undefined ? pctOrNum(node.attrs.fy, cy) : ref?.fy ?? cy;
       if (node.attrs.gradientTransform) {
         const m = parseTransform(node.attrs.gradientTransform);
         [cx, cy] = m.apply(cx, cy);
+        [fx, fy] = m.apply(fx, fy);
         // Scale radius by average scale of transform
         r *= m.averageScale();
       }
-      this.registerGradient(id, { type, stops, x1: 0, y1: 0, x2: 0, y2: 0, cx, cy, r, units });
+      this.registerGradient(id, { type, stops, x1: 0, y1: 0, x2: 0, y2: 0, cx, cy, r, fx, fy, units, spreadMethod });
     } else {
       // Linear gradient: x1, y1, x2, y2
       let x1 = node.attrs.x1 !== undefined ? parseNum(node.attrs.x1) : ref?.x1 ?? 0;
@@ -823,18 +1145,14 @@ export class SvgContext {
         [x1, y1] = m.apply(x1, y1);
         [x2, y2] = m.apply(x2, y2);
       }
-      this.registerGradient(id, { type, stops, x1, y1, x2, y2, units });
+      this.registerGradient(id, { type, stops, x1, y1, x2, y2, units, spreadMethod });
     }
   }
 
-  /** Text element — renders text using canvasText. */
-  text(attrs: SvgElementAttrs, content?: string): SvgElement {
-    if (!content) return new SvgElement(null);
+  /** Text element — renders text using canvasText. Supports tspan children for multi-line. */
+  text(attrs: SvgElementAttrs, content?: string, tspans?: SvgNode[]): SvgElement {
     if (attrs.transform) this.pushTransform(attrs);
     const style = this.resolveStyle(attrs);
-    const x = parseNum(attrs.x ?? 0);
-    const y = parseNum(attrs.y ?? 0);
-    const [mx, my] = this.mapPoint(x, y);
 
     // Scale font size through viewBox mapping + current transform
     const baseFontSize = style.fontSize ?? 16;
@@ -857,9 +1175,55 @@ export class SvgContext {
     const fillColor = resolveFillColor(style.fill, this, effectiveAlpha(style));
     const color = fillColor ?? 'black';
 
+    // Baseline correction: SVG y is baseline; Fyne positions from top-left.
+    const baselineOffset = textSize * 1.07;
+
+    // Handle tspan children for multi-line text
+    if (tspans && tspans.length > 0) {
+      const baseX = parseNum(attrs.x ?? 0);
+      const baseY = parseNum(attrs.y ?? 0);
+      let curX = baseX;
+      let curY = baseY;
+      let lastUnderlying: any = null;
+
+      for (const tspan of tspans) {
+        if (!tspan.text) continue;
+        // tspan x resets horizontal position
+        if (tspan.attrs.x !== undefined) curX = parseNum(tspan.attrs.x);
+        // tspan dx adds horizontal offset
+        if (tspan.attrs.dx !== undefined) curX += parseDyEm(tspan.attrs.dx, baseFontSize);
+        // tspan dy adds vertical offset
+        if (tspan.attrs.dy !== undefined) curY += parseDyEm(tspan.attrs.dy, baseFontSize);
+
+        const [mx, my] = this.mapPoint(curX, curY);
+        lastUnderlying = this.app.canvasText(tspan.text, {
+          x: mx,
+          y: my - baselineOffset,
+          color,
+          textSize,
+          bold,
+          italic,
+          monospace,
+          alignment,
+        });
+      }
+      if (attrs.transform) this.popTransform();
+      return new SvgElement(lastUnderlying);
+    }
+
+    // Simple text (no tspans)
+    if (!content) {
+      if (attrs.transform) this.popTransform();
+      return new SvgElement(null);
+    }
+
+    const x = parseNum(attrs.x ?? 0);
+    const y = parseNum(attrs.y ?? 0);
+    const [mx, my] = this.mapPoint(x, y);
+
     const underlying = this.app.canvasText(content, {
       x: mx,
-      y: my,
+      y: my - baselineOffset,
       color,
       textSize,
       bold,
@@ -878,9 +1242,18 @@ export class SvgContext {
     const refId = href.replace(/^#/, '');
     const refNode = this.nodesById.get(refId);
     if (!refNode || !this.walkNodeFn) return;
-    if (attrs.transform) this.pushTransform(attrs);
+    this.pushStyle(attrs);
+    // SVG <use x="..." y="..."> creates an implicit translate(x, y)
+    const ux = parseNum(attrs.x ?? 0);
+    const uy = parseNum(attrs.y ?? 0);
+    let combinedTransform = attrs.transform ?? '';
+    if (ux !== 0 || uy !== 0) {
+      combinedTransform = `translate(${ux},${uy}) ${combinedTransform}`;
+    }
+    this.pushTransform({ ...attrs, transform: combinedTransform || undefined });
     this.walkNodeFn(this, refNode);
-    if (attrs.transform) this.popTransform();
+    this.popTransform();
+    this.popStyle();
   }
 
   // ─── Fluent PathBuilder ──────────────────────────────────────
@@ -907,8 +1280,9 @@ export class SvgContext {
   ): any {
     const mapped = this.mapPathCoords(commands);
     const bounds = computePathBounds(mapped);
-    const strokeColor = style.stroke && style.stroke !== 'none' ? style.stroke : undefined;
-    const sw = this.mapStrokeWidth(style.strokeWidth ?? 1);
+    let strokeColor = style.stroke && style.stroke !== 'none' ? style.stroke : undefined;
+    const [sw, swOp] = this.mapStrokeWidth(style.strokeWidth ?? 1);
+    if (strokeColor && swOp < 1) strokeColor = applyOpacityToColor(strokeColor, swOp);
     const margin = Math.ceil(sw / 2) + 2;
     const width = Math.max(bounds.maxX + margin, 10);
     const height = Math.max(bounds.maxY + margin, 10);
@@ -1080,8 +1454,8 @@ export class SvgBuilder {
     return this.ctx!.polygon(attrs);
   }
 
-  text(attrs: SvgElementAttrs, content?: string): SvgElement {
-    return this.ctx!.text(attrs, content);
+  text(attrs: SvgElementAttrs, content?: string, tspans?: SvgNode[]): SvgElement {
+    return this.ctx!.text(attrs, content, tspans);
   }
 
   desc(attrs?: SvgElementAttrs): void {
@@ -1190,8 +1564,39 @@ export function parseStyleAttr(str: string | undefined): Record<string, string> 
 
 function parseNum(v: any): number {
   if (typeof v === 'number') return v;
-  const n = parseFloat(v);
-  return isNaN(n) ? 0 : n;
+  return parseLengthToPx(v);
+}
+
+/** Convert a CSS length value (possibly with units) to px. */
+function parseLengthToPx(v: any): number {
+  const s = String(v).trim();
+  const n = parseFloat(s);
+  if (isNaN(n)) return 0;
+  if (s.endsWith('cm')) return n * 37.7953;
+  if (s.endsWith('mm')) return n * 3.77953;
+  if (s.endsWith('in')) return n * 96;
+  if (s.endsWith('pt')) return n * 1.333;
+  if (s.endsWith('pc')) return n * 16;
+  return n; // px or unitless
+}
+
+/** Parse a font-size value, handling pt/px/em units. Returns size in px (SVG user units). */
+function parseFontSize(v: any): number {
+  if (typeof v === 'number') return v;
+  const s = String(v).trim();
+  if (s.endsWith('pt')) return parseFloat(s) * 1.333;
+  if (s.endsWith('em')) return parseFloat(s) * 16;
+  if (s.endsWith('px')) return parseFloat(s);
+  return parseFloat(s) || 0;
+}
+
+/** Parse a dy/dx value that may be in 'em' units (e.g. "1.1em") or plain numbers. */
+function parseDyEm(v: string, fontSize: number): number {
+  const s = v.trim();
+  if (s.endsWith('em')) {
+    return parseFloat(s) * fontSize;
+  }
+  return parseFloat(s) || 0;
 }
 
 /** Parse a filter region attribute (percentage or fraction), returning a fraction. */
@@ -1260,10 +1665,12 @@ function resolveFillColor(fill: string | undefined, ctx?: SvgContext, alpha?: nu
   if (fill === 'none') return undefined;
   let color: string;
   if (fill) {
-    const urlMatch = fill.match(/^url\(#([^)]+)\)$/);
+    const urlMatch = fill.match(/url\(#([^)]+)\)/);
     if (urlMatch) {
       const grad = ctx?.getGradient(urlMatch[1]);
-      color = (grad && grad.stops.length > 0) ? grad.stops[0].color : 'black';
+      // Use first gradient stop as fallback, or extract fallback color after url()
+      const fallback = fill.replace(/url\([^)]*\)\s*/, '').trim();
+      color = (grad && grad.stops.length > 0) ? grad.stops[0].color : (fallback || 'black');
     } else {
       color = fill;
     }
@@ -1273,7 +1680,7 @@ function resolveFillColor(fill: string | undefined, ctx?: SvgContext, alpha?: nu
   if (alpha !== undefined && alpha < 1) {
     return applyOpacityToColor(color, alpha);
   }
-  return color;
+  return normalizeColor(color);
 }
 
 /** Compute effective fill alpha from opacity and fill-opacity (both default to 1). */
@@ -1291,15 +1698,33 @@ function effectiveStrokeAlpha(style: SvgStyle): number | undefined {
   return a < 1 ? a : undefined;
 }
 
-/** Resolve a stroke color, applying stroke-opacity and element opacity. */
+/** Resolve a stroke color, applying stroke-opacity and element opacity.
+ *  Returns undefined if stroke is a gradient reference (url(#id)). */
 function resolveStrokeColor(style: SvgStyle): string | undefined {
   if (!style.stroke || style.stroke === 'none') return undefined;
+  // Gradient references: extract fallback color if present
+  if (style.stroke.startsWith('url(')) {
+    const fallback = style.stroke.replace(/url\([^)]*\)\s*/, '').trim();
+    if (!fallback) return undefined;
+    const color = normalizeColor(fallback);
+    const alpha = effectiveStrokeAlpha(style);
+    if (alpha !== undefined) return applyOpacityToColor(color, alpha);
+    return color;
+  }
   const color = normalizeColor(style.stroke);
   const alpha = effectiveStrokeAlpha(style);
   if (alpha !== undefined) {
     return applyOpacityToColor(color, alpha);
   }
   return color;
+}
+
+/** Resolve a stroke value to a GradientDef if it references a gradient, undefined otherwise. */
+function resolveGradientStroke(stroke: string | undefined, ctx?: SvgContext): GradientDef | undefined {
+  if (!stroke || stroke === 'none') return undefined;
+  const urlMatch = stroke.match(/url\(#([^)]+)\)/);
+  if (!urlMatch) return undefined;
+  return ctx?.getGradient(urlMatch[1]);
 }
 
 /** Normalize CSS color formats (rgb(), named) to hex. */
@@ -1312,13 +1737,64 @@ function normalizeColor(color: string): string {
     const b = parseInt(rgbMatch[3]);
     return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
   }
+  // Named CSS colors → hex
+  const named = CSS_COLORS[c.toLowerCase()];
+  if (named) {
+    return `#${named[0].toString(16).padStart(2, '0')}${named[1].toString(16).padStart(2, '0')}${named[2].toString(16).padStart(2, '0')}`;
+  }
   return c;
+}
+
+/** Parse preserveAspectRatio attribute value. */
+function parsePreserveAspectRatio(par: string): { alignX: string; alignY: string; meetOrSlice: string } {
+  const parts = par.trim().split(/\s+/);
+  const align = parts[0] || 'xMidYMid';
+  const meetOrSlice = parts[1] || 'meet';
+  const m = align.match(/^x(Min|Mid|Max)Y(Min|Mid|Max)$/);
+  if (!m) return { alignX: 'Mid', alignY: 'Mid', meetOrSlice };
+  return { alignX: m[1], alignY: m[2], meetOrSlice };
+}
+
+/** Transform a normalized path (M, L, C, Z) to buffer pixel coordinates. */
+function transformPathToBuffer(
+  pathStr: string,
+  xform: AffineMatrix,
+  ctx: SvgContext,
+  px0: number,
+  py0: number,
+): string {
+  const re = /([MLCZ])\s*([-\d\s.e+]*)/gi;
+  let result = '';
+  let match;
+  while ((match = re.exec(pathStr)) !== null) {
+    const cmd = match[1].toUpperCase();
+    if (cmd === 'Z') { result += 'Z '; continue; }
+    const nums = match[2].trim();
+    if (!nums) continue;
+    const values = nums.split(/\s+/).map(Number);
+    switch (cmd) {
+      case 'M':
+      case 'L': {
+        const [tx, ty] = xform.apply(values[0], values[1]);
+        result += `${cmd} ${ctx.mapX(tx) - px0} ${ctx.mapY(ty) - py0} `;
+        break;
+      }
+      case 'C': {
+        const [tx1, ty1] = xform.apply(values[0], values[1]);
+        const [tx2, ty2] = xform.apply(values[2], values[3]);
+        const [tx3, ty3] = xform.apply(values[4], values[5]);
+        result += `C ${ctx.mapX(tx1) - px0} ${ctx.mapY(ty1) - py0} ${ctx.mapX(tx2) - px0} ${ctx.mapY(ty2) - py0} ${ctx.mapX(tx3) - px0} ${ctx.mapY(ty3) - py0} `;
+        break;
+      }
+    }
+  }
+  return result;
 }
 
 /** Resolve a fill value to a GradientDef if it references a gradient, undefined otherwise. */
 function resolveGradientFill(fill: string | undefined, ctx?: SvgContext): GradientDef | undefined {
   if (!fill || fill === 'none') return undefined;
-  const urlMatch = fill.match(/^url\(#([^)]+)\)$/);
+  const urlMatch = fill.match(/url\(#([^)]+)\)/);
   if (!urlMatch) return undefined;
   return ctx?.getGradient(urlMatch[1]);
 }

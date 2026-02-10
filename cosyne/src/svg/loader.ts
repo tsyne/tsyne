@@ -30,14 +30,19 @@ export function loadSvg(
   const viewBoxStr = root.attrs.viewBox || root.attrs.viewbox;
   const svgW = parseNumAttr(root.attrs.width);
   const svgH = parseNumAttr(root.attrs.height);
-  const viewBox = viewBoxStr || (svgW && svgH ? `0 0 ${svgW} ${svgH}` : '0 0 100 100');
+  const canvasW = options?.width ?? parseNumAttr(root.attrs.width) ?? 400;
+  const canvasH = options?.height ?? parseNumAttr(root.attrs.height) ?? 400;
+  // When viewBox is absent, use SVG width/height (or canvas size) as the coordinate system
+  const vbW = svgW ?? canvasW;
+  const vbH = svgH ?? canvasH;
+  const viewBox = viewBoxStr || `0 0 ${vbW} ${vbH}`;
 
   return svg(
     app,
     {
       viewBox,
-      width: options?.width ?? parseNumAttr(root.attrs.width) ?? 400,
-      height: options?.height ?? parseNumAttr(root.attrs.height) ?? 400,
+      width: canvasW,
+      height: canvasH,
       rootAttrs: root.attrs,
     },
     (s) => {
@@ -52,7 +57,7 @@ export function loadSvg(
 
 /** Recursively walk an SvgNode tree and call SvgContext methods. */
 function walkNode(s: SvgContext, node: SvgNode): void {
-  const attrs = node.attrs;
+  const attrs = { ...node.attrs, _tag: node.tag };
 
   switch (node.tag) {
     case 'g':
@@ -106,17 +111,28 @@ function walkNode(s: SvgContext, node: SvgNode): void {
     case 'feGaussianBlur':
       // Handled as child of <filter>, no-op here
       break;
-    case 'text':
-      s.text(attrs, node.text);
+    case 'style':
+      // CSS <style> block — extract text and register rules
+      if (node.text) s.registerCssStyle(node.text);
       break;
+    case 'text': {
+      const tspans = node.children.filter(c => c.tag === 'tspan');
+      if (tspans.length > 0) {
+        s.text(attrs, undefined, tspans);
+      } else {
+        s.text(attrs, node.text);
+      }
+      break;
+    }
     case 'use':
       s.use(attrs);
       break;
     case 'svg':
-      // Nested svg — just walk children
-      for (const child of node.children) {
-        walkNode(s, child);
-      }
+      s.nestedSvg(attrs, node.children, () => {
+        for (const child of node.children) {
+          walkNode(s, child);
+        }
+      });
       break;
     default:
       // Unknown element — try walking children
@@ -129,6 +145,13 @@ function walkNode(s: SvgContext, node: SvgNode): void {
 
 function parseNumAttr(v: string | undefined): number | undefined {
   if (v === undefined) return undefined;
-  const n = parseFloat(v);
-  return isNaN(n) ? undefined : n;
+  const s = v.trim();
+  const n = parseFloat(s);
+  if (isNaN(n)) return undefined;
+  if (s.endsWith('cm')) return n * 37.7953;
+  if (s.endsWith('mm')) return n * 3.77953;
+  if (s.endsWith('in')) return n * 96;
+  if (s.endsWith('pt')) return n * 1.333;
+  if (s.endsWith('pc')) return n * 16;
+  return n;
 }

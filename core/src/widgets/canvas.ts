@@ -1416,10 +1416,23 @@ export interface CanvasPathOptions {
     type: 'linear' | 'radial';
     x1?: number; y1?: number; x2?: number; y2?: number;  // linear: bbox-relative 0-1
     cx?: number; cy?: number; r?: number;                 // radial: bbox-relative 0-1
+    rx?: number; ry?: number;                             // radial: separate x/y radii
+    fx?: number; fy?: number;                             // radial: focal point
+    pixelSpace?: boolean;                                 // true = userSpaceOnUse coords
+    stops: { offset: number; color: string }[];
+  };
+  strokeGradient?: {       // Gradient stroke (overrides strokeColor)
+    type: 'linear' | 'radial';
+    x1?: number; y1?: number; x2?: number; y2?: number;
+    cx?: number; cy?: number; r?: number;
+    rx?: number; ry?: number;
+    fx?: number; fy?: number;
+    pixelSpace?: boolean;
     stops: { offset: number; color: string }[];
   };
   lineCap?: 'butt' | 'round' | 'square';   // Line cap style
   lineJoin?: 'round' | 'bevel';            // Line join style (no miter in gg library)
+  fillRule?: 'nonzero' | 'evenodd';        // Fill rule (default nonzero)
 }
 
 export class CanvasPath {
@@ -1446,8 +1459,10 @@ export class CanvasPath {
     if (options.strokeWidth !== undefined) payload.strokeWidth = options.strokeWidth;
     if (options.fillColor) payload.fillColor = options.fillColor;
     if (options.fillGradient) payload.fillGradient = options.fillGradient;
+    if (options.strokeGradient) payload.strokeGradient = options.strokeGradient;
     if (options.lineCap) payload.lineCap = options.lineCap;
     if (options.lineJoin) payload.lineJoin = options.lineJoin;
+    if (options.fillRule) payload.fillRule = options.fillRule;
 
     ctx.bridge.send('createCanvasPath', payload);
     ctx.addToCurrentContainer(this.id);

@@ -160,7 +160,8 @@ def generate_html(results: list[dict], html_path: Path):
 
         mae_str = f'MAE: {mae:.1f}' if mae >= 0 else 'no render'
 
-        svg_source_escaped = html_mod.escape(r.get('svg_source', ''))
+        svg_source = r.get('svg_source', '')
+        svg_source_escaped = html_mod.escape(svg_source)
         cosyne_source_escaped = html_mod.escape(r.get('cosyne_source', ''))
 
         if r.get('cosyne_uri'):
@@ -193,6 +194,27 @@ def generate_html(results: list[dict], html_path: Path):
         else:
             scrubber_panel = ''
 
+        # Inline SVG for browser rendering — set explicit size so it fits the panel
+        browser_svg = svg_source
+        import re
+        # Extract original width/height before stripping (needed for viewBox injection)
+        orig_w_m = re.search(r'<svg[^>]*?\s+width\s*=\s*"([^"]*)"', browser_svg)
+        orig_h_m = re.search(r'<svg[^>]*?\s+height\s*=\s*"([^"]*)"', browser_svg)
+        orig_w = orig_w_m.group(1) if orig_w_m else None
+        orig_h = orig_h_m.group(1) if orig_h_m else None
+        # Strip existing width/height and inject 300x300
+        browser_svg = re.sub(r'(<svg[^>]*?)(\s+width\s*=\s*"[^"]*")', r'\1', browser_svg)
+        browser_svg = re.sub(r'(<svg[^>]*?)(\s+height\s*=\s*"[^"]*")', r'\1', browser_svg)
+        browser_svg = browser_svg.replace('<svg', f'<svg width="300" height="300"', 1)
+        # If no viewBox, inject one from original dimensions so content scales
+        if 'viewBox' not in browser_svg.split('>')[0] and 'viewbox' not in browser_svg.split('>')[0]:
+            if orig_w and orig_h:
+                # Strip non-numeric suffixes (e.g. "406.25000" → "406.25")
+                w_val = re.sub(r'[^0-9.]', '', orig_w)
+                h_val = re.sub(r'[^0-9.]', '', orig_h)
+                if w_val and h_val:
+                    browser_svg = browser_svg.replace('<svg ', f'<svg viewBox="0 0 {w_val} {h_val}" ', 1)
+
         rows_html.append(f'''
     <div class="comparison">
       <div class="row-header">
@@ -202,7 +224,11 @@ def generate_html(results: list[dict], html_path: Path):
       </div>
       <div class="images">
         <div class="panel">
-          <div class="label ref-label">Reference (librsvg){svg_source_link}</div>
+          <div class="label browser-label">Browser (native){svg_source_link}</div>
+          <div class="panel-wrap svg-native">{browser_svg}</div>
+        </div>
+        <div class="panel">
+          <div class="label ref-label">Reference (librsvg)</div>
           <div class="panel-wrap">
             <img src="{r['ref_uri']}" width="300" height="300">
           </div>
@@ -251,7 +277,10 @@ def generate_html(results: list[dict], html_path: Path):
   .panel img {{ border: 1px solid #ddd; background: white; }}
   .label {{ font-size: 12px; color: #666; margin-bottom: 4px; }}
   .ref-label {{ color: #2a2; }}
+  .browser-label {{ color: #07a; }}
   .cosyne-label {{ color: #a2a; }}
+  .svg-native {{ width: 300px; height: 300px; border: 1px solid #ddd; background: white; overflow: hidden; }}
+  .svg-native svg {{ display: block; width: 100%; height: 100%; }}
   .no-screenshot {{ width: 300px; height: 300px; border: 1px dashed #ccc; display: flex; align-items: center; justify-content: center; color: #aaa; font-size: 13px; }}
   .scrub-label {{ color: #07a; }}
   .scrubber {{ position: relative; width: 300px; height: 300px; border: 1px solid #ddd; cursor: ew-resize; user-select: none; -webkit-user-select: none; overflow: hidden; background: white; }}

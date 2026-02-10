@@ -142,6 +142,154 @@ export function fillCircleInBuffer(
   }
 }
 
+// ─── SVG Path Rasterizer ───────────────────────────────────────────
+
+interface Edge {
+  x1: number; y1: number;
+  x2: number; y2: number;
+}
+
+/** Flatten a cubic Bezier curve into line segment edges via recursive subdivision. */
+function flattenCubic(
+  x0: number, y0: number,
+  cp1x: number, cp1y: number,
+  cp2x: number, cp2y: number,
+  x3: number, y3: number,
+  edges: Edge[],
+  depth = 0,
+): void {
+  const tolerance = 0.5;
+  if (depth < 8) {
+    const dx = x3 - x0;
+    const dy = y3 - y0;
+    const d2 = dx * dx + dy * dy;
+    if (d2 > 0.001) {
+      const invLen = 1 / Math.sqrt(d2);
+      const d1 = Math.abs((cp1x - x0) * dy - (cp1y - y0) * dx) * invLen;
+      const d2v = Math.abs((cp2x - x0) * dy - (cp2y - y0) * dx) * invLen;
+      if (d1 > tolerance || d2v > tolerance) {
+        const mx01 = (x0 + cp1x) / 2, my01 = (y0 + cp1y) / 2;
+        const mx12 = (cp1x + cp2x) / 2, my12 = (cp1y + cp2y) / 2;
+        const mx23 = (cp2x + x3) / 2, my23 = (cp2y + y3) / 2;
+        const mx012 = (mx01 + mx12) / 2, my012 = (my01 + my12) / 2;
+        const mx123 = (mx12 + mx23) / 2, my123 = (my12 + my23) / 2;
+        const mid = [(mx012 + mx123) / 2, (my012 + my123) / 2];
+        flattenCubic(x0, y0, mx01, my01, mx012, my012, mid[0], mid[1], edges, depth + 1);
+        flattenCubic(mid[0], mid[1], mx123, my123, mx23, my23, x3, y3, edges, depth + 1);
+        return;
+      }
+    }
+  }
+  edges.push({ x1: x0, y1: y0, x2: x3, y2: y3 });
+}
+
+/** Parse a normalized SVG path string (M, L, C, Z only) into line segment edges.
+ *  offX/offY are added to all coordinates. */
+function pathToEdges(pathStr: string, offX: number, offY: number): Edge[] {
+  const edges: Edge[] = [];
+  let cx = 0, cy = 0;
+  let sx = 0, sy = 0;
+  const re = /([MLCZ])\s*([-\d\s.e+]*)/gi;
+  let match;
+  while ((match = re.exec(pathStr)) !== null) {
+    const cmd = match[1].toUpperCase();
+    const nums = match[2].trim();
+    if (cmd === 'Z') {
+      if (Math.abs(cx - sx) > 0.01 || Math.abs(cy - sy) > 0.01) {
+        edges.push({ x1: cx, y1: cy, x2: sx, y2: sy });
+      }
+      cx = sx; cy = sy;
+      continue;
+    }
+    if (!nums) continue;
+    const values = nums.split(/\s+/).map(Number);
+    switch (cmd) {
+      case 'M':
+        cx = values[0] + offX; cy = values[1] + offY;
+        sx = cx; sy = cy;
+        break;
+      case 'L':
+        edges.push({ x1: cx, y1: cy, x2: values[0] + offX, y2: values[1] + offY });
+        cx = values[0] + offX; cy = values[1] + offY;
+        break;
+      case 'C':
+        flattenCubic(cx, cy,
+          values[0] + offX, values[1] + offY,
+          values[2] + offX, values[3] + offY,
+          values[4] + offX, values[5] + offY,
+          edges);
+        cx = values[4] + offX; cy = values[5] + offY;
+        break;
+    }
+  }
+  return edges;
+}
+
+/**
+ * Fill an SVG path into an RGBA pixel buffer using scanline rendering.
+ * Path must be normalized (M, L, C, Z commands only, absolute coordinates).
+ * offX/offY are added to all path coordinates to convert to buffer space.
+ */
+export function fillPathInBuffer(
+  buf: Uint8Array,
+  bufW: number,
+  bufH: number,
+  pathStr: string,
+  offX: number,
+  offY: number,
+  r: number,
+  g: number,
+  b: number,
+  a: number,
+  fillRule: 'nonzero' | 'evenodd' = 'nonzero',
+): void {
+  const edges = pathToEdges(pathStr, offX, offY);
+  if (edges.length === 0) return;
+
+  for (let y = 0; y < bufH; y++) {
+    const scanY = y + 0.5;
+    const crossings: { x: number; dir: number }[] = [];
+    for (const edge of edges) {
+      if ((edge.y1 <= scanY && edge.y2 > scanY) || (edge.y2 <= scanY && edge.y1 > scanY)) {
+        const t = (scanY - edge.y1) / (edge.y2 - edge.y1);
+        const x = edge.x1 + t * (edge.x2 - edge.x1);
+        const dir = edge.y2 > edge.y1 ? 1 : -1;
+        crossings.push({ x, dir });
+      }
+    }
+    if (crossings.length === 0) continue;
+    crossings.sort((ca, cb) => ca.x - cb.x);
+
+    if (fillRule === 'evenodd') {
+      for (let i = 0; i + 1 < crossings.length; i += 2) {
+        const x0 = Math.max(Math.round(crossings[i].x), 0);
+        const x1 = Math.min(Math.round(crossings[i + 1].x), bufW);
+        for (let px = x0; px < x1; px++) {
+          const idx = (y * bufW + px) * 4;
+          buf[idx] = r; buf[idx + 1] = g; buf[idx + 2] = b; buf[idx + 3] = a;
+        }
+      }
+    } else {
+      let winding = 0;
+      let spanStart = -1;
+      for (const crossing of crossings) {
+        const prevWinding = winding;
+        winding += crossing.dir;
+        if (prevWinding === 0 && winding !== 0) {
+          spanStart = crossing.x;
+        } else if (prevWinding !== 0 && winding === 0) {
+          const x0 = Math.max(Math.round(spanStart), 0);
+          const x1 = Math.min(Math.round(crossing.x), bufW);
+          for (let px = x0; px < x1; px++) {
+            const idx = (y * bufW + px) * 4;
+            buf[idx] = r; buf[idx + 1] = g; buf[idx + 2] = b; buf[idx + 3] = a;
+          }
+        }
+      }
+    }
+  }
+}
+
 /**
  * Multiply target alpha by mask alpha for each pixel (in-place on target).
  * Both buffers must have the same pixel count.

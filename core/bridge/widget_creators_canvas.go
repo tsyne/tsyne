@@ -231,7 +231,7 @@ func parseHexColorSimple(hexStr string) color.Color {
 			l := parsePercentComponent(strings.TrimSpace(parts[2]))
 			a := parseAlphaComponent(strings.TrimSpace(parts[3]))
 			r, g, b := hslToRgb(h, s, l)
-			return color.RGBA{R: r, G: g, B: b, A: a}
+			return color.NRGBA{R: r, G: g, B: b, A: a}
 		}
 	}
 
@@ -254,7 +254,7 @@ func parseHexColorSimple(hexStr string) color.Color {
 			g := parseColorComponent(strings.TrimSpace(parts[1]))
 			b := parseColorComponent(strings.TrimSpace(parts[2]))
 			a := parseAlphaComponent(strings.TrimSpace(parts[3]))
-			return color.RGBA{R: r, G: g, B: b, A: a}
+			return color.NRGBA{R: r, G: g, B: b, A: a}
 		}
 	}
 
@@ -306,7 +306,7 @@ func parseHexColorSimple(hexStr string) color.Color {
 		fmt.Sscanf(hexStr, "%2x%2x%2x%2x", &r, &g, &b, &a)
 	}
 
-	return color.RGBA{R: r, G: g, B: b, A: a}
+	return color.NRGBA{R: r, G: g, B: b, A: a}
 }
 
 // parseColorComponent parses an RGB component (0-255)
