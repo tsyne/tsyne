@@ -5,16 +5,16 @@
  *   handlers set via the options-object pattern. Hovering brightens the circle.
  * Test 2: Verifies onHover and onClick work together via options on a simple rect.
  *
- * Run with TSYNE_SLOW=1 to add pauses between interactions for visual inspection:
- *   TSYNE_HEADED=1 TSYNE_SLOW=1 pnpm test test/svg-hover.test.ts
+ * Run with SLOWER_TESTS=1 to add pauses between interactions for visual inspection:
+ *   TSYNE_HEADED=1 SLOWER_TESTS=1 pnpm test test/svg-hover.test.ts
  */
 
 import { TestContext } from 'tsyne';
 import type { App } from 'tsyne';
 import { CosyneTest, svg, TestJournal, SvgContext, SvgEvent, SvgElement } from '../src';
 
-const slow = process.env.TSYNE_SLOW === '1';
-const pause = slow ? 1200 : 50;
+const slow = process.env.SLOWER_TESTS === '1';
+const pause = slow ? 500 : 50;
 
 describe('SVG hover events', () => {
   let cosyneTest: CosyneTest;
@@ -152,7 +152,8 @@ describe('SVG hover events', () => {
 
     await journal.log('\n── All circle hover tests passed ──');
     await ctx.captureScreenshot('svg-hover-circles.png');
-  }, slow ? 30000 : undefined);
+    await ctx.wait(pause);
+  }, slow ? 30000 : 10000);
 
   it('onHover and onClick work together via options', async () => {
     cosyneTest = new CosyneTest({ headed: true });
@@ -215,5 +216,6 @@ describe('SVG hover events', () => {
 
     await journal.log('\n── All hover+click tests passed ──');
     await ctx.captureScreenshot('svg-hover-click.png');
-  }, slow ? 30000 : undefined);
+    await ctx.wait(pause);
+  }, slow ? 30000 : 10000);
 });

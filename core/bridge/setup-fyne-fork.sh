@@ -275,14 +275,70 @@ if [ -f "$CAPTURE_FILE" ]; then
     sed -i '/p\.ctx\.ReadBuffer(backFace)/d' "$CAPTURE_FILE"
 fi
 
-# 13. Fix preferences EOF handling (suppress EOF errors from empty/truncated prefs file)
-echo "[setup-fyne-fork] Patching app/preferences.go for EOF handling..."
-PREFS_FILE="$FORK_DIR/app/preferences.go"
-if [ -f "$PREFS_FILE" ]; then
-    sed -i 's/if err != nil && err != errEmptyPreferencesStore {/if err != nil \&\& err != errEmptyPreferencesStore \&\& err != io.EOF {/' "$PREFS_FILE"
+# 13. Disable all file-based preferences and settings
+# Fyne watches settings.json + preferences.json via fsnotify, and the system theme via
+# D-Bus. None of this is needed — tsyne controls everything programmatically. The watchers
+# waste FDs (causing "too many open files" in test suites) and the typed-nil watcher stored
+# in an `any` field causes a nil-pointer panic on shutdown.
+# Strategy: no-op watchSettings/stopWatching, no-op preferences load/save/watch,
+# strip the save-triggering change listener from newPreferences().
+echo "[setup-fyne-fork] Disabling file-based preferences and settings..."
+
+# 13a. No-op watchSettings() and stopWatching() — kills fsnotify + theme watching
+SETTINGS_DESKTOP="$FORK_DIR/app/settings_desktop.go"
+if [ -f "$SETTINGS_DESKTOP" ]; then
+    sed -i '/^func (s \*settings) watchSettings()/,/^}/ c\
+func (s *settings) watchSettings() {\
+}' "$SETTINGS_DESKTOP"
+    sed -i '/^func (s \*settings) stopWatching()/,/^}/ c\
+func (s *settings) stopWatching() {\
+}' "$SETTINGS_DESKTOP"
 fi
 
-# 14. Add Move(Position) to Window interface and implementations
+# 13b. No-op settings load() — don't read settings.json, but keep setupTheme()
+#      Also remove loadFromFile() (now dead code) and its unused imports.
+SETTINGS_FILE="$FORK_DIR/app/settings_file.go"
+if [ -f "$SETTINGS_FILE" ]; then
+    cat > "$SETTINGS_FILE" << 'GOEOF'
+//go:build !wasm && !test_web_driver && !tamago && !noos && !tinygo
+
+package app
+
+func (s *settings) load() {
+	s.setupTheme()
+}
+GOEOF
+fi
+
+# 13c. No-op preferences watch(), save(), load()
+PREFS_FILE="$FORK_DIR/app/preferences.go"
+if [ -f "$PREFS_FILE" ]; then
+    # No-op save() — keep in-memory data, just don't write to disk
+    sed -i '/^func (p \*preferences) save() error/,/^}/ c\
+func (p *preferences) save() error {\
+\treturn nil\
+}' "$PREFS_FILE"
+    # No-op load() — don't read from disk
+    sed -i '/^func (p \*preferences) load()/,/^}/ c\
+func (p *preferences) load() {\
+}' "$PREFS_FILE"
+    # Strip the change listener and watch() call from newPreferences() —
+    # replace everything after "p.needsSaveBeforeExit = true" up to the final "return p"
+    # with just "return p"
+    sed -i '/p\.needsSaveBeforeExit = true/,/p\.watch()/{
+        /p\.needsSaveBeforeExit/d
+        /p\.watch()/!d
+        s/p\.watch()//
+    }' "$PREFS_FILE"
+fi
+PREFS_OTHER="$FORK_DIR/app/preferences_other.go"
+if [ -f "$PREFS_OTHER" ]; then
+    sed -i '/^func (p \*preferences) watch()/,/^}/ c\
+func (p *preferences) watch() {\
+}' "$PREFS_OTHER"
+fi
+
+# 14b. Add Move(Position) to Window interface and implementations
 echo "[setup-fyne-fork] Adding Window.Move(Position) support..."
 WINDOW_IFACE="$FORK_DIR/window.go"
 if [ -f "$WINDOW_IFACE" ]; then

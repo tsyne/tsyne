@@ -1,18 +1,18 @@
 /**
  * Tests for SVG drag, scroll, and keyboard events
  *
- * Run with TSYNE_SLOW=1 to add pauses for visual inspection:
- *   TSYNE_HEADED=1 TSYNE_SLOW=1 pnpm test test/svg-drag-scroll-keys.test.ts
+ * Run with SLOWER_TESTS=1 to add pauses for visual inspection:
+ *   TSYNE_HEADED=1 SLOWER_TESTS=1 pnpm test test/svg-drag-scroll-keys.test.ts
  */
 
 import { TestContext } from 'tsyne';
 import type { App } from 'tsyne';
 import { CosyneTest, svg, TestJournal, SvgContext, SvgEvent, SvgElement } from '../src';
 
-const slow = process.env.TSYNE_SLOW === '1';
-const pause = slow ? 1200 : 50;
+const slow = process.env.SLOWER_TESTS === '1';
+const pause = slow ? 500 : 50;
 
-describe('SVG drag, scroll, and key events', () => {
+describe('SVG rect drag, scroll, and key events', () => {
   let cosyneTest: CosyneTest;
   let ctx: TestContext;
 
@@ -75,7 +75,8 @@ describe('SVG drag, scroll, and key events', () => {
 
     svgCtx.dispatchDragEnd();
     await journal.log('── onDrag test passed ──');
-  }, slow ? 30000 : undefined);
+    await ctx.wait(pause);
+  }, slow ? 30000 : 10000);
 
   it('drag sticks to initial element', async () => {
     cosyneTest = new CosyneTest({ headed: true });
@@ -139,7 +140,8 @@ describe('SVG drag, scroll, and key events', () => {
 
     svgCtx.dispatchDragEnd();
     await journal.log('── Drag sticky test passed ──');
-  }, slow ? 30000 : undefined);
+    await ctx.wait(pause);
+  }, slow ? 30000 : 10000);
 
   it('onScroll fires on topmost element', async () => {
     cosyneTest = new CosyneTest({ headed: true });
@@ -206,7 +208,8 @@ describe('SVG drag, scroll, and key events', () => {
     await journal.log(`  ✓ hit bottom, deltaY=${scrollEvents[1].deltaY}`);
 
     await journal.log('── onScroll topmost test passed ──');
-  }, slow ? 30000 : undefined);
+    await ctx.wait(pause);
+  }, slow ? 30000 : 10000);
 
   it('onScroll falls back to scene-wide handler', async () => {
     cosyneTest = new CosyneTest({ headed: true });
@@ -258,7 +261,8 @@ describe('SVG drag, scroll, and key events', () => {
     await journal.log(`  ✓ scene scroll fired, deltaY=${sceneScrollData.deltaY}`);
 
     await journal.log('── Scene scroll fallback passed ──');
-  }, slow ? 30000 : undefined);
+    await ctx.wait(pause);
+  }, slow ? 30000 : 10000);
 
   it('onKeyDown/onKeyUp fire on SvgContext', async () => {
     cosyneTest = new CosyneTest({ headed: true });
@@ -323,7 +327,8 @@ describe('SVG drag, scroll, and key events', () => {
     expect(keyUpEvents[0].key).toBe('ArrowUp');
 
     await journal.log('── Key events test passed ──');
-  }, slow ? 30000 : undefined);
+    await ctx.wait(pause);
+  }, slow ? 30000 : 10000);
 
   it('visual: draggable rect', async () => {
     cosyneTest = new CosyneTest({ headed: true });
@@ -389,5 +394,6 @@ describe('SVG drag, scroll, and key events', () => {
 
     await journal.log('── Visual drag test passed ──');
     await ctx.captureScreenshot('svg-drag-rect.png');
-  }, slow ? 30000 : undefined);
+    await ctx.wait(pause);
+  }, slow ? 30000 : 10000);
 });
