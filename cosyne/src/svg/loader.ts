@@ -8,6 +8,7 @@
 import { SvgNode } from './types';
 import { parseSvg, parseViewBox } from './parser';
 import { SvgContext, svg } from './grammar';
+import { computeContentBounds } from './bbox';
 
 /**
  * Load and render an SVG string into a Tsyne canvas.
@@ -32,10 +33,30 @@ export function loadSvg(
   const svgH = parseNumAttr(root.attrs.height);
   const canvasW = options?.width ?? parseNumAttr(root.attrs.width) ?? 400;
   const canvasH = options?.height ?? parseNumAttr(root.attrs.height) ?? 400;
-  // When viewBox is absent, use SVG width/height (or canvas size) as the coordinate system
-  const vbW = svgW ?? canvasW;
-  const vbH = svgH ?? canvasH;
-  const viewBox = viewBoxStr || `0 0 ${vbW} ${vbH}`;
+
+  // Determine viewBox: explicit > content bounds > fallback to canvas size
+  let viewBox: string;
+  if (viewBoxStr) {
+    viewBox = viewBoxStr;
+  } else if (svgW !== undefined && svgH !== undefined) {
+    viewBox = `0 0 ${svgW} ${svgH}`;
+  } else {
+    // No viewBox or dimensions — compute from content bounding box.
+    // Use the bbox with its origin so the content exactly fills the viewport
+    // (matching browser behavior: no clipping, no dead space).
+    const bounds = computeContentBounds(root);
+    if (bounds) {
+      const bw = bounds.maxX - bounds.minX;
+      const bh = bounds.maxY - bounds.minY;
+      if (bw > 0 && bh > 0) {
+        viewBox = `${bounds.minX} ${bounds.minY} ${bw} ${bh}`;
+      } else {
+        viewBox = `0 0 ${canvasW} ${canvasH}`;
+      }
+    } else {
+      viewBox = `0 0 ${canvasW} ${canvasH}`;
+    }
+  }
 
   return svg(
     app,

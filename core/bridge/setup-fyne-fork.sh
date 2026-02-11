@@ -282,7 +282,49 @@ if [ -f "$PREFS_FILE" ]; then
     sed -i 's/if err != nil && err != errEmptyPreferencesStore {/if err != nil \&\& err != errEmptyPreferencesStore \&\& err != io.EOF {/' "$PREFS_FILE"
 fi
 
-# 14. Final tidy
+# 14. Add Move(Position) to Window interface and implementations
+echo "[setup-fyne-fork] Adding Window.Move(Position) support..."
+WINDOW_IFACE="$FORK_DIR/window.go"
+if [ -f "$WINDOW_IFACE" ]; then
+    sed -i '/CenterOnScreen()/a\\n\t// Move positions the window at the specified coordinates.\n\tMove(Position)' "$WINDOW_IFACE"
+fi
+# GLFW desktop — real implementation via viewport.SetPos
+WINDOW_DESKTOP="$FORK_DIR/internal/driver/glfw/window_desktop.go"
+if [ -f "$WINDOW_DESKTOP" ]; then
+    sed -i '/^func (w \*window) CenterOnScreen/i\
+func (w *window) Move(pos fyne.Position) {\
+\tif build.IsWayland {\
+\t\treturn\
+\t}\
+\tw.runOnMainWhenCreated(func() {\
+\t\tw.viewport.SetPos(int(pos.X), int(pos.Y))\
+\t})\
+}\
+' "$WINDOW_DESKTOP"
+fi
+# No-op stubs for other Window implementations
+for STUB_FILE in \
+    "$FORK_DIR/internal/driver/glfw/window_wasm.go" \
+    "$FORK_DIR/internal/driver/mobile/window.go" \
+    "$FORK_DIR/test/window.go" \
+    "$FORK_DIR/internal/driver/embedded/window.go"; do
+    if [ -f "$STUB_FILE" ]; then
+        sed -i '/CenterOnScreen/,/^}/{ /^}/a\
+func (w *window) Move(pos fyne.Position) {}
+        }' "$STUB_FILE" 2>/dev/null || true
+    fi
+done
+# The embedded driver uses noosWindow not window
+if [ -f "$FORK_DIR/internal/driver/embedded/window.go" ]; then
+    sed -i 's/func (w \*window) Move(pos fyne.Position)/func (w *noosWindow) Move(pos fyne.Position)/' "$FORK_DIR/internal/driver/embedded/window.go" 2>/dev/null || true
+fi
+# The wasm file also has wrapInner type
+if [ -f "$FORK_DIR/internal/driver/glfw/window_wasm.go" ]; then
+    # Add stub for wrapInner too
+    echo 'func (w *wrapInner) Move(pos fyne.Position) {}' >> "$FORK_DIR/internal/driver/glfw/window_wasm.go"
+fi
+
+# 15. Final tidy
 echo "[setup-fyne-fork] Final tidying..."
 cd "$FORK_DIR"
 go mod tidy

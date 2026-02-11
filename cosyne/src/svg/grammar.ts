@@ -29,6 +29,19 @@ import { AffineMatrix, parseTransform } from './transform';
 import { gaussianBlur } from './blur';
 import { fillRectInBuffer, fillCircleInBuffer, fillPathInBuffer, applyClipMask, parseColorToRGBA } from './rasterize';
 
+/** Structured event emitted by SvgContext on tap hit/miss. */
+export interface SvgEvent {
+  type: 'tap-hit' | 'tap-miss' | 'hover-in' | 'hover-out'
+      | 'drag' | 'drag-end' | 'scroll' | 'key-down' | 'key-up';
+  x: number;
+  y: number;
+  elementName?: string;
+  elementIndex?: number;
+  deltaX?: number;
+  deltaY?: number;
+  key?: string;
+}
+
 /** Gradient definition — stores stop colors and geometry for url(#id) resolution. */
 export interface GradientDef {
   type: 'linear' | 'radial';
@@ -60,9 +73,76 @@ interface ViewBoxMapping {
  */
 export class SvgElement {
   private underlying: any;
+  private clickHandler?: (e: { x: number; y: number }) => void;
+  private hoverHandler?: (hovered: boolean) => void;
+  private dragHandler?: (e: { x: number; y: number; deltaX: number; deltaY: number }) => void;
+  private dragEndHandler?: () => void;
+  private scrollHandler?: (e: { deltaX: number; deltaY: number; x: number; y: number }) => void;
+  private bounds?: { x: number; y: number; width: number; height: number };
+  private elementName?: string;
 
   constructor(underlying: any) {
     this.underlying = underlying;
+  }
+
+  /** Assign a human-readable name for journal/debugging purposes. */
+  name(n: string): this { this.elementName = n; return this; }
+
+  /** Get the assigned name, if any. */
+  getName(): string | undefined { return this.elementName; }
+
+  /** Register a click handler for this element. */
+  onClick(handler: (e: { x: number; y: number }) => void): this {
+    this.clickHandler = handler;
+    return this;
+  }
+
+  getClickHandler() { return this.clickHandler; }
+
+  /** Register a hover handler for this element. */
+  onHover(handler: (hovered: boolean) => void): this {
+    this.hoverHandler = handler;
+    return this;
+  }
+
+  getHoverHandler() { return this.hoverHandler; }
+
+  /** Register a drag handler for this element. */
+  onDrag(handler: (e: { x: number; y: number; deltaX: number; deltaY: number }) => void): this {
+    this.dragHandler = handler;
+    return this;
+  }
+
+  getDragHandler() { return this.dragHandler; }
+
+  /** Register a drag-end handler for this element. */
+  onDragEnd(handler: () => void): this {
+    this.dragEndHandler = handler;
+    return this;
+  }
+
+  getDragEndHandler() { return this.dragEndHandler; }
+
+  /** Register a scroll handler for this element. */
+  onScroll(handler: (e: { deltaX: number; deltaY: number; x: number; y: number }) => void): this {
+    this.scrollHandler = handler;
+    return this;
+  }
+
+  getScrollHandler() { return this.scrollHandler; }
+
+  setBounds(x: number, y: number, w: number, h: number): this {
+    this.bounds = { x, y, width: w, height: h };
+    return this;
+  }
+
+  getBounds() { return this.bounds; }
+
+  hitTest(px: number, py: number): boolean {
+    if (!this.bounds) return false;
+    const b = this.bounds;
+    return px >= b.x && px <= b.x + b.width &&
+           py >= b.y && py <= b.y + b.height;
   }
 
   /** Set fill color on the element (updates the underlying widget). */
@@ -100,16 +180,163 @@ export class SvgContext {
   private styleStack: SvgStyle[] = [{}];
   private transformStack: AffineMatrix[] = [AffineMatrix.identity()];
   private gradients: Map<string, GradientDef> = new Map();
+  private trackedElements: SvgElement[] = [];
   private filters: Map<string, FilterDef> = new Map();
   private clipPaths: Map<string, ClipPathDef> = new Map();
   private nodesById: Map<string, SvgNode> = new Map();
   private walkNodeFn?: (s: SvgContext, node: SvgNode) => void;
   private cssRules: Map<string, Record<string, string>> = new Map(); // selector → properties
+  private eventCallback?: (event: SvgEvent) => void;
+  private hoveredElement: SvgElement | null = null;
+  private draggedElement: SvgElement | null = null;
+  private keyDownHandler?: (key: string) => void;
+  private keyUpHandler?: (key: string) => void;
+  private sceneScrollHandler?: (e: { deltaX: number; deltaY: number; x: number; y: number }) => void;
 
   constructor(app: any, mapping: ViewBoxMapping, rootStyle?: SvgStyle) {
     this.app = app;
     this.mapping = mapping;
     if (rootStyle) this.styleStack[0] = rootStyle;
+  }
+
+  // ─── Event tracking ─────────────────────────────────────────
+
+  private trackElement(el: SvgElement): void {
+    this.trackedElements.push(el);
+  }
+
+  /** Register an event callback that fires on every tap hit/miss. */
+  onEvent(cb: (event: SvgEvent) => void): this {
+    this.eventCallback = cb;
+    return this;
+  }
+
+  /** Simulate a tap at canvas coordinates — dispatches to topmost element with a click handler. */
+  dispatchTap(x: number, y: number): void {
+    for (let i = this.trackedElements.length - 1; i >= 0; i--) {
+      const el = this.trackedElements[i];
+      const handler = el.getClickHandler();
+      if (handler && el.hitTest(x, y)) {
+        this.eventCallback?.({ type: 'tap-hit', x, y, elementName: el.getName(), elementIndex: i });
+        handler({ x, y });
+        return;
+      }
+    }
+    this.eventCallback?.({ type: 'tap-miss', x, y });
+  }
+
+  /** Dispatch hover events — finds topmost hovered element and fires enter/leave transitions. */
+  dispatchHover(x: number, y: number): void {
+    let newHovered: SvgElement | null = null;
+    for (let i = this.trackedElements.length - 1; i >= 0; i--) {
+      const el = this.trackedElements[i];
+      if (el.getHoverHandler() && el.hitTest(x, y)) {
+        newHovered = el;
+        break;
+      }
+    }
+    if (newHovered !== this.hoveredElement) {
+      if (this.hoveredElement) {
+        const idx = this.trackedElements.indexOf(this.hoveredElement);
+        this.eventCallback?.({ type: 'hover-out', x, y, elementName: this.hoveredElement.getName(), elementIndex: idx });
+        this.hoveredElement.getHoverHandler()?.(false);
+      }
+      if (newHovered) {
+        const idx = this.trackedElements.indexOf(newHovered);
+        this.eventCallback?.({ type: 'hover-in', x, y, elementName: newHovered.getName(), elementIndex: idx });
+        newHovered.getHoverHandler()?.(true);
+      }
+      this.hoveredElement = newHovered;
+    }
+  }
+
+  /** Dispatch drag — hit-tests on first call to find drag target, sticks to it until dragEnd. */
+  dispatchDrag(x: number, y: number, deltaX: number, deltaY: number): void {
+    if (!this.draggedElement) {
+      // First drag event — find topmost element with a drag handler
+      for (let i = this.trackedElements.length - 1; i >= 0; i--) {
+        const el = this.trackedElements[i];
+        if (el.getDragHandler() && el.hitTest(x, y)) {
+          this.draggedElement = el;
+          break;
+        }
+      }
+    }
+    if (this.draggedElement) {
+      const idx = this.trackedElements.indexOf(this.draggedElement);
+      this.eventCallback?.({ type: 'drag', x, y, deltaX, deltaY, elementName: this.draggedElement.getName(), elementIndex: idx });
+      this.draggedElement.getDragHandler()?.({ x, y, deltaX, deltaY });
+    }
+  }
+
+  /** Dispatch drag end — fires dragEnd handler on current drag target, clears it. */
+  dispatchDragEnd(): void {
+    if (this.draggedElement) {
+      const idx = this.trackedElements.indexOf(this.draggedElement);
+      this.eventCallback?.({ type: 'drag-end', x: 0, y: 0, elementName: this.draggedElement.getName(), elementIndex: idx });
+      this.draggedElement.getDragEndHandler()?.();
+      this.draggedElement = null;
+    }
+  }
+
+  /** Dispatch scroll — topmost element under cursor, falls back to scene-wide handler. */
+  dispatchScroll(deltaX: number, deltaY: number, x: number, y: number): void {
+    for (let i = this.trackedElements.length - 1; i >= 0; i--) {
+      const el = this.trackedElements[i];
+      if (el.getScrollHandler() && el.hitTest(x, y)) {
+        this.eventCallback?.({ type: 'scroll', x, y, deltaX, deltaY, elementName: el.getName(), elementIndex: i });
+        el.getScrollHandler()!({ deltaX, deltaY, x, y });
+        return;
+      }
+    }
+    if (this.sceneScrollHandler) {
+      this.eventCallback?.({ type: 'scroll', x, y, deltaX, deltaY });
+      this.sceneScrollHandler({ deltaX, deltaY, x, y });
+    }
+  }
+
+  /** Dispatch key down — fires scene-wide handler directly (no hit testing). */
+  dispatchKeyDown(key: string): void {
+    this.eventCallback?.({ type: 'key-down', x: 0, y: 0, key });
+    this.keyDownHandler?.(key);
+  }
+
+  /** Dispatch key up — fires scene-wide handler directly (no hit testing). */
+  dispatchKeyUp(key: string): void {
+    this.eventCallback?.({ type: 'key-up', x: 0, y: 0, key });
+    this.keyUpHandler?.(key);
+  }
+
+  /** Register a scene-wide key-down handler. */
+  onKeyDown(handler: (key: string) => void): this {
+    this.keyDownHandler = handler;
+    return this;
+  }
+
+  /** Register a scene-wide key-up handler. */
+  onKeyUp(handler: (key: string) => void): this {
+    this.keyUpHandler = handler;
+    return this;
+  }
+
+  /** Register a scene-wide scroll handler (fires when no element handles scroll). */
+  onScroll(handler: (e: { deltaX: number; deltaY: number; x: number; y: number }) => void): this {
+    this.sceneScrollHandler = handler;
+    return this;
+  }
+
+  /** Create a TappableCanvasRaster overlay that forwards taps and hovers to SVG element hit testing. */
+  enableEvents(): this {
+    this.app.tappableCanvasRaster(this.mapping.canvasWidth, this.mapping.canvasHeight, {
+      onTap: (x: number, y: number) => { this.dispatchTap(x, y); },
+      onMouseMove: (x: number, y: number) => { this.dispatchHover(x, y); },
+      onDrag: (x: number, y: number, deltaX: number, deltaY: number) => { this.dispatchDrag(x, y, deltaX, deltaY); },
+      onDragEnd: () => { this.dispatchDragEnd(); },
+      onScroll: (deltaX: number, deltaY: number, x: number, y: number) => { this.dispatchScroll(deltaX, deltaY, x, y); },
+      onKeyDown: (key: string) => { this.dispatchKeyDown(key); },
+      onKeyUp: (key: string) => { this.dispatchKeyUp(key); },
+    });
+    return this;
   }
 
   /** Parse a CSS <style> block and register rules for class/element selectors. */
@@ -396,6 +623,17 @@ export class SvgContext {
     );
   }
 
+  // ─── Event handler wiring ───────────────────────────────────
+
+  /** Wire event handlers from attrs onto an SvgElement (consolidates all creation sites). */
+  private wireEventHandlers(el: SvgElement, attrs: SvgElementAttrs): void {
+    if (attrs.onClick) el.onClick(attrs.onClick);
+    if (attrs.onHover) el.onHover(attrs.onHover);
+    if (attrs.onDrag) el.onDrag(attrs.onDrag);
+    if (attrs.onDragEnd) el.onDragEnd(attrs.onDragEnd);
+    if (attrs.onScroll) el.onScroll(attrs.onScroll);
+  }
+
   // ─── SVG Element Methods ─────────────────────────────────────
 
   /** Group element — pushes style and transform onto stacks, runs builder, pops both. */
@@ -641,7 +879,10 @@ export class SvgContext {
 
     const underlying = this.app.canvasPath(opts);
     if (attrs.transform) this.popTransform();
-    return new SvgElement(underlying);
+    const el = new SvgElement(underlying);
+    this.trackElement(el);
+    this.wireEventHandlers(el, attrs);
+    return el;
   }
 
   /** Circle element. */
@@ -665,6 +906,7 @@ export class SvgContext {
         },
       );
       if (attrs.transform) this.popTransform();
+      this.wireEventHandlers(result, attrs);
       return result;
     }
 
@@ -690,7 +932,11 @@ export class SvgContext {
       strokeWidth: sw,
     });
     if (attrs.transform) this.popTransform();
-    return new SvgElement(underlying);
+    const el = new SvgElement(underlying);
+    el.setBounds(cx - r, cy - r, 2 * r, 2 * r);
+    this.trackElement(el);
+    this.wireEventHandlers(el, attrs);
+    return el;
   }
 
   /** Ellipse element — renders as a path for full stroke/fill support. */
@@ -738,6 +984,7 @@ export class SvgContext {
         },
       );
       if (attrs.transform) this.popTransform();
+      this.wireEventHandlers(result, attrs);
       return result;
     }
 
@@ -778,7 +1025,8 @@ export class SvgContext {
       } else {
         rectPath = `M ${px} ${py} L ${px + pw} ${py} L ${px + pw} ${py + ph} L ${px} ${py + ph} Z`;
       }
-      const result = this.path({ ...attrs, d: rectPath, fill: style.fill });
+      // Strip transform since rect() already pushed it — avoid double application
+      const result = this.path({ ...attrs, transform: undefined, d: rectPath, fill: style.fill });
       if (attrs.transform) this.popTransform();
       return result;
     }
@@ -818,7 +1066,11 @@ export class SvgContext {
       strokeWidth: sw,
     });
     if (attrs.transform) this.popTransform();
-    return new SvgElement(underlying);
+    const el = new SvgElement(underlying);
+    el.setBounds(minX, minY, maxX - minX, maxY - minY);
+    this.trackElement(el);
+    this.wireEventHandlers(el, attrs);
+    return el;
   }
 
   /** Line element. */
@@ -836,7 +1088,12 @@ export class SvgContext {
       strokeWidth: lineSw,
     });
     if (attrs.transform) this.popTransform();
-    return new SvgElement(underlying);
+    const el = new SvgElement(underlying);
+    const minX = Math.min(x1, x2), minY = Math.min(y1, y2);
+    el.setBounds(minX, minY, Math.abs(x2 - x1), Math.abs(y2 - y1));
+    this.trackElement(el);
+    this.wireEventHandlers(el, attrs);
+    return el;
   }
 
   /** Polyline element — convert points to a path. */
@@ -1173,7 +1430,16 @@ export class SvgContext {
       /mono|courier|consolas/i.test(style.fontFamily);
 
     const fillColor = resolveFillColor(style.fill, this, effectiveAlpha(style));
-    const color = fillColor ?? 'black';
+    // If this text element has its own stroke but no explicit fill, use stroke color
+    // (we can't render actual text stroke, so this is the best approximation)
+    const inlineS = attrs.style ? parseStyleAttr(attrs.style) : undefined;
+    const hasOwnStroke = attrs.stroke !== undefined ||
+      (inlineS !== undefined && inlineS.stroke !== undefined);
+    const hasOwnFill = attrs.fill !== undefined ||
+      (inlineS !== undefined && inlineS.fill !== undefined);
+    const strokeColor = hasOwnStroke && style.stroke && style.stroke !== 'none'
+      ? normalizeColor(style.stroke) : undefined;
+    const color = (!hasOwnFill && strokeColor) ? strokeColor : (fillColor ?? 'black');
 
     // Baseline correction: SVG y is baseline; Fyne positions from top-left.
     const baselineOffset = textSize * 1.07;
@@ -1208,7 +1474,10 @@ export class SvgContext {
         });
       }
       if (attrs.transform) this.popTransform();
-      return new SvgElement(lastUnderlying);
+      const el = new SvgElement(lastUnderlying);
+      this.trackElement(el);
+      this.wireEventHandlers(el, attrs);
+      return el;
     }
 
     // Simple text (no tspans)
@@ -1232,7 +1501,10 @@ export class SvgContext {
       alignment,
     });
     if (attrs.transform) this.popTransform();
-    return new SvgElement(underlying);
+    const el = new SvgElement(underlying);
+    this.trackElement(el);
+    this.wireEventHandlers(el, attrs);
+    return el;
   }
 
   /** Use element — clone and render a referenced element with optional transform. */
@@ -1502,7 +1774,19 @@ export function svg(
   builder: (s: SvgContext) => void,
 ): SvgContext {
   const ctx = createSvgContext(app, options);
-  builder(ctx);
+  const canvasWidth = options.width ?? 400;
+  const canvasHeight = options.height ?? 400;
+  app.clip(() => {
+    app.stack(() => {
+      // Sizing shim: rect with MinSize gives the Stack (and thus the Clip) proper bounds.
+      // canvasStack uses NewWithoutLayout which has MinSize(0,0), so we need a regular
+      // Stack parent with a sized child to establish the clip region.
+      app.canvasRectangle({ width: canvasWidth, height: canvasHeight, fillColor: 'transparent' });
+      app.canvasStack(() => {
+        builder(ctx);
+      });
+    });
+  });
   return ctx;
 }
 
@@ -1521,17 +1805,48 @@ function createSvgContext(app: any, options: SvgOptions): SvgContext {
     vb = options.viewBox;
   }
 
-  const scaleX = canvasWidth / vb.width;
-  const scaleY = canvasHeight / vb.height;
-  const scale = Math.min(scaleX, scaleY);
-  const offsetX = (canvasWidth - vb.width * scale) / 2;
-  const offsetY = (canvasHeight - vb.height * scale) / 2;
+  // Two-step mapping: viewBox → SVG viewport → canvas
+  // Step 1: viewBox maps to the SVG's intrinsic viewport (width/height attrs)
+  // Step 2: the viewport scales to fit in the canvas
+  const ra = options.rootAttrs;
+  const rawW = ra?.width ? String(ra.width) : '';
+  const rawH = ra?.height ? String(ra.height) : '';
+  const svgW = rawW && !rawW.includes('%') ? parseLengthToPx(rawW) : 0;
+  const svgH = rawH && !rawH.includes('%') ? parseLengthToPx(rawH) : 0;
+  const vpW = svgW > 0 ? svgW : canvasWidth;
+  const vpH = svgH > 0 ? svgH : canvasHeight;
+
+  const parStr = ra?.preserveAspectRatio || 'xMidYMid meet';
+  const par = parsePreserveAspectRatio(parStr);
+
+  // Step 1: viewBox → viewport (using preserveAspectRatio)
+  const scaleXvb = vpW / vb.width;
+  const scaleYvb = vpH / vb.height;
+  const scaleVB = par.meetOrSlice === 'slice'
+    ? Math.max(scaleXvb, scaleYvb)
+    : Math.min(scaleXvb, scaleYvb);
+  let txVB = 0, tyVB = 0;
+  if (par.alignX === 'Mid') txVB = (vpW - vb.width * scaleVB) / 2;
+  else if (par.alignX === 'Max') txVB = vpW - vb.width * scaleVB;
+  if (par.alignY === 'Mid') tyVB = (vpH - vb.height * scaleVB) / 2;
+  else if (par.alignY === 'Max') tyVB = vpH - vb.height * scaleVB;
+
+  // Step 2: viewport → canvas (uniform scale, centered)
+  const scaleXc = canvasWidth / vpW;
+  const scaleYc = canvasHeight / vpH;
+  const scaleC = Math.min(scaleXc, scaleYc);
+  const txC = (canvasWidth - vpW * scaleC) / 2;
+  const tyC = (canvasHeight - vpH * scaleC) / 2;
+
+  // Combined: canvas_pt = (txC + scaleC*txVB, tyC + scaleC*tyVB) + scaleC*scaleVB*(pt - vb.min)
+  const scale = scaleC * scaleVB;
+  const offsetX = txC + scaleC * txVB;
+  const offsetY = tyC + scaleC * tyVB;
 
   const mapping: ViewBoxMapping = { vb, canvasWidth, canvasHeight, scale, offsetX, offsetY };
 
   // Build initial inherited style from root <svg> attributes
   let rootStyle: SvgStyle | undefined;
-  const ra = options.rootAttrs;
   if (ra) {
     rootStyle = {};
     if (ra.fill) rootStyle.fill = ra.fill;

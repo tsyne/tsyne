@@ -113,6 +113,13 @@ func (b *Bridge) handleCreateWindow(msg Message) Response {
 			}
 		}
 
+		// Move window to position if provided (otherwise Fyne centers it)
+		if xVal, ok := msg.Payload["x"]; ok {
+			if yVal, ok := msg.Payload["y"]; ok {
+				win.Move(fyne.NewPos(toFloat32(xVal), toFloat32(yVal)))
+			}
+		}
+
 		// Set fixed size if provided
 		if fixedSize, ok := msg.Payload["fixedSize"].(bool); ok && fixedSize {
 			win.SetFixedSize(true)

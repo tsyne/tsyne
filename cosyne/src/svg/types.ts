@@ -104,5 +104,10 @@ export interface SvgElementAttrs {
   'stroke-width'?: number | string;
   'stroke-linecap'?: string;
   'stroke-linejoin'?: string;
+  onClick?: (e: { x: number; y: number }) => void;
+  onHover?: (hovered: boolean) => void;
+  onDrag?: (e: { x: number; y: number; deltaX: number; deltaY: number }) => void;
+  onDragEnd?: () => void;
+  onScroll?: (e: { deltaX: number; deltaY: number; x: number; y: number }) => void;
   [key: string]: any;
 }

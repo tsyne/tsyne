@@ -62,6 +62,8 @@ export interface WindowOptions {
   title: string;
   width?: number;
   height?: number;
+  x?: number;       // Initial x position (default: centered)
+  y?: number;       // Initial y position (default: centered)
   fixedSize?: boolean;
   icon?: string;  // Resource name registered via ResourceManager
   padded?: boolean;  // Whether to add padding around content (default true, set false for fullscreen)
@@ -93,6 +95,12 @@ export class Window {
     }
     if (options.height !== undefined) {
       payload.height = options.height;
+    }
+    if (options.x !== undefined) {
+      payload.x = options.x;
+    }
+    if (options.y !== undefined) {
+      payload.y = options.y;
     }
     if (options.fixedSize !== undefined) {
       payload.fixedSize = options.fixedSize;

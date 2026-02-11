@@ -26,7 +26,7 @@ export { parseSvg, parseViewBox } from './parser';
 export { parsePath, normalizeCommands, normalizePath, serializeCommands } from './normalizer';
 
 // Grammar
-export { SvgContext, SvgElement, SvgBuilder, PathBuilder, svg, svgBuilder, parseStyleAttr } from './grammar';
+export { SvgContext, SvgElement, SvgBuilder, PathBuilder, svg, svgBuilder, parseStyleAttr, type SvgEvent } from './grammar';
 
 // Loader
 export { loadSvg } from './loader';

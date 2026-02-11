@@ -163,7 +163,7 @@ export * from './svg';
 export * from './index3d';
 
 // Testing utilities
-export { CosyneTest, type CosyneTestOptions } from './cosyne-test';
+export { CosyneTest, TestJournal, type CosyneTestOptions } from './cosyne-test';
 
 // Procedural terrain generation library
 export {

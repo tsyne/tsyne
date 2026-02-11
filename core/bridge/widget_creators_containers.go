@@ -391,6 +391,13 @@ func (b *Bridge) handleCreateClip(msg Message) Response {
 	// NewClip creates a container that clips any content that extends beyond the bounds of its child
 	clipped := container.NewClip(child)
 
+	// Initialize clip size to child's MinSize so it works correctly even inside
+	// NewWithoutLayout containers (which never call Resize on children).
+	// Properly-laid-out parents will override this via Resize during layout.
+	if ms := child.MinSize(); ms.Width > 0 || ms.Height > 0 {
+		clipped.Resize(ms)
+	}
+
 	b.mu.Lock()
 	b.widgets[widgetID] = clipped
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "clip", Text: ""}

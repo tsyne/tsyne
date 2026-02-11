@@ -35,7 +35,7 @@ go*.linux-amd64.tar.gz
 *.dylib
 
 ## screenshots generally
-**/screenshots/
+**/screenshots/*
 
 # iOS build artifacts
 forios/bundle/
