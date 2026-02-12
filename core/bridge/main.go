@@ -495,6 +495,12 @@ func (b *Bridge) handleMessage(msg Message) Response {
 		return b.handleSetTappableCanvasImage(msg)
 	case "setTappableCanvasRect":
 		return b.handleSetTappableCanvasRect(msg)
+	case "showTooltip":
+		return b.handleShowTooltip(msg)
+	case "hideTooltip":
+		return b.handleHideTooltip(msg)
+	case "setCursor":
+		return b.handleSetCursor(msg)
 	case "createCanvasShader":
 		return b.handleCreateCanvasShader(msg)
 	case "updateCanvasShader":

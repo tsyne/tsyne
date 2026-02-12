@@ -109,5 +109,14 @@ export interface SvgElementAttrs {
   onDrag?: (e: { x: number; y: number; deltaX: number; deltaY: number }) => void;
   onDragEnd?: () => void;
   onScroll?: (e: { deltaX: number; deltaY: number; x: number; y: number }) => void;
+  onDoubleClick?: (e: { x: number; y: number }) => void;
+  onRightClick?: (e: { x: number; y: number }) => void;
+  tooltip?: string;
+  when?: () => boolean;
+  cursor?: 'default' | 'pointer' | 'text' | 'crosshair' | 'hResize' | 'vResize';
+  bindFill?: () => string;
+  bindStroke?: () => { color: string; width?: number };
+  bindOpacity?: () => number;
+  bindPos?: () => Record<string, number>;
   [key: string]: any;
 }

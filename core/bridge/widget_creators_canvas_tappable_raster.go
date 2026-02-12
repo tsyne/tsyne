@@ -67,6 +67,18 @@ func (b *Bridge) handleCreateTappableCanvasRaster(msg Message) Response {
 		tappable.SetOnDragCallback(b, onDragCallbackId, onDragEndCallbackId)
 	}
 
+	// Set up double-tap callback if provided
+	onDoubleTapCallbackId, _ := msg.Payload["onDoubleTapCallbackId"].(string)
+	if onDoubleTapCallbackId != "" {
+		tappable.SetOnDoubleTapCallback(b, onDoubleTapCallbackId)
+	}
+
+	// Set up secondary tap (right-click/long-press) callback if provided
+	onSecondaryTapCallbackId, _ := msg.Payload["onSecondaryTapCallbackId"].(string)
+	if onSecondaryTapCallbackId != "" {
+		tappable.SetOnSecondaryTapCallback(b, onSecondaryTapCallbackId)
+	}
+
 	// Position the widget at (0,0) and resize to fill canvas area
 	// This is required for NewWithoutLayout containers to receive tap events
 	tappable.Move(fyne.NewPos(0, 0))
@@ -395,4 +407,73 @@ func (b *Bridge) handleSetTappableCanvasRect(msg Message) Response {
 	tappable.SetPixelRect(x, y, rectWidth, rectHeight, pixels)
 
 	return responseWithDrainedEvents(msg.ID, tappable, nil)
+}
+
+// handleShowTooltip shows a tooltip popup on a tappable canvas raster
+func (b *Bridge) handleShowTooltip(msg Message) Response {
+	widgetID := msg.Payload["widgetId"].(string)
+	text := msg.Payload["text"].(string)
+	x := toFloat32(msg.Payload["x"])
+	y := toFloat32(msg.Payload["y"])
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		return Response{ID: msg.ID, Success: false, Error: "Widget not found"}
+	}
+
+	tappable, ok := w.(*TappableCanvasRaster)
+	if !ok {
+		return Response{ID: msg.ID, Success: false, Error: "Widget is not a tappable canvas raster"}
+	}
+
+	tappable.ShowTooltip(text, x, y)
+	return Response{ID: msg.ID, Success: true}
+}
+
+// handleHideTooltip hides the tooltip popup on a tappable canvas raster
+func (b *Bridge) handleHideTooltip(msg Message) Response {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		return Response{ID: msg.ID, Success: false, Error: "Widget not found"}
+	}
+
+	tappable, ok := w.(*TappableCanvasRaster)
+	if !ok {
+		return Response{ID: msg.ID, Success: false, Error: "Widget is not a tappable canvas raster"}
+	}
+
+	fyne.Do(func() {
+		tappable.HideTooltip()
+	})
+	return Response{ID: msg.ID, Success: true}
+}
+
+// handleSetCursor changes the cursor on a tappable canvas raster
+func (b *Bridge) handleSetCursor(msg Message) Response {
+	widgetID := msg.Payload["widgetId"].(string)
+	cursorType := msg.Payload["cursorType"].(string)
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		return Response{ID: msg.ID, Success: false, Error: "Widget not found"}
+	}
+
+	tappable, ok := w.(*TappableCanvasRaster)
+	if !ok {
+		return Response{ID: msg.ID, Success: false, Error: "Widget is not a tappable canvas raster"}
+	}
+
+	tappable.SetCursor(stringToCursor(cursorType))
+	return Response{ID: msg.ID, Success: true}
 }

@@ -97,6 +97,24 @@ export class TestJournal {
         case 'key-up':
           this.log(`KEY-UP ${event.key}`);
           break;
+        case 'double-click':
+          this.log(`DBLCLICK ${name}  (${event.x}, ${event.y})`);
+          break;
+        case 'right-click':
+          this.log(`RTCLICK ${name}  (${event.x}, ${event.y})`);
+          break;
+        case 'tooltip-show':
+          this.log(`TOOLTIP-SHOW ${name}`);
+          break;
+        case 'tooltip-hide':
+          this.log(`TOOLTIP-HIDE ${name}`);
+          break;
+        case 'when-show':
+          this.log(`WHEN-SHOW ${name}`);
+          break;
+        case 'when-hide':
+          this.log(`WHEN-HIDE ${name}`);
+          break;
       }
     });
   }

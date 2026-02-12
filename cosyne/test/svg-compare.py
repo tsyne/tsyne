@@ -493,7 +493,7 @@ def main():
     html_path = output_dir / 'comparison.html'
     generate_html(results, html_path)
 
-    # Write CSV
+    # Write CSV (sorted by MAE, into output dir)
     csv_path = output_dir / 'results.csv'
     with open(csv_path, 'w') as f:
         f.write('file,mae,status,bytes\n')
@@ -504,6 +504,18 @@ def main():
             size = svg_file.stat().st_size if svg_file.exists() else 0
             f.write(f'{r["name"]},{mae:.1f},{status},{size}\n')
     print(f'CSV: {csv_path}')
+
+    # Write conformance CSV (alpha-sorted, checked into repo) — only for full runs
+    if not args.files:
+        conformance_path = SCRIPT_DIR / 'svg-conformance.csv'
+        alpha_sorted = sorted(results, key=lambda r: r['name'].lower())
+        with open(conformance_path, 'w') as f:
+            f.write('file,mae,status\n')
+            for r in alpha_sorted:
+                mae = r['mae']
+                status = 'none' if mae < 0 else 'good' if mae < 20 else 'ok' if mae < 40 else 'diff'
+                f.write(f'{r["name"]},{mae:.1f},{status}\n')
+        print(f'Conformance: {conformance_path}')
 
     # Summary
     print(f'\n{"="*50}')

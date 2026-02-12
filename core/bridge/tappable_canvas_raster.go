@@ -50,6 +50,16 @@ type TappableCanvasRaster struct {
 	onDragCallbackId    string
 	onDragEndCallbackId string
 
+	// Double-tap and secondary-tap callback IDs
+	onDoubleTapCallbackId    string
+	onSecondaryTapCallbackId string
+
+	// Tooltip popup (shown on demand from TS)
+	tooltipPopup *widget.PopUp
+
+	// Cursor type for desktop.Cursorable
+	cursor desktop.Cursor
+
 	bridge   *Bridge
 	widgetID string
 
@@ -467,6 +477,88 @@ func (t *TappableCanvasRaster) SetOnDragCallback(bridge *Bridge, dragId, dragEnd
 	t.onDragEndCallbackId = dragEndId
 }
 
+// --- fyne.DoubleTappable interface ---
+
+// DoubleTapped is called when the raster is double-tapped/double-clicked.
+func (t *TappableCanvasRaster) DoubleTapped(ev *fyne.PointEvent) {
+	if t.onDoubleTapCallbackId == "" || t.bridge == nil {
+		return
+	}
+	t.bufferEvent(TappableEvent{
+		Type: "doubletap",
+		Data: map[string]interface{}{
+			"x": float64(ev.Position.X),
+			"y": float64(ev.Position.Y),
+		},
+	})
+}
+
+// SetOnDoubleTapCallback sets the callback ID for double-tap events
+func (t *TappableCanvasRaster) SetOnDoubleTapCallback(bridge *Bridge, callbackId string) {
+	t.bridge = bridge
+	t.onDoubleTapCallbackId = callbackId
+}
+
+// --- fyne.SecondaryTappable interface ---
+
+// TappedSecondary is called on right-click or long-press.
+func (t *TappableCanvasRaster) TappedSecondary(ev *fyne.PointEvent) {
+	if t.onSecondaryTapCallbackId == "" || t.bridge == nil {
+		return
+	}
+	t.bufferEvent(TappableEvent{
+		Type: "secondarytap",
+		Data: map[string]interface{}{
+			"x": float64(ev.Position.X),
+			"y": float64(ev.Position.Y),
+		},
+	})
+}
+
+// SetOnSecondaryTapCallback sets the callback ID for secondary tap (right-click/long-press) events
+func (t *TappableCanvasRaster) SetOnSecondaryTapCallback(bridge *Bridge, callbackId string) {
+	t.bridge = bridge
+	t.onSecondaryTapCallbackId = callbackId
+}
+
+// --- Tooltip support ---
+
+// ShowTooltip displays a tooltip popup at the given position relative to the canvas.
+func (t *TappableCanvasRaster) ShowTooltip(text string, x, y float32) {
+	c := fyne.CurrentApp().Driver().CanvasForObject(t)
+	if c == nil {
+		return
+	}
+	fyne.Do(func() {
+		t.HideTooltip()
+		label := widget.NewLabel(text)
+		t.tooltipPopup = widget.NewPopUp(label, c)
+		absPos := fyne.CurrentApp().Driver().AbsolutePositionForObject(t)
+		t.tooltipPopup.ShowAtPosition(fyne.NewPos(absPos.X+x, absPos.Y+y+20))
+	})
+}
+
+// HideTooltip hides and removes the tooltip popup.
+func (t *TappableCanvasRaster) HideTooltip() {
+	if t.tooltipPopup != nil {
+		t.tooltipPopup.Hide()
+		t.tooltipPopup = nil
+	}
+}
+
+// Cursor returns the current cursor for the desktop.Cursorable interface.
+func (t *TappableCanvasRaster) Cursor() desktop.Cursor {
+	if t.cursor != nil {
+		return t.cursor
+	}
+	return desktop.DefaultCursor
+}
+
+// SetCursor changes the cursor shown when hovering over this widget.
+func (t *TappableCanvasRaster) SetCursor(cursor desktop.Cursor) {
+	t.cursor = cursor
+}
+
 // bufferEvent adds an event to the pending buffer with coalescing.
 // Events are drained on the next pixel-operation response (piggybacked delivery).
 // If no response arrives within 16ms, events flush via sendEvent (push fallback).
@@ -610,6 +702,28 @@ func (t *TappableCanvasRaster) flushViaPush() {
 					},
 				})
 			}
+		case "doubletap":
+			if t.onDoubleTapCallbackId != "" {
+				t.bridge.sendEvent(Event{
+					Type: "callback",
+					Data: map[string]interface{}{
+						"callbackId": t.onDoubleTapCallbackId,
+						"x":          evt.Data["x"],
+						"y":          evt.Data["y"],
+					},
+				})
+			}
+		case "secondarytap":
+			if t.onSecondaryTapCallbackId != "" {
+				t.bridge.sendEvent(Event{
+					Type: "callback",
+					Data: map[string]interface{}{
+						"callbackId": t.onSecondaryTapCallbackId,
+						"x":          evt.Data["x"],
+						"y":          evt.Data["y"],
+					},
+				})
+			}
 		case "tap":
 			t.bridge.sendEvent(Event{
 				Type:     "canvasRasterTapped",
@@ -629,8 +743,11 @@ func (t *TappableCanvasRaster) RequestFocus() {
 
 // Ensure TappableCanvasRaster implements the required interfaces
 var _ fyne.Tappable = (*TappableCanvasRaster)(nil)
+var _ fyne.DoubleTappable = (*TappableCanvasRaster)(nil)
+var _ fyne.SecondaryTappable = (*TappableCanvasRaster)(nil)
 var _ fyne.Focusable = (*TappableCanvasRaster)(nil)
 var _ desktop.Keyable = (*TappableCanvasRaster)(nil)
 var _ fyne.Scrollable = (*TappableCanvasRaster)(nil)
 var _ desktop.Hoverable = (*TappableCanvasRaster)(nil)
 var _ fyne.Draggable = (*TappableCanvasRaster)(nil)
+var _ desktop.Cursorable = (*TappableCanvasRaster)(nil)

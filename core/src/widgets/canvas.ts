@@ -243,6 +243,14 @@ export class CanvasLine {
     }
     return this._tween.to(toValues, options);
   }
+
+  async hide(): Promise<void> {
+    await this.ctx.bridge.send('hideWidget', { widgetId: this.id });
+  }
+
+  async show(): Promise<void> {
+    await this.ctx.bridge.send('showWidget', { widgetId: this.id });
+  }
 }
 
 /**
@@ -350,6 +358,14 @@ export class CanvasCircle {
       );
     }
     return this._tween.to(toValues, options);
+  }
+
+  async hide(): Promise<void> {
+    await this.ctx.bridge.send('hideWidget', { widgetId: this.id });
+  }
+
+  async show(): Promise<void> {
+    await this.ctx.bridge.send('showWidget', { widgetId: this.id });
   }
 }
 
@@ -492,6 +508,14 @@ export class CanvasRectangle {
     this.ctx.trackRegistration(registrationPromise);
     return this;
   }
+
+  async hide(): Promise<void> {
+    await this.ctx.bridge.send('hideWidget', { widgetId: this.id });
+  }
+
+  async show(): Promise<void> {
+    await this.ctx.bridge.send('showWidget', { widgetId: this.id });
+  }
 }
 
 /**
@@ -573,6 +597,14 @@ export class CanvasText {
     for (const binding of this.bindings) {
       await binding();
     }
+  }
+
+  async hide(): Promise<void> {
+    await this.ctx.bridge.send('hideWidget', { widgetId: this.id });
+  }
+
+  async show(): Promise<void> {
+    await this.ctx.bridge.send('showWidget', { widgetId: this.id });
   }
 }
 
@@ -876,6 +908,14 @@ export class CanvasRaster {
   getSprites(): Sprite[] {
     return Array.from(this._sprites.values());
   }
+
+  async hide(): Promise<void> {
+    await this.ctx.bridge.send('hideWidget', { widgetId: this.id });
+  }
+
+  async show(): Promise<void> {
+    await this.ctx.bridge.send('showWidget', { widgetId: this.id });
+  }
 }
 
 /**
@@ -895,6 +935,10 @@ export interface TappableCanvasRasterOptions {
   onDrag?: (x: number, y: number, deltaX: number, deltaY: number) => void;
   /** Called when drag ends */
   onDragEnd?: () => void;
+  /** Called on double-click / double-tap */
+  onDoubleTap?: (x: number, y: number) => void;
+  /** Called on right-click / long-press */
+  onSecondaryTap?: (x: number, y: number) => void;
 }
 
 /**
@@ -912,6 +956,8 @@ export class TappableCanvasRaster {
   private onMouseMoveCallback?: (x: number, y: number) => void;
   private onDragCallback?: (x: number, y: number, deltaX: number, deltaY: number) => void;
   private onDragEndCallback?: () => void;
+  private onDoubleTapCallback?: (x: number, y: number) => void;
+  private onSecondaryTapCallback?: (x: number, y: number) => void;
 
   constructor(ctx: Context, width: number, height: number, options?: TappableCanvasRasterOptions);
   /** @deprecated Use options object instead */
@@ -943,6 +989,8 @@ export class TappableCanvasRaster {
     this.onMouseMoveCallback = options.onMouseMove;
     this.onDragCallback = options.onDrag;
     this.onDragEndCallback = options.onDragEnd;
+    this.onDoubleTapCallback = options.onDoubleTap;
+    this.onSecondaryTapCallback = options.onSecondaryTap;
 
     const payload: any = { id: this.id, width, height };
 
@@ -1019,6 +1067,28 @@ export class TappableCanvasRaster {
       });
     }
 
+    // Set up double-tap callback
+    if (options.onDoubleTap) {
+      const callbackId = ctx.generateId('callback');
+      payload.onDoubleTapCallbackId = callbackId;
+      ctx.bridge.registerEventHandler(callbackId, (data: any) => {
+        if (this.onDoubleTapCallback) {
+          this.onDoubleTapCallback(data.x, data.y);
+        }
+      });
+    }
+
+    // Set up secondary tap (right-click/long-press) callback
+    if (options.onSecondaryTap) {
+      const callbackId = ctx.generateId('callback');
+      payload.onSecondaryTapCallbackId = callbackId;
+      ctx.bridge.registerEventHandler(callbackId, (data: any) => {
+        if (this.onSecondaryTapCallback) {
+          this.onSecondaryTapCallback(data.x, data.y);
+        }
+      });
+    }
+
     ctx.bridge.send('createTappableCanvasRaster', payload);
     ctx.addToCurrentContainer(this.id);
 
@@ -1065,6 +1135,12 @@ export class TappableCanvasRaster {
         case 'dragend':
           this.onDragEndCallback?.();
           break;
+        case 'doubletap':
+          this.onDoubleTapCallback?.(data.x, data.y);
+          break;
+        case 'secondarytap':
+          this.onSecondaryTapCallback?.(data.x, data.y);
+          break;
         case 'tap':
           this.onTapCallback?.(data.x, data.y);
           break;
@@ -1097,6 +1173,28 @@ export class TappableCanvasRaster {
    */
   onTap(callback: (x: number, y: number) => void): void {
     this.onTapCallback = callback;
+  }
+
+  /**
+   * Show a tooltip popup at the given canvas-relative position.
+   */
+  async showTooltip(text: string, x: number, y: number): Promise<void> {
+    await this.ctx.bridge.send('showTooltip', { widgetId: this.id, text, x, y });
+  }
+
+  /**
+   * Hide the tooltip popup.
+   */
+  async hideTooltip(): Promise<void> {
+    await this.ctx.bridge.send('hideTooltip', { widgetId: this.id });
+  }
+
+  /**
+   * Set the cursor type shown when hovering over this canvas.
+   * @param cursorType One of: 'default', 'pointer', 'text', 'crosshair', 'hResize', 'vResize'
+   */
+  async setCursor(cursorType: string): Promise<void> {
+    await this.ctx.bridge.send('setCursor', { widgetId: this.id, cursorType });
   }
 
   /**
@@ -1554,6 +1652,14 @@ export class CanvasPath {
     });
     this.ctx.trackRegistration(registrationPromise);
     return this;
+  }
+
+  async hide(): Promise<void> {
+    await this.ctx.bridge.send('hideWidget', { widgetId: this.id });
+  }
+
+  async show(): Promise<void> {
+    await this.ctx.bridge.send('showWidget', { widgetId: this.id });
   }
 }
 

@@ -32,7 +32,9 @@ import { fillRectInBuffer, fillCircleInBuffer, fillPathInBuffer, applyClipMask, 
 /** Structured event emitted by SvgContext on tap hit/miss. */
 export interface SvgEvent {
   type: 'tap-hit' | 'tap-miss' | 'hover-in' | 'hover-out'
-      | 'drag' | 'drag-end' | 'scroll' | 'key-down' | 'key-up';
+      | 'drag' | 'drag-end' | 'scroll' | 'key-down' | 'key-up'
+      | 'double-click' | 'right-click' | 'tooltip-show' | 'tooltip-hide'
+      | 'when-show' | 'when-hide';
   x: number;
   y: number;
   elementName?: string;
@@ -63,6 +65,120 @@ interface ViewBoxMapping {
   offsetY: number;
 }
 
+/** Easing function type: takes normalized t (0→1), returns eased value (0→1). */
+export type EasingFn = (t: number) => number;
+
+/** Built-in easing functions. */
+export const Easing = {
+  linear: (t: number) => t,
+  easeIn: (t: number) => t * t,
+  easeOut: (t: number) => t * (2 - t),
+  easeInOut: (t: number) => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t,
+  easeInCubic: (t: number) => t * t * t,
+  easeOutCubic: (t: number) => (--t) * t * t + 1,
+  easeInOutCubic: (t: number) => t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1,
+} as const;
+
+/** Options for .transition() and .animate() */
+export interface AnimationOptions {
+  duration?: number;         // ms, default 300
+  easing?: EasingFn | keyof typeof Easing;  // default 'easeInOut'
+  delay?: number;            // ms before start, default 0
+  loop?: boolean;            // repeat indefinitely
+  yoyo?: boolean;            // ping-pong (implies loop)
+  onComplete?: () => void;   // fires when animation finishes (not on loop iterations)
+}
+
+/** Handle returned by .transition()/.animate() — allows stopping the animation. */
+export class AnimationHandle {
+  /** @internal */ _id: number;
+  /** @internal */ _context: SvgContext | null = null;
+  /** @internal */ _stopped = false;
+  /** @internal */ _onComplete?: () => void;
+  /** @internal */ _resolve?: () => void;
+  /** @internal */ _promise: Promise<void>;
+
+  constructor(id: number) {
+    this._id = id;
+    this._promise = new Promise<void>((resolve) => { this._resolve = resolve; });
+  }
+
+  /** Stop this animation immediately. */
+  stop(): void {
+    this._stopped = true;
+    this._context?.removeAnimation(this._id);
+    this._resolve?.();
+  }
+
+  /** Promise that resolves when the animation completes (or is stopped). */
+  then(onFulfilled?: () => void): Promise<void> {
+    return this._promise.then(onFulfilled);
+  }
+}
+
+/** @internal Tracked binding region for bindTo(). */
+interface BindingRegion<T = any> {
+  items: () => T[];
+  render: (item: T, index: number) => SvgElement | SvgElement[];
+  trackBy: (item: T) => string | number;
+  update?: (item: T, elements: SvgElement[]) => void;
+  /** Map from trackBy key → { item, elements } for current items */
+  current: Map<string | number, { item: T; elements: SvgElement[] }>;
+}
+
+/** @internal Active animation state tracked by the animation manager. */
+interface ActiveAnimation {
+  handle: AnimationHandle;
+  element: SvgElement;
+  tickFn: (t: number) => void;
+  startTime: number;
+  duration: number;
+  delay: number;
+  easing: EasingFn;
+  loop: boolean;
+  yoyo: boolean;
+}
+
+/** Parse a hex color string to [r, g, b] (0-255). */
+function parseHexColor(color: string): [number, number, number] {
+  let hex = color.replace('#', '');
+  if (hex.length === 3) hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+  return [
+    parseInt(hex.slice(0, 2), 16),
+    parseInt(hex.slice(2, 4), 16),
+    parseInt(hex.slice(4, 6), 16),
+  ];
+}
+
+/** Interpolate between two hex colors. */
+function lerpColor(from: string, to: string, t: number): string {
+  const [r1, g1, b1] = parseHexColor(from);
+  const [r2, g2, b2] = parseHexColor(to);
+  const r = Math.round(r1 + (r2 - r1) * t);
+  const g = Math.round(g1 + (g2 - g1) * t);
+  const b = Math.round(b1 + (b2 - b1) * t);
+  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+}
+
+/** Interpolate between two numbers. */
+function lerp(from: number, to: number, t: number): number {
+  return from + (to - from) * t;
+}
+
+/** Resolve an easing option to a function. */
+function resolveEasing(easing?: EasingFn | keyof typeof Easing): EasingFn {
+  if (!easing) return Easing.easeInOut;
+  if (typeof easing === 'function') return easing;
+  return Easing[easing] ?? Easing.easeInOut;
+}
+
+/** SVG geometry property names per shape type — used by updateSvgProps(). */
+const SVG_GEOM_KEYS: Record<string, string[]> = {
+  circle: ['cx', 'cy', 'r'],
+  rect: ['x', 'y', 'width', 'height'],
+  line: ['x1', 'y1', 'x2', 'y2'],
+};
+
 /**
  * Wrapper returned by element methods — allows fluent .fill() / .stroke() chaining.
  *
@@ -78,8 +194,20 @@ export class SvgElement {
   private dragHandler?: (e: { x: number; y: number; deltaX: number; deltaY: number }) => void;
   private dragEndHandler?: () => void;
   private scrollHandler?: (e: { deltaX: number; deltaY: number; x: number; y: number }) => void;
+  private doubleClickHandler?: (e: { x: number; y: number }) => void;
+  private rightClickHandler?: (e: { x: number; y: number }) => void;
+  private tooltipText?: string;
   private bounds?: { x: number; y: number; width: number; height: number };
   private elementName?: string;
+  private whenPredicate?: () => boolean;
+  private _visible: boolean = true;
+  private cursorType?: string;
+  private fillBinding?: () => string;
+  private strokeBinding?: () => { color: string; width?: number };
+  private opacityBinding?: () => number;
+  private posBinding?: () => Record<string, number>;
+  private _context?: SvgContext;
+  private _destroyed = false;
 
   constructor(underlying: any) {
     this.underlying = underlying;
@@ -131,6 +259,116 @@ export class SvgElement {
 
   getScrollHandler() { return this.scrollHandler; }
 
+  /** Register a double-click handler for this element. */
+  onDoubleClick(handler: (e: { x: number; y: number }) => void): this {
+    this.doubleClickHandler = handler;
+    return this;
+  }
+
+  getDoubleClickHandler() { return this.doubleClickHandler; }
+
+  /** Register a right-click / long-press handler for this element. */
+  onRightClick(handler: (e: { x: number; y: number }) => void): this {
+    this.rightClickHandler = handler;
+    return this;
+  }
+
+  getRightClickHandler() { return this.rightClickHandler; }
+
+  /** Set tooltip text to show on hover. */
+  tooltip(text: string): this {
+    this.tooltipText = text;
+    return this;
+  }
+
+  getTooltip() { return this.tooltipText; }
+
+  /** Conditionally show/hide this element based on a predicate.
+   *  Evaluates immediately — hides if false. Call `svgCtx.refresh()` after
+   *  state changes to re-evaluate. */
+  when(predicate: () => boolean): this {
+    this.whenPredicate = predicate;
+    // Evaluate immediately — hide if condition is false at registration
+    if (!predicate()) {
+      this.hide();
+    }
+    return this;
+  }
+
+  getWhenPredicate() { return this.whenPredicate; }
+
+  /** Set the cursor type shown when hovering over this element. */
+  cursor(type: 'default' | 'pointer' | 'text' | 'crosshair' | 'hResize' | 'vResize'): this {
+    this.cursorType = type;
+    return this;
+  }
+
+  getCursor() { return this.cursorType; }
+
+  /** Bind fill color to a reactive function. Re-evaluated on `svgCtx.refresh()`. */
+  bindFill(fn: () => string): this {
+    this.fillBinding = fn;
+    return this;
+  }
+
+  getFillBinding() { return this.fillBinding; }
+
+  /** Bind stroke to a reactive function. Re-evaluated on `svgCtx.refresh()`. */
+  bindStroke(fn: () => { color: string; width?: number }): this {
+    this.strokeBinding = fn;
+    return this;
+  }
+
+  getStrokeBinding() { return this.strokeBinding; }
+
+  /** Bind opacity to a reactive function. Re-evaluated on `svgCtx.refresh()`. */
+  bindOpacity(fn: () => number): this {
+    this.opacityBinding = fn;
+    return this;
+  }
+
+  getOpacityBinding() { return this.opacityBinding; }
+
+  /** Bind position/size to a reactive function. Re-evaluated on `svgCtx.refresh()`.
+   *  Returns an object with numeric properties to update (e.g. { cx: 50, cy: 30, r: 10 }). */
+  bindPos(fn: () => Record<string, number>): this {
+    this.posBinding = fn;
+    return this;
+  }
+
+  getPosBinding() { return this.posBinding; }
+
+  /** Whether the element is currently visible. */
+  isVisible(): boolean { return this._visible; }
+
+  /** Hide this element (removes from rendering and hit-testing). */
+  async hide(): Promise<void> {
+    if (!this._visible) return;
+    this._visible = false;
+    if (this.underlying?.hide) {
+      await this.underlying.hide();
+    }
+  }
+
+  /** Show this element (restores rendering and hit-testing). */
+  async show(): Promise<void> {
+    if (this._visible) return;
+    this._visible = true;
+    if (this.underlying?.show) {
+      await this.underlying.show();
+    }
+  }
+
+  /** Destroy this element — hides it and marks it as permanently removed.
+   *  Used by bindTo() when data items are removed. */
+  async destroy(): Promise<void> {
+    this._destroyed = true;
+    await this.hide();
+  }
+
+  /** Whether the element has been destroyed (removed from a bindTo region). */
+  isDestroyed(): boolean { return this._destroyed; }
+
   setBounds(x: number, y: number, w: number, h: number): this {
     this.bounds = { x, y, width: w, height: h };
     return this;
@@ -139,6 +377,8 @@ export class SvgElement {
   getBounds() { return this.bounds; }
 
   hitTest(px: number, py: number): boolean {
+    if (this._destroyed) return false;
+    if (!this._visible) return false;
     if (!this.bounds) return false;
     const b = this.bounds;
     return px >= b.x && px <= b.x + b.width &&
@@ -163,9 +403,223 @@ export class SvgElement {
     return this;
   }
 
+  /** Set opacity on the element (updates the underlying widget). */
+  opacity(value: number): this {
+    if (this.underlying?.update) {
+      this.underlying.update({ opacity: value });
+    }
+    return this;
+  }
+
+  /** @internal Set the owning SvgContext (for animation manager access). */
+  setContext(ctx: SvgContext): void {
+    this._context = ctx;
+  }
+
+  /** Get the owning SvgContext. */
+  getContext(): SvgContext | undefined {
+    return this._context;
+  }
+
   /** Get the underlying Tsyne widget. */
   getUnderlying(): any {
     return this.underlying;
+  }
+
+  // ─── SVG-semantic coordinate translation ──────────────────────
+
+  private _shapeType?: 'circle' | 'rect' | 'line';
+  private _mapping?: ViewBoxMapping;
+  private _svgAttrs?: Record<string, number>;
+
+  /** @internal Store shape type and viewBox mapping for SVG→canvas coordinate translation. */
+  setShapeInfo(type: 'circle' | 'rect' | 'line', mapping: ViewBoxMapping, svgAttrs: Record<string, number>): void {
+    this._shapeType = type;
+    this._mapping = mapping;
+    this._svgAttrs = { ...svgAttrs };
+  }
+
+  /** Get the current SVG-level attribute value (in viewBox units). */
+  getSvgAttr(key: string): number | undefined {
+    return this._svgAttrs?.[key];
+  }
+
+  /** Whether this element has SVG-semantic shape info for coordinate translation. */
+  hasShapeInfo(): boolean {
+    return this._shapeType !== undefined && this._mapping !== undefined;
+  }
+
+  /**
+   * Update SVG-level properties with automatic coordinate translation.
+   *
+   * Translates SVG-space props (cx, cy, r for circle; x, y, width, height for rect;
+   * x1, y1, x2, y2 for line) to canvas pixel coords using the stored viewBox mapping.
+   * Also updates hit-test bounds.
+   *
+   * Non-geometry props (fillColor, strokeColor, etc.) are passed through directly.
+   */
+  updateSvgProps(props: Record<string, any>): void {
+    if (!this._mapping || !this._shapeType || !this._svgAttrs) {
+      // No shape info — pass through directly
+      if (this.underlying?.update) this.underlying.update(props);
+      return;
+    }
+
+    const m = this._mapping;
+    const mapXFn = (x: number) => (x - m.vb.minX) * m.scale + m.offsetX;
+    const mapYFn = (y: number) => (y - m.vb.minY) * m.scale + m.offsetY;
+    const mapLen = (l: number) => l * m.scale;
+
+    // Determine which keys are SVG geometry props for this shape type
+    const geomKeys = SVG_GEOM_KEYS[this._shapeType];
+    const canvasUpdates: Record<string, any> = {};
+
+    // Merge geometry props into stored attrs; pass non-geometry props through
+    for (const k of Object.keys(props)) {
+      if (geomKeys.includes(k)) {
+        this._svgAttrs[k] = props[k];
+      } else {
+        canvasUpdates[k] = props[k];
+      }
+    }
+
+    // Translate geometry from SVG space → canvas space
+    const a = this._svgAttrs;
+    switch (this._shapeType) {
+      case 'circle': {
+        const cx = mapXFn(a.cx ?? 0);
+        const cy = mapYFn(a.cy ?? 0);
+        const r = mapLen(a.r ?? 0);
+        canvasUpdates.x = cx - r;
+        canvasUpdates.y = cy - r;
+        canvasUpdates.x2 = cx + r;
+        canvasUpdates.y2 = cy + r;
+        this.setBounds(cx - r, cy - r, 2 * r, 2 * r);
+        break;
+      }
+      case 'rect': {
+        const x = mapXFn(a.x ?? 0);
+        const y = mapYFn(a.y ?? 0);
+        const w = mapLen(a.width ?? 0);
+        const h = mapLen(a.height ?? 0);
+        canvasUpdates.x = x;
+        canvasUpdates.y = y;
+        canvasUpdates.x2 = x + w;
+        canvasUpdates.y2 = y + h;
+        this.setBounds(x, y, w, h);
+        break;
+      }
+      case 'line': {
+        const lx1 = mapXFn(a.x1 ?? 0);
+        const ly1 = mapYFn(a.y1 ?? 0);
+        const lx2 = mapXFn(a.x2 ?? 0);
+        const ly2 = mapYFn(a.y2 ?? 0);
+        canvasUpdates.x1 = lx1;
+        canvasUpdates.y1 = ly1;
+        canvasUpdates.x2 = lx2;
+        canvasUpdates.y2 = ly2;
+        const minX = Math.min(lx1, lx2), minY = Math.min(ly1, ly2);
+        this.setBounds(minX, minY, Math.abs(lx2 - lx1), Math.abs(ly2 - ly1));
+        break;
+      }
+    }
+
+    if (Object.keys(canvasUpdates).length > 0 && this.underlying?.update) {
+      this.underlying.update(canvasUpdates);
+    }
+  }
+
+  /**
+   * Animate from current property values to target values over time.
+   *
+   * Supported properties: `fill`, `stroke`, `strokeWidth`, `opacity`, and any
+   * numeric property accepted by the underlying widget's `.update()` (cx, cy, x, y, width, height, r, etc.)
+   *
+   * ```ts
+   * el.transition({ fill: '#f00', cx: 100 }, { duration: 300, easing: 'easeOut' });
+   * ```
+   */
+  transition(
+    props: Record<string, string | number>,
+    opts?: AnimationOptions
+  ): AnimationHandle {
+    if (!this._context) throw new Error('SvgElement must be tracked by an SvgContext to animate');
+
+    // Snapshot current values — prefer SVG-level attrs for geometry props
+    const underlying = this.underlying;
+    const geomKeys = this._shapeType ? (SVG_GEOM_KEYS[this._shapeType] || []) : [];
+    const startValues: Record<string, string | number> = {};
+    for (const key of Object.keys(props)) {
+      if (key === 'fill' || key === 'fillColor') {
+        startValues[key] = underlying?._fillColor ?? underlying?.fillColor ?? '#000000';
+      } else if (key === 'stroke' || key === 'strokeColor') {
+        startValues[key] = underlying?._strokeColor ?? underlying?.strokeColor ?? '#000000';
+      } else if (key === 'opacity') {
+        startValues[key] = underlying?._opacity ?? 1;
+      } else if (this._svgAttrs && geomKeys.includes(key)) {
+        // SVG-level geometry prop — read from stored SVG attrs (viewBox units)
+        startValues[key] = this._svgAttrs[key] ?? 0;
+      } else {
+        startValues[key] = underlying?.[`_${key}`] ?? underlying?.[key] ?? 0;
+      }
+    }
+
+    const hasSvgProps = this._shapeType && geomKeys.some(k => k in props);
+
+    const tickFn = (t: number) => {
+      const svgUpdates: Record<string, any> = {};
+      const directUpdates: Record<string, any> = {};
+      for (const key of Object.keys(props)) {
+        const from = startValues[key];
+        const to = props[key];
+        let val: any;
+        if (typeof from === 'string' && typeof to === 'string') {
+          val = lerpColor(from, to, t);
+          directUpdates[key === 'fill' ? 'fillColor' : key === 'stroke' ? 'strokeColor' : key] = val;
+        } else {
+          val = lerp(Number(from), Number(to), t);
+          if (hasSvgProps && geomKeys.includes(key)) {
+            svgUpdates[key] = val;
+          } else {
+            directUpdates[key] = val;
+          }
+        }
+      }
+      if (Object.keys(svgUpdates).length > 0) this.updateSvgProps({ ...svgUpdates, ...directUpdates });
+      else if (Object.keys(directUpdates).length > 0 && underlying?.update) underlying.update(directUpdates);
+    };
+
+    return this._context.addAnimation(this, tickFn, opts);
+  }
+
+  /**
+   * Run a custom animation with a callback that receives normalized time.
+   *
+   * ```ts
+   * el.animate((t) => ({ cx: 50 + 100 * t, r: 5 + 15 * t }), {
+   *   duration: 500,
+   *   easing: 'easeOut',
+   *   onComplete: () => console.log('done'),
+   * });
+   * ```
+   */
+  animate(
+    fn: (t: number) => Record<string, any>,
+    opts?: AnimationOptions
+  ): AnimationHandle {
+    if (!this._context) throw new Error('SvgElement must be tracked by an SvgContext to animate');
+
+    const underlying = this.underlying;
+    const tickFn = (t: number) => {
+      const updates = fn(t);
+      if (this.hasShapeInfo()) {
+        this.updateSvgProps(updates);
+      } else if (underlying?.update) {
+        underlying.update(updates);
+      }
+    };
+
+    return this._context.addAnimation(this, tickFn, opts);
   }
 }
 
@@ -192,6 +646,14 @@ export class SvgContext {
   private keyDownHandler?: (key: string) => void;
   private keyUpHandler?: (key: string) => void;
   private sceneScrollHandler?: (e: { deltaX: number; deltaY: number; x: number; y: number }) => void;
+  private tappableRaster?: any;  // TappableCanvasRaster for tooltip support
+  private tooltipTimer?: ReturnType<typeof setTimeout>;
+  private tooltipElement: SvgElement | null = null;
+  private tooltipDelay: number = 500;  // ms before showing tooltip
+  private animations: ActiveAnimation[] = [];
+  private animationTimer?: ReturnType<typeof setInterval>;
+  private nextAnimationId: number = 1;
+  private bindingRegions: BindingRegion[] = [];
 
   constructor(app: any, mapping: ViewBoxMapping, rootStyle?: SvgStyle) {
     this.app = app;
@@ -202,6 +664,7 @@ export class SvgContext {
   // ─── Event tracking ─────────────────────────────────────────
 
   private trackElement(el: SvgElement): void {
+    el.setContext(this);
     this.trackedElements.push(el);
   }
 
@@ -225,17 +688,23 @@ export class SvgContext {
     this.eventCallback?.({ type: 'tap-miss', x, y });
   }
 
-  /** Dispatch hover events — finds topmost hovered element and fires enter/leave transitions. */
+  /** Dispatch hover events — finds topmost hovered element and fires enter/leave transitions.
+   *  Also manages tooltip show/hide with a delay and cursor changes. */
   dispatchHover(x: number, y: number): void {
     let newHovered: SvgElement | null = null;
     for (let i = this.trackedElements.length - 1; i >= 0; i--) {
       const el = this.trackedElements[i];
-      if (el.getHoverHandler() && el.hitTest(x, y)) {
+      if ((el.getHoverHandler() || el.getTooltip() || el.getCursor()) && el.hitTest(x, y)) {
         newHovered = el;
         break;
       }
     }
     if (newHovered !== this.hoveredElement) {
+      // Hide tooltip from old element
+      if (this.tooltipElement) {
+        this.cancelTooltip();
+        this.hideTooltipNow();
+      }
       if (this.hoveredElement) {
         const idx = this.trackedElements.indexOf(this.hoveredElement);
         this.eventCallback?.({ type: 'hover-out', x, y, elementName: this.hoveredElement.getName(), elementIndex: idx });
@@ -245,8 +714,45 @@ export class SvgContext {
         const idx = this.trackedElements.indexOf(newHovered);
         this.eventCallback?.({ type: 'hover-in', x, y, elementName: newHovered.getName(), elementIndex: idx });
         newHovered.getHoverHandler()?.(true);
+        // Start tooltip delay if element has tooltip text
+        const tip = newHovered.getTooltip();
+        if (tip && this.tappableRaster) {
+          this.scheduleTooltip(newHovered, tip, x, y);
+        }
+      }
+      // Update cursor based on new hovered element
+      if (this.tappableRaster) {
+        const cursorType = newHovered?.getCursor() || 'default';
+        this.tappableRaster.setCursor(cursorType);
       }
       this.hoveredElement = newHovered;
+    }
+  }
+
+  private scheduleTooltip(el: SvgElement, text: string, x: number, y: number): void {
+    this.cancelTooltip();
+    this.tooltipTimer = setTimeout(() => {
+      this.tooltipElement = el;
+      this.tappableRaster?.showTooltip(text, x, y);
+      const idx = this.trackedElements.indexOf(el);
+      this.eventCallback?.({ type: 'tooltip-show', x, y, elementName: el.getName(), elementIndex: idx });
+    }, this.tooltipDelay);
+  }
+
+  private cancelTooltip(): void {
+    if (this.tooltipTimer) {
+      clearTimeout(this.tooltipTimer);
+      this.tooltipTimer = undefined;
+    }
+  }
+
+  private hideTooltipNow(): void {
+    if (this.tooltipElement) {
+      const el = this.tooltipElement;
+      const idx = this.trackedElements.indexOf(el);
+      this.eventCallback?.({ type: 'tooltip-hide', x: 0, y: 0, elementName: el.getName(), elementIndex: idx });
+      this.tappableRaster?.hideTooltip();
+      this.tooltipElement = null;
     }
   }
 
@@ -307,6 +813,32 @@ export class SvgContext {
     this.keyUpHandler?.(key);
   }
 
+  /** Dispatch double-click — hits topmost element with a doubleClick handler. */
+  dispatchDoubleTap(x: number, y: number): void {
+    for (let i = this.trackedElements.length - 1; i >= 0; i--) {
+      const el = this.trackedElements[i];
+      const handler = el.getDoubleClickHandler();
+      if (handler && el.hitTest(x, y)) {
+        this.eventCallback?.({ type: 'double-click', x, y, elementName: el.getName(), elementIndex: i });
+        handler({ x, y });
+        return;
+      }
+    }
+  }
+
+  /** Dispatch right-click / secondary tap — hits topmost element with a rightClick handler. */
+  dispatchSecondaryTap(x: number, y: number): void {
+    for (let i = this.trackedElements.length - 1; i >= 0; i--) {
+      const el = this.trackedElements[i];
+      const handler = el.getRightClickHandler();
+      if (handler && el.hitTest(x, y)) {
+        this.eventCallback?.({ type: 'right-click', x, y, elementName: el.getName(), elementIndex: i });
+        handler({ x, y });
+        return;
+      }
+    }
+  }
+
   /** Register a scene-wide key-down handler. */
   onKeyDown(handler: (key: string) => void): this {
     this.keyDownHandler = handler;
@@ -325,9 +857,216 @@ export class SvgContext {
     return this;
   }
 
+  // ─── Dynamic Binding Regions ──────────────────────────────────
+
+  /** Remove an element from hit-test tracking (used when destroying bindTo elements). */
+  private untrackElement(el: SvgElement): void {
+    const idx = this.trackedElements.indexOf(el);
+    if (idx >= 0) this.trackedElements.splice(idx, 1);
+  }
+
+  /**
+   * Bind a dynamic list of data items to SVG elements.
+   *
+   * On each `refresh()`, the items are diffed using `trackBy`:
+   * - **New items**: `render()` is called to create elements
+   * - **Removed items**: elements are destroyed (hidden + untracked)
+   * - **Existing items**: `update()` is called if provided (or rely on property bindings)
+   *
+   * ```ts
+   * svgCtx.bindTo({
+   *   items: () => dataPoints,
+   *   trackBy: (d) => d.id,
+   *   render: (d) => s.rect({ x: d.x, y: 0, width: 10, height: d.value, fill: '#48c' }),
+   *   update: (d, els) => els[0].fill(d.color),
+   * });
+   * ```
+   */
+  bindTo<T>(config: {
+    items: () => T[];
+    render: (item: T, index: number) => SvgElement | SvgElement[];
+    trackBy: (item: T) => string | number;
+    update?: (item: T, elements: SvgElement[]) => void;
+  }): void {
+    const region: BindingRegion<T> = {
+      items: config.items,
+      render: config.render,
+      trackBy: config.trackBy,
+      update: config.update,
+      current: new Map(),
+    };
+
+    // Initial render
+    const items = config.items();
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      const key = config.trackBy(item);
+      const result = config.render(item, i);
+      const elements = Array.isArray(result) ? result : [result];
+      region.current.set(key, { item, elements });
+    }
+
+    this.bindingRegions.push(region);
+  }
+
+  /** @internal Process all binding regions during refresh(). */
+  private async refreshBindingRegions(): Promise<void> {
+    for (const region of this.bindingRegions) {
+      const newItems = region.items();
+      const newKeys = new Set<string | number>();
+
+      // Build map of new items by key
+      const newItemMap = new Map<string | number, { item: any; index: number }>();
+      for (let i = 0; i < newItems.length; i++) {
+        const key = region.trackBy(newItems[i]);
+        newKeys.add(key);
+        newItemMap.set(key, { item: newItems[i], index: i });
+      }
+
+      // Remove items that are no longer present
+      for (const [key, entry] of region.current) {
+        if (!newKeys.has(key)) {
+          for (const el of entry.elements) {
+            await el.destroy();
+            this.untrackElement(el);
+          }
+          region.current.delete(key);
+        }
+      }
+
+      // Add new items and update existing ones
+      for (const [key, { item, index }] of newItemMap) {
+        const existing = region.current.get(key);
+        if (existing) {
+          // Update existing — call update callback if provided
+          existing.item = item;
+          if (region.update) {
+            region.update(item, existing.elements);
+          }
+        } else {
+          // New item — render it
+          const result = region.render(item, index);
+          const elements = Array.isArray(result) ? result : [result];
+          region.current.set(key, { item, elements });
+        }
+      }
+    }
+  }
+
+  // ─── Animation Manager ────────────────────────────────────────
+
+  /** @internal Add an animation to the manager. Called by SvgElement.transition/animate. */
+  addAnimation(element: SvgElement, tickFn: (t: number) => void, opts?: AnimationOptions): AnimationHandle {
+    const resolvedEasing = resolveEasing(opts?.easing);
+    const handle = new AnimationHandle(this.nextAnimationId++);
+    handle._context = this;
+    handle._onComplete = opts?.onComplete;
+
+    const anim: ActiveAnimation = {
+      handle,
+      element,
+      tickFn,
+      startTime: Date.now() + (opts?.delay ?? 0),
+      duration: opts?.duration ?? 300,
+      delay: opts?.delay ?? 0,
+      easing: resolvedEasing,
+      loop: opts?.loop ?? opts?.yoyo ?? false,
+      yoyo: opts?.yoyo ?? false,
+    };
+
+    this.animations.push(anim);
+    this.startAnimationLoop();
+    return handle;
+  }
+
+  /** @internal Remove an animation by id (called by AnimationHandle.stop). */
+  removeAnimation(id: number): void {
+    this.animations = this.animations.filter(a => a.handle._id !== id);
+    if (this.animations.length === 0) {
+      this.stopAnimationLoop();
+    }
+  }
+
+  /** Stop all running animations. */
+  stopAllAnimations(): void {
+    for (const anim of this.animations) {
+      anim.handle._stopped = true;
+      anim.handle._resolve?.();
+    }
+    this.animations = [];
+    this.stopAnimationLoop();
+  }
+
+  /** Whether any animations are currently running. */
+  isAnimating(): boolean {
+    return this.animations.length > 0;
+  }
+
+  private startAnimationLoop(): void {
+    if (this.animationTimer) return;
+    this.animationTimer = setInterval(() => this.tickAnimations(), 16);
+  }
+
+  private stopAnimationLoop(): void {
+    if (this.animationTimer) {
+      clearInterval(this.animationTimer);
+      this.animationTimer = undefined;
+    }
+  }
+
+  private tickAnimations(): void {
+    const now = Date.now();
+    const completed: ActiveAnimation[] = [];
+
+    for (const anim of this.animations) {
+      if (anim.handle._stopped) {
+        completed.push(anim);
+        continue;
+      }
+
+      // Not started yet (delay)
+      if (now < anim.startTime) continue;
+
+      const elapsed = now - anim.startTime;
+      let rawT = Math.min(elapsed / anim.duration, 1);
+
+      if (anim.yoyo) {
+        // Full cycle = 2 * duration (forward + reverse)
+        const cycleTime = elapsed % (anim.duration * 2);
+        rawT = cycleTime <= anim.duration
+          ? cycleTime / anim.duration
+          : 2 - cycleTime / anim.duration;
+      } else if (anim.loop && rawT >= 1) {
+        rawT = (elapsed % anim.duration) / anim.duration;
+      }
+
+      const easedT = anim.easing(rawT);
+      anim.tickFn(easedT);
+
+      // Check completion (non-looping)
+      if (!anim.loop && !anim.yoyo && elapsed >= anim.duration) {
+        anim.tickFn(anim.easing(1));  // ensure we land exactly at target
+        completed.push(anim);
+      }
+    }
+
+    // Remove completed animations
+    for (const anim of completed) {
+      this.animations = this.animations.filter(a => a !== anim);
+      if (!anim.handle._stopped) {
+        anim.handle._onComplete?.();
+      }
+      anim.handle._resolve?.();
+    }
+
+    if (this.animations.length === 0) {
+      this.stopAnimationLoop();
+    }
+  }
+
   /** Create a TappableCanvasRaster overlay that forwards taps and hovers to SVG element hit testing. */
   enableEvents(): this {
-    this.app.tappableCanvasRaster(this.mapping.canvasWidth, this.mapping.canvasHeight, {
+    this.tappableRaster = this.app.tappableCanvasRaster(this.mapping.canvasWidth, this.mapping.canvasHeight, {
       onTap: (x: number, y: number) => { this.dispatchTap(x, y); },
       onMouseMove: (x: number, y: number) => { this.dispatchHover(x, y); },
       onDrag: (x: number, y: number, deltaX: number, deltaY: number) => { this.dispatchDrag(x, y, deltaX, deltaY); },
@@ -335,8 +1074,59 @@ export class SvgContext {
       onScroll: (deltaX: number, deltaY: number, x: number, y: number) => { this.dispatchScroll(deltaX, deltaY, x, y); },
       onKeyDown: (key: string) => { this.dispatchKeyDown(key); },
       onKeyUp: (key: string) => { this.dispatchKeyUp(key); },
+      onDoubleTap: (x: number, y: number) => { this.dispatchDoubleTap(x, y); },
+      onSecondaryTap: (x: number, y: number) => { this.dispatchSecondaryTap(x, y); },
     });
     return this;
+  }
+
+  /** Re-evaluate all .when() predicates, property bindings, binding regions, and show/hide elements.
+   *  Call this after state changes that affect .when() conditions, bound properties, or data lists. */
+  async refresh(): Promise<void> {
+    // Process binding regions first (may add/remove elements)
+    await this.refreshBindingRegions();
+
+    for (const el of this.trackedElements) {
+      // Skip destroyed elements (from bindTo removal)
+      if (el.isDestroyed()) continue;
+
+      // Evaluate .when() predicates
+      const pred = el.getWhenPredicate();
+      if (pred) {
+        const shouldShow = pred();
+        if (shouldShow && !el.isVisible()) {
+          await el.show();
+          const idx = this.trackedElements.indexOf(el);
+          this.eventCallback?.({ type: 'when-show', x: 0, y: 0, elementName: el.getName(), elementIndex: idx });
+        } else if (!shouldShow && el.isVisible()) {
+          await el.hide();
+          const idx = this.trackedElements.indexOf(el);
+          this.eventCallback?.({ type: 'when-hide', x: 0, y: 0, elementName: el.getName(), elementIndex: idx });
+        }
+      }
+
+      // Skip property bindings for hidden elements
+      if (!el.isVisible()) continue;
+
+      // Evaluate property bindings
+      const fillFn = el.getFillBinding();
+      if (fillFn) el.fill(fillFn());
+
+      const strokeFn = el.getStrokeBinding();
+      if (strokeFn) {
+        const { color, width } = strokeFn();
+        el.stroke(color, width);
+      }
+
+      const opacityFn = el.getOpacityBinding();
+      if (opacityFn) el.opacity(opacityFn());
+
+      const posFn = el.getPosBinding();
+      if (posFn) {
+        const props = posFn();
+        el.updateSvgProps(props);
+      }
+    }
   }
 
   /** Parse a CSS <style> block and register rules for class/element selectors. */
@@ -632,6 +1422,15 @@ export class SvgContext {
     if (attrs.onDrag) el.onDrag(attrs.onDrag);
     if (attrs.onDragEnd) el.onDragEnd(attrs.onDragEnd);
     if (attrs.onScroll) el.onScroll(attrs.onScroll);
+    if (attrs.onDoubleClick) el.onDoubleClick(attrs.onDoubleClick);
+    if (attrs.onRightClick) el.onRightClick(attrs.onRightClick);
+    if (attrs.tooltip) el.tooltip(attrs.tooltip);
+    if (attrs.when) el.when(attrs.when);
+    if (attrs.cursor) el.cursor(attrs.cursor);
+    if (attrs.bindFill) el.bindFill(attrs.bindFill);
+    if (attrs.bindStroke) el.bindStroke(attrs.bindStroke);
+    if (attrs.bindOpacity) el.bindOpacity(attrs.bindOpacity);
+    if (attrs.bindPos) el.bindPos(attrs.bindPos);
   }
 
   // ─── SVG Element Methods ─────────────────────────────────────
@@ -934,6 +1733,11 @@ export class SvgContext {
     if (attrs.transform) this.popTransform();
     const el = new SvgElement(underlying);
     el.setBounds(cx - r, cy - r, 2 * r, 2 * r);
+    el.setShapeInfo('circle', this.mapping, {
+      cx: this.parseLenX(attrs.cx ?? 0),
+      cy: this.parseLenY(attrs.cy ?? 0),
+      r: this.parseLenX(attrs.r ?? 0),
+    });
     this.trackElement(el);
     this.wireEventHandlers(el, attrs);
     return el;
@@ -1068,6 +1872,12 @@ export class SvgContext {
     if (attrs.transform) this.popTransform();
     const el = new SvgElement(underlying);
     el.setBounds(minX, minY, maxX - minX, maxY - minY);
+    el.setShapeInfo('rect', this.mapping, {
+      x: px,
+      y: py,
+      width: pw,
+      height: ph,
+    });
     this.trackElement(el);
     this.wireEventHandlers(el, attrs);
     return el;
@@ -1091,6 +1901,12 @@ export class SvgContext {
     const el = new SvgElement(underlying);
     const minX = Math.min(x1, x2), minY = Math.min(y1, y2);
     el.setBounds(minX, minY, Math.abs(x2 - x1), Math.abs(y2 - y1));
+    el.setShapeInfo('line', this.mapping, {
+      x1: parseNum(attrs.x1 ?? 0),
+      y1: parseNum(attrs.y1 ?? 0),
+      x2: parseNum(attrs.x2 ?? 0),
+      y2: parseNum(attrs.y2 ?? 0),
+    });
     this.trackElement(el);
     this.wireEventHandlers(el, attrs);
     return el;
