@@ -892,6 +892,11 @@ export class Clip {
 
     ctx.addToCurrentContainer(this.id);
   }
+
+  /** Resize the clip container to new dimensions. */
+  async resize(width: number, height: number): Promise<void> {
+    await this.ctx.bridge.send('resizeWidget', { widgetId: this.id, width, height });
+  }
 }
 
 /**

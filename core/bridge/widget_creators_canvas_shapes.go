@@ -349,6 +349,14 @@ func (b *Bridge) handleUpdateCanvasRectangle(msg Message) Response {
 				}
 			}
 
+			if width, ok := getFloat64(msg.Payload["width"]); ok {
+				if height, ok := getFloat64(msg.Payload["height"]); ok {
+					size := fyne.NewSize(float32(width), float32(height))
+					rect.SetMinSize(size)
+					rect.Resize(size)
+				}
+			}
+
 			if fillHex, ok := msg.Payload["fillColor"].(string); ok {
 				rect.FillColor = parseHexColorSimple(fillHex)
 			}
@@ -382,6 +390,14 @@ func (b *Bridge) handleUpdateCanvasRectangle(msg Message) Response {
 				if y2, ok := getFloat64(msg.Payload["y2"]); ok {
 					currentPos := tappableRect.Position()
 					tappableRect.Resize(fyne.NewSize(float32(x2)-currentPos.X, float32(y2)-currentPos.Y))
+				}
+			}
+
+			if width, ok := getFloat64(msg.Payload["width"]); ok {
+				if height, ok := getFloat64(msg.Payload["height"]); ok {
+					tappableRect.width = float32(width)
+					tappableRect.height = float32(height)
+					tappableRect.Resize(fyne.NewSize(float32(width), float32(height)))
 				}
 			}
 

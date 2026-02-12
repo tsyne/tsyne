@@ -411,6 +411,35 @@ func (b *Bridge) handleCreateClip(msg Message) Response {
 	}
 }
 
+func (b *Bridge) handleResizeWidget(msg Message) Response {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		}
+	}
+
+	width, _ := getFloat64(msg.Payload["width"])
+	height, _ := getFloat64(msg.Payload["height"])
+	size := fyne.NewSize(float32(width), float32(height))
+
+	fyne.DoAndWait(func() {
+		w.Resize(size)
+	})
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+	}
+}
+
 func (b *Bridge) handleCreateMax(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	childIDs, ok := msg.Payload["childIds"].([]interface{})

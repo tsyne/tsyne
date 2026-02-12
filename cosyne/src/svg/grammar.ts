@@ -60,9 +60,10 @@ interface ViewBoxMapping {
   vb: ViewBox;
   canvasWidth: number;
   canvasHeight: number;
-  scale: number;
-  offsetX: number;
-  offsetY: number;
+  scale: number;           // kept for mapLength() and test readability
+  offsetX: number;         // kept for test assertions
+  offsetY: number;         // kept for test assertions
+  transform: AffineMatrix; // viewBox→canvas point transform
 }
 
 /** Easing function type: takes normalized t (0→1), returns eased value (0→1). */
@@ -431,12 +432,14 @@ export class SvgElement {
   private _shapeType?: 'circle' | 'rect' | 'line';
   private _mapping?: ViewBoxMapping;
   private _svgAttrs?: Record<string, number>;
+  private _parentTransform: AffineMatrix = AffineMatrix.identity();
 
   /** @internal Store shape type and viewBox mapping for SVG→canvas coordinate translation. */
-  setShapeInfo(type: 'circle' | 'rect' | 'line', mapping: ViewBoxMapping, svgAttrs: Record<string, number>): void {
+  setShapeInfo(type: 'circle' | 'rect' | 'line', mapping: ViewBoxMapping, svgAttrs: Record<string, number>, parentTransform?: AffineMatrix): void {
     this._shapeType = type;
     this._mapping = mapping;
     this._svgAttrs = { ...svgAttrs };
+    if (parentTransform) this._parentTransform = parentTransform;
   }
 
   /** Get the current SVG-level attribute value (in viewBox units). */
@@ -466,9 +469,14 @@ export class SvgElement {
     }
 
     const m = this._mapping;
-    const mapXFn = (x: number) => (x - m.vb.minX) * m.scale + m.offsetX;
-    const mapYFn = (y: number) => (y - m.vb.minY) * m.scale + m.offsetY;
-    const mapLen = (l: number) => l * m.scale;
+    const vb = m.transform;
+    const pt = this._parentTransform;
+    // Map a point: apply parent group transform, then viewBox→canvas mapping
+    const mapPt = (x: number, y: number): [number, number] => {
+      const [tx, ty] = pt.apply(x, y);
+      return vb.apply(tx, ty);
+    };
+    const mapLen = (l: number) => l * m.scale * pt.averageScale();
 
     // Determine which keys are SVG geometry props for this shape type
     const geomKeys = SVG_GEOM_KEYS[this._shapeType];
@@ -487,8 +495,7 @@ export class SvgElement {
     const a = this._svgAttrs;
     switch (this._shapeType) {
       case 'circle': {
-        const cx = mapXFn(a.cx ?? 0);
-        const cy = mapYFn(a.cy ?? 0);
+        const [cx, cy] = mapPt(a.cx ?? 0, a.cy ?? 0);
         const r = mapLen(a.r ?? 0);
         canvasUpdates.x = cx - r;
         canvasUpdates.y = cy - r;
@@ -498,8 +505,7 @@ export class SvgElement {
         break;
       }
       case 'rect': {
-        const x = mapXFn(a.x ?? 0);
-        const y = mapYFn(a.y ?? 0);
+        const [x, y] = mapPt(a.x ?? 0, a.y ?? 0);
         const w = mapLen(a.width ?? 0);
         const h = mapLen(a.height ?? 0);
         canvasUpdates.x = x;
@@ -510,10 +516,8 @@ export class SvgElement {
         break;
       }
       case 'line': {
-        const lx1 = mapXFn(a.x1 ?? 0);
-        const ly1 = mapYFn(a.y1 ?? 0);
-        const lx2 = mapXFn(a.x2 ?? 0);
-        const ly2 = mapYFn(a.y2 ?? 0);
+        const [lx1, ly1] = mapPt(a.x1 ?? 0, a.y1 ?? 0);
+        const [lx2, ly2] = mapPt(a.x2 ?? 0, a.y2 ?? 0);
         canvasUpdates.x1 = lx1;
         canvasUpdates.y1 = ly1;
         canvasUpdates.x2 = lx2;
@@ -527,6 +531,18 @@ export class SvgElement {
     if (Object.keys(canvasUpdates).length > 0 && this.underlying?.update) {
       this.underlying.update(canvasUpdates);
     }
+  }
+
+  /** @internal Re-translate stored SVG attrs through a (possibly updated) mapping. */
+  recomputeGeometry(): void {
+    if (this._svgAttrs && this._shapeType && this._mapping) {
+      this.updateSvgProps({ ...this._svgAttrs });
+    }
+  }
+
+  /** @internal Update the stored mapping (used by SvgContext.resize). */
+  setMapping(mapping: ViewBoxMapping): void {
+    if (this._mapping) this._mapping = mapping;
   }
 
   /**
@@ -654,6 +670,9 @@ export class SvgContext {
   private animationTimer?: ReturnType<typeof setInterval>;
   private nextAnimationId: number = 1;
   private bindingRegions: BindingRegion[] = [];
+  private pollTimer?: ReturnType<typeof setInterval>;
+  private sizingShim?: any;  // transparent rect that sizes the clip container
+  private clipContainer?: any;  // outermost clip — resized from outside in
 
   constructor(app: any, mapping: ViewBoxMapping, rootStyle?: SvgStyle) {
     this.app = app;
@@ -1002,6 +1021,92 @@ export class SvgContext {
     return this.animations.length > 0;
   }
 
+  /**
+   * Start polling — re-evaluates all property bindings at the given interval.
+   *
+   * Use for live data displays (clocks, dashboards, sensor readouts) where
+   * bound values change over time without explicit user interaction.
+   *
+   * ```ts
+   * svgCtx.poll(1000);  // re-evaluate bindings every second
+   * ```
+   */
+  poll(intervalMs: number): this {
+    this.stopPolling();
+    this.pollTimer = setInterval(() => this.refresh(), intervalMs);
+    return this;
+  }
+
+  /** Stop polling. */
+  stopPolling(): void {
+    if (this.pollTimer) {
+      clearInterval(this.pollTimer);
+      this.pollTimer = undefined;
+    }
+  }
+
+  /**
+   * Resize the SVG canvas — recomputes the viewBox→canvas mapping and
+   * re-positions all elements that have shape info.
+   *
+   * Pair with `win.onResize()` for responsive SVG scenes:
+   * ```ts
+   * win.onResize((w, h) => {
+   *   const side = Math.min(w, h);  // maintain aspect ratio
+   *   svgCtx.resize(side, side);
+   * });
+   * ```
+   */
+  resize(canvasWidth: number, canvasHeight: number): void {
+    const vb = this.mapping.vb;
+    const scaleX = canvasWidth / vb.width;
+    const scaleY = canvasHeight / vb.height;
+    const scale = Math.min(scaleX, scaleY);
+    const offsetX = (canvasWidth - vb.width * scale) / 2;
+    const offsetY = (canvasHeight - vb.height * scale) / 2;
+
+    const transform = AffineMatrix.translate(offsetX, offsetY)
+      .multiply(AffineMatrix.scale(scale))
+      .multiply(AffineMatrix.translate(-vb.minX, -vb.minY));
+    this.mapping = { vb, canvasWidth, canvasHeight, scale, offsetX, offsetY, transform };
+
+    // Outside in: resize the clip container first, then elements follow
+    if (this.clipContainer?.resize) {
+      this.clipContainer.resize(canvasWidth, canvasHeight);
+    }
+
+    // Resize sizing shim (establishes clip bounds)
+    if (this.sizingShim?.update) {
+      this.sizingShim.update({ width: canvasWidth, height: canvasHeight });
+    }
+
+    // Re-position all elements with stored SVG attrs
+    for (const el of this.trackedElements) {
+      el.setMapping(this.mapping);
+      el.recomputeGeometry();
+    }
+
+    // Resize TappableCanvasRaster overlay if present
+    if (this.tappableRaster?.resize) {
+      this.tappableRaster.resize(canvasWidth, canvasHeight);
+    }
+  }
+
+  /** Get the current viewBox mapping (for external layout calculations). */
+  getMapping(): ViewBoxMapping {
+    return this.mapping;
+  }
+
+  /** @internal Set the sizing shim (used by svg() factory for resize support). */
+  setSizingShim(shim: any): void {
+    this.sizingShim = shim;
+  }
+
+  /** @internal Set the clip container (used by svg() factory for outside-in resize). */
+  setClipContainer(clip: any): void {
+    this.clipContainer = clip;
+  }
+
   private startAnimationLoop(): void {
     if (this.animationTimer) return;
     this.animationTimer = setInterval(() => this.tickAnimations(), 16);
@@ -1253,7 +1358,7 @@ export class SvgContext {
   /** Apply current transform then viewBox mapping to a point. */
   mapPoint(x: number, y: number): [number, number] {
     const [tx, ty] = this.currentTransform().apply(x, y);
-    return [this.mapX(tx), this.mapY(ty)];
+    return this.mapping.transform.apply(tx, ty);
   }
 
   /** Resolve final style: element attrs override inline style override CSS class override inherited. */
@@ -1304,11 +1409,13 @@ export class SvgContext {
   // ─── Coordinate mapping ──────────────────────────────────────
 
   mapX(x: number): number {
-    return (x - this.mapping.vb.minX) * this.mapping.scale + this.mapping.offsetX;
+    const t = this.mapping.transform;
+    return t.a * x + t.e;
   }
 
   mapY(y: number): number {
-    return (y - this.mapping.vb.minY) * this.mapping.scale + this.mapping.offsetY;
+    const t = this.mapping.transform;
+    return t.d * y + t.f;
   }
 
   mapLength(l: number): number {
@@ -1730,6 +1837,7 @@ export class SvgContext {
       strokeColor,
       strokeWidth: sw,
     });
+    const xform = this.currentTransform();
     if (attrs.transform) this.popTransform();
     const el = new SvgElement(underlying);
     el.setBounds(cx - r, cy - r, 2 * r, 2 * r);
@@ -1737,7 +1845,7 @@ export class SvgContext {
       cx: this.parseLenX(attrs.cx ?? 0),
       cy: this.parseLenY(attrs.cy ?? 0),
       r: this.parseLenX(attrs.r ?? 0),
-    });
+    }, xform);
     this.trackElement(el);
     this.wireEventHandlers(el, attrs);
     return el;
@@ -1869,6 +1977,7 @@ export class SvgContext {
       strokeColor,
       strokeWidth: sw,
     });
+    const xform = this.currentTransform();
     if (attrs.transform) this.popTransform();
     const el = new SvgElement(underlying);
     el.setBounds(minX, minY, maxX - minX, maxY - minY);
@@ -1877,7 +1986,7 @@ export class SvgContext {
       y: py,
       width: pw,
       height: ph,
-    });
+    }, xform);
     this.trackElement(el);
     this.wireEventHandlers(el, attrs);
     return el;
@@ -1897,6 +2006,7 @@ export class SvgContext {
       strokeColor: lineStroke,
       strokeWidth: lineSw,
     });
+    const xform = this.currentTransform();
     if (attrs.transform) this.popTransform();
     const el = new SvgElement(underlying);
     const minX = Math.min(x1, x2), minY = Math.min(y1, y2);
@@ -1906,7 +2016,7 @@ export class SvgContext {
       y1: parseNum(attrs.y1 ?? 0),
       x2: parseNum(attrs.x2 ?? 0),
       y2: parseNum(attrs.y2 ?? 0),
-    });
+    }, xform);
     this.trackElement(el);
     this.wireEventHandlers(el, attrs);
     return el;
@@ -2592,17 +2702,18 @@ export function svg(
   const ctx = createSvgContext(app, options);
   const canvasWidth = options.width ?? 400;
   const canvasHeight = options.height ?? 400;
-  app.clip(() => {
+  const clip = app.clip(() => {
     app.stack(() => {
       // Sizing shim: rect with MinSize gives the Stack (and thus the Clip) proper bounds.
       // canvasStack uses NewWithoutLayout which has MinSize(0,0), so we need a regular
       // Stack parent with a sized child to establish the clip region.
-      app.canvasRectangle({ width: canvasWidth, height: canvasHeight, fillColor: 'transparent' });
+      ctx.setSizingShim(app.canvasRectangle({ width: canvasWidth, height: canvasHeight, fillColor: 'transparent' }));
       app.canvasStack(() => {
         builder(ctx);
       });
     });
   });
+  ctx.setClipContainer(clip);
   return ctx;
 }
 
@@ -2659,7 +2770,10 @@ function createSvgContext(app: any, options: SvgOptions): SvgContext {
   const offsetX = txC + scaleC * txVB;
   const offsetY = tyC + scaleC * tyVB;
 
-  const mapping: ViewBoxMapping = { vb, canvasWidth, canvasHeight, scale, offsetX, offsetY };
+  const transform = AffineMatrix.translate(offsetX, offsetY)
+    .multiply(AffineMatrix.scale(scale))
+    .multiply(AffineMatrix.translate(-vb.minX, -vb.minY));
+  const mapping: ViewBoxMapping = { vb, canvasWidth, canvasHeight, scale, offsetX, offsetY, transform };
 
   // Build initial inherited style from root <svg> attributes
   let rootStyle: SvgStyle | undefined;

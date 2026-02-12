@@ -25,7 +25,8 @@ SVG string
 
 ## SVG 1.1 Compatibility
 
-Tested against 193 SVG files (15 hand-crafted + 178 from the W3C SVG test suite).
+Tested against 199 SVG files (15 hand-crafted + 184 from the W3C SVG test suite).
+Median MAE ~0.5, 169 below MAE 5.
 
 ### Fully Supported
 
@@ -34,19 +35,31 @@ Tested against 193 SVG files (15 hand-crafted + 178 from the W3C SVG test suite)
 | **`<path>`** | All path commands — see normalizer section below |
 | **`<circle>`** | cx, cy, r |
 | **`<ellipse>`** | cx, cy, rx, ry |
-| **`<rect>`** | x, y, width, height |
+| **`<rect>`** | x, y, width, height, rx/ry (rounded corners via arc paths) |
 | **`<line>`** | x1, y1, x2, y2 |
 | **`<polyline>`** | Converted to path (M + L commands) |
 | **`<polygon>`** | Converted to closed path (M + L + Z) |
-| **`<g>`** | Groups with style inheritance |
+| **`<g>`** | Groups with style + transform inheritance |
 | **`<svg>`** | Root element, nested `<svg>` elements |
+| **`<defs>` / `<use>`** | Definitions registered, `<use>` clones + renders referenced elements |
+| **`<text>`** | Font size/family/weight/style, text-anchor, `<tspan>` children |
 | **`<desc>`** | Preserved as comments in transpiler output |
-| **viewBox** | Full xMidYMid meet scaling + centering |
-| **fill** | Solid colors, `none` |
+| **viewBox** | Full scaling + centering |
+| **preserveAspectRatio** | All alignment values (xMin/xMid/xMax, yMin/yMid/yMax) + meet/slice modes |
+| **fill** | Solid colors, `none`, `url(#gradient)` references |
 | **stroke** | Color, `stroke-width` |
 | **stroke-linecap** | Parsed and inherited, passed to bridge |
 | **stroke-linejoin** | Parsed and inherited, passed to bridge |
+| **opacity** | `opacity`, `fill-opacity`, `stroke-opacity` — all supported and inherited |
+| **transform** | `translate`, `rotate`, `scale`, `matrix`, `skewX`, `skewY` — full affine transform stack |
+| **`<linearGradient>`** | Stops, geometry, `userSpaceOnUse` and `objectBoundingBox` units |
+| **`<radialGradient>`** | cx, cy, r, fx, fy + both coordinate systems |
+| **`<clipPath>`** | Rasterization-based clipping for circles, rects, paths |
+| **`style` attribute** | Inline CSS (`style="fill:red"`) parsed and applied |
+| **`<style>` element** | CSS class and element selectors (missing: descendant selectors, `!important`) |
+| **`class` attribute** | Resolved against `<style>` rules |
 | **Style inheritance** | Groups push style onto stack, children override |
+| **DTD entity references** | `<!ENTITY>` definitions extracted and `&name;` refs expanded |
 
 ### Path Commands (Normalizer)
 
@@ -71,41 +84,28 @@ comma/whitespace separators.
 
 ### Not Yet Supported
 
-These SVG 1.1 features are parsed without error but are not rendered:
-
 | Feature | Status |
 |---------|--------|
-| **`<text>`** | Parsed, stub in grammar (no-op) |
-| **`<defs>` / `<use>`** | `<defs>` is a no-op; `<use>` references not resolved |
-| **`<clipPath>`** | Parsed as a group, clipping not applied |
-| **`<mask>`** | Parsed, not applied |
-| **`<linearGradient>`** | Parsed within defs, not applied to fills |
-| **`<radialGradient>`** | Parsed within defs, not applied to fills |
-| **`<pattern>`** | Not supported |
-| **`<filter>`** | Not supported (gaussianBlur, feColorMatrix, etc.) |
-| **`<image>`** | Not supported |
+| **`<pattern>`** | Not supported (renders as solid black) |
+| **`<filter>`** | Partial — Gaussian blur only; feColorMatrix, feOffset, etc. missing |
+| **`<image>`** | Not supported (embedded or external images) |
 | **`<symbol>`** | Not supported |
-| **`<marker>`** | Not supported |
+| **`<marker>`** | Not supported (arrowheads, dots on lines/paths) |
+| **`<mask>`** | Not supported (distinct from clipPath — uses luminance/alpha) |
 | **`<switch>`** | Not supported |
 | **`<foreignObject>`** | Not supported |
-| **opacity** | Not supported (`fill-opacity`, `stroke-opacity`, `opacity`) |
-| **transform** | Not supported (`translate`, `rotate`, `scale`, `matrix`) |
-| **`style` attribute** | Inline CSS (`style="fill:red"`) not parsed — use presentation attributes |
-| **`<style>` element** | CSS stylesheets not supported |
-| **`class` attribute** | Not resolved |
-| **rx/ry on `<rect>`** | Rounded corners not rendered |
-| **`preserveAspectRatio`** | Only `xMidYMid meet` (the default) — other values ignored |
-| **`font-*` attributes** | No text rendering |
-| **DTD entity references** | DOCTYPE with `<!ENTITY>` definitions is stripped; entity refs (`&name;`) are not expanded |
+| **Text stroke** | Stroke color used as fill fallback; true stroke rendering missing |
+| **`<tspan>` dx/dy arrays** | Individual glyph positioning not supported |
 
-### What This Means in Practice
+### Won't Fix (static .svg renderer)
 
-For SVGs consisting of **paths, basic shapes, groups, fills, and strokes**, rendering
-is accurate — the original 15 test SVGs scored 12 pixel-perfect and 3 within excellent
-tolerance (max MAE 5.2/255) against librsvg reference renders.
+- JavaScript / `<script>`
+- SMIL animation (`<animate>`, `<animateTransform>`, `<set>`)
+- CSS transitions/animations
+- `:hover` / `:active` / `:focus` pseudo-classes
+- `<video>` / `<audio>` elements
 
-SVGs that rely on gradients, filters, transforms, text, clipping, or CSS will parse
-and display their basic geometry but will be missing visual effects.
+These are replaced by the programmatic SVG grammar API (see TODO.md).
 
 ## Files
 
@@ -114,8 +114,12 @@ and display their basic geometry but will be missing visual effects.
 | `types.ts` | Shared types: SvgNode, SvgStyle, PathCommand, etc. |
 | `parser.ts` | Regex-based SVG XML parser (no dependencies) |
 | `normalizer.ts` | Path d-string normalizer: all commands to absolute M/L/C/Z |
+| `transform.ts` | AffineMatrix and `parseTransform()` for SVG transform attributes |
 | `grammar.ts` | SvgContext, SvgElement, SvgBuilder, PathBuilder |
 | `loader.ts` | Runtime SVG string rendering via parser + grammar |
+| `rasterize.ts` | CPU rasterizer for clipPath, gradients, blur |
+| `blur.ts` | Gaussian blur implementation |
+| `bbox.ts` | Bounding box computation with transform support |
 | `transpiler.ts` | SVG string to TypeScript source code |
 | `index.ts` | Barrel re-exports |
 
@@ -126,10 +130,13 @@ cd cosyne
 
 # Unit tests (no display needed)
 npx jest test/svg-normalizer.test.ts   # 44 tests
-npx jest test/svg-parser.test.ts       # 214 tests (all 193 SVGs)
+npx jest test/svg-parser.test.ts       # 214 tests (all 199 SVGs)
 npx jest test/svg-grammar.test.ts      # 39 tests
 npx jest test/svg-transpiler.test.ts   # 13 tests
+npx jest test/svg-transform.test.ts    # transform stack tests
+npx jest test/svg-text.test.ts         # text rendering tests
 
 # Visual comparison (needs display + rsvg-convert)
+python3 test/svg-compare.py --no-open  # 199 SVGs, generates svg-conformance.csv
 TSYNE_HEADED=1 npx jest test/svg-rendering.test.ts
 ```

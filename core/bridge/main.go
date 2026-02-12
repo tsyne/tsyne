@@ -107,6 +107,8 @@ func (b *Bridge) handleMessage(msg Message) Response {
 		return b.handleCreateAspectRatio(msg)
 	case "createClip":
 		return b.handleCreateClip(msg)
+	case "resizeWidget":
+		return b.handleResizeWidget(msg)
 	case "createMax":
 		return b.handleCreateMax(msg)
 	case "createCard":
