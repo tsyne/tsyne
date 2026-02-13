@@ -62,9 +62,8 @@ export function handLine(rotation: number, length: number) {
  *
  * @param s      SvgContext to draw into
  * @param time   Function returning the current Date
- * @param prefix Name prefix for hands (for unique element names)
  */
-export function drawClockFace(s: SvgContext, time: () => Date, prefix = '') {
+export function drawClockFace(s: SvgContext, time: () => Date) {
   const hourRotation = () => {
     const t = time();
     return (t.getHours() % 12 + t.getMinutes() / 60) / 12;
@@ -85,15 +84,15 @@ export function drawClockFace(s: SvgContext, time: () => Date, prefix = '') {
 
   // Hands with bound positions
   s.line({ ...handLine(hourRotation(), RADIUS * 0.5), stroke: '#333', 'stroke-width': 4 })
-    .name(`${prefix}hour`)
+    .name('hour')
     .bindPos(() => handLine(hourRotation(), RADIUS * 0.5));
 
   s.line({ ...handLine(minRotation(), RADIUS * 0.75), stroke: '#333', 'stroke-width': 3 })
-    .name(`${prefix}minute`)
+    .name('minute')
     .bindPos(() => handLine(minRotation(), RADIUS * 0.75));
 
   s.line({ ...handLine(secRotation(), RADIUS * 0.85), stroke: '#e74c3c', 'stroke-width': 1 })
-    .name(`${prefix}second`)
+    .name('second')
     .bindPos(() => handLine(secRotation(), RADIUS * 0.85));
 
   // Center dot
@@ -140,19 +139,18 @@ if (require.main === module) {
     const win = a.window({ title: 'Mirror Clock', width: 500, height: 500, padded: false }, () => {
       a.stack(() => {
         const mirror = (sx: number, sy: number) => {
-          const prefix = sx === 1 && sy === 1 ? '' : `${sx},${sy}-`;
           const flips = (sx < 0 ? 1 : 0) + (sy < 0 ? 1 : 0);
           const opacity = [1, 0.5, 0.25][flips];
           const tx = sx < 0 ? SCENE_W : 0;
           const ty = sy < 0 ? SCENE_H : 0;
-          return { prefix, opacity, transform: `translate(${tx}, ${ty}) scale(${sx}, ${sy})` };
+          return { opacity, transform: `translate(${tx}, ${ty}) scale(${sx}, ${sy})` };
         };
 
         svgCtx = svg(a, { viewBox: `0 0 ${SCENE_W} ${SCENE_H}`, width: 500, height: 500 }, (s) => {
           for (const [sx, sy] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) {
             const m = mirror(sx, sy);
             s.g({ transform: m.transform, opacity: m.opacity }, () => {
-              drawClockFace(s, now, m.prefix);
+              drawClockFace(s, now);
             });
           }
         });
