@@ -1571,6 +1571,8 @@ export class CanvasPath {
    */
   async update(options: {
     path?: string;
+    width?: number;
+    height?: number;
     strokeColor?: string;
     strokeWidth?: number;
     fillColor?: string;

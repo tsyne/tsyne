@@ -82,8 +82,27 @@ export interface SvgOptions {
   rootAttrs?: Record<string, string>;
 }
 
+/** Perspective projection — Cosyne extension (not part of SVG). */
+export interface CosynePerspective {
+  rotateY?: number;              // degrees — rotation around vertical axis
+  rotateX?: number;              // degrees — rotation around horizontal axis
+  distance: number;              // camera distance (larger = subtler effect)
+  origin?: [number, number];     // rotation center in local coordinates (default [0, 0])
+}
+
+/** Typed transform specification — alternative to SVG transform strings. */
+export interface TransformSpec {
+  translate?: [number, number];
+  scale?: number | [number, number];
+  rotate?: number | [number, number, number];  // degrees | [degrees, cx, cy]
+  skewX?: number;
+  skewY?: number;
+  cosynePerspective?: CosynePerspective;
+}
+
 /** Attributes passed to grammar element methods */
 export interface SvgElementAttrs {
+  transform?: string | TransformSpec;
   d?: string;
   cx?: number | string;
   cy?: number | string;
@@ -98,7 +117,7 @@ export interface SvgElementAttrs {
   y2?: number | string;
   width?: number | string;
   height?: number | string;
-  points?: string;
+  points?: string | [number, number][];
   fill?: string;
   stroke?: string;
   'stroke-width'?: number | string;

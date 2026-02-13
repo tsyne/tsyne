@@ -1994,12 +1994,18 @@ func (b *Bridge) handleShowPopup(msg Message) Response {
 	// Show at position if provided, otherwise show centered
 	if x, hasX := getFloat64(msg.Payload["x"]); hasX {
 		if y, hasY := getFloat64(msg.Payload["y"]); hasY {
-			popup.ShowAtPosition(fyne.NewPos(float32(x), float32(y)))
+			fyne.Do(func() {
+				popup.ShowAtPosition(fyne.NewPos(float32(x), float32(y)))
+			})
 		} else {
-			popup.Show()
+			fyne.Do(func() {
+				popup.Show()
+			})
 		}
 	} else {
-		popup.Show()
+		fyne.Do(func() {
+			popup.Show()
+		})
 	}
 
 	return Response{
@@ -2032,7 +2038,9 @@ func (b *Bridge) handleHidePopup(msg Message) Response {
 		}
 	}
 
-	popup.Hide()
+	fyne.Do(func() {
+		popup.Hide()
+	})
 
 	return Response{
 		ID:      msg.ID,
@@ -2066,7 +2074,9 @@ func (b *Bridge) handleMovePopup(msg Message) Response {
 		}
 	}
 
-	popup.Move(fyne.NewPos(float32(x), float32(y)))
+	fyne.Do(func() {
+		popup.Move(fyne.NewPos(float32(x), float32(y)))
+	})
 
 	return Response{
 		ID:      msg.ID,

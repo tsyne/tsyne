@@ -74,6 +74,12 @@ func (pr *PathRaster) SetPath(pathString string) {
 	pr.pathString = pathString
 }
 
+// SetSize stores new dimensions (applied on next Refresh via fyne.Do).
+func (pr *PathRaster) SetSize(width, height int) {
+	pr.width = width
+	pr.height = height
+}
+
 // SetStrokeColor sets the stroke color
 func (pr *PathRaster) SetStrokeColor(c color.Color) {
 	pr.strokeColor = c
@@ -119,9 +125,11 @@ func (pr *PathRaster) Raster() *canvas.Raster {
 	return pr.raster
 }
 
-// Refresh triggers a redraw
+// Refresh applies any pending size change and triggers a redraw, all on the Fyne thread.
 func (pr *PathRaster) Refresh() {
+	w, h := pr.width, pr.height
 	fyne.Do(func() {
+		pr.raster.Resize(fyne.NewSize(float32(w), float32(h)))
 		pr.raster.Refresh()
 	})
 }

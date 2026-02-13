@@ -106,6 +106,13 @@ func (b *Bridge) handleUpdateCanvasPath(msg Message) Response {
 		pr.SetPath(pathStr)
 	}
 
+	// Update size if provided
+	if w, ok := getFloat64(msg.Payload["width"]); ok {
+		if h, ok2 := getFloat64(msg.Payload["height"]); ok2 {
+			pr.SetSize(int(w), int(h))
+		}
+	}
+
 	// Update stroke color if provided
 	if strokeHex, ok := msg.Payload["strokeColor"].(string); ok {
 		pr.SetStrokeColor(parseHexColorSimple(strokeHex))

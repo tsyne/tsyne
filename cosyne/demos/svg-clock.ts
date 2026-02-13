@@ -143,13 +143,13 @@ if (require.main === module) {
           const opacity = [1, 0.5, 0.25][flips];
           const tx = sx < 0 ? SCENE_W : 0;
           const ty = sy < 0 ? SCENE_H : 0;
-          return { opacity, transform: `translate(${tx}, ${ty}) scale(${sx}, ${sy})` };
+          return { opacity, tx, ty, sx, sy };
         };
 
         svgCtx = svg(a, { viewBox: `0 0 ${SCENE_W} ${SCENE_H}`, width: 500, height: 500 }, (s) => {
           for (const [sx, sy] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) {
             const m = mirror(sx, sy);
-            s.g({ transform: m.transform, opacity: m.opacity }, () => {
+            s.g({ transform: { translate: [m.tx, m.ty], scale: [m.sx, m.sy] }, opacity: m.opacity }, () => {
               drawClockFace(s, now);
             });
           }

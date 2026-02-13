@@ -17,6 +17,8 @@ export type {
   ViewBox,
   SvgOptions,
   SvgElementAttrs,
+  TransformSpec,
+  CosynePerspective,
 } from './types';
 
 // Parser
@@ -32,7 +34,7 @@ export { SvgContext, SvgElement, SvgBuilder, PathBuilder, svg, svgBuilder, parse
 export { loadSvg } from './loader';
 
 // Transform
-export { AffineMatrix, parseTransform } from './transform';
+export { AffineMatrix, parseTransform, ProjectiveMatrix, composeTransforms, transformFromSpec, type Transform2D } from './transform';
 
 // Transpiler
 export { transpileSvg, transpileSvgToModule } from './transpiler';

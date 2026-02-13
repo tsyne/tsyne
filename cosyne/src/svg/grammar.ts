@@ -25,7 +25,7 @@
 import { SvgNode, SvgStyle, SvgOptions, SvgElementAttrs, ViewBox, FilterDef, ClipPathDef, ClipPathShape } from './types';
 import { normalizePath } from './normalizer';
 import { parseViewBox } from './parser';
-import { AffineMatrix, parseTransform } from './transform';
+import { AffineMatrix, parseTransform, ProjectiveMatrix, composeTransforms, transformFromSpec, type Transform2D } from './transform';
 import { gaussianBlur } from './blur';
 import { fillRectInBuffer, fillCircleInBuffer, fillPathInBuffer, applyClipMask, parseColorToRGBA } from './rasterize';
 
@@ -432,10 +432,18 @@ export class SvgElement {
   private _shapeType?: 'circle' | 'rect' | 'line';
   private _mapping?: ViewBoxMapping;
   private _svgAttrs?: Record<string, number>;
-  private _parentTransform: AffineMatrix = AffineMatrix.identity();
+  private _parentTransform: Transform2D = AffineMatrix.identity();
+  /** @internal Callback for path-based elements to recompute geometry on resize. */
+  private _resizeFn?: (mapping: ViewBoxMapping) => void;
+
+  /** @internal Store a resize callback and initial mapping for path-based elements. */
+  setPathResize(mapping: ViewBoxMapping, fn: (mapping: ViewBoxMapping) => void): void {
+    this._mapping = mapping;
+    this._resizeFn = fn;
+  }
 
   /** @internal Store shape type and viewBox mapping for SVG→canvas coordinate translation. */
-  setShapeInfo(type: 'circle' | 'rect' | 'line', mapping: ViewBoxMapping, svgAttrs: Record<string, number>, parentTransform?: AffineMatrix): void {
+  setShapeInfo(type: 'circle' | 'rect' | 'line', mapping: ViewBoxMapping, svgAttrs: Record<string, number>, parentTransform?: Transform2D): void {
     this._shapeType = type;
     this._mapping = mapping;
     this._svgAttrs = { ...svgAttrs };
@@ -537,12 +545,14 @@ export class SvgElement {
   recomputeGeometry(): void {
     if (this._svgAttrs && this._shapeType && this._mapping) {
       this.updateSvgProps({ ...this._svgAttrs });
+    } else if (this._resizeFn && this._mapping) {
+      this._resizeFn(this._mapping);
     }
   }
 
   /** @internal Update the stored mapping (used by SvgContext.resize). */
   setMapping(mapping: ViewBoxMapping): void {
-    if (this._mapping) this._mapping = mapping;
+    if (this._mapping || this._resizeFn) this._mapping = mapping;
   }
 
   /**
@@ -648,7 +658,7 @@ export class SvgContext {
   private app: any;
   private mapping: ViewBoxMapping;
   private styleStack: SvgStyle[] = [{}];
-  private transformStack: AffineMatrix[] = [AffineMatrix.identity()];
+  private transformStack: Transform2D[] = [AffineMatrix.identity()];
   private gradients: Map<string, GradientDef> = new Map();
   private trackedElements: SvgElement[] = [];
   private filters: Map<string, FilterDef> = new Map();
@@ -671,6 +681,7 @@ export class SvgContext {
   private nextAnimationId: number = 1;
   private bindingRegions: BindingRegion[] = [];
   private pollTimer?: ReturnType<typeof setInterval>;
+  private resizeTimer?: ReturnType<typeof setTimeout>;
   private sizingShim?: any;  // transparent rect that sizes the clip container
   private clipContainer?: any;  // outermost clip — resized from outside in
 
@@ -1092,6 +1103,18 @@ export class SvgContext {
     }
   }
 
+  /**
+   * Debounced resize — drops intermediate events, applies only the latest.
+   * Use from `win.onResize()` to avoid flooding the bridge during drag-resize.
+   */
+  debouncedResize(canvasWidth: number, canvasHeight: number): void {
+    if (this.resizeTimer) clearTimeout(this.resizeTimer);
+    this.resizeTimer = setTimeout(() => {
+      this.resizeTimer = undefined;
+      this.resize(canvasWidth, canvasHeight);
+    }, 16);
+  }
+
   /** Get the current viewBox mapping (for external layout calculations). */
   getMapping(): ViewBoxMapping {
     return this.mapping;
@@ -1337,15 +1360,17 @@ export class SvgContext {
 
   // ─── Transform stack ──────────────────────────────────────────
 
-  private currentTransform(): AffineMatrix {
+  private currentTransform(): Transform2D {
     return this.transformStack[this.transformStack.length - 1];
   }
 
   private pushTransform(attrs: SvgElementAttrs): void {
     const parent = this.currentTransform();
     if (attrs.transform) {
-      const local = parseTransform(attrs.transform);
-      this.transformStack.push(parent.multiply(local));
+      const local = typeof attrs.transform === 'string'
+        ? parseTransform(attrs.transform)
+        : transformFromSpec(attrs.transform);
+      this.transformStack.push(composeTransforms(parent, local));
     } else {
       this.transformStack.push(parent);
     }
@@ -1500,6 +1525,28 @@ export class SvgContext {
   }
 
   /** Map all coordinate args in a normalized path string, applying current transform. */
+  /** Re-map a normalized path using a specific transform and mapping (for resize). */
+  private remapPath(pathStr: string, xform: Transform2D, mapping: ViewBoxMapping): string {
+    return pathStr.replace(
+      /([MLCZ])\s*([\d\s.e+-]*)/gi,
+      (_, cmd: string, nums: string) => {
+        if (cmd === 'Z') return 'Z';
+        const values = nums.trim().split(/\s+/).map(Number);
+        const mapped: number[] = [];
+        for (let i = 0; i + 1 < values.length; i += 2) {
+          const [tx, ty] = xform.apply(values[i], values[i + 1]);
+          const [mx, my] = mapping.transform.apply(tx, ty);
+          mapped.push(mx, my);
+        }
+        const parts = mapped.map(n => {
+          const r = Math.round(n * 10000) / 10000;
+          return Number.isInteger(r) ? r.toString() : r.toFixed(4).replace(/0+$/, '').replace(/\.$/, '');
+        });
+        return `${cmd} ${parts.join(' ')}`;
+      },
+    );
+  }
+
   private mapPathCoords(pathStr: string): string {
     return pathStr.replace(
       /([MLCZ])\s*([\d\s.e+-]*)/gi,
@@ -1599,7 +1646,7 @@ export class SvgContext {
 
     // Meet mode: no clipping needed, push transform and render normally
     const parent = this.currentTransform();
-    this.transformStack.push(parent.multiply(parMatrix));
+    this.transformStack.push(composeTransforms(parent, parMatrix));
     builder();
     this.popTransform();
   }
@@ -1620,7 +1667,7 @@ export class SvgContext {
     const bufH = Math.max(Math.round(py1 - py0), 1);
 
     // Combined transform: parent * PAR (maps viewBox coords to root SVG coords)
-    const fullXform = this.currentTransform().multiply(parMatrix);
+    const fullXform = composeTransforms(this.currentTransform(), parMatrix);
 
     const pixels = new Uint8Array(bufW * bufH * 4);
 
@@ -1642,7 +1689,7 @@ export class SvgContext {
   /** Recursively rasterize an SvgNode tree into a pixel buffer for slice clipping. */
   private rasterizeNode(
     node: SvgNode,
-    xform: AffineMatrix,
+    xform: Transform2D,
     buf: Uint8Array,
     bufW: number,
     bufH: number,
@@ -1654,7 +1701,7 @@ export class SvgContext {
     // Apply any transform on this node
     let localXform = xform;
     if (attrs.transform) {
-      localXform = xform.multiply(parseTransform(attrs.transform));
+      localXform = composeTransforms(xform, parseTransform(attrs.transform));
     }
 
     // Resolve fill color
@@ -1784,8 +1831,21 @@ export class SvgContext {
     }
 
     const underlying = this.app.canvasPath(opts);
+    const pathTransform = this.currentTransform();
     if (attrs.transform) this.popTransform();
     const el = new SvgElement(underlying);
+    el.setBounds(bounds.minX, bounds.minY, bounds.maxX - bounds.minX, bounds.maxY - bounds.minY);
+    // Store resize callback for path-based elements (polygons, rounded rects, ellipses, etc.)
+    el.setPathResize(this.mapping, (newMapping) => {
+      const remapped = this.remapPath(normalized, pathTransform, newMapping);
+      const newBounds = computePathBounds(remapped);
+      const newMargin = Math.ceil(sw / 2) + 2;
+      underlying.update({
+        path: remapped,
+        width: Math.max(newBounds.maxX + newMargin, 10),
+        height: Math.max(newBounds.maxY + newMargin, 10),
+      });
+    });
     this.trackElement(el);
     this.wireEventHandlers(el, attrs);
     return el;
@@ -1793,6 +1853,25 @@ export class SvgContext {
 
   /** Circle element. */
   circle(attrs: SvgElementAttrs): SvgElement {
+    // Under projective transforms, render as bezier path (circle → conic under perspective)
+    if (this.currentTransform() instanceof ProjectiveMatrix ||
+        (attrs.transform && typeof attrs.transform === 'object' && attrs.transform.cosynePerspective)) {
+      const ecx = this.parseLenX(attrs.cx ?? 0);
+      const ecy = this.parseLenY(attrs.cy ?? 0);
+      const er = this.parseLenX(attrs.r ?? 0);
+      const k = 0.5522847498;  // 4*(sqrt(2)-1)/3
+      const kr = er * k;
+      const d = [
+        `M ${ecx + er} ${ecy}`,
+        `C ${ecx + er} ${ecy - kr} ${ecx + kr} ${ecy - er} ${ecx} ${ecy - er}`,
+        `C ${ecx - kr} ${ecy - er} ${ecx - er} ${ecy - kr} ${ecx - er} ${ecy}`,
+        `C ${ecx - er} ${ecy + kr} ${ecx - kr} ${ecy + er} ${ecx} ${ecy + er}`,
+        `C ${ecx + kr} ${ecy + er} ${ecx + er} ${ecy + kr} ${ecx + er} ${ecy}`,
+        'Z',
+      ].join(' ');
+      return this.path({ ...attrs, d });
+    }
+
     if (attrs.transform) this.pushTransform(attrs);
     const style = this.resolveStyle(attrs);
 
@@ -1902,9 +1981,10 @@ export class SvgContext {
 
     const gradDef = resolveGradientFill(style.fill, this);
 
-    // Check if current transform includes rotation/skew
+    // Check if current transform includes rotation/skew/perspective
     const t = this.currentTransform();
-    const hasRotation = Math.abs(t.b) > 1e-6 || Math.abs(t.c) > 1e-6;
+    const isPerspective = t instanceof ProjectiveMatrix;
+    const hasRotation = isPerspective || Math.abs(t.b) > 1e-6 || Math.abs(t.c) > 1e-6;
 
     // Rounded corners
     const hasRoundedCorners = parseNum(attrs.rx ?? 0) > 0 || parseNum(attrs.ry ?? 0) > 0;
@@ -2025,7 +2105,10 @@ export class SvgContext {
   /** Polyline element — convert points to a path. */
   polyline(attrs: SvgElementAttrs): SvgElement {
     if (!attrs.points) return new SvgElement(null);
-    const d = pointsToPath(attrs.points, false);
+    const pts = typeof attrs.points === 'string'
+      ? attrs.points
+      : attrs.points.map(([x, y]) => `${x},${y}`).join(' ');
+    const d = pointsToPath(pts, false);
     // path() handles transform push/pop itself, pass attrs through
     return this.path({ ...attrs, d });
   }
@@ -2033,7 +2116,10 @@ export class SvgContext {
   /** Polygon element — convert points to a closed path. */
   polygon(attrs: SvgElementAttrs): SvgElement {
     if (!attrs.points) return new SvgElement(null);
-    const d = pointsToPath(attrs.points, true);
+    const pts = typeof attrs.points === 'string'
+      ? attrs.points
+      : attrs.points.map(([x, y]) => `${x},${y}`).join(' ');
+    const d = pointsToPath(pts, true);
     return this.path({ ...attrs, d });
   }
 
@@ -2428,6 +2514,13 @@ export class SvgContext {
     });
     if (attrs.transform) this.popTransform();
     const el = new SvgElement(underlying);
+    // Estimate text bounds for hit testing (char width ≈ 0.6 × textSize)
+    const estW = content.length * textSize * 0.6;
+    const estH = textSize;
+    let bx = mx;
+    if (alignment === 'center') bx -= estW / 2;
+    else if (alignment === 'trailing') bx -= estW;
+    el.setBounds(bx, my - estH, estW, estH);
     this.trackElement(el);
     this.wireEventHandlers(el, attrs);
     return el;
@@ -3003,7 +3096,7 @@ function parsePreserveAspectRatio(par: string): { alignX: string; alignY: string
 /** Transform a normalized path (M, L, C, Z) to buffer pixel coordinates. */
 function transformPathToBuffer(
   pathStr: string,
-  xform: AffineMatrix,
+  xform: Transform2D,
   ctx: SvgContext,
   px0: number,
   py0: number,
