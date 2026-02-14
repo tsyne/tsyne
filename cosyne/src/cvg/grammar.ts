@@ -193,7 +193,7 @@ export class CvgElement {
   private clickHandler?: (e: { x: number; y: number }) => void;
   private hoverHandler?: (hovered: boolean) => void;
   private dragHandler?: (e: { x: number; y: number; deltaX: number; deltaY: number }) => void;
-  private dragEndHandler?: () => void;
+  private dragEndHandler?: (e: { x: number; y: number }) => void;
   private scrollHandler?: (e: { deltaX: number; deltaY: number; x: number; y: number }) => void;
   private doubleClickHandler?: (e: { x: number; y: number }) => void;
   private rightClickHandler?: (e: { x: number; y: number }) => void;
@@ -245,7 +245,7 @@ export class CvgElement {
   getDragHandler() { return this.dragHandler; }
 
   /** Register a drag-end handler for this element. */
-  onDragEnd(handler: () => void): this {
+  onDragEnd(handler: (e: { x: number; y: number }) => void): this {
     this.dragEndHandler = handler;
     return this;
   }
@@ -669,6 +669,8 @@ export class CvgContext {
   private eventCallback?: (event: CvgEvent) => void;
   private hoveredElement: CvgElement | null = null;
   private draggedElement: CvgElement | null = null;
+  private lastDragX: number = 0;
+  private lastDragY: number = 0;
   private keyDownHandler?: (key: string) => void;
   private keyUpHandler?: (key: string) => void;
   private sceneScrollHandler?: (e: { deltaX: number; deltaY: number; x: number; y: number }) => void;
@@ -788,6 +790,8 @@ export class CvgContext {
 
   /** Dispatch drag — hit-tests on first call to find drag target, sticks to it until dragEnd. */
   dispatchDrag(x: number, y: number, deltaX: number, deltaY: number): void {
+    this.lastDragX = x;
+    this.lastDragY = y;
     if (!this.draggedElement) {
       // First drag event — find topmost element with a drag handler
       for (let i = this.trackedElements.length - 1; i >= 0; i--) {
@@ -809,8 +813,10 @@ export class CvgContext {
   dispatchDragEnd(): void {
     if (this.draggedElement) {
       const idx = this.trackedElements.indexOf(this.draggedElement);
-      this.eventCallback?.({ type: 'drag-end', x: 0, y: 0, elementName: this.draggedElement.getName(), elementIndex: idx });
-      this.draggedElement.getDragEndHandler()?.();
+      const x = this.lastDragX;
+      const y = this.lastDragY;
+      this.eventCallback?.({ type: 'drag-end', x, y, elementName: this.draggedElement.getName(), elementIndex: idx });
+      this.draggedElement.getDragEndHandler()?.({ x, y });
       this.draggedElement = null;
     }
   }

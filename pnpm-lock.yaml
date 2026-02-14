@@ -961,12 +961,12 @@ importers:
 
   ported-apps/chess:
     dependencies:
-      '@resvg/resvg-js':
-        specifier: ^2.6.2
-        version: 2.6.2
       chess.js:
         specifier: ^1.4.0
         version: 1.4.0
+      cosyne:
+        specifier: workspace:*
+        version: link:../../cosyne
       tsyne:
         specifier: workspace:*
         version: link:../../core

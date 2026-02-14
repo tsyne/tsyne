@@ -8,7 +8,6 @@
 
 import { TsyneTest, TestContext } from 'tsyne';
 import { createChessApp } from './chess';
-import type { IResourceManager } from 'tsyne';
 import * as path from 'path';
 
 describe('Chess Integration Tests', () => {
@@ -21,8 +20,7 @@ describe('Chess Integration Tests', () => {
     tsyneTest = new TsyneTest({ headed });
 
     const testApp = await tsyneTest.createApp(async (app) => {
-      // Pass app.resources for test isolation (IoC pattern)
-      chessUI = await createChessApp(app, app.resources, 10); // 10ms AI delay for fast tests
+      chessUI = await createChessApp(app, 10); // 10ms AI delay for fast tests
     });
 
     ctx = tsyneTest.getContext();
@@ -42,16 +40,14 @@ describe('Chess Integration Tests', () => {
   // ============================================================================
 
   test('selecting a piece shows selection message', async () => {
-    // Just verify clicking any starting piece shows selection
-    // Don't rely on specific board state
-    await ctx.getById('square-g1').click(); // Knight always available at start
+    chessUI.clickSquare('g1'); // Knight always available at start
     await ctx.expect(ctx.getByText('Selected')).toBeVisible();
   });
 
   test('deselecting a piece removes selection', async () => {
     // g1 is already selected from previous test
     // Click to deselect
-    await ctx.getById('square-g1').click();
+    chessUI.clickSquare('g1');
     await ctx.expect(ctx.getByText('to move').within(2000)).toBeVisible();
   });
 
@@ -60,9 +56,6 @@ describe('Chess Integration Tests', () => {
   // ============================================================================
 
   test('renders correctly (visual regression)', async () => {
-    // Capture screenshot in current state (may have pieces moved from previous tests)
-    // No need to reset - just verify UI is functional
-
     // Capture screenshot if TAKE_SCREENSHOTS=1
     if (process.env.TAKE_SCREENSHOTS === '1') {
       const screenshotPath = path.join(__dirname, '../screenshots', 'chess-integration.png');

@@ -380,7 +380,23 @@ if [ -f "$FORK_DIR/internal/driver/glfw/window_wasm.go" ]; then
     echo 'func (w *wrapInner) Move(pos fyne.Position) {}' >> "$FORK_DIR/internal/driver/glfw/window_wasm.go"
 fi
 
-# 15. Final tidy
+# 15b. Fix Clip.MinSize() to delegate to Content instead of hardcoded (1,1)
+# Without this, a Clip inside a VBox only gets 1px of height allocated.
+CLIP_FILE="$FORK_DIR/container/clip.go"
+if [ -f "$CLIP_FILE" ]; then
+    sed -i '/^\/\/ MinSize for a Clip/,/^}/ c\
+// MinSize returns the Content'\''s MinSize so that parent layouts (e.g. VBox)\
+// allocate the correct space for the clipped region.\
+func (c *Clip) MinSize() fyne.Size {\
+\tc.ExtendBaseWidget(c)\
+\tif c.Content != nil {\
+\t\treturn c.Content.MinSize()\
+\t}\
+\treturn fyne.NewSize(1, 1)\
+}' "$CLIP_FILE"
+fi
+
+# 16. Final tidy
 echo "[setup-fyne-fork] Final tidying..."
 cd "$FORK_DIR"
 go mod tidy

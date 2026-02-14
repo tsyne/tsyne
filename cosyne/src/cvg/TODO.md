@@ -58,6 +58,13 @@ These are replaced by the programmatic CVG grammar API below.
 
 # Programmatic CVG Interactivity & Reactivity Roadmap
 
+## TODO
+
+### Element IDs: `withId()` and `{id: ...}` option
+- `.withId(id)` fluent method on CvgElement — sets Tsyne widget ID for test queries (`ctx.getById(...)`)
+- `id` option in CvgElementAttrs — `s.rect({ id: 'my-rect', ... })` as constructor shorthand
+- Would allow CVG elements to participate in Tsyne's widget ID system
+
 Equivalent functions for pure Cosyne TypeScript, following the
 [pseudo-declarative UI composition](../../../docs/pseudo-declarative-ui-composition.md) patterns.
 

@@ -143,6 +143,105 @@ describe('SVG rect drag, scroll, and key events', () => {
     await ctx.wait(pause);
   }, slow ? 30000 : 10000);
 
+  it('onDragEnd receives last drag position', async () => {
+    cosyneTest = new CosyneTest({ headed: true });
+    let svgCtx: CvgContext = null as any;
+    let journal: TestJournal = null as any;
+
+    const dragEndEvents: Array<{ x: number; y: number }> = [];
+
+    const testApp = await cosyneTest.createApp((a: App) => {
+      a.window({ title: 'SVG DragEnd Coords', width: 400, height: 200, x: 50, y: 50, padded: false }, (win: any) => {
+        win.setContent(() => {
+          a.canvasStack(() => {
+            svgCtx = cvg(a, { viewBox: '0 0 400 200', width: 400, height: 200 }, (s) => {
+              s.rect({
+                x: 10, y: 10, width: 180, height: 180,
+                fill: '#4488cc',
+                onDrag: () => {},
+                onDragEnd: (e) => { dragEndEvents.push(e); },
+              }).name('target');
+            });
+            svgCtx.enableEvents();
+          });
+        });
+        win.show();
+      });
+      journal = cosyneTest.createJournal(a, svgCtx!, { x: 480, y: 50 });
+    });
+
+    ctx = cosyneTest.getContext();
+    await testApp.run();
+    await ctx.wait(300);
+
+    // Drag sequence: three moves, then end
+    await journal.log('Drag on target rect');
+    svgCtx.dispatchDrag(50, 50, 10, 5);
+    svgCtx.dispatchDrag(60, 55, 10, 5);
+    svgCtx.dispatchDrag(70, 60, 10, 5);
+    svgCtx.dispatchDragEnd();
+    await ctx.wait(pause);
+
+    expect(dragEndEvents.length).toBe(1);
+    expect(dragEndEvents[0]).toEqual({ x: 70, y: 60 }); // last drag position
+    await journal.log(`  ✓ dragEnd at (${dragEndEvents[0].x}, ${dragEndEvents[0].y})`);
+
+    // Second drag — verify fresh tracking
+    svgCtx.dispatchDrag(100, 100, 0, 0);
+    svgCtx.dispatchDrag(120, 110, 20, 10);
+    svgCtx.dispatchDragEnd();
+    await ctx.wait(pause);
+
+    expect(dragEndEvents.length).toBe(2);
+    expect(dragEndEvents[1]).toEqual({ x: 120, y: 110 });
+    await journal.log(`  ✓ second dragEnd at (${dragEndEvents[1].x}, ${dragEndEvents[1].y})`);
+
+    await journal.log('── onDragEnd coords test passed ──');
+    await ctx.wait(pause);
+  }, slow ? 30000 : 10000);
+
+  it('onDragEnd event callback includes position', async () => {
+    cosyneTest = new CosyneTest({ headed: true });
+    let svgCtx: CvgContext = null as any;
+
+    const events: CvgEvent[] = [];
+
+    const testApp = await cosyneTest.createApp((a: App) => {
+      a.window({ title: 'SVG DragEnd Event', width: 300, height: 200, x: 50, y: 50, padded: false }, (win: any) => {
+        win.setContent(() => {
+          a.canvasStack(() => {
+            svgCtx = cvg(a, { viewBox: '0 0 300 200', width: 300, height: 200 }, (s) => {
+              s.rect({
+                x: 10, y: 10, width: 280, height: 180,
+                fill: '#88cc44',
+                onDrag: () => {},
+                onDragEnd: () => {},
+              }).name('box');
+            });
+            svgCtx.enableEvents();
+          });
+        });
+        win.show();
+      });
+    });
+
+    ctx = cosyneTest.getContext();
+    await testApp.run();
+    await ctx.wait(300);
+
+    svgCtx.onEvent((e) => { events.push(e); });
+
+    svgCtx.dispatchDrag(150, 100, 5, 5);
+    svgCtx.dispatchDrag(200, 130, 50, 30);
+    svgCtx.dispatchDragEnd();
+
+    const dragEndEvts = events.filter(e => e.type === 'drag-end');
+    expect(dragEndEvts.length).toBe(1);
+    expect(dragEndEvts[0].x).toBe(200);
+    expect(dragEndEvts[0].y).toBe(130);
+    expect(dragEndEvts[0].elementName).toBe('box');
+  }, 10000);
+
   it('onScroll fires on topmost element', async () => {
     cosyneTest = new CosyneTest({ headed: true });
     let svgCtx: CvgContext = null as any;
@@ -360,8 +459,8 @@ describe('SVG rect drag, scroll, and key events', () => {
                     u.update({ x: rectX, y: rectY, x2: rectX + 80, y2: rectY + 80 });
                   }
                 },
-                onDragEnd: () => {
-                  journal?.log(`Dropped at (${rectX.toFixed(0)}, ${rectY.toFixed(0)})`);
+                onDragEnd: (e) => {
+                  journal?.log(`Dropped at (${e.x.toFixed(0)}, ${e.y.toFixed(0)})`);
                 },
               }).name('draggable');
             });

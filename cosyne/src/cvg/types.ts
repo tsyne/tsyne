@@ -126,7 +126,7 @@ export interface CvgElementAttrs {
   onClick?: (e: { x: number; y: number }) => void;
   onHover?: (hovered: boolean) => void;
   onDrag?: (e: { x: number; y: number; deltaX: number; deltaY: number }) => void;
-  onDragEnd?: () => void;
+  onDragEnd?: (e: { x: number; y: number }) => void;
   onScroll?: (e: { deltaX: number; deltaY: number; x: number; y: number }) => void;
   onDoubleClick?: (e: { x: number; y: number }) => void;
   onRightClick?: (e: { x: number; y: number }) => void;
