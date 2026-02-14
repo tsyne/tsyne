@@ -712,6 +712,19 @@ export class CosyneContext {
         }
       }
 
+      // Handle polygon vertex bindings (with change detection)
+      if (primitive instanceof CosynePolygon) {
+        const vertBinding = primitive.getVertexBinding();
+        if (vertBinding) {
+          const newVerts = vertBinding.evaluate();
+          const oldVerts = primitive.getVertices();
+          if (newVerts.length !== oldVerts.length ||
+              newVerts.some((v, i) => v.x !== oldVerts[i].x || v.y !== oldVerts[i].y)) {
+            primitive.updateVertices(newVerts);
+          }
+        }
+      }
+
       // Refresh fill color bindings
       const fillBinding = primitive.getFillBinding();
       if (fillBinding) {

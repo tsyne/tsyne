@@ -659,6 +659,7 @@ export class CvgContext {
   private mapping: ViewBoxMapping;
   private styleStack: SvgStyle[] = [{}];
   private transformStack: Transform2D[] = [AffineMatrix.identity()];
+  private whenStack: (() => boolean)[] = [];
   private gradients: Map<string, GradientDef> = new Map();
   private trackedElements: CvgElement[] = [];
   private filters: Map<string, FilterDef> = new Map();
@@ -1585,7 +1586,9 @@ export class CvgContext {
     if (attrs.onDoubleClick) el.onDoubleClick(attrs.onDoubleClick);
     if (attrs.onRightClick) el.onRightClick(attrs.onRightClick);
     if (attrs.tooltip) el.tooltip(attrs.tooltip);
-    if (attrs.when) el.when(attrs.when);
+    // Combine element-level when with any group-level when predicates from the whenStack
+    const effectiveWhen = this.resolveWhen(attrs.when);
+    if (effectiveWhen) el.when(effectiveWhen);
     if (attrs.cursor) el.cursor(attrs.cursor);
     if (attrs.bindFill) el.bindFill(attrs.bindFill);
     if (attrs.bindStroke) el.bindStroke(attrs.bindStroke);
@@ -1593,13 +1596,27 @@ export class CvgContext {
     if (attrs.bindPos) el.bindPos(attrs.bindPos);
   }
 
+  /** Combine an element's own when predicate with any active group-level when predicates. */
+  private resolveWhen(elementWhen?: () => boolean): (() => boolean) | undefined {
+    if (this.whenStack.length === 0) return elementWhen;
+    // Snapshot the current stack predicates (they may be popped later)
+    const groupPredicates = [...this.whenStack];
+    if (!elementWhen) {
+      if (groupPredicates.length === 1) return groupPredicates[0];
+      return () => groupPredicates.every(p => p());
+    }
+    return () => groupPredicates.every(p => p()) && elementWhen();
+  }
+
   // ─── SVG Element Methods ─────────────────────────────────────
 
-  /** Group element — pushes style and transform onto stacks, runs builder, pops both. */
+  /** Group element — pushes style, transform, and optional when predicate onto stacks, runs builder, pops all. */
   g(attrs: CvgElementAttrs, builder: () => void): void {
     this.pushStyle(attrs);
     this.pushTransform(attrs);
+    if (attrs.when) this.whenStack.push(attrs.when);
     builder();
+    if (attrs.when) this.whenStack.pop();
     this.popTransform();
     this.popStyle();
   }

@@ -4,7 +4,7 @@
  */
 
 import { Primitive, PrimitiveOptions } from './base';
-import { PositionBinding } from '../binding';
+import { PositionBinding, Binding, BindingFunction } from '../binding';
 import { HitTester, DefaultHitTesters } from '../events';
 
 export interface Point {
@@ -23,6 +23,7 @@ export class CosynePolygon extends Primitive<any> {
   private x: number;
   private y: number;
   private vertices: Point[] = [];
+  private vertexBinding: Binding<Point[]> | undefined;
 
   constructor(x: number, y: number, vertices: Point[], underlying: any, options?: PolygonOptions) {
     super(underlying, options);
@@ -59,6 +60,36 @@ export class CosynePolygon extends Primitive<any> {
     this.vertices = vertices;
     this.updateUnderlying();
     return this;
+  }
+
+  /**
+   * Bind vertices to a function
+   */
+  bindVertices(fn: BindingFunction<Point[]>): this {
+    this.vertexBinding = new Binding(fn);
+    return this;
+  }
+
+  /**
+   * Get vertex binding if set
+   */
+  getVertexBinding(): Binding<Point[]> | undefined {
+    return this.vertexBinding;
+  }
+
+  /**
+   * Update vertices from binding
+   */
+  updateVertices(vertices: Point[]): void {
+    this.vertices = vertices;
+    this.updateUnderlying();
+  }
+
+  /**
+   * Override to include vertex binding
+   */
+  hasAnyBinding(): boolean {
+    return super.hasAnyBinding() || !!this.vertexBinding;
   }
 
   /**
@@ -134,11 +165,8 @@ export class CosynePolygon extends Primitive<any> {
    */
   private updateUnderlying(): void {
     if (this.underlying && this.underlying.update) {
-      this.underlying.update({
-        x: this.x,
-        y: this.y,
-        vertices: this.vertices,
-      });
+      const points = this.vertices.map(v => ({ x: this.x + v.x, y: this.y + v.y }));
+      this.underlying.update({ points });
     }
   }
 
