@@ -16,7 +16,7 @@
 import { TestContext } from 'tsyne';
 import type { App } from 'tsyne';
 import { CosyneTest } from '../src';
-import { loadSvg } from '../src/svg';
+import { loadSvg } from '../src/cvg';
 import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';

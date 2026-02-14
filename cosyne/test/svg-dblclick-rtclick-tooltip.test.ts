@@ -7,7 +7,7 @@
 
 import { TestContext } from 'tsyne';
 import type { App } from 'tsyne';
-import { CosyneTest, svg, TestJournal, SvgContext, SvgEvent, SvgElement } from '../src';
+import { CosyneTest, cvg, TestJournal, CvgContext, CvgEvent, CvgElement } from '../src';
 
 const slow = process.env.SLOWER_TESTS === '1';
 const pause = slow ? 500 : 50;
@@ -24,19 +24,19 @@ describe('SVG double-click, right-click, and tooltip events', () => {
 
   it('onDoubleClick fires on correct element', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
 
     let dblClicked = false;
     let dblClickCoords = { x: 0, y: 0 };
     let singleClicked = false;
-    let rectEl: SvgElement;
+    let rectEl: CvgElement;
 
     const testApp = await cosyneTest.createApp((a: App) => {
       a.window({ title: 'SVG DoubleClick Test', width: 300, height: 300, x: 50, y: 50, padded: false }, (win: any) => {
         win.setContent(() => {
           a.canvasStack(() => {
-            svgCtx = svg(a, { viewBox: '0 0 300 300', width: 300, height: 300 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 300 300', width: 300, height: 300 }, (s) => {
               rectEl = s.rect({
                 x: 50, y: 50, width: 200, height: 200,
                 fill: '#4488cc',
@@ -85,18 +85,18 @@ describe('SVG double-click, right-click, and tooltip events', () => {
 
   it('onRightClick fires on correct element', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
 
     let rtClicked = false;
     let rtClickCoords = { x: 0, y: 0 };
-    let rectEl: SvgElement;
+    let rectEl: CvgElement;
 
     const testApp = await cosyneTest.createApp((a: App) => {
       a.window({ title: 'SVG RightClick Test', width: 300, height: 300, x: 50, y: 50, padded: false }, (win: any) => {
         win.setContent(() => {
           a.canvasStack(() => {
-            svgCtx = svg(a, { viewBox: '0 0 300 300', width: 300, height: 300 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 300 300', width: 300, height: 300 }, (s) => {
               rectEl = s.rect({
                 x: 50, y: 50, width: 200, height: 200,
                 fill: '#44cc88',
@@ -143,15 +143,15 @@ describe('SVG double-click, right-click, and tooltip events', () => {
 
   it('tooltip shows on hover with delay and hides on leave', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
-    const events: SvgEvent[] = [];
+    const events: CvgEvent[] = [];
 
     const testApp = await cosyneTest.createApp((a: App) => {
       a.window({ title: 'SVG Tooltip Test', width: 300, height: 300, x: 50, y: 50, padded: false }, (win: any) => {
         win.setContent(() => {
           a.canvasStack(() => {
-            svgCtx = svg(a, { viewBox: '0 0 300 300', width: 300, height: 300 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 300 300', width: 300, height: 300 }, (s) => {
               s.rect({
                 x: 50, y: 50, width: 200, height: 200,
                 fill: '#8844cc',
@@ -204,19 +204,19 @@ describe('SVG double-click, right-click, and tooltip events', () => {
 
   it('onDoubleClick and onRightClick work together on same element', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
 
     let dblCount = 0;
     let rtCount = 0;
     let clickCount = 0;
-    let rectEl: SvgElement;
+    let rectEl: CvgElement;
 
     const testApp = await cosyneTest.createApp((a: App) => {
       a.window({ title: 'SVG Multi-Event Test', width: 300, height: 300, x: 50, y: 50, padded: false }, (win: any) => {
         win.setContent(() => {
           a.canvasStack(() => {
-            svgCtx = svg(a, { viewBox: '0 0 300 300', width: 300, height: 300 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 300 300', width: 300, height: 300 }, (s) => {
               rectEl = s.rect({
                 x: 50, y: 50, width: 200, height: 200,
                 fill: '#cc8844',

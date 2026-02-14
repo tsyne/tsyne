@@ -2,12 +2,12 @@
  * Dynamic SVG Loader
  *
  * Parses SVG strings at runtime and renders them using the SVG grammar.
- * Uses parseSvg() → walkNode() → SvgContext methods.
+ * Uses parseSvg() → walkNode() → CvgContext methods.
  */
 
 import { SvgNode } from './types';
 import { parseSvg, parseViewBox } from './parser';
-import { SvgContext, svg } from './grammar';
+import { CvgContext, cvg } from './grammar';
 import { computeContentBounds } from './bbox';
 
 /**
@@ -23,7 +23,7 @@ export function loadSvg(
   app: any,
   svgString: string,
   options?: { width?: number; height?: number },
-): SvgContext {
+): CvgContext {
   const root = parseSvg(svgString);
 
   // Extract viewBox from root svg element
@@ -58,7 +58,7 @@ export function loadSvg(
     }
   }
 
-  return svg(
+  return cvg(
     app,
     {
       viewBox,
@@ -76,8 +76,8 @@ export function loadSvg(
   );
 }
 
-/** Recursively walk an SvgNode tree and call SvgContext methods. */
-function walkNode(s: SvgContext, node: SvgNode): void {
+/** Recursively walk an SvgNode tree and call CvgContext methods. */
+function walkNode(s: CvgContext, node: SvgNode): void {
   const attrs = { ...node.attrs, _tag: node.tag };
 
   switch (node.tag) {

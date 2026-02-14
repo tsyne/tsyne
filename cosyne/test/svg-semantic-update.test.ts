@@ -11,7 +11,7 @@
 
 import { TestContext } from 'tsyne';
 import type { App } from 'tsyne';
-import { CosyneTest, svg, TestJournal, SvgContext, SvgElement, AnimationHandle } from '../src';
+import { CosyneTest, cvg, TestJournal, CvgContext, CvgElement, AnimationHandle } from '../src';
 
 const slow = process.env.SLOWER_TESTS === '1';
 const pause = slow ? 500 : 50;
@@ -28,9 +28,9 @@ describe('SVG semantic updates', () => {
 
   it('circle bindPos updates cx/cy/r with correct coordinate translation', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
-    let circleEl: SvgElement = null as any;
+    let circleEl: CvgElement = null as any;
 
     // Reactive state in SVG viewBox units (0-100)
     let cx = 25, cy = 50, r = 10;
@@ -40,7 +40,7 @@ describe('SVG semantic updates', () => {
         win.setContent(() => {
           a.canvasStack(() => {
             // ViewBox 0-100 maps to 400px canvas → 4x scale
-            svgCtx = svg(a, { viewBox: '0 0 100 100', width: 400, height: 400 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 100 100', width: 400, height: 400 }, (s) => {
               s.rect({ x: 0, y: 0, width: 100, height: 100, fill: '#f0f0f0' }).name('bg');
 
               circleEl = s.circle({ cx, cy, r, fill: '#cc4444' })
@@ -113,9 +113,9 @@ describe('SVG semantic updates', () => {
 
   it('rect bindPos updates x/y/width/height with correct coordinate translation', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
-    let rectEl: SvgElement = null as any;
+    let rectEl: CvgElement = null as any;
 
     // ViewBox 0-200, canvas 400px → 2x scale
     let rx = 10, ry = 10, rw = 40, rh = 30;
@@ -124,7 +124,7 @@ describe('SVG semantic updates', () => {
       a.window({ title: 'Rect SVG Update', width: 400, height: 400, x: 50, y: 50, padded: false }, (win: any) => {
         win.setContent(() => {
           a.canvasStack(() => {
-            svgCtx = svg(a, { viewBox: '0 0 200 200', width: 400, height: 400 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 200 200', width: 400, height: 400 }, (s) => {
               s.rect({ x: 0, y: 0, width: 200, height: 200, fill: '#eee' }).name('bg');
 
               rectEl = s.rect({ x: rx, y: ry, width: rw, height: rh, fill: '#44cc88' })
@@ -186,16 +186,16 @@ describe('SVG semantic updates', () => {
 
   it('line updateSvgProps updates x1/y1/x2/y2 with correct coordinate translation', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
-    let lineEl: SvgElement = null as any;
+    let lineEl: CvgElement = null as any;
 
     const testApp = await cosyneTest.createApp((a: App) => {
       a.window({ title: 'Line SVG Update', width: 400, height: 400, x: 50, y: 50, padded: false }, (win: any) => {
         win.setContent(() => {
           a.canvasStack(() => {
             // viewBox 0-100, canvas 400px → 4x scale
-            svgCtx = svg(a, { viewBox: '0 0 100 100', width: 400, height: 400 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 100 100', width: 400, height: 400 }, (s) => {
               s.rect({ x: 0, y: 0, width: 100, height: 100, fill: '#f8f8f8' }).name('bg');
 
               lineEl = s.line({
@@ -249,15 +249,15 @@ describe('SVG semantic updates', () => {
 
   it('transition with SVG-level props on circle (cx/cy/r)', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
-    let circleEl: SvgElement = null as any;
+    let circleEl: CvgElement = null as any;
 
     const testApp = await cosyneTest.createApp((a: App) => {
       a.window({ title: 'Circle Transition', width: 400, height: 400, x: 50, y: 50, padded: false }, (win: any) => {
         win.setContent(() => {
           a.canvasStack(() => {
-            svgCtx = svg(a, { viewBox: '0 0 100 100', width: 400, height: 400 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 100 100', width: 400, height: 400 }, (s) => {
               s.rect({ x: 0, y: 0, width: 100, height: 100, fill: '#1a1a2e' }).name('bg');
               circleEl = s.circle({ cx: 20, cy: 50, r: 8, fill: '#e94560' }).name('dot');
             });
@@ -314,15 +314,15 @@ describe('SVG semantic updates', () => {
 
   it('animate with SVG-level props routes through updateSvgProps', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
-    let circleEl: SvgElement = null as any;
+    let circleEl: CvgElement = null as any;
 
     const testApp = await cosyneTest.createApp((a: App) => {
       a.window({ title: 'Circle Animate', width: 400, height: 400, x: 50, y: 50, padded: false }, (win: any) => {
         win.setContent(() => {
           a.canvasStack(() => {
-            svgCtx = svg(a, { viewBox: '0 0 100 100', width: 400, height: 400 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 100 100', width: 400, height: 400 }, (s) => {
               s.rect({ x: 0, y: 0, width: 100, height: 100, fill: '#2d3436' }).name('bg');
               circleEl = s.circle({ cx: 50, cy: 50, r: 10, fill: '#00b894' }).name('pulsing');
             });
@@ -368,9 +368,9 @@ describe('SVG semantic updates', () => {
 
   it('visual: draggable circle with SVG-semantic coordinates', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
-    let dotEl: SvgElement = null as any;
+    let dotEl: CvgElement = null as any;
 
     // Positions in SVG viewBox (0-200)
     let dotCx = 100, dotCy = 100;
@@ -380,7 +380,7 @@ describe('SVG semantic updates', () => {
         win.setContent(() => {
           a.canvasStack(() => {
             // viewBox 0-200, canvas 400 → 2x scale
-            svgCtx = svg(a, { viewBox: '0 0 200 200', width: 400, height: 400 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 200 200', width: 400, height: 400 }, (s) => {
               s.rect({ x: 0, y: 0, width: 200, height: 200, fill: '#f5f5f5' }).name('bg');
 
               // Grid lines for reference

@@ -11,7 +11,7 @@
 
 import { TestContext } from 'tsyne';
 import type { App } from 'tsyne';
-import { CosyneTest, svg, TestJournal, SvgContext, SvgEvent, SvgElement } from '../src';
+import { CosyneTest, cvg, TestJournal, CvgContext, CvgEvent, CvgElement } from '../src';
 
 const slow = process.env.SLOWER_TESTS === '1';
 const pause = slow ? 500 : 50;
@@ -28,18 +28,18 @@ describe('SVG hover events', () => {
 
   it('dispatches onHover via options object on overlapping circles', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
 
     // Track hover state per circle
     const hoverState: Record<string, boolean> = { red: false, green: false, blue: false };
-    const events: SvgEvent[] = [];
+    const events: CvgEvent[] = [];
 
-    // Capture SvgElement refs so we can change their fill on hover
-    let redEl: SvgElement, blueEl: SvgElement, greenEl: SvgElement;
+    // Capture CvgElement refs so we can change their fill on hover
+    let redEl: CvgElement, blueEl: CvgElement, greenEl: CvgElement;
 
     // Hover handlers: brighten on hover-in, restore on hover-out
-    function makeHoverHandler(name: string, el: () => SvgElement, normal: string, bright: string) {
+    function makeHoverHandler(name: string, el: () => CvgElement, normal: string, bright: string) {
       return (hovered: boolean) => {
         hoverState[name] = hovered;
         el().fill(hovered ? bright : normal);
@@ -50,7 +50,7 @@ describe('SVG hover events', () => {
       a.window({ title: 'SVG Hover Test', width: 400, height: 400, x: 50, y: 50, padded: false }, (win: any) => {
         win.setContent(() => {
           a.canvasStack(() => {
-            svgCtx = svg(a, { viewBox: '0 0 100 100', width: 400, height: 400 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 100 100', width: 400, height: 400 }, (s) => {
               s.g({ style: 'fill-opacity:0.7;' }, () => {
                 redEl = s.circle({
                   cx: '6.5cm', cy: '2cm', r: 100,
@@ -157,18 +157,18 @@ describe('SVG hover events', () => {
 
   it('onHover and onClick work together via options', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
 
     let hovered = false;
     let clicked = false;
-    let rectEl: SvgElement;
+    let rectEl: CvgElement;
 
     const testApp = await cosyneTest.createApp((a: App) => {
       a.window({ title: 'SVG Hover+Click Test', width: 300, height: 300, x: 50, y: 50, padded: false }, (win: any) => {
         win.setContent(() => {
           a.canvasStack(() => {
-            svgCtx = svg(a, { viewBox: '0 0 300 300', width: 300, height: 300 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 300 300', width: 300, height: 300 }, (s) => {
               rectEl = s.rect({
                 x: '50', y: '50', width: '200', height: '200',
                 fill: 'cornflowerblue',

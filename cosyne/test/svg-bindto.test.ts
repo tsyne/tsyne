@@ -7,7 +7,7 @@
 
 import { TestContext } from 'tsyne';
 import type { App } from 'tsyne';
-import { CosyneTest, svg, TestJournal, SvgContext, SvgEvent, SvgElement } from '../src';
+import { CosyneTest, cvg, TestJournal, CvgContext, CvgEvent, CvgElement } from '../src';
 
 const slow = process.env.SLOWER_TESTS === '1';
 const pause = slow ? 500 : 50;
@@ -24,7 +24,7 @@ describe('SVG bindTo dynamic lists', () => {
 
   it('renders initial items and adds new ones on refresh', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
 
     const items = [
@@ -36,7 +36,7 @@ describe('SVG bindTo dynamic lists', () => {
       a.window({ title: 'SVG bindTo Add', width: 400, height: 200, x: 50, y: 50, padded: false }, (win: any) => {
         win.setContent(() => {
           a.canvasStack(() => {
-            svgCtx = svg(a, { viewBox: '0 0 400 200', width: 400, height: 200 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 400 200', width: 400, height: 200 }, (s) => {
               s.rect({ x: 0, y: 0, width: 400, height: 200, fill: '#f0f0f0' }).name('bg');
 
               s.bindTo({
@@ -88,7 +88,7 @@ describe('SVG bindTo dynamic lists', () => {
 
   it('removes items by hiding and untracking elements', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
 
     let items = [
@@ -103,7 +103,7 @@ describe('SVG bindTo dynamic lists', () => {
       a.window({ title: 'SVG bindTo Remove', width: 400, height: 200, x: 50, y: 50, padded: false }, (win: any) => {
         win.setContent(() => {
           a.canvasStack(() => {
-            svgCtx = svg(a, { viewBox: '0 0 400 200', width: 400, height: 200 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 400 200', width: 400, height: 200 }, (s) => {
               s.bindTo({
                 items: () => items,
                 trackBy: (d) => d.id,
@@ -165,7 +165,7 @@ describe('SVG bindTo dynamic lists', () => {
 
   it('trackBy preserves existing elements across refreshes', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
 
     let items = [
@@ -180,7 +180,7 @@ describe('SVG bindTo dynamic lists', () => {
       a.window({ title: 'SVG bindTo TrackBy', width: 300, height: 200, x: 50, y: 50, padded: false }, (win: any) => {
         win.setContent(() => {
           a.canvasStack(() => {
-            svgCtx = svg(a, { viewBox: '0 0 300 200', width: 300, height: 200 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 300 200', width: 300, height: 200 }, (s) => {
               s.bindTo({
                 items: () => items,
                 trackBy: (d) => d.id,
@@ -244,7 +244,7 @@ describe('SVG bindTo dynamic lists', () => {
 
   it('multiple bindTo regions coexist', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
 
     const bars = [
@@ -260,7 +260,7 @@ describe('SVG bindTo dynamic lists', () => {
       a.window({ title: 'SVG bindTo Multi', width: 400, height: 200, x: 50, y: 50, padded: false }, (win: any) => {
         win.setContent(() => {
           a.canvasStack(() => {
-            svgCtx = svg(a, { viewBox: '0 0 400 200', width: 400, height: 200 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 400 200', width: 400, height: 200 }, (s) => {
               s.rect({ x: 0, y: 0, width: 400, height: 200, fill: '#1a1a2e' }).name('bg');
 
               // Region 1: bars
@@ -311,7 +311,7 @@ describe('SVG bindTo dynamic lists', () => {
 
   it('bindTo with click handlers on dynamic items', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
 
     interface Item { id: number; label: string; x: number; selected: boolean }
@@ -325,7 +325,7 @@ describe('SVG bindTo dynamic lists', () => {
       a.window({ title: 'SVG bindTo Click', width: 400, height: 200, x: 50, y: 50, padded: false }, (win: any) => {
         win.setContent(() => {
           a.canvasStack(() => {
-            svgCtx = svg(a, { viewBox: '0 0 400 200', width: 400, height: 200 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 400 200', width: 400, height: 200 }, (s) => {
               s.bindTo({
                 items: () => items,
                 trackBy: (d) => d.id,
@@ -382,7 +382,7 @@ describe('SVG bindTo dynamic lists', () => {
 
   it('visual: dynamic bar chart with add/remove', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
 
     interface DataPoint { id: number; value: number; color: string }
@@ -405,7 +405,7 @@ describe('SVG bindTo dynamic lists', () => {
       a.window({ title: 'SVG Dynamic Bar Chart', width: 500, height: 300, x: 50, y: 50, padded: false }, (win: any) => {
         win.setContent(() => {
           a.canvasStack(() => {
-            svgCtx = svg(a, { viewBox: '0 0 500 300', width: 500, height: 300 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 500 300', width: 500, height: 300 }, (s) => {
               // Background
               s.rect({ x: 0, y: 0, width: 500, height: 300, fill: '#f8f8f8' }).name('bg');
               // Axis line

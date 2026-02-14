@@ -6,8 +6,8 @@
 
 import { TestContext } from 'tsyne';
 import type { App } from 'tsyne';
-import { CosyneTest, svg, SvgContext } from '../src';
-import { loadSvg } from '../src/svg';
+import { CosyneTest, cvg, CvgContext } from '../src';
+import { loadSvg } from '../src/cvg';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -32,7 +32,7 @@ describe('SVG viewport clipping', () => {
           // White background so we can detect clipping vs overflow
           a.canvasStack(() => {
             a.canvasRectangle({ width: 250, height: 250, fillColor: 'white' });
-            svg(a, { viewBox: '0 0 200 200', width: 200, height: 200 }, (s) => {
+            cvg(a, { viewBox: '0 0 200 200', width: 200, height: 200 }, (s) => {
               // This rect overflows: starts at x=150 and is 200 wide → extends to x=350
               s.rect({ x: '150', y: '50', width: '200', height: '100', fill: 'red' });
               // A rect fully inside for reference

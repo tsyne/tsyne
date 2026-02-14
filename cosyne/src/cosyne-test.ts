@@ -5,14 +5,14 @@
  */
 
 import { TsyneTest, TestOptions, App } from 'tsyne';
-import type { SvgContext, SvgEvent } from './svg';
+import type { CvgContext, CvgEvent } from './cvg';
 
 export interface CosyneTestOptions extends TestOptions {
   // Future: cosyne-specific options
 }
 
 /**
- * Journal monitor window — logs SvgContext events in a second Fyne window.
+ * Journal monitor window — logs CvgContext events in a second Fyne window.
  *
  * Created via `CosyneTest.createJournal(app, svgCtx)`.
  */
@@ -65,9 +65,9 @@ export class TestJournal {
     }
   }
 
-  /** Hook into an SvgContext to automatically log tap, hover, drag, scroll, and key events. */
-  monitor(svgCtx: SvgContext): void {
-    svgCtx.onEvent((event: SvgEvent) => {
+  /** Hook into an CvgContext to automatically log tap, hover, drag, scroll, and key events. */
+  monitor(svgCtx: CvgContext): void {
+    svgCtx.onEvent((event: CvgEvent) => {
       const name = event.elementName ?? (event.elementIndex !== undefined ? `#${event.elementIndex}` : '(scene)');
       switch (event.type) {
         case 'tap-hit':
@@ -199,11 +199,11 @@ export class CosyneTest extends TsyneTest {
     super(options);
   }
 
-  /** Create a journal monitor window that logs events from an SvgContext.
+  /** Create a journal monitor window that logs events from an CvgContext.
    *  Auto-detects the test file, describe chain, and it() name from Jest
    *  and shows them as a header in the content pane above the event log.
    *  Also intercepts expect() assertions so they appear in the journal. */
-  createJournal(app: App, svgCtx: SvgContext, position?: { x: number; y: number }): TestJournal {
+  createJournal(app: App, svgCtx: CvgContext, position?: { x: number; y: number }): TestJournal {
     const journal = new TestJournal(app);
 
     // Build content header from Jest test context

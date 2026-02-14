@@ -2,8 +2,8 @@
  * Tests for SVG path normalizer
  */
 
-import { parsePath, normalizeCommands, normalizePath, serializeCommands } from '../src/svg/normalizer';
-import type { PathCommand, NormalizedCommand } from '../src/svg/types';
+import { parsePath, normalizeCommands, normalizePath, serializeCommands } from '../src/cvg/normalizer';
+import type { PathCommand, NormalizedCommand } from '../src/cvg/types';
 
 describe('parsePath', () => {
   it('should parse simple absolute commands', () => {

@@ -1,4 +1,4 @@
-# Cosyne SVG Renderer — TODO
+# CVG (Cosyne Vector Graphics) — TODO
 
 199 test SVGs, median MAE ~0.5, 169 below MAE 5.
 
@@ -52,11 +52,11 @@ Two-step viewBox→viewport→canvas mapping implemented. Handles meet/slice mod
 - `:hover` / `:active` / `:focus` pseudo-classes
 - `<video>` / `<audio>` elements
 
-These are replaced by the programmatic SVG grammar API below.
+These are replaced by the programmatic CVG grammar API below.
 
 ---
 
-# Programmatic SVG Interactivity & Reactivity Roadmap
+# Programmatic CVG Interactivity & Reactivity Roadmap
 
 Equivalent functions for pure Cosyne TypeScript, following the
 [pseudo-declarative UI composition](../../../docs/pseudo-declarative-ui-composition.md) patterns.
@@ -69,8 +69,8 @@ Equivalent functions for pure Cosyne TypeScript, following the
 - Both options-object (`s.rect({ onClick: ... })`) and fluent (`.onClick(...)`) patterns
 
 ### Events — scene-wide
-- `onKeyDown`, `onKeyUp` (on SvgContext, no hit-testing)
-- `onScroll` fallback (on SvgContext, fires when no element under cursor)
+- `onKeyDown`, `onKeyUp` (on CvgContext, no hit-testing)
+- `onScroll` fallback (on CvgContext, fires when no element under cursor)
 
 ### Fluent styling
 - `.fill(color)`, `.stroke(color, width?)`, `.opacity(value)`, `.name(n)`, `.tooltip(text)`
@@ -86,13 +86,13 @@ Equivalent functions for pure Cosyne TypeScript, following the
 - Header shows test file + describe/it chain from Jest context
 
 ### Reactive visibility: `.when()`
-- `.when(predicate)` stores a predicate on SvgElement, evaluates immediately
+- `.when(predicate)` stores a predicate on CvgElement, evaluates immediately
 - `svgCtx.refresh()` re-evaluates all `.when()` conditions, shows/hides elements
 - Hidden elements excluded from hit-testing
 - Emits `when-show` / `when-hide` events
 
 ### Cursor changes
-- `.cursor(type)` fluent method + `cursor` option in SvgElementAttrs
+- `.cursor(type)` fluent method + `cursor` option in CvgElementAttrs
 - `dispatchHover()` sets cursor from topmost hovered element via `setCursor` bridge call
 - Go bridge: `desktop.Cursorable` on TappableCanvasRaster
 - Supported cursors: `default`, `pointer`, `text`, `crosshair`, `hResize`, `vResize`
@@ -109,7 +109,7 @@ Equivalent functions for pure Cosyne TypeScript, following the
 - Built-in easing: `linear`, `easeIn`, `easeOut`, `easeInOut`, `easeInCubic`, `easeOutCubic`, `easeInOutCubic`
 - `AnimationOptions`: `duration`, `delay`, `loop`, `yoyo`, `easing`, `onComplete`
 - `AnimationHandle` with `.stop()` and `.then()` (promise-based completion)
-- Animation manager on SvgContext: 16ms timer, auto-start/stop, `stopAllAnimations()`, `isAnimating()`
+- Animation manager on CvgContext: 16ms timer, auto-start/stop, `stopAllAnimations()`, `isAnimating()`
 - Multiple concurrent animations on different elements supported
 
 ### Dynamic element lists: `.bindTo()`
@@ -117,8 +117,8 @@ Equivalent functions for pure Cosyne TypeScript, following the
 - Diff on `refresh()`: new items rendered, removed items destroyed + untracked, existing items updated
 - `trackBy` key-based diffing preserves existing elements (no re-render for unchanged keys)
 - Optional `update` callback for existing items; can also use `.bindFill()` etc. on rendered elements
-- Multiple `.bindTo()` regions coexist in one SvgContext
-- `SvgElement.destroy()` hides and marks element as permanently removed from hit-testing
+- Multiple `.bindTo()` regions coexist in one CvgContext
+- `CvgElement.destroy()` hides and marks element as permanently removed from hit-testing
 
 ### SVG-semantic coordinate translation
 - `el.setShapeInfo(type, mapping, svgAttrs)` stores shape type + viewBox mapping at creation time

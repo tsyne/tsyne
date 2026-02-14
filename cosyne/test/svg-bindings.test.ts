@@ -7,7 +7,7 @@
 
 import { TestContext } from 'tsyne';
 import type { App } from 'tsyne';
-import { CosyneTest, svg, TestJournal, SvgContext, SvgEvent, SvgElement } from '../src';
+import { CosyneTest, cvg, TestJournal, CvgContext, CvgEvent, CvgElement } from '../src';
 
 const slow = process.env.SLOWER_TESTS === '1';
 const pause = slow ? 500 : 50;
@@ -24,7 +24,7 @@ describe('SVG property bindings', () => {
 
   it('bindFill updates color on refresh', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
 
     // Reactive state
@@ -34,7 +34,7 @@ describe('SVG property bindings', () => {
       a.window({ title: 'SVG bindFill Test', width: 400, height: 200, x: 50, y: 50, padded: false }, (win: any) => {
         win.setContent(() => {
           a.canvasStack(() => {
-            svgCtx = svg(a, { viewBox: '0 0 400 200', width: 400, height: 200 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 400 200', width: 400, height: 200 }, (s) => {
               // Indicator rect — fill bound to isActive state
               s.rect({ x: 50, y: 50, width: 120, height: 100, fill: '#ccc' })
                 .name('indicator')
@@ -88,7 +88,7 @@ describe('SVG property bindings', () => {
 
   it('bindStroke updates stroke color and width on refresh', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
 
     let selected = false;
@@ -97,7 +97,7 @@ describe('SVG property bindings', () => {
       a.window({ title: 'SVG bindStroke Test', width: 400, height: 200, x: 50, y: 50, padded: false }, (win: any) => {
         win.setContent(() => {
           a.canvasStack(() => {
-            svgCtx = svg(a, { viewBox: '0 0 400 200', width: 400, height: 200 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 400 200', width: 400, height: 200 }, (s) => {
               // Card with selection border
               s.rect({ x: 50, y: 30, width: 300, height: 140, fill: '#fff', stroke: '#ddd', 'stroke-width': 1 })
                 .name('card')
@@ -141,9 +141,9 @@ describe('SVG property bindings', () => {
 
   it('bindFill + bindStroke + when work together', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
-    const events: SvgEvent[] = [];
+    const events: CvgEvent[] = [];
 
     // Reactive state
     let activeTab = 0;
@@ -154,7 +154,7 @@ describe('SVG property bindings', () => {
       a.window({ title: 'SVG Bindings Combo', width: 500, height: 300, x: 50, y: 50, padded: false }, (win: any) => {
         win.setContent(() => {
           a.canvasStack(() => {
-            svgCtx = svg(a, { viewBox: '0 0 500 300', width: 500, height: 300 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 500 300', width: 500, height: 300 }, (s) => {
               // Three tab buttons across the top
               for (let i = 0; i < 3; i++) {
                 const tabX = 20 + i * 160;
@@ -233,7 +233,7 @@ describe('SVG property bindings', () => {
 
   it('bindPos updates element position on refresh', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
 
     // Reactive position
@@ -244,7 +244,7 @@ describe('SVG property bindings', () => {
       a.window({ title: 'SVG bindPos Test', width: 400, height: 300, x: 50, y: 50, padded: false }, (win: any) => {
         win.setContent(() => {
           a.canvasStack(() => {
-            svgCtx = svg(a, { viewBox: '0 0 400 300', width: 400, height: 300 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 400 300', width: 400, height: 300 }, (s) => {
               // Background
               s.rect({ x: 0, y: 0, width: 400, height: 300, fill: '#f8f8f8' }).name('bg');
 
@@ -302,7 +302,7 @@ describe('SVG property bindings', () => {
 
   it('bindOpacity fades element on refresh', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
 
     let opacity = 1.0;
@@ -311,7 +311,7 @@ describe('SVG property bindings', () => {
       a.window({ title: 'SVG bindOpacity Test', width: 400, height: 200, x: 50, y: 50, padded: false }, (win: any) => {
         win.setContent(() => {
           a.canvasStack(() => {
-            svgCtx = svg(a, { viewBox: '0 0 400 200', width: 400, height: 200 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 400 200', width: 400, height: 200 }, (s) => {
               // Fading rectangle
               s.rect({ x: 50, y: 30, width: 200, height: 140, fill: '#cc4444' })
                 .name('fader')
@@ -360,7 +360,7 @@ describe('SVG property bindings', () => {
 
   it('hidden elements skip property binding evaluation', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
 
     let visible = false;
@@ -370,7 +370,7 @@ describe('SVG property bindings', () => {
       a.window({ title: 'SVG Hidden Binding Test', width: 300, height: 200, x: 50, y: 50, padded: false }, (win: any) => {
         win.setContent(() => {
           a.canvasStack(() => {
-            svgCtx = svg(a, { viewBox: '0 0 300 200', width: 300, height: 200 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 300 200', width: 300, height: 200 }, (s) => {
               // Element that starts hidden
               s.rect({ x: 50, y: 50, width: 200, height: 100, fill: '#ccc' })
                 .name('hidden-rect')

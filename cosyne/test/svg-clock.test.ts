@@ -6,7 +6,7 @@
 
 import { TestContext } from 'tsyne';
 import type { App } from 'tsyne';
-import { CosyneTest, TestJournal, SvgContext, SvgElement } from '../src';
+import { CosyneTest, TestJournal, CvgContext, CvgElement } from '../src';
 import { createClock, handLine, RADIUS, CENTER, SIZE } from '../demos/svg-clock';
 
 const slow = process.env.SLOWER_TESTS === '1';
@@ -21,7 +21,7 @@ describe('SVG clock', () => {
 
   it('declarative analog clock with poll()', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
 
     let now = () => new Date();
@@ -42,9 +42,9 @@ describe('SVG clock', () => {
     await testApp.run();
     await ctx.wait(300);
 
-    const hourEl = (svgCtx as any).trackedElements.find((el: SvgElement) => el.getName() === 'hour')!;
-    const minEl = (svgCtx as any).trackedElements.find((el: SvgElement) => el.getName() === 'minute')!;
-    const secEl = (svgCtx as any).trackedElements.find((el: SvgElement) => el.getName() === 'second')!;
+    const hourEl = (svgCtx as any).trackedElements.find((el: CvgElement) => el.getName() === 'hour')!;
+    const minEl = (svgCtx as any).trackedElements.find((el: CvgElement) => el.getName() === 'minute')!;
+    const secEl = (svgCtx as any).trackedElements.find((el: CvgElement) => el.getName() === 'second')!;
 
     // ── Inject 12:00:00 — all hands point straight up ──
     now = () => new Date(2026, 0, 1, 12, 0, 0);
@@ -81,7 +81,7 @@ describe('SVG clock', () => {
 
   it('resize remaps all elements to new canvas dimensions', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
 
     // Fixed at 12:00:00 for deterministic bounds
@@ -104,11 +104,11 @@ describe('SVG clock', () => {
     await ctx.wait(300);
 
     // Find the face circle and hour hand
-    const faceEl = (svgCtx as any).trackedElements.find((el: SvgElement) => {
+    const faceEl = (svgCtx as any).trackedElements.find((el: CvgElement) => {
       // Face circle: r=90 (the big one)
       return el.getSvgAttr('r') === RADIUS;
     })!;
-    const hourEl = (svgCtx as any).trackedElements.find((el: SvgElement) => el.getName() === 'hour')!;
+    const hourEl = (svgCtx as any).trackedElements.find((el: CvgElement) => el.getName() === 'hour')!;
 
     // ── At 200x200 canvas, viewBox 200x200 → scale=1, offset=0 ──
     const m1 = svgCtx.getMapping();

@@ -2,7 +2,7 @@
  * Tests for SVG XML parser
  */
 
-import { parseSvg, parseViewBox } from '../src/svg/parser';
+import { parseSvg, parseViewBox } from '../src/cvg/parser';
 import * as fs from 'fs';
 import * as path from 'path';
 

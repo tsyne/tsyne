@@ -20,9 +20,9 @@ const OMIT_ATTRS = new Set(['xmlns', 'xmlns:xlink', 'version', 'xml:space', 'id'
  * Returns an importable module with a function that renders the SVG:
  *
  * ```ts
- * import { svg } from 'cosyne/svg';
+ * import { cvg } from 'cosyne/cvg';
  * export function mySvg(app: any, width = 400, height = 400) {
- *   return svg(app, { viewBox: '0 0 100 100', width, height }, (s) => {
+ *   return cvg(app, { viewBox: '0 0 100 100', width, height }, (s) => {
  *     s.path({ d: 'M 50 30 C 59 8 ...', fill: '#F00' });
  *   });
  * }
@@ -54,10 +54,10 @@ export function transpileSvgToModule(
     ? `, rootAttrs: { ${rootStyleEntries.join(', ')} }`
     : '';
 
-  lines.push(`import { svg } from 'cosyne/svg';`);
+  lines.push(`import { cvg } from 'cosyne/cvg';`);
   lines.push('');
   lines.push(`export function ${fnName}(app: any, width = 400, height = 400) {`);
-  lines.push(`  return svg(app, { viewBox: '${escapeStr(viewBox)}', width, height${rootAttrsStr} }, (s) => {`);
+  lines.push(`  return cvg(app, { viewBox: '${escapeStr(viewBox)}', width, height${rootAttrsStr} }, (s) => {`);
 
   for (const child of root.children) {
     emitNode(lines, child, 2);
@@ -73,7 +73,7 @@ export function transpileSvgToModule(
 /**
  * Transpile an SVG string to an inline builder snippet (no imports/function wrapper).
  *
- * Returns the content of the svg() builder callback:
+ * Returns the content of the cvg() builder callback:
  * ```
  * s.path({ d: 'M 50 30 C ...', fill: '#F00' });
  * s.circle({ cx: 50, cy: 50, r: 20 });

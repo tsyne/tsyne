@@ -7,7 +7,7 @@
 
 import { TestContext } from 'tsyne';
 import type { App } from 'tsyne';
-import { CosyneTest, svg, TestJournal, SvgContext, SvgElement, AnimationHandle, Easing } from '../src';
+import { CosyneTest, cvg, TestJournal, CvgContext, CvgElement, AnimationHandle, Easing } from '../src';
 
 const slow = process.env.SLOWER_TESTS === '1';
 const pause = slow ? 500 : 50;
@@ -24,15 +24,15 @@ describe('SVG animation', () => {
 
   it('transition animates numeric properties over time', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
-    let circleEl: SvgElement = null as any;
+    let circleEl: CvgElement = null as any;
 
     const testApp = await cosyneTest.createApp((a: App) => {
       a.window({ title: 'SVG Transition Test', width: 400, height: 300, x: 50, y: 50, padded: false }, (win: any) => {
         win.setContent(() => {
           a.canvasStack(() => {
-            svgCtx = svg(a, { viewBox: '0 0 400 300', width: 400, height: 300 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 400 300', width: 400, height: 300 }, (s) => {
               s.rect({ x: 0, y: 0, width: 400, height: 300, fill: '#1a1a2e' }).name('bg');
               circleEl = s.circle({ cx: 50, cy: 150, r: 20, fill: '#e94560' }).name('dot');
             });
@@ -77,9 +77,9 @@ describe('SVG animation', () => {
 
   it('animate with custom callback + easing', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
-    let rectEl: SvgElement = null as any;
+    let rectEl: CvgElement = null as any;
     let completeCalled = false;
     const tValues: number[] = [];
 
@@ -87,7 +87,7 @@ describe('SVG animation', () => {
       a.window({ title: 'SVG Animate Test', width: 400, height: 200, x: 50, y: 50, padded: false }, (win: any) => {
         win.setContent(() => {
           a.canvasStack(() => {
-            svgCtx = svg(a, { viewBox: '0 0 400 200', width: 400, height: 200 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 400 200', width: 400, height: 200 }, (s) => {
               rectEl = s.rect({ x: 10, y: 50, width: 50, height: 100, fill: '#48c' }).name('bar');
             });
             svgCtx.enableEvents();
@@ -144,16 +144,16 @@ describe('SVG animation', () => {
 
   it('loop animation runs multiple cycles and can be stopped', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
-    let circleEl: SvgElement = null as any;
+    let circleEl: CvgElement = null as any;
     let tickCount = 0;
 
     const testApp = await cosyneTest.createApp((a: App) => {
       a.window({ title: 'SVG Loop Test', width: 300, height: 200, x: 50, y: 50, padded: false }, (win: any) => {
         win.setContent(() => {
           a.canvasStack(() => {
-            svgCtx = svg(a, { viewBox: '0 0 300 200', width: 300, height: 200 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 300 200', width: 300, height: 200 }, (s) => {
               circleEl = s.circle({ cx: 150, cy: 100, r: 20, fill: '#e94560' }).name('pulse');
             });
             svgCtx.enableEvents();
@@ -202,16 +202,16 @@ describe('SVG animation', () => {
 
   it('yoyo animation ping-pongs', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
-    let rectEl: SvgElement = null as any;
+    let rectEl: CvgElement = null as any;
     const widthValues: number[] = [];
 
     const testApp = await cosyneTest.createApp((a: App) => {
       a.window({ title: 'SVG Yoyo Test', width: 400, height: 200, x: 50, y: 50, padded: false }, (win: any) => {
         win.setContent(() => {
           a.canvasStack(() => {
-            svgCtx = svg(a, { viewBox: '0 0 400 200', width: 400, height: 200 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 400 200', width: 400, height: 200 }, (s) => {
               rectEl = s.rect({ x: 50, y: 50, width: 50, height: 100, fill: '#44cc88' }).name('yoyo-bar');
             });
             svgCtx.enableEvents();
@@ -261,10 +261,10 @@ describe('SVG animation', () => {
 
   it('multiple concurrent animations on different elements', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
-    let circle1: SvgElement = null as any;
-    let circle2: SvgElement = null as any;
+    let circle1: CvgElement = null as any;
+    let circle2: CvgElement = null as any;
     let complete1 = false;
     let complete2 = false;
 
@@ -272,7 +272,7 @@ describe('SVG animation', () => {
       a.window({ title: 'SVG Concurrent Anims', width: 400, height: 300, x: 50, y: 50, padded: false }, (win: any) => {
         win.setContent(() => {
           a.canvasStack(() => {
-            svgCtx = svg(a, { viewBox: '0 0 400 300', width: 400, height: 300 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 400 300', width: 400, height: 300 }, (s) => {
               s.rect({ x: 0, y: 0, width: 400, height: 300, fill: '#1a1a2e' }).name('bg');
               circle1 = s.circle({ cx: 50, cy: 100, r: 20, fill: '#e94560' }).name('dot1');
               circle2 = s.circle({ cx: 50, cy: 200, r: 20, fill: '#0f3460' }).name('dot2');
@@ -321,16 +321,16 @@ describe('SVG animation', () => {
 
   it('stopAllAnimations stops everything', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
-    let c1: SvgElement = null as any;
-    let c2: SvgElement = null as any;
+    let c1: CvgElement = null as any;
+    let c2: CvgElement = null as any;
 
     const testApp = await cosyneTest.createApp((a: App) => {
       a.window({ title: 'SVG StopAll Test', width: 300, height: 200, x: 50, y: 50, padded: false }, (win: any) => {
         win.setContent(() => {
           a.canvasStack(() => {
-            svgCtx = svg(a, { viewBox: '0 0 300 200', width: 300, height: 200 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 300 200', width: 300, height: 200 }, (s) => {
               c1 = s.circle({ cx: 50, cy: 80, r: 15, fill: '#e94560' }).name('c1');
               c2 = s.circle({ cx: 50, cy: 140, r: 15, fill: '#0f3460' }).name('c2');
             });
@@ -364,16 +364,16 @@ describe('SVG animation', () => {
 
   it('delay option postpones animation start', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
-    let circleEl: SvgElement = null as any;
+    let circleEl: CvgElement = null as any;
     let tickCount = 0;
 
     const testApp = await cosyneTest.createApp((a: App) => {
       a.window({ title: 'SVG Delay Test', width: 300, height: 200, x: 50, y: 50, padded: false }, (win: any) => {
         win.setContent(() => {
           a.canvasStack(() => {
-            svgCtx = svg(a, { viewBox: '0 0 300 200', width: 300, height: 200 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 300 200', width: 300, height: 200 }, (s) => {
               circleEl = s.circle({ cx: 150, cy: 100, r: 20, fill: '#e94560' }).name('delayed');
             });
             svgCtx.enableEvents();
@@ -411,15 +411,15 @@ describe('SVG animation', () => {
 
   it('visual: bouncing ball (for SLOWER_TESTS inspection)', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
-    let ball: SvgElement = null as any;
+    let ball: CvgElement = null as any;
 
     const testApp = await cosyneTest.createApp((a: App) => {
       a.window({ title: 'SVG Bouncing Ball', width: 400, height: 400, x: 50, y: 50, padded: false }, (win: any) => {
         win.setContent(() => {
           a.canvasStack(() => {
-            svgCtx = svg(a, { viewBox: '0 0 400 400', width: 400, height: 400 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 400 400', width: 400, height: 400 }, (s) => {
               // Sky
               s.rect({ x: 0, y: 0, width: 400, height: 300, fill: '#87ceeb' }).name('sky');
               // Ground

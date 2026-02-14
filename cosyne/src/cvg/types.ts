@@ -1,5 +1,5 @@
 /**
- * Shared types for the SVG-to-Cosyne pipeline
+ * Shared types for the CVG pipeline (includes SVG import types)
  */
 
 /** Parsed XML node from SVG */
@@ -73,8 +73,8 @@ export interface ViewBox {
   height: number;
 }
 
-/** Options for the svg() factory */
-export interface SvgOptions {
+/** Options for the cvg() factory */
+export interface CvgOptions {
   viewBox?: string | ViewBox;
   width?: number;
   height?: number;
@@ -101,7 +101,7 @@ export interface TransformSpec {
 }
 
 /** Attributes passed to grammar element methods */
-export interface SvgElementAttrs {
+export interface CvgElementAttrs {
   transform?: string | TransformSpec;
   d?: string;
   cx?: number | string;

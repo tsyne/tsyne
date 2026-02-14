@@ -4,7 +4,7 @@
 
 import { TestContext } from 'tsyne';
 import type { App } from 'tsyne';
-import { CosyneTest, svg, TestJournal, SvgContext } from '../src';
+import { CosyneTest, cvg, TestJournal, CvgContext } from '../src';
 
 describe('SVG click events', () => {
   let cosyneTest: CosyneTest;
@@ -19,14 +19,14 @@ describe('SVG click events', () => {
   it('dispatches onClick to correct rect', async () => {
     cosyneTest = new CosyneTest({ headed: true });
     let clicked = '';
-    let svgCtx: SvgContext;
+    let svgCtx: CvgContext;
     let journal: TestJournal;
 
     const testApp = await cosyneTest.createApp((a: App) => {
       a.window({ title: 'SVG Click Test', width: 300, height: 100, x: 50, y: 50, padded: false }, (win: any) => {
         win.setContent(() => {
           a.canvasStack(() => {
-            svgCtx = svg(a, { viewBox: '0 0 300 100', width: 300, height: 100 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 300 100', width: 300, height: 100 }, (s) => {
               s.rect({ x: '0', y: '0', width: '100', height: '100', fill: 'red' })
                 .onClick(() => { clicked = 'red'; }).name('red');
               s.rect({ x: '100', y: '0', width: '100', height: '100', fill: 'green' })
@@ -64,14 +64,14 @@ describe('SVG click events', () => {
   it('topmost element wins on overlap', async () => {
     cosyneTest = new CosyneTest({ headed: true });
     let clicked = '';
-    let svgCtx: SvgContext;
+    let svgCtx: CvgContext;
     let journal: TestJournal;
 
     const testApp = await cosyneTest.createApp((a: App) => {
       a.window({ title: 'SVG Overlap Test', width: 200, height: 200, x: 50, y: 50, padded: false }, (win: any) => {
         win.setContent(() => {
           a.canvasStack(() => {
-            svgCtx = svg(a, { viewBox: '0 0 200 200', width: 200, height: 200 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 200 200', width: 200, height: 200 }, (s) => {
               s.rect({ x: '0', y: '0', width: '200', height: '200', fill: 'red' })
                 .onClick(() => { clicked = 'bottom'; }).name('bottom');
               s.rect({ x: '50', y: '50', width: '100', height: '100', fill: 'blue' })
@@ -103,14 +103,14 @@ describe('SVG click events', () => {
   it('no handler fires on miss', async () => {
     cosyneTest = new CosyneTest({ headed: true });
     let clicked = false;
-    let svgCtx: SvgContext;
+    let svgCtx: CvgContext;
     let journal: TestJournal;
 
     const testApp = await cosyneTest.createApp((a: App) => {
       a.window({ title: 'SVG Miss Test', width: 200, height: 200, x: 50, y: 50, padded: false }, (win: any) => {
         win.setContent(() => {
           a.canvasStack(() => {
-            svgCtx = svg(a, { viewBox: '0 0 200 200', width: 200, height: 200 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 200 200', width: 200, height: 200 }, (s) => {
               s.rect({ x: '50', y: '50', width: '50', height: '50', fill: 'red' })
                 .onClick(() => { clicked = true; }).name('target');
             });

@@ -1,7 +1,7 @@
 /**
- * SVG Grammar for Cosyne
+ * CVG (Cosyne Vector Graphics) Grammar
  *
- * Provides an SvgContext that mirrors SVG element names (path, circle, g, etc.)
+ * Provides a CvgContext with SVG-inspired element names (path, circle, g, etc.)
  * and a fluent PathBuilder for programmatic path construction.
  *
  * This is a separate branch of the Tsyne widget tree — it calls app.canvasPath(),
@@ -9,28 +9,28 @@
  *
  * Two entry points:
  *
- * 1. Standalone `svg()` factory:
- *    svg(app, { viewBox: '0 0 100 100', width: 400, height: 400 }, (s) => {
+ * 1. Standalone `cvg()` factory:
+ *    cvg(app, { viewBox: '0 0 100 100', width: 400, height: 400 }, (s) => {
  *      s.path({ d: '...', fill: '#F00' });
  *    });
  *
- * 2. Builder-style `svgBuilder(app)`:
- *    const s = svgBuilder(app);
+ * 2. Builder-style `cvgBuilder(app)`:
+ *    const s = cvgBuilder(app);
  *    s.svg({ viewBox: "0 0 100 100" }, () => {
  *      s.path({ d: "...", fill: "#069" });
  *      s.circle({ r: 15, cx: 50, cy: 18 }).fill("#900");
  *    });
  */
 
-import { SvgNode, SvgStyle, SvgOptions, SvgElementAttrs, ViewBox, FilterDef, ClipPathDef, ClipPathShape } from './types';
+import { SvgNode, SvgStyle, CvgOptions, CvgElementAttrs, ViewBox, FilterDef, ClipPathDef, ClipPathShape } from './types';
 import { normalizePath } from './normalizer';
 import { parseViewBox } from './parser';
 import { AffineMatrix, parseTransform, ProjectiveMatrix, composeTransforms, transformFromSpec, type Transform2D } from './transform';
 import { gaussianBlur } from './blur';
 import { fillRectInBuffer, fillCircleInBuffer, fillPathInBuffer, applyClipMask, parseColorToRGBA } from './rasterize';
 
-/** Structured event emitted by SvgContext on tap hit/miss. */
-export interface SvgEvent {
+/** Structured event emitted by CvgContext on tap hit/miss. */
+export interface CvgEvent {
   type: 'tap-hit' | 'tap-miss' | 'hover-in' | 'hover-out'
       | 'drag' | 'drag-end' | 'scroll' | 'key-down' | 'key-up'
       | 'double-click' | 'right-click' | 'tooltip-show' | 'tooltip-hide'
@@ -93,7 +93,7 @@ export interface AnimationOptions {
 /** Handle returned by .transition()/.animate() — allows stopping the animation. */
 export class AnimationHandle {
   /** @internal */ _id: number;
-  /** @internal */ _context: SvgContext | null = null;
+  /** @internal */ _context: CvgContext | null = null;
   /** @internal */ _stopped = false;
   /** @internal */ _onComplete?: () => void;
   /** @internal */ _resolve?: () => void;
@@ -120,17 +120,17 @@ export class AnimationHandle {
 /** @internal Tracked binding region for bindTo(). */
 interface BindingRegion<T = any> {
   items: () => T[];
-  render: (item: T, index: number) => SvgElement | SvgElement[];
+  render: (item: T, index: number) => CvgElement | CvgElement[];
   trackBy: (item: T) => string | number;
-  update?: (item: T, elements: SvgElement[]) => void;
+  update?: (item: T, elements: CvgElement[]) => void;
   /** Map from trackBy key → { item, elements } for current items */
-  current: Map<string | number, { item: T; elements: SvgElement[] }>;
+  current: Map<string | number, { item: T; elements: CvgElement[] }>;
 }
 
 /** @internal Active animation state tracked by the animation manager. */
 interface ActiveAnimation {
   handle: AnimationHandle;
-  element: SvgElement;
+  element: CvgElement;
   tickFn: (t: number) => void;
   startTime: number;
   duration: number;
@@ -188,7 +188,7 @@ const SVG_GEOM_KEYS: Record<string, string[]> = {
  * s.path({ d: "M10,10 L90,90" }).stroke("#000", 2);
  * ```
  */
-export class SvgElement {
+export class CvgElement {
   private underlying: any;
   private clickHandler?: (e: { x: number; y: number }) => void;
   private hoverHandler?: (hovered: boolean) => void;
@@ -207,7 +207,7 @@ export class SvgElement {
   private strokeBinding?: () => { color: string; width?: number };
   private opacityBinding?: () => number;
   private posBinding?: () => Record<string, number>;
-  private _context?: SvgContext;
+  private _context?: CvgContext;
   private _destroyed = false;
 
   constructor(underlying: any) {
@@ -412,13 +412,13 @@ export class SvgElement {
     return this;
   }
 
-  /** @internal Set the owning SvgContext (for animation manager access). */
-  setContext(ctx: SvgContext): void {
+  /** @internal Set the owning CvgContext (for animation manager access). */
+  setContext(ctx: CvgContext): void {
     this._context = ctx;
   }
 
-  /** Get the owning SvgContext. */
-  getContext(): SvgContext | undefined {
+  /** Get the owning CvgContext. */
+  getContext(): CvgContext | undefined {
     return this._context;
   }
 
@@ -550,7 +550,7 @@ export class SvgElement {
     }
   }
 
-  /** @internal Update the stored mapping (used by SvgContext.resize). */
+  /** @internal Update the stored mapping (used by CvgContext.resize). */
   setMapping(mapping: ViewBoxMapping): void {
     if (this._mapping || this._resizeFn) this._mapping = mapping;
   }
@@ -569,7 +569,7 @@ export class SvgElement {
     props: Record<string, string | number>,
     opts?: AnimationOptions
   ): AnimationHandle {
-    if (!this._context) throw new Error('SvgElement must be tracked by an SvgContext to animate');
+    if (!this._context) throw new Error('CvgElement must be tracked by an CvgContext to animate');
 
     // Snapshot current values — prefer SVG-level attrs for geometry props
     const underlying = this.underlying;
@@ -633,7 +633,7 @@ export class SvgElement {
     fn: (t: number) => Record<string, any>,
     opts?: AnimationOptions
   ): AnimationHandle {
-    if (!this._context) throw new Error('SvgElement must be tracked by an SvgContext to animate');
+    if (!this._context) throw new Error('CvgElement must be tracked by an CvgContext to animate');
 
     const underlying = this.underlying;
     const tickFn = (t: number) => {
@@ -650,31 +650,31 @@ export class SvgElement {
 }
 
 /**
- * SVG rendering context. Mirrors SVG element names for a familiar API.
+ * CVG rendering context. Uses SVG-inspired element names for a familiar API.
  *
- * Element methods return SvgElement wrappers supporting fluent .fill()/.stroke().
+ * Element methods return CvgElement wrappers supporting fluent .fill()/.stroke().
  */
-export class SvgContext {
+export class CvgContext {
   private app: any;
   private mapping: ViewBoxMapping;
   private styleStack: SvgStyle[] = [{}];
   private transformStack: Transform2D[] = [AffineMatrix.identity()];
   private gradients: Map<string, GradientDef> = new Map();
-  private trackedElements: SvgElement[] = [];
+  private trackedElements: CvgElement[] = [];
   private filters: Map<string, FilterDef> = new Map();
   private clipPaths: Map<string, ClipPathDef> = new Map();
   private nodesById: Map<string, SvgNode> = new Map();
-  private walkNodeFn?: (s: SvgContext, node: SvgNode) => void;
+  private walkNodeFn?: (s: CvgContext, node: SvgNode) => void;
   private cssRules: Map<string, Record<string, string>> = new Map(); // selector → properties
-  private eventCallback?: (event: SvgEvent) => void;
-  private hoveredElement: SvgElement | null = null;
-  private draggedElement: SvgElement | null = null;
+  private eventCallback?: (event: CvgEvent) => void;
+  private hoveredElement: CvgElement | null = null;
+  private draggedElement: CvgElement | null = null;
   private keyDownHandler?: (key: string) => void;
   private keyUpHandler?: (key: string) => void;
   private sceneScrollHandler?: (e: { deltaX: number; deltaY: number; x: number; y: number }) => void;
   private tappableRaster?: any;  // TappableCanvasRaster for tooltip support
   private tooltipTimer?: ReturnType<typeof setTimeout>;
-  private tooltipElement: SvgElement | null = null;
+  private tooltipElement: CvgElement | null = null;
   private tooltipDelay: number = 500;  // ms before showing tooltip
   private animations: ActiveAnimation[] = [];
   private animationTimer?: ReturnType<typeof setInterval>;
@@ -693,13 +693,13 @@ export class SvgContext {
 
   // ─── Event tracking ─────────────────────────────────────────
 
-  private trackElement(el: SvgElement): void {
+  private trackElement(el: CvgElement): void {
     el.setContext(this);
     this.trackedElements.push(el);
   }
 
   /** Register an event callback that fires on every tap hit/miss. */
-  onEvent(cb: (event: SvgEvent) => void): this {
+  onEvent(cb: (event: CvgEvent) => void): this {
     this.eventCallback = cb;
     return this;
   }
@@ -721,7 +721,7 @@ export class SvgContext {
   /** Dispatch hover events — finds topmost hovered element and fires enter/leave transitions.
    *  Also manages tooltip show/hide with a delay and cursor changes. */
   dispatchHover(x: number, y: number): void {
-    let newHovered: SvgElement | null = null;
+    let newHovered: CvgElement | null = null;
     for (let i = this.trackedElements.length - 1; i >= 0; i--) {
       const el = this.trackedElements[i];
       if ((el.getHoverHandler() || el.getTooltip() || el.getCursor()) && el.hitTest(x, y)) {
@@ -759,7 +759,7 @@ export class SvgContext {
     }
   }
 
-  private scheduleTooltip(el: SvgElement, text: string, x: number, y: number): void {
+  private scheduleTooltip(el: CvgElement, text: string, x: number, y: number): void {
     this.cancelTooltip();
     this.tooltipTimer = setTimeout(() => {
       this.tooltipElement = el;
@@ -890,7 +890,7 @@ export class SvgContext {
   // ─── Dynamic Binding Regions ──────────────────────────────────
 
   /** Remove an element from hit-test tracking (used when destroying bindTo elements). */
-  private untrackElement(el: SvgElement): void {
+  private untrackElement(el: CvgElement): void {
     const idx = this.trackedElements.indexOf(el);
     if (idx >= 0) this.trackedElements.splice(idx, 1);
   }
@@ -914,9 +914,9 @@ export class SvgContext {
    */
   bindTo<T>(config: {
     items: () => T[];
-    render: (item: T, index: number) => SvgElement | SvgElement[];
+    render: (item: T, index: number) => CvgElement | CvgElement[];
     trackBy: (item: T) => string | number;
-    update?: (item: T, elements: SvgElement[]) => void;
+    update?: (item: T, elements: CvgElement[]) => void;
   }): void {
     const region: BindingRegion<T> = {
       items: config.items,
@@ -985,8 +985,8 @@ export class SvgContext {
 
   // ─── Animation Manager ────────────────────────────────────────
 
-  /** @internal Add an animation to the manager. Called by SvgElement.transition/animate. */
-  addAnimation(element: SvgElement, tickFn: (t: number) => void, opts?: AnimationOptions): AnimationHandle {
+  /** @internal Add an animation to the manager. Called by CvgElement.transition/animate. */
+  addAnimation(element: CvgElement, tickFn: (t: number) => void, opts?: AnimationOptions): AnimationHandle {
     const resolvedEasing = resolveEasing(opts?.easing);
     const handle = new AnimationHandle(this.nextAnimationId++);
     handle._context = this;
@@ -1120,12 +1120,12 @@ export class SvgContext {
     return this.mapping;
   }
 
-  /** @internal Set the sizing shim (used by svg() factory for resize support). */
+  /** @internal Set the sizing shim (used by cvg() factory for resize support). */
   setSizingShim(shim: any): void {
     this.sizingShim = shim;
   }
 
-  /** @internal Set the clip container (used by svg() factory for outside-in resize). */
+  /** @internal Set the clip container (used by cvg() factory for outside-in resize). */
   setClipContainer(clip: any): void {
     this.clipContainer = clip;
   }
@@ -1297,7 +1297,7 @@ export class SvgContext {
   }
 
   /** Register the walkNode callback for <use> element support. */
-  setWalkNode(fn: (s: SvgContext, node: SvgNode) => void): void {
+  setWalkNode(fn: (s: CvgContext, node: SvgNode) => void): void {
     this.walkNodeFn = fn;
   }
 
@@ -1316,7 +1316,7 @@ export class SvgContext {
     return this.styleStack[this.styleStack.length - 1];
   }
 
-  private pushStyle(attrs: SvgElementAttrs): void {
+  private pushStyle(attrs: CvgElementAttrs): void {
     const parent = this.currentStyle();
     const merged: SvgStyle = { ...parent };
     const style = parseStyleAttr(attrs.style);
@@ -1364,7 +1364,7 @@ export class SvgContext {
     return this.transformStack[this.transformStack.length - 1];
   }
 
-  private pushTransform(attrs: SvgElementAttrs): void {
+  private pushTransform(attrs: CvgElementAttrs): void {
     const parent = this.currentTransform();
     if (attrs.transform) {
       const local = typeof attrs.transform === 'string'
@@ -1387,7 +1387,7 @@ export class SvgContext {
   }
 
   /** Resolve final style: element attrs override inline style override CSS class override inherited. */
-  private resolveStyle(attrs: SvgElementAttrs): SvgStyle {
+  private resolveStyle(attrs: CvgElementAttrs): SvgStyle {
     const inherited = this.currentStyle();
     const style = parseStyleAttr(attrs.style);
     // CSS class/tag rules (lower priority than inline style and element attrs)
@@ -1569,8 +1569,8 @@ export class SvgContext {
 
   // ─── Event handler wiring ───────────────────────────────────
 
-  /** Wire event handlers from attrs onto an SvgElement (consolidates all creation sites). */
-  private wireEventHandlers(el: SvgElement, attrs: SvgElementAttrs): void {
+  /** Wire event handlers from attrs onto an CvgElement (consolidates all creation sites). */
+  private wireEventHandlers(el: CvgElement, attrs: CvgElementAttrs): void {
     if (attrs.onClick) el.onClick(attrs.onClick);
     if (attrs.onHover) el.onHover(attrs.onHover);
     if (attrs.onDrag) el.onDrag(attrs.onDrag);
@@ -1590,7 +1590,7 @@ export class SvgContext {
   // ─── SVG Element Methods ─────────────────────────────────────
 
   /** Group element — pushes style and transform onto stacks, runs builder, pops both. */
-  g(attrs: SvgElementAttrs, builder: () => void): void {
+  g(attrs: CvgElementAttrs, builder: () => void): void {
     this.pushStyle(attrs);
     this.pushTransform(attrs);
     builder();
@@ -1599,7 +1599,7 @@ export class SvgContext {
   }
 
   /** Nested <svg> element — applies viewport transform with preserveAspectRatio. */
-  nestedSvg(attrs: SvgElementAttrs, children: SvgNode[], builder: () => void): void {
+  nestedSvg(attrs: CvgElementAttrs, children: SvgNode[], builder: () => void): void {
     const viewBoxStr = attrs.viewBox || attrs.viewbox;
     const width = parseNum(attrs.width);
     const height = parseNum(attrs.height);
@@ -1790,8 +1790,8 @@ export class SvgContext {
   }
 
   /** Path element — normalizes d, maps coords, renders via canvasPath. */
-  path(attrs: SvgElementAttrs): SvgElement {
-    if (!attrs.d) return new SvgElement(null);
+  path(attrs: CvgElementAttrs): CvgElement {
+    if (!attrs.d) return new CvgElement(null);
     if (attrs.transform) this.pushTransform(attrs);
     const style = this.resolveStyle(attrs);
     const normalized = normalizePath(attrs.d);
@@ -1833,7 +1833,7 @@ export class SvgContext {
     const underlying = this.app.canvasPath(opts);
     const pathTransform = this.currentTransform();
     if (attrs.transform) this.popTransform();
-    const el = new SvgElement(underlying);
+    const el = new CvgElement(underlying);
     el.setBounds(bounds.minX, bounds.minY, bounds.maxX - bounds.minX, bounds.maxY - bounds.minY);
     // Store resize callback for path-based elements (polygons, rounded rects, ellipses, etc.)
     el.setPathResize(this.mapping, (newMapping) => {
@@ -1852,7 +1852,7 @@ export class SvgContext {
   }
 
   /** Circle element. */
-  circle(attrs: SvgElementAttrs): SvgElement {
+  circle(attrs: CvgElementAttrs): CvgElement {
     // Under projective transforms, render as bezier path (circle → conic under perspective)
     if (this.currentTransform() instanceof ProjectiveMatrix ||
         (attrs.transform && typeof attrs.transform === 'object' && attrs.transform.cosynePerspective)) {
@@ -1918,7 +1918,7 @@ export class SvgContext {
     });
     const xform = this.currentTransform();
     if (attrs.transform) this.popTransform();
-    const el = new SvgElement(underlying);
+    const el = new CvgElement(underlying);
     el.setBounds(cx - r, cy - r, 2 * r, 2 * r);
     el.setShapeInfo('circle', this.mapping, {
       cx: this.parseLenX(attrs.cx ?? 0),
@@ -1931,7 +1931,7 @@ export class SvgContext {
   }
 
   /** Ellipse element — renders as a path for full stroke/fill support. */
-  ellipse(attrs: SvgElementAttrs): SvgElement {
+  ellipse(attrs: CvgElementAttrs): CvgElement {
     // Approximate ellipse as cubic Bezier path (4 arcs)
     const ecx = this.parseLenX(attrs.cx ?? 0);
     const ecy = this.parseLenY(attrs.cy ?? 0);
@@ -1953,7 +1953,7 @@ export class SvgContext {
   }
 
   /** Rect element. */
-  rect(attrs: SvgElementAttrs): SvgElement {
+  rect(attrs: CvgElementAttrs): CvgElement {
     if (attrs.transform) this.pushTransform(attrs);
     const style = this.resolveStyle(attrs);
 
@@ -2059,7 +2059,7 @@ export class SvgContext {
     });
     const xform = this.currentTransform();
     if (attrs.transform) this.popTransform();
-    const el = new SvgElement(underlying);
+    const el = new CvgElement(underlying);
     el.setBounds(minX, minY, maxX - minX, maxY - minY);
     el.setShapeInfo('rect', this.mapping, {
       x: px,
@@ -2073,7 +2073,7 @@ export class SvgContext {
   }
 
   /** Line element. */
-  line(attrs: SvgElementAttrs): SvgElement {
+  line(attrs: CvgElementAttrs): CvgElement {
     if (attrs.transform) this.pushTransform(attrs);
     const [x1, y1] = this.mapPoint(parseNum(attrs.x1 ?? 0), parseNum(attrs.y1 ?? 0));
     const [x2, y2] = this.mapPoint(parseNum(attrs.x2 ?? 0), parseNum(attrs.y2 ?? 0));
@@ -2088,7 +2088,7 @@ export class SvgContext {
     });
     const xform = this.currentTransform();
     if (attrs.transform) this.popTransform();
-    const el = new SvgElement(underlying);
+    const el = new CvgElement(underlying);
     const minX = Math.min(x1, x2), minY = Math.min(y1, y2);
     el.setBounds(minX, minY, Math.abs(x2 - x1), Math.abs(y2 - y1));
     el.setShapeInfo('line', this.mapping, {
@@ -2103,8 +2103,8 @@ export class SvgContext {
   }
 
   /** Polyline element — convert points to a path. */
-  polyline(attrs: SvgElementAttrs): SvgElement {
-    if (!attrs.points) return new SvgElement(null);
+  polyline(attrs: CvgElementAttrs): CvgElement {
+    if (!attrs.points) return new CvgElement(null);
     const pts = typeof attrs.points === 'string'
       ? attrs.points
       : attrs.points.map(([x, y]) => `${x},${y}`).join(' ');
@@ -2114,8 +2114,8 @@ export class SvgContext {
   }
 
   /** Polygon element — convert points to a closed path. */
-  polygon(attrs: SvgElementAttrs): SvgElement {
-    if (!attrs.points) return new SvgElement(null);
+  polygon(attrs: CvgElementAttrs): CvgElement {
+    if (!attrs.points) return new CvgElement(null);
     const pts = typeof attrs.points === 'string'
       ? attrs.points
       : attrs.points.map(([x, y]) => `${x},${y}`).join(' ');
@@ -2124,10 +2124,10 @@ export class SvgContext {
   }
 
   /** Desc element — ignored (metadata only). */
-  desc(_attrs?: SvgElementAttrs): void {}
+  desc(_attrs?: CvgElementAttrs): void {}
 
   /** Defs element — run the builder so child elements (gradients, etc.) are registered. */
-  defs(_attrs?: SvgElementAttrs, builder?: () => void): void {
+  defs(_attrs?: CvgElementAttrs, builder?: () => void): void {
     if (builder) builder();
   }
 
@@ -2213,14 +2213,14 @@ export class SvgContext {
 
   /**
    * Pre-render an element as a raster image (for filter/clipPath support).
-   * Returns an SvgElement wrapping the created canvasRaster.
+   * Returns an CvgElement wrapping the created canvasRaster.
    */
   renderAsRaster(
     elemBounds: { x: number; y: number; w: number; h: number },
     fillColor: string,
     style: SvgStyle,
     shapeFiller: (buf: Uint8Array, bufW: number, bufH: number, offX: number, offY: number, r: number, g: number, b: number, a: number) => void,
-  ): SvgElement {
+  ): CvgElement {
     const filterDef = style.filterId ? this.getFilter(style.filterId) : undefined;
     const clipDef = style.clipPathId ? this.getClipPath(style.clipPathId) : undefined;
 
@@ -2339,7 +2339,7 @@ export class SvgContext {
       undefined, // no blend mode
       { x: Math.round(outPxX), y: Math.round(outPxY), rawPixels },
     );
-    return new SvgElement(underlying);
+    return new CvgElement(underlying);
   }
 
   /** Parse a linearGradient or radialGradient node and register its stops + geometry. */
@@ -2419,7 +2419,7 @@ export class SvgContext {
   }
 
   /** Text element — renders text using canvasText. Supports tspan children for multi-line. */
-  text(attrs: SvgElementAttrs, content?: string, tspans?: SvgNode[]): SvgElement {
+  text(attrs: CvgElementAttrs, content?: string, tspans?: SvgNode[]): CvgElement {
     if (attrs.transform) this.pushTransform(attrs);
     const style = this.resolveStyle(attrs);
 
@@ -2486,7 +2486,7 @@ export class SvgContext {
         });
       }
       if (attrs.transform) this.popTransform();
-      const el = new SvgElement(lastUnderlying);
+      const el = new CvgElement(lastUnderlying);
       this.trackElement(el);
       this.wireEventHandlers(el, attrs);
       return el;
@@ -2495,7 +2495,7 @@ export class SvgContext {
     // Simple text (no tspans)
     if (!content) {
       if (attrs.transform) this.popTransform();
-      return new SvgElement(null);
+      return new CvgElement(null);
     }
 
     const x = parseNum(attrs.x ?? 0);
@@ -2513,7 +2513,7 @@ export class SvgContext {
       alignment,
     });
     if (attrs.transform) this.popTransform();
-    const el = new SvgElement(underlying);
+    const el = new CvgElement(underlying);
     // Estimate text bounds for hit testing (char width ≈ 0.6 × textSize)
     const estW = content.length * textSize * 0.6;
     const estH = textSize;
@@ -2527,7 +2527,7 @@ export class SvgContext {
   }
 
   /** Use element — clone and render a referenced element with optional transform. */
-  use(attrs: SvgElementAttrs): void {
+  use(attrs: CvgElementAttrs): void {
     const href = attrs['xlink:href'] ?? attrs.href;
     if (!href) return;
     const refId = href.replace(/^#/, '');
@@ -2595,7 +2595,7 @@ export class SvgContext {
  * Fluent path builder — moveTo/lineTo/cubicTo/arc/close/fill/stroke.
  */
 export class PathBuilder {
-  private ctx: SvgContext;
+  private ctx: CvgContext;
   private parts: string[] = [];
   private cx = 0;
   private cy = 0;
@@ -2603,7 +2603,7 @@ export class PathBuilder {
   private _stroke?: string;
   private _strokeWidth?: number;
 
-  constructor(ctx: SvgContext) {
+  constructor(ctx: CvgContext) {
     this.ctx = ctx;
   }
 
@@ -2675,36 +2675,36 @@ export class PathBuilder {
   }
 }
 
-// ─── SvgBuilder — builder-style entry point ─────────────────────
+// ─── CvgBuilder — builder-style entry point ─────────────────────
 
 /**
- * Builder-style SVG context. Use `svgBuilder(app)` to create, then call `.svg()`.
+ * Builder-style SVG context. Use `cvgBuilder(app)` to create, then call `.svg()`.
  *
  * ```ts
- * const s = svgBuilder(app);
+ * const s = cvgBuilder(app);
  * s.svg({ viewBox: "0 0 100 100" }, () => {
  *   s.path({ d: "M19,16a46,46 0,1,0 62,0...", fill: "#069" });
  *   s.circle({ r: 15, cx: 50, cy: 18 }).fill("#900");
  * });
  * ```
  */
-export class SvgBuilder {
+export class CvgBuilder {
   private app: any;
-  private ctx: SvgContext | null = null;
+  private ctx: CvgContext | null = null;
 
   constructor(app: any) {
     this.app = app;
   }
 
   /** Create an SVG context with viewBox and run the builder. */
-  svg(options: SvgOptions, builder: (s: SvgContext) => void): SvgContext;
-  svg(options: SvgOptions, builder: () => void): SvgContext;
-  svg(options: SvgOptions, builder: ((s: SvgContext) => void) | (() => void)): SvgContext {
-    const ctx = createSvgContext(this.app, options);
+  cvg(options: CvgOptions, builder: (s: CvgContext) => void): CvgContext;
+  cvg(options: CvgOptions, builder: () => void): CvgContext;
+  cvg(options: CvgOptions, builder: ((s: CvgContext) => void) | (() => void)): CvgContext {
+    const ctx = createCvgContext(this.app, options);
     this.ctx = ctx;
     // Call builder — if it takes args, pass the context; otherwise `this` methods delegate to ctx
     if (builder.length > 0) {
-      (builder as (s: SvgContext) => void)(ctx);
+      (builder as (s: CvgContext) => void)(ctx);
     } else {
       (builder as () => void)();
     }
@@ -2713,47 +2713,47 @@ export class SvgBuilder {
 
   // ─── Delegate element methods to active context ──────────────
 
-  g(attrs: SvgElementAttrs, builder: () => void): void {
+  g(attrs: CvgElementAttrs, builder: () => void): void {
     this.ctx!.g(attrs, builder);
   }
 
-  path(attrs: SvgElementAttrs): SvgElement {
+  path(attrs: CvgElementAttrs): CvgElement {
     return this.ctx!.path(attrs);
   }
 
-  circle(attrs: SvgElementAttrs): SvgElement {
+  circle(attrs: CvgElementAttrs): CvgElement {
     return this.ctx!.circle(attrs);
   }
 
-  ellipse(attrs: SvgElementAttrs): SvgElement {
+  ellipse(attrs: CvgElementAttrs): CvgElement {
     return this.ctx!.ellipse(attrs);
   }
 
-  rect(attrs: SvgElementAttrs): SvgElement {
+  rect(attrs: CvgElementAttrs): CvgElement {
     return this.ctx!.rect(attrs);
   }
 
-  line(attrs: SvgElementAttrs): SvgElement {
+  line(attrs: CvgElementAttrs): CvgElement {
     return this.ctx!.line(attrs);
   }
 
-  polyline(attrs: SvgElementAttrs): SvgElement {
+  polyline(attrs: CvgElementAttrs): CvgElement {
     return this.ctx!.polyline(attrs);
   }
 
-  polygon(attrs: SvgElementAttrs): SvgElement {
+  polygon(attrs: CvgElementAttrs): CvgElement {
     return this.ctx!.polygon(attrs);
   }
 
-  text(attrs: SvgElementAttrs, content?: string, tspans?: SvgNode[]): SvgElement {
+  text(attrs: CvgElementAttrs, content?: string, tspans?: SvgNode[]): CvgElement {
     return this.ctx!.text(attrs, content, tspans);
   }
 
-  desc(attrs?: SvgElementAttrs): void {
+  desc(attrs?: CvgElementAttrs): void {
     this.ctx?.desc(attrs);
   }
 
-  defs(attrs?: SvgElementAttrs, builder?: () => void): void {
+  defs(attrs?: CvgElementAttrs, builder?: () => void): void {
     this.ctx?.defs(attrs, builder);
   }
 
@@ -2763,36 +2763,36 @@ export class SvgBuilder {
 }
 
 /**
- * Create an SvgBuilder for builder-style usage.
+ * Create an CvgBuilder for builder-style usage.
  *
  * ```ts
- * const s = svgBuilder(app);
+ * const s = cvgBuilder(app);
  * s.svg({ viewBox: "0 0 100 100" }, () => {
  *   s.circle({ r: 15, cx: 50, cy: 18 }).fill("#900");
  * });
  * ```
  */
-export function svgBuilder(app: any): SvgBuilder {
-  return new SvgBuilder(app);
+export function cvgBuilder(app: any): CvgBuilder {
+  return new CvgBuilder(app);
 }
 
-// ─── svg() Factory (standalone) ─────────────────────────────────
+// ─── cvg() Factory (standalone) ─────────────────────────────────
 
 /**
- * Create an SVG rendering context (standalone factory).
+ * Create a CVG rendering context (standalone factory).
  *
  * ```ts
- * svg(app, { viewBox: '0 0 100 100', width: 400, height: 400 }, (s) => {
+ * cvg(app, { viewBox: '0 0 100 100', width: 400, height: 400 }, (s) => {
  *   s.path({ d: 'M50,30c9-22...', fill: '#F00' });
  * });
  * ```
  */
-export function svg(
+export function cvg(
   app: any,
-  options: SvgOptions,
-  builder: (s: SvgContext) => void,
-): SvgContext {
-  const ctx = createSvgContext(app, options);
+  options: CvgOptions,
+  builder: (s: CvgContext) => void,
+): CvgContext {
+  const ctx = createCvgContext(app, options);
   const canvasWidth = options.width ?? 400;
   const canvasHeight = options.height ?? 400;
   const clip = app.clip(() => {
@@ -2810,8 +2810,8 @@ export function svg(
   return ctx;
 }
 
-/** Shared: create an SvgContext from options. */
-function createSvgContext(app: any, options: SvgOptions): SvgContext {
+/** Shared: create an CvgContext from options. */
+function createCvgContext(app: any, options: CvgOptions): CvgContext {
   const canvasWidth = options.width ?? 400;
   const canvasHeight = options.height ?? 400;
 
@@ -2881,7 +2881,7 @@ function createSvgContext(app: any, options: SvgOptions): SvgContext {
     if (ra['font-family']) rootStyle.fontFamily = ra['font-family'];
   }
 
-  return new SvgContext(app, mapping, rootStyle);
+  return new CvgContext(app, mapping, rootStyle);
 }
 
 // ─── Helpers ───────────────────────────────────────────────────
@@ -2999,7 +2999,7 @@ function applyOpacityToColor(color: string, opacity: number): string {
   return `rgba(${r}, ${g}, ${b}, ${opacity})`;
 }
 
-function resolveFillColor(fill: string | undefined, ctx?: SvgContext, alpha?: number): string | undefined {
+function resolveFillColor(fill: string | undefined, ctx?: CvgContext, alpha?: number): string | undefined {
   if (fill === 'none') return undefined;
   let color: string;
   if (fill) {
@@ -3058,7 +3058,7 @@ function resolveStrokeColor(style: SvgStyle): string | undefined {
 }
 
 /** Resolve a stroke value to a GradientDef if it references a gradient, undefined otherwise. */
-function resolveGradientStroke(stroke: string | undefined, ctx?: SvgContext): GradientDef | undefined {
+function resolveGradientStroke(stroke: string | undefined, ctx?: CvgContext): GradientDef | undefined {
   if (!stroke || stroke === 'none') return undefined;
   const urlMatch = stroke.match(/url\(#([^)]+)\)/);
   if (!urlMatch) return undefined;
@@ -3097,7 +3097,7 @@ function parsePreserveAspectRatio(par: string): { alignX: string; alignY: string
 function transformPathToBuffer(
   pathStr: string,
   xform: Transform2D,
-  ctx: SvgContext,
+  ctx: CvgContext,
   px0: number,
   py0: number,
 ): string {
@@ -3130,7 +3130,7 @@ function transformPathToBuffer(
 }
 
 /** Resolve a fill value to a GradientDef if it references a gradient, undefined otherwise. */
-function resolveGradientFill(fill: string | undefined, ctx?: SvgContext): GradientDef | undefined {
+function resolveGradientFill(fill: string | undefined, ctx?: CvgContext): GradientDef | undefined {
   if (!fill || fill === 'none') return undefined;
   const urlMatch = fill.match(/url\(#([^)]+)\)/);
   if (!urlMatch) return undefined;

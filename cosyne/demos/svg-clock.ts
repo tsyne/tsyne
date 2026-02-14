@@ -15,7 +15,7 @@
 
 import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
 import type { App } from 'tsyne';
-import { svg, SvgContext } from '../src';
+import { cvg, CvgContext } from '../src';
 
 // ─── Constants ───────────────────────────────────────────────
 
@@ -60,10 +60,10 @@ export function handLine(rotation: number, length: number) {
  * coordinate space the caller establishes. Wrap it in `s.g()`
  * with a transform to translate, scale, rotate, or mirror it.
  *
- * @param s      SvgContext to draw into
+ * @param s      CvgContext to draw into
  * @param time   Function returning the current Date
  */
-export function drawClockFace(s: SvgContext, time: () => Date) {
+export function drawClockFace(s: CvgContext, time: () => Date) {
   const hourRotation = () => {
     const t = time();
     return (t.getHours() % 12 + t.getMinutes() / 60) / 12;
@@ -107,17 +107,17 @@ export function drawClockFace(s: SvgContext, time: () => Date) {
  * @param a     Tsyne App
  * @param time  Function returning the current Date (injectable for testing)
  * @param opts  Canvas dimensions
- * @returns     The SvgContext (already polling)
+ * @returns     The CvgContext (already polling)
  */
 export function createClock(
   a: App,
   time: () => Date = () => new Date(),
   opts: { width?: number; height?: number } = {},
-): SvgContext {
+): CvgContext {
   const w = opts.width ?? 250;
   const h = opts.height ?? 250;
 
-  const svgCtx = svg(a, { viewBox: `0 0 ${SIZE} ${SIZE}`, width: w, height: h }, (s) => {
+  const svgCtx = cvg(a, { viewBox: `0 0 ${SIZE} ${SIZE}`, width: w, height: h }, (s) => {
     drawClockFace(s, time);
   });
 
@@ -133,7 +133,7 @@ if (require.main === module) {
   const SCENE_H = SIZE * 2 + GAP;
 
   const appInstance = app(resolveTransport(), { title: 'Mirror Clock' }, async (a: App) => {
-    let svgCtx: SvgContext;
+    let svgCtx: CvgContext;
     const now = () => new Date();
 
     const win = a.window({ title: 'Mirror Clock', width: 500, height: 500, padded: false }, () => {
@@ -146,7 +146,7 @@ if (require.main === module) {
           return { opacity, tx, ty, sx, sy };
         };
 
-        svgCtx = svg(a, { viewBox: `0 0 ${SCENE_W} ${SCENE_H}`, width: 500, height: 500 }, (s) => {
+        svgCtx = cvg(a, { viewBox: `0 0 ${SCENE_W} ${SCENE_H}`, width: 500, height: 500 }, (s) => {
           for (const [sx, sy] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) {
             const m = mirror(sx, sy);
             s.g({ transform: { translate: [m.tx, m.ty], scale: [m.sx, m.sy] }, opacity: m.opacity }, () => {

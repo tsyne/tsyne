@@ -2,7 +2,7 @@
  * Tests for SVG → TypeScript transpiler
  */
 
-import { transpileSvg, transpileSvgToModule } from '../src/svg/transpiler';
+import { transpileSvg, transpileSvgToModule } from '../src/cvg/transpiler';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -12,7 +12,7 @@ describe('transpileSvgToModule', () => {
   it('should produce valid module structure', () => {
     const svg = '<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="20" fill="red"/></svg>';
     const output = transpileSvgToModule(svg);
-    expect(output).toContain("import { svg } from 'cosyne/svg'");
+    expect(output).toContain("import { cvg } from 'cosyne/cvg'");
     expect(output).toContain('export function renderSvg');
     expect(output).toContain("viewBox: '0 0 100 100'");
     expect(output).toContain('s.circle(');

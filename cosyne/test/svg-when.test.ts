@@ -7,7 +7,7 @@
 
 import { TestContext } from 'tsyne';
 import type { App } from 'tsyne';
-import { CosyneTest, svg, TestJournal, SvgContext, SvgEvent, SvgElement } from '../src';
+import { CosyneTest, cvg, TestJournal, CvgContext, CvgEvent, CvgElement } from '../src';
 
 const slow = process.env.SLOWER_TESTS === '1';
 const pause = slow ? 500 : 50;
@@ -24,18 +24,18 @@ describe('SVG .when() reactive visibility', () => {
 
   it('.when(false) hides element, .when(true) shows it', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
-    const events: SvgEvent[] = [];
+    const events: CvgEvent[] = [];
 
     let showRect = false;
-    let rectEl: SvgElement = null as any;
+    let rectEl: CvgElement = null as any;
 
     const testApp = await cosyneTest.createApp((a: App) => {
       a.window({ title: 'SVG When Show/Hide', width: 300, height: 300, x: 50, y: 50, padded: false }, (win: any) => {
         win.setContent(() => {
           a.canvasStack(() => {
-            svgCtx = svg(a, { viewBox: '0 0 300 300', width: 300, height: 300 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 300 300', width: 300, height: 300 }, (s) => {
               // Background — always visible
               s.rect({ x: 0, y: 0, width: 300, height: 300, fill: '#ddd' }).name('bg');
               // Conditional rect — starts hidden (showRect = false)
@@ -98,19 +98,19 @@ describe('SVG .when() reactive visibility', () => {
 
   it('hidden element excluded from hit-testing (click falls through)', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
 
     let clicked = '';
     let showTop = true;
-    let topEl: SvgElement = null as any;
-    let bottomEl: SvgElement = null as any;
+    let topEl: CvgElement = null as any;
+    let bottomEl: CvgElement = null as any;
 
     const testApp = await cosyneTest.createApp((a: App) => {
       a.window({ title: 'SVG When Hit-Test', width: 300, height: 300, x: 50, y: 50, padded: false }, (win: any) => {
         win.setContent(() => {
           a.canvasStack(() => {
-            svgCtx = svg(a, { viewBox: '0 0 300 300', width: 300, height: 300 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 300 300', width: 300, height: 300 }, (s) => {
               bottomEl = s.rect({
                 x: 50, y: 50, width: 200, height: 200,
                 fill: '#cc4444',
@@ -174,17 +174,17 @@ describe('SVG .when() reactive visibility', () => {
 
   it('multiple elements with different .when() conditions', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
 
     let tab = 'A';
-    let rectA: SvgElement = null as any, rectB: SvgElement = null as any, rectC: SvgElement = null as any;
+    let rectA: CvgElement = null as any, rectB: CvgElement = null as any, rectC: CvgElement = null as any;
 
     const testApp = await cosyneTest.createApp((a: App) => {
       a.window({ title: 'SVG When Tabs', width: 300, height: 300, x: 50, y: 50, padded: false }, (win: any) => {
         win.setContent(() => {
           a.canvasStack(() => {
-            svgCtx = svg(a, { viewBox: '0 0 300 300', width: 300, height: 300 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 300 300', width: 300, height: 300 }, (s) => {
               rectA = s.rect({
                 x: 50, y: 50, width: 200, height: 200,
                 fill: '#cc4444',
@@ -259,17 +259,17 @@ describe('SVG .when() reactive visibility', () => {
 
   it('.when() with click toggles visibility interactively', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
 
     let detailsVisible = false;
-    let toggleBtn: SvgElement = null as any, detailsRect: SvgElement = null as any;
+    let toggleBtn: CvgElement = null as any, detailsRect: CvgElement = null as any;
 
     const testApp = await cosyneTest.createApp((a: App) => {
       a.window({ title: 'SVG When Toggle', width: 300, height: 300, x: 50, y: 50, padded: false }, (win: any) => {
         win.setContent(() => {
           a.canvasStack(() => {
-            svgCtx = svg(a, { viewBox: '0 0 300 300', width: 300, height: 300 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 300 300', width: 300, height: 300 }, (s) => {
               // Background
               s.rect({ x: 0, y: 0, width: 300, height: 300, fill: '#eee' }).name('bg');
 
@@ -343,18 +343,18 @@ describe('SVG .when() reactive visibility', () => {
 
   it('fluent .when() method works same as options pattern', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
 
     let show1 = true;
     let show2 = false;
-    let el1: SvgElement = null as any, el2: SvgElement = null as any;
+    let el1: CvgElement = null as any, el2: CvgElement = null as any;
 
     const testApp = await cosyneTest.createApp((a: App) => {
       a.window({ title: 'SVG When Fluent', width: 300, height: 300, x: 50, y: 50, padded: false }, (win: any) => {
         win.setContent(() => {
           a.canvasStack(() => {
-            svgCtx = svg(a, { viewBox: '0 0 300 300', width: 300, height: 300 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 300 300', width: 300, height: 300 }, (s) => {
               // Options pattern
               el1 = s.rect({
                 x: 20, y: 50, width: 120, height: 200,

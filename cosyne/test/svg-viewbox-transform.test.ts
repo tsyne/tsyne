@@ -7,10 +7,10 @@
  *   cd cosyne && npx jest test/svg-viewbox-transform.test.ts --forceExit
  */
 
-import { SvgContext } from '../src';
-import { AffineMatrix } from '../src/svg/transform';
+import { CvgContext } from '../src';
+import { AffineMatrix } from '../src/cvg/transform';
 
-/** Build a ViewBoxMapping with the same logic as createSvgContext's simple path. */
+/** Build a ViewBoxMapping with the same logic as createCvgContext's simple path. */
 function makeMapping(
   minX: number, minY: number, vbW: number, vbH: number,
   canvasWidth: number, canvasHeight: number,
@@ -27,13 +27,13 @@ function makeMapping(
   return { vb, canvasWidth, canvasHeight, scale, offsetX, offsetY, transform };
 }
 
-/** Create an SvgContext directly (null app — we only test coordinate mapping). */
+/** Create an CvgContext directly (null app — we only test coordinate mapping). */
 function makeCtx(
   minX: number, minY: number, vbW: number, vbH: number,
   canvasWidth: number, canvasHeight: number,
-): SvgContext {
+): CvgContext {
   const mapping = makeMapping(minX, minY, vbW, vbH, canvasWidth, canvasHeight);
-  return new SvgContext(null as any, mapping);
+  return new CvgContext(null as any, mapping);
 }
 
 describe('ViewBoxMapping transform', () => {

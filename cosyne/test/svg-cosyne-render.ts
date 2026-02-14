@@ -5,7 +5,7 @@
  */
 
 import { CosyneTest } from '../src/cosyne-test';
-import { loadSvg } from '../src/svg/loader';
+import { loadSvg } from '../src/cvg/loader';
 import type { App } from 'tsyne';
 import * as fs from 'fs';
 

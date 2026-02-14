@@ -14,7 +14,7 @@
 
 import { app, resolveTransport, standaloneShutdownStrategy, Popup } from 'tsyne';
 import type { App, CompletionEntry } from 'tsyne';
-import { svg, SvgContext } from '../src';
+import { cvg, CvgContext } from '../src';
 import { drawClockFace, SIZE } from './svg-clock';
 import { WORLD_CITIES, type City } from '../../ported-apps/nomad/nomad';
 
@@ -95,11 +95,11 @@ const SKY        = '#d4e6f1';
 /**
  * Draw a stylized Big Ben tower with a live clock face.
  *
- * @param s     SvgContext to draw into (expects ~200x500 viewBox)
+ * @param s     CvgContext to draw into (expects ~200x500 viewBox)
  * @param time  Function returning the current Date
  * @param opts  Optional: `sky: false` to skip the background (for composited scenes)
  */
-export function drawBigBen(s: SvgContext, time: () => Date, opts?: { sky?: boolean }) {
+export function drawBigBen(s: CvgContext, time: () => Date, opts?: { sky?: boolean }) {
   // Sky background (skip when compositing multiple towers into a shared scene)
   if (opts?.sky !== false) {
     s.rect({ x: 0, y: 0, width: VB_W, height: VB_H, fill: SKY });
@@ -262,7 +262,7 @@ if (require.main === module) {
   const GROUND_EDGE = '#7a6850';
 
   const appInstance = app(resolveTransport(), { title: 'Big Ben Courtyard' }, async (a: App) => {
-    let svgCtx: SvgContext;
+    let svgCtx: CvgContext;
     let cityPicker: CityPicker | undefined;
 
     // Build the full window content (slider + scene), called on init and on slider change.
@@ -310,7 +310,7 @@ if (require.main === module) {
         // ── SVG scene (center — expands to fill) ────────
         center: () => {
           a.canvasStack(() => {
-          svgCtx = svg(a, { viewBox: `0 0 ${SCENE_W} ${SCENE_H}`, width: 900, height: 560 }, (s) => {
+          svgCtx = cvg(a, { viewBox: `0 0 ${SCENE_W} ${SCENE_H}`, width: 900, height: 560 }, (s) => {
             // Sky
             s.rect({ x: 0, y: 0, width: SCENE_W, height: SCENE_H, fill: SKY });
 

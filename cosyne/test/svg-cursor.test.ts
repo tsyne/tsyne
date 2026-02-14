@@ -7,7 +7,7 @@
 
 import { TestContext } from 'tsyne';
 import type { App } from 'tsyne';
-import { CosyneTest, svg, TestJournal, SvgContext, SvgEvent, SvgElement } from '../src';
+import { CosyneTest, cvg, TestJournal, CvgContext, CvgEvent, CvgElement } from '../src';
 
 const slow = process.env.SLOWER_TESTS === '1';
 const pause = slow ? 500 : 50;
@@ -24,16 +24,16 @@ describe('SVG cursor changes', () => {
 
   it('sets pointer cursor on hoverable button rect', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
-    const events: SvgEvent[] = [];
+    const events: CvgEvent[] = [];
     const cursorLog: string[] = [];
 
     const testApp = await cosyneTest.createApp((a: App) => {
       a.window({ title: 'SVG Cursor Test', width: 400, height: 300, x: 50, y: 50, padded: false }, (win: any) => {
         win.setContent(() => {
           a.canvasStack(() => {
-            svgCtx = svg(a, { viewBox: '0 0 400 300', width: 400, height: 300 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 400 300', width: 400, height: 300 }, (s) => {
               // Background — no cursor set (should revert to default)
               s.rect({ x: 0, y: 0, width: 400, height: 300, fill: '#f0f0f0' }).name('bg');
 
@@ -134,17 +134,17 @@ describe('SVG cursor changes', () => {
 
   it('cursor works with onHover handler on same element', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
 
     let hovered = false;
-    let rectEl: SvgElement = null as any;
+    let rectEl: CvgElement = null as any;
 
     const testApp = await cosyneTest.createApp((a: App) => {
       a.window({ title: 'SVG Cursor+Hover Test', width: 300, height: 200, x: 50, y: 50, padded: false }, (win: any) => {
         win.setContent(() => {
           a.canvasStack(() => {
-            svgCtx = svg(a, { viewBox: '0 0 300 200', width: 300, height: 200 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 300 200', width: 300, height: 200 }, (s) => {
               rectEl = s.rect({
                 x: 50, y: 50, width: 200, height: 100, fill: '#4488cc',
                 onHover: (h) => {

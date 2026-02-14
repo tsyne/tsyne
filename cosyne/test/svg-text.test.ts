@@ -2,7 +2,7 @@
  * Tests for SVG text rendering in the grammar.
  */
 
-import { SvgContext, SvgElement, svg, parseStyleAttr } from '../src/svg/grammar';
+import { CvgContext, CvgElement, cvg, parseStyleAttr } from '../src/cvg/grammar';
 
 // ─── Mock app ────────────────────────────────────────────────────
 
@@ -93,10 +93,10 @@ describe('parseStyleAttr', () => {
 
 // ─── text() rendering ────────────────────────────────────────────
 
-describe('SvgContext.text', () => {
+describe('CvgContext.text', () => {
   it('should render text with correct position and fill', () => {
     const app = createMockApp();
-    svg(app, { viewBox: '0 0 100 100', width: 400, height: 400 }, (s) => {
+    cvg(app, { viewBox: '0 0 100 100', width: 400, height: 400 }, (s) => {
       s.text({ x: '50', y: '60', fill: '#FFF', 'font-size': '24' }, 'Hello');
     });
     expect(app.calls).toHaveLength(1);
@@ -111,21 +111,21 @@ describe('SvgContext.text', () => {
     expect(call.args[1].textSize).toBeCloseTo(96);
   });
 
-  it('should return SvgElement with null for empty content', () => {
+  it('should return CvgElement with null for empty content', () => {
     const app = createMockApp();
     let result: any;
-    svg(app, { viewBox: '0 0 100 100' }, (s) => {
+    cvg(app, { viewBox: '0 0 100 100' }, (s) => {
       result = s.text({ x: '10', y: '10' });
     });
-    expect(result).toBeInstanceOf(SvgElement);
+    expect(result).toBeInstanceOf(CvgElement);
     expect(result.getUnderlying()).toBeNull();
     expect(app.calls).toHaveLength(0);
   });
 
-  it('should return SvgElement with null for undefined content', () => {
+  it('should return CvgElement with null for undefined content', () => {
     const app = createMockApp();
     let result: any;
-    svg(app, { viewBox: '0 0 100 100' }, (s) => {
+    cvg(app, { viewBox: '0 0 100 100' }, (s) => {
       result = s.text({ x: '10', y: '10' }, undefined);
     });
     expect(result.getUnderlying()).toBeNull();
@@ -133,7 +133,7 @@ describe('SvgContext.text', () => {
 
   it('should use default font-size 16 when not specified', () => {
     const app = createMockApp();
-    svg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
+    cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.text({ x: '0', y: '20' }, 'Test');
     });
     // 1:1 mapping, default fontSize=16, transform scale=1
@@ -142,7 +142,7 @@ describe('SvgContext.text', () => {
 
   it('should map text-anchor "middle" to alignment "center"', () => {
     const app = createMockApp();
-    svg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
+    cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.text({ x: '50', y: '50', 'text-anchor': 'middle' }, 'Centered');
     });
     expect(app.calls[0].args[1].alignment).toBe('center');
@@ -150,7 +150,7 @@ describe('SvgContext.text', () => {
 
   it('should map text-anchor "end" to alignment "trailing"', () => {
     const app = createMockApp();
-    svg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
+    cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.text({ x: '50', y: '50', 'text-anchor': 'end' }, 'Right');
     });
     expect(app.calls[0].args[1].alignment).toBe('trailing');
@@ -158,7 +158,7 @@ describe('SvgContext.text', () => {
 
   it('should default to alignment "leading"', () => {
     const app = createMockApp();
-    svg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
+    cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.text({ x: '10', y: '20' }, 'Default');
     });
     expect(app.calls[0].args[1].alignment).toBe('leading');
@@ -166,7 +166,7 @@ describe('SvgContext.text', () => {
 
   it('should detect bold font-weight', () => {
     const app = createMockApp();
-    svg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
+    cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.text({ x: '10', y: '20', 'font-weight': 'bold' }, 'Bold');
     });
     expect(app.calls[0].args[1].bold).toBe(true);
@@ -174,7 +174,7 @@ describe('SvgContext.text', () => {
 
   it('should detect bold from numeric weight >= 600', () => {
     const app = createMockApp();
-    svg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
+    cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.text({ x: '10', y: '20', 'font-weight': '700' }, 'Bold');
     });
     expect(app.calls[0].args[1].bold).toBe(true);
@@ -182,7 +182,7 @@ describe('SvgContext.text', () => {
 
   it('should not be bold for normal weight', () => {
     const app = createMockApp();
-    svg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
+    cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.text({ x: '10', y: '20', 'font-weight': '400' }, 'Normal');
     });
     expect(app.calls[0].args[1].bold).toBe(false);
@@ -190,7 +190,7 @@ describe('SvgContext.text', () => {
 
   it('should detect italic', () => {
     const app = createMockApp();
-    svg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
+    cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.text({ x: '10', y: '20', 'font-style': 'italic' }, 'Italic');
     });
     expect(app.calls[0].args[1].italic).toBe(true);
@@ -198,7 +198,7 @@ describe('SvgContext.text', () => {
 
   it('should detect oblique as italic', () => {
     const app = createMockApp();
-    svg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
+    cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.text({ x: '10', y: '20', 'font-style': 'oblique' }, 'Oblique');
     });
     expect(app.calls[0].args[1].italic).toBe(true);
@@ -206,7 +206,7 @@ describe('SvgContext.text', () => {
 
   it('should detect monospace font family', () => {
     const app = createMockApp();
-    svg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
+    cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.text({ x: '10', y: '20', 'font-family': 'Courier New' }, 'Code');
     });
     expect(app.calls[0].args[1].monospace).toBe(true);
@@ -214,7 +214,7 @@ describe('SvgContext.text', () => {
 
   it('should not be monospace for serif', () => {
     const app = createMockApp();
-    svg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
+    cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.text({ x: '10', y: '20', 'font-family': 'serif' }, 'Serif');
     });
     expect(app.calls[0].args[1].monospace).toBe(false);
@@ -222,7 +222,7 @@ describe('SvgContext.text', () => {
 
   it('should use fill color from style, default to black', () => {
     const app = createMockApp();
-    svg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
+    cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.text({ x: '10', y: '20' }, 'Black');
       s.text({ x: '10', y: '40', fill: 'red' }, 'Red');
       s.text({ x: '10', y: '60', fill: 'none' }, 'None');
@@ -238,7 +238,7 @@ describe('SvgContext.text', () => {
 describe('text style inheritance', () => {
   it('should inherit font-size from group', () => {
     const app = createMockApp();
-    svg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
+    cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.g({ 'font-size': '24' }, () => {
         s.text({ x: '10', y: '20' }, 'Inherited');
       });
@@ -248,7 +248,7 @@ describe('text style inheritance', () => {
 
   it('should inherit text-anchor from group', () => {
     const app = createMockApp();
-    svg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
+    cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.g({ 'text-anchor': 'middle' }, () => {
         s.text({ x: '50', y: '50' }, 'Centered');
       });
@@ -258,7 +258,7 @@ describe('text style inheritance', () => {
 
   it('should inherit font-weight from group', () => {
     const app = createMockApp();
-    svg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
+    cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.g({ 'font-weight': 'bold' }, () => {
         s.text({ x: '10', y: '20' }, 'Bold');
       });
@@ -268,7 +268,7 @@ describe('text style inheritance', () => {
 
   it('should inherit fill from group for text color', () => {
     const app = createMockApp();
-    svg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
+    cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.g({ fill: 'blue' }, () => {
         s.text({ x: '10', y: '20' }, 'Blue');
       });
@@ -278,7 +278,7 @@ describe('text style inheritance', () => {
 
   it('should allow text element to override inherited font-size', () => {
     const app = createMockApp();
-    svg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
+    cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.g({ 'font-size': '24' }, () => {
         s.text({ x: '10', y: '20', 'font-size': '12' }, 'Smaller');
       });
@@ -288,7 +288,7 @@ describe('text style inheritance', () => {
 
   it('should inherit style attribute properties on group', () => {
     const app = createMockApp();
-    svg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
+    cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.g({ style: 'font-size: 18px; text-anchor: middle; font-family: serif' }, () => {
         s.text({ x: '50', y: '50' }, 'Styled');
       });
@@ -304,7 +304,7 @@ describe('text style inheritance', () => {
 describe('text with transform', () => {
   it('should apply transform to text position', () => {
     const app = createMockApp();
-    svg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
+    cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.text({ x: '10', y: '20', transform: 'translate(5, 10)' }, 'Moved');
     });
     // transform: translate(5,10) → point (10,20) → (15,30), then viewBox 1:1 → (15,30)
@@ -314,7 +314,7 @@ describe('text with transform', () => {
 
   it('should scale font size with transform', () => {
     const app = createMockApp();
-    svg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
+    cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.text({ x: '10', y: '20', 'font-size': '10', transform: 'scale(2)' }, 'Big');
     });
     // fontSize=10, viewBox scale=1, transform averageScale=2 → 10*1*2 = 20
@@ -327,7 +327,7 @@ describe('text with transform', () => {
 describe('text with style attribute', () => {
   it('should parse font-size from style attribute', () => {
     const app = createMockApp();
-    svg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
+    cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.text({ x: '10', y: '20', style: 'font-size: 32px' }, 'Styled');
     });
     expect(app.calls[0].args[1].textSize).toBeCloseTo(32);
@@ -335,7 +335,7 @@ describe('text with style attribute', () => {
 
   it('should parse text-anchor from style attribute', () => {
     const app = createMockApp();
-    svg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
+    cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.text({ x: '50', y: '50', style: 'text-anchor: middle' }, 'Center');
     });
     expect(app.calls[0].args[1].alignment).toBe('center');
@@ -343,7 +343,7 @@ describe('text with style attribute', () => {
 
   it('should prefer direct attrs over style attribute', () => {
     const app = createMockApp();
-    svg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
+    cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.text({ x: '10', y: '20', 'font-size': '20', style: 'font-size: 40px' }, 'Direct');
     });
     // Direct attr font-size=20 should win

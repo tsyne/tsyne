@@ -6,9 +6,9 @@
  * - Grammar integration: g with transform, element-level transform, nested transforms
  */
 
-import { AffineMatrix, parseTransform, ProjectiveMatrix, composeTransforms, transformFromSpec } from '../src/svg/transform';
-import type { TransformSpec } from '../src/svg/types';
-import { svg } from '../src/svg/grammar';
+import { AffineMatrix, parseTransform, ProjectiveMatrix, composeTransforms, transformFromSpec } from '../src/cvg/transform';
+import type { TransformSpec } from '../src/cvg/types';
+import { cvg } from '../src/cvg/grammar';
 
 const EPSILON = 1e-6;
 
@@ -371,7 +371,7 @@ function createMockApp() {
   const calls: { method: string; args: any[] }[] = [];
   const widget = { update(u: any) {} };
   return {
-    /** Shape calls only (excludes sizing shim from svg() wrapper). */
+    /** Shape calls only (excludes sizing shim from cvg() wrapper). */
     calls,
     clip(fn: () => void) { fn(); return widget; },
     stack(fn: () => void) { fn(); },
@@ -389,7 +389,7 @@ function createMockApp() {
       return widget;
     },
     canvasRectangle(opts: any) {
-      // Skip the sizing shim rect (transparent, from svg() wrapper)
+      // Skip the sizing shim rect (transparent, from cvg() wrapper)
       if (opts.fillColor !== 'transparent') {
         calls.push({ method: 'canvasRectangle', args: [opts] });
       }
@@ -406,7 +406,7 @@ describe('Grammar transform integration', () => {
   it('should apply group transform to child path', () => {
     const app = createMockApp();
     // viewBox 0 0 100 100, canvas 100x100 → 1:1 mapping
-    svg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
+    cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.g({ transform: 'translate(10, 20)' }, () => {
         s.path({ d: 'M 0 0 L 50 50' });
       });
@@ -423,7 +423,7 @@ describe('Grammar transform integration', () => {
 
   it('should apply element-level transform to path', () => {
     const app = createMockApp();
-    svg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
+    cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.path({ d: 'M 0 0 L 10 0', transform: 'scale(2)' });
     });
 
@@ -435,7 +435,7 @@ describe('Grammar transform integration', () => {
 
   it('should apply group transform to circle center', () => {
     const app = createMockApp();
-    svg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
+    cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.g({ transform: 'translate(10, 20)' }, () => {
         s.circle({ cx: 0, cy: 0, r: 5 });
       });
@@ -452,7 +452,7 @@ describe('Grammar transform integration', () => {
 
   it('should apply scale to circle radius', () => {
     const app = createMockApp();
-    svg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
+    cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.g({ transform: 'scale(2)' }, () => {
         s.circle({ cx: 10, cy: 10, r: 5 });
       });
@@ -469,7 +469,7 @@ describe('Grammar transform integration', () => {
 
   it('should nest transforms', () => {
     const app = createMockApp();
-    svg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
+    cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.g({ transform: 'translate(10, 0)' }, () => {
         s.g({ transform: 'translate(0, 10)' }, () => {
           s.path({ d: 'M 0 0 L 5 5' });
@@ -485,7 +485,7 @@ describe('Grammar transform integration', () => {
 
   it('should isolate transform to group scope', () => {
     const app = createMockApp();
-    svg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
+    cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.g({ transform: 'translate(10, 10)' }, () => {
         s.path({ d: 'M 0 0 L 5 0' });
       });
@@ -502,7 +502,7 @@ describe('Grammar transform integration', () => {
 
   it('should apply transform to rect via corner mapping', () => {
     const app = createMockApp();
-    svg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
+    cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.rect({ x: 0, y: 0, width: 10, height: 10, transform: 'translate(20, 30)' });
     });
 
@@ -516,7 +516,7 @@ describe('Grammar transform integration', () => {
 
   it('should apply transform to line endpoints', () => {
     const app = createMockApp();
-    svg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
+    cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.line({ x1: 0, y1: 0, x2: 10, y2: 0, transform: 'translate(5, 5)' });
     });
 
@@ -534,7 +534,7 @@ describe('Grammar transform integration', () => {
 describe('Grammar typed TransformSpec integration', () => {
   it('should apply typed translate to group children', () => {
     const app = createMockApp();
-    svg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
+    cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.g({ transform: { translate: [10, 20] } }, () => {
         s.path({ d: 'M 0 0 L 50 50' });
       });
@@ -548,7 +548,7 @@ describe('Grammar typed TransformSpec integration', () => {
 
   it('should apply typed scale to group children', () => {
     const app = createMockApp();
-    svg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
+    cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.g({ transform: { scale: 2 } }, () => {
         s.path({ d: 'M 5 5 L 10 10' });
       });
@@ -562,7 +562,7 @@ describe('Grammar typed TransformSpec integration', () => {
 
   it('should apply typed translate + scale (Big Ben pattern)', () => {
     const app = createMockApp();
-    svg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
+    cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.g({ transform: { translate: [10, 0], scale: 2 } }, () => {
         s.path({ d: 'M 0 0 L 5 0' });
       });
@@ -577,7 +577,7 @@ describe('Grammar typed TransformSpec integration', () => {
 
   it('should apply typed transform on shape element (not just groups)', () => {
     const app = createMockApp();
-    svg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
+    cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.rect({ x: 0, y: 0, width: 10, height: 10, transform: { translate: [20, 30] } });
     });
 
@@ -593,13 +593,13 @@ describe('Grammar typed TransformSpec integration', () => {
     const appTyped = createMockApp();
     const appString = createMockApp();
 
-    svg(appTyped, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
+    cvg(appTyped, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.g({ transform: { translate: [15, 25], scale: [2, 3] } }, () => {
         s.path({ d: 'M 1 1 L 10 10' });
       });
     });
 
-    svg(appString, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
+    cvg(appString, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.g({ transform: 'translate(15, 25) scale(2, 3)' }, () => {
         s.path({ d: 'M 1 1 L 10 10' });
       });
@@ -610,7 +610,7 @@ describe('Grammar typed TransformSpec integration', () => {
 
   it('should apply typed transform to line endpoints', () => {
     const app = createMockApp();
-    svg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
+    cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.line({ x1: 0, y1: 0, x2: 10, y2: 0, transform: { translate: [5, 5] } });
     });
 
@@ -624,7 +624,7 @@ describe('Grammar typed TransformSpec integration', () => {
 
   it('should apply typed rotate to circle center', () => {
     const app = createMockApp();
-    svg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
+    cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.g({ transform: { rotate: [90, 50, 50] } }, () => {
         s.circle({ cx: 50, cy: 0, r: 5 });
       });
@@ -826,7 +826,7 @@ describe('transformFromSpec', () => {
 describe('Grammar cosynePerspective integration', () => {
   it('should apply perspective to path points', () => {
     const app = createMockApp();
-    svg(app, { viewBox: '0 0 200 200', width: 200, height: 200 }, (s) => {
+    cvg(app, { viewBox: '0 0 200 200', width: 200, height: 200 }, (s) => {
       s.g({ transform: { cosynePerspective: { rotateY: 30, distance: 500, origin: [100, 100] } } }, () => {
         // Horizontal line at y=100 through the origin
         s.path({ d: 'M 0 100 L 200 100' });
@@ -848,7 +848,7 @@ describe('Grammar cosynePerspective integration', () => {
 
   it('should render circle as bezier path under perspective', () => {
     const app = createMockApp();
-    svg(app, { viewBox: '0 0 200 200', width: 200, height: 200 }, (s) => {
+    cvg(app, { viewBox: '0 0 200 200', width: 200, height: 200 }, (s) => {
       s.g({ transform: { cosynePerspective: { rotateY: 30, distance: 500, origin: [100, 100] } } }, () => {
         s.circle({ cx: 100, cy: 100, r: 20 });
       });
@@ -864,7 +864,7 @@ describe('Grammar cosynePerspective integration', () => {
 
   it('should render rect as path under perspective', () => {
     const app = createMockApp();
-    svg(app, { viewBox: '0 0 200 200', width: 200, height: 200 }, (s) => {
+    cvg(app, { viewBox: '0 0 200 200', width: 200, height: 200 }, (s) => {
       s.g({ transform: { cosynePerspective: { rotateY: 30, distance: 500, origin: [100, 100] } } }, () => {
         s.rect({ x: 50, y: 50, width: 100, height: 100, fill: 'red' });
       });
@@ -877,7 +877,7 @@ describe('Grammar cosynePerspective integration', () => {
 
   it('perspective origin should stay fixed', () => {
     const app = createMockApp();
-    svg(app, { viewBox: '0 0 200 200', width: 200, height: 200 }, (s) => {
+    cvg(app, { viewBox: '0 0 200 200', width: 200, height: 200 }, (s) => {
       s.g({ transform: { cosynePerspective: { rotateY: 30, distance: 500, origin: [100, 100] } } }, () => {
         // A point at the origin should not move
         s.path({ d: 'M 100 100 L 101 100' });

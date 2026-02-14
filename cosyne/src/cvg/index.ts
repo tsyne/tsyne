@@ -1,10 +1,10 @@
 /**
- * SVG-to-Cosyne pipeline
+ * CVG (Cosyne Vector Graphics) pipeline
  *
  * Entry points:
- *  - svg()        — standalone factory: svg(app, { viewBox: '...' }, (s) => { ... })
- *  - svgBuilder() — builder-style: const s = svgBuilder(app); s.svg({...}, () => { ... })
- *  - loadSvg()    — render SVG string at runtime
+ *  - cvg()        — standalone factory: cvg(app, { viewBox: '...' }, (s) => { ... })
+ *  - cvgBuilder() — builder-style: const s = cvgBuilder(app); s.svg({...}, () => { ... })
+ *  - loadSvg()    — render SVG string at runtime (SVG → CVG)
  *  - transpileSvg() / transpileSvgToModule() — SVG → TypeScript source code
  */
 
@@ -15,8 +15,8 @@ export type {
   PathCommand,
   NormalizedCommand,
   ViewBox,
-  SvgOptions,
-  SvgElementAttrs,
+  CvgOptions,
+  CvgElementAttrs,
   TransformSpec,
   CosynePerspective,
 } from './types';
@@ -28,7 +28,7 @@ export { parseSvg, parseViewBox } from './parser';
 export { parsePath, normalizeCommands, normalizePath, serializeCommands } from './normalizer';
 
 // Grammar
-export { SvgContext, SvgElement, SvgBuilder, PathBuilder, svg, svgBuilder, parseStyleAttr, AnimationHandle, Easing, type SvgEvent, type AnimationOptions, type EasingFn } from './grammar';
+export { CvgContext, CvgElement, CvgBuilder, PathBuilder, cvg, cvgBuilder, parseStyleAttr, AnimationHandle, Easing, type CvgEvent, type AnimationOptions, type EasingFn } from './grammar';
 
 // Loader
 export { loadSvg } from './loader';

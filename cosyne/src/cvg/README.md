@@ -1,10 +1,52 @@
-# SVG-to-Cosyne Pipeline
+# CVG — Cosyne Vector Graphics
 
-Renders SVG content through Tsyne's canvas primitives. Three entry points:
+SVG-inspired vector graphics system with reactive bindings, perspective transforms,
+and interactivity. Renders through Tsyne's canvas primitives.
 
-- **`loadSvg(app, svgString, options?)`** — render SVG strings at runtime
-- **`svg(app, options, builder)`** / **`svgBuilder(app)`** — programmatic SVG grammar
+CVG mirrors SVG's element vocabulary (`circle`, `rect`, `path`, `g`, `text`,
+`use`/`defs`) and attribute conventions (`cx`/`cy`, `viewBox`, `transform`,
+`fill-opacity`), but is its own system — not an SVG renderer.
+
+## CVG vs SVG
+
+### What CVG adds beyond SVG
+
+| Feature | Example |
+|---------|---------|
+| Reactive bindings | `.bindFill(() => color)`, `.bindPos(() => coords)`, `.bindOpacity(() => n)` |
+| Data-driven lists | `.bindTo(items, render, { trackBy, update })` — D3-style enter/update/exit |
+| Perspective transforms | `cosynePerspective` on `s.g()` groups |
+| Hit testing + events | `enableEvents()` + `onClick` / `onHover` / `onDrag` / `onScroll` / `onKeyDown` |
+| Animation system | `.animate()`, `.transition()`, keyframes, easing functions |
+| Conditional rendering | `.when(predicate)` — show/hide elements reactively |
+| Timed updates | `poll(interval)` for clock-style refresh |
+| Responsive resize | `resize(w, h)` with automatic viewBox remapping |
+| Named element lookup | `.name('hour')` + `ctx.find('hour')` |
+| Canvas interop | Coexists with cosyne-classic in the same `canvasStack` |
+
+### SVG features CVG does not implement
+
+| Feature | Notes |
+|---------|-------|
+| CSS cascade / external stylesheets | `<style>` element supported in SVG import only |
+| SMIL animation | Replaced by CVG's programmatic animation API |
+| JavaScript / `<script>` | Replaced by TypeScript CVG grammar |
+| `<filter>` (beyond blur) | Only Gaussian blur; feColorMatrix, feOffset etc. missing |
+| DOM manipulation | No DOM — CVG elements are canvas primitives |
+| `<pattern>`, `<mask>`, `<marker>` | Not supported |
+| `<image>`, `<video>`, `<audio>` | Not supported |
+
+### SVG as input format
+
+CVG can import `.svg` files via three paths — the SVG vocabulary is the *input*, CVG is the *runtime*:
+
+- **`loadSvg(app, svgString, options?)`** — render SVG strings at runtime (SVG → CVG)
 - **`transpileSvg()` / `transpileSvgToModule()`** — SVG files to hand-editable TypeScript
+
+### Programmatic API
+
+- **`cvg(app, options, builder)`** — standalone factory
+- **`cvgBuilder(app)`** — builder-style entry point
 
 All paths are normalized to absolute M/L/C/Z before reaching the Go bridge,
 which only supports those four commands.
@@ -12,18 +54,18 @@ which only supports those four commands.
 ## Architecture
 
 ```
-SVG string
+SVG string (input format)
   │
-  ├─ loadSvg()     ─→ parser ─→ walkNode() ─→ SvgContext methods ─→ app.canvasPath() etc.
-  ├─ transpileSvg() ─→ parser ─→ emit TypeScript source using grammar API
-  └─ svg() / svgBuilder() ─→ user calls SvgContext directly
+  ├─ loadSvg()     ─→ parser ─→ walkNode() ─→ CvgContext methods ─→ app.canvasPath() etc.
+  ├─ transpileSvg() ─→ parser ─→ emit TypeScript source using CVG grammar API
+  └─ cvg() / cvgBuilder() ─→ user calls CvgContext directly
                                     │
                             normalizer (path d → M/L/C/Z)
                                     │
                               Go bridge PathRaster
 ```
 
-## SVG 1.1 Compatibility
+## SVG 1.1 Compatibility (import pipeline)
 
 Tested against 199 SVG files (15 hand-crafted + 184 from the W3C SVG test suite).
 Median MAE ~0.5, 169 below MAE 5.
@@ -97,7 +139,7 @@ comma/whitespace separators.
 | **Text stroke** | Stroke color used as fill fallback; true stroke rendering missing |
 | **`<tspan>` dx/dy arrays** | Individual glyph positioning not supported |
 
-### Won't Fix (static .svg renderer)
+### Won't Fix (static .svg import)
 
 - JavaScript / `<script>`
 - SMIL animation (`<animate>`, `<animateTransform>`, `<set>`)
@@ -105,17 +147,17 @@ comma/whitespace separators.
 - `:hover` / `:active` / `:focus` pseudo-classes
 - `<video>` / `<audio>` elements
 
-These are replaced by the programmatic SVG grammar API (see TODO.md).
+These are replaced by the programmatic CVG grammar API (see TODO.md).
 
 ## Files
 
 | File | Purpose |
 |------|---------|
-| `types.ts` | Shared types: SvgNode, SvgStyle, PathCommand, etc. |
+| `types.ts` | Shared types: SvgNode, SvgStyle, PathCommand, CvgOptions, etc. |
 | `parser.ts` | Regex-based SVG XML parser (no dependencies) |
 | `normalizer.ts` | Path d-string normalizer: all commands to absolute M/L/C/Z |
 | `transform.ts` | AffineMatrix and `parseTransform()` for SVG transform attributes |
-| `grammar.ts` | SvgContext, SvgElement, SvgBuilder, PathBuilder |
+| `grammar.ts` | CvgContext, CvgElement, CvgBuilder, PathBuilder |
 | `loader.ts` | Runtime SVG string rendering via parser + grammar |
 | `rasterize.ts` | CPU rasterizer for clipPath, gradients, blur |
 | `blur.ts` | Gaussian blur implementation |

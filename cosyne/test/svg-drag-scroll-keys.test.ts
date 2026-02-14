@@ -7,7 +7,7 @@
 
 import { TestContext } from 'tsyne';
 import type { App } from 'tsyne';
-import { CosyneTest, svg, TestJournal, SvgContext, SvgEvent, SvgElement } from '../src';
+import { CosyneTest, cvg, TestJournal, CvgContext, CvgEvent, CvgElement } from '../src';
 
 const slow = process.env.SLOWER_TESTS === '1';
 const pause = slow ? 500 : 50;
@@ -24,7 +24,7 @@ describe('SVG rect drag, scroll, and key events', () => {
 
   it('onDrag fires on correct element with deltas', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
 
     const dragEvents: Array<{ x: number; y: number; deltaX: number; deltaY: number }> = [];
@@ -34,7 +34,7 @@ describe('SVG rect drag, scroll, and key events', () => {
       a.window({ title: 'SVG Drag Test', width: 400, height: 200, x: 50, y: 50, padded: false }, (win: any) => {
         win.setContent(() => {
           a.canvasStack(() => {
-            svgCtx = svg(a, { viewBox: '0 0 400 200', width: 400, height: 200 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 400 200', width: 400, height: 200 }, (s) => {
               // Left rect — should NOT receive drags targeted at right rect
               s.rect({
                 x: 10, y: 10, width: 180, height: 180,
@@ -80,7 +80,7 @@ describe('SVG rect drag, scroll, and key events', () => {
 
   it('drag sticks to initial element', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
 
     let rightDragCount = 0;
@@ -90,7 +90,7 @@ describe('SVG rect drag, scroll, and key events', () => {
       a.window({ title: 'SVG Drag Sticky', width: 400, height: 200, x: 50, y: 50, padded: false }, (win: any) => {
         win.setContent(() => {
           a.canvasStack(() => {
-            svgCtx = svg(a, { viewBox: '0 0 400 200', width: 400, height: 200 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 400 200', width: 400, height: 200 }, (s) => {
               s.rect({
                 x: 10, y: 10, width: 180, height: 180,
                 fill: '#4488cc',
@@ -145,17 +145,17 @@ describe('SVG rect drag, scroll, and key events', () => {
 
   it('onScroll fires on topmost element', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
 
     const scrollEvents: Array<{ name: string; deltaY: number }> = [];
-    let bottomEl: SvgElement, topEl: SvgElement;
+    let bottomEl: CvgElement, topEl: CvgElement;
 
     const testApp = await cosyneTest.createApp((a: App) => {
       a.window({ title: 'SVG Scroll Test', width: 300, height: 300, x: 50, y: 50, padded: false }, (win: any) => {
         win.setContent(() => {
           a.canvasStack(() => {
-            svgCtx = svg(a, { viewBox: '0 0 300 300', width: 300, height: 300 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 300 300', width: 300, height: 300 }, (s) => {
               // Bottom rect (rendered first)
               bottomEl = s.rect({
                 x: 50, y: 50, width: 200, height: 200,
@@ -213,18 +213,18 @@ describe('SVG rect drag, scroll, and key events', () => {
 
   it('onScroll falls back to scene-wide handler', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
 
     let sceneScrollFired = false;
     let sceneScrollData: any = null;
-    let bgEl: SvgElement;
+    let bgEl: CvgElement;
 
     const testApp = await cosyneTest.createApp((a: App) => {
       a.window({ title: 'SVG Scene Scroll', width: 300, height: 300, x: 50, y: 50, padded: false }, (win: any) => {
         win.setContent(() => {
           a.canvasStack(() => {
-            svgCtx = svg(a, { viewBox: '0 0 300 300', width: 300, height: 300 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 300 300', width: 300, height: 300 }, (s) => {
               bgEl = s.rect({ x: 0, y: 0, width: 300, height: 300, fill: '#f8f8f8' }).name('bg');
               // A rect with NO scroll handler
               s.rect({
@@ -264,21 +264,21 @@ describe('SVG rect drag, scroll, and key events', () => {
     await ctx.wait(pause);
   }, slow ? 30000 : 10000);
 
-  it('onKeyDown/onKeyUp fire on SvgContext', async () => {
+  it('onKeyDown/onKeyUp fire on CvgContext', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
 
     const keysDown: string[] = [];
     const keysUp: string[] = [];
-    const events: SvgEvent[] = [];
-    let bgEl: SvgElement;
+    const events: CvgEvent[] = [];
+    let bgEl: CvgElement;
 
     const testApp = await cosyneTest.createApp((a: App) => {
       a.window({ title: 'SVG Keys Test', width: 200, height: 200, x: 50, y: 50, padded: false }, (win: any) => {
         win.setContent(() => {
           a.canvasStack(() => {
-            svgCtx = svg(a, { viewBox: '0 0 200 200', width: 200, height: 200 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 200 200', width: 200, height: 200 }, (s) => {
               bgEl = s.rect({ x: 0, y: 0, width: 200, height: 200, fill: '#eeeeee' }).name('bg');
             });
             svgCtx.enableEvents();
@@ -332,9 +332,9 @@ describe('SVG rect drag, scroll, and key events', () => {
 
   it('visual: draggable rect', async () => {
     cosyneTest = new CosyneTest({ headed: true });
-    let svgCtx: SvgContext = null as any;
+    let svgCtx: CvgContext = null as any;
     let journal: TestJournal = null as any;
-    let dragRect: SvgElement;
+    let dragRect: CvgElement;
 
     // Track rect position in viewBox space
     let rectX = 100, rectY = 100;
@@ -343,7 +343,7 @@ describe('SVG rect drag, scroll, and key events', () => {
       a.window({ title: 'SVG Draggable Rect', width: 400, height: 400, x: 50, y: 50, padded: false }, (win: any) => {
         win.setContent(() => {
           a.canvasStack(() => {
-            svgCtx = svg(a, { viewBox: '0 0 400 400', width: 400, height: 400 }, (s) => {
+            svgCtx = cvg(a, { viewBox: '0 0 400 400', width: 400, height: 400 }, (s) => {
               // Background
               s.rect({ x: 0, y: 0, width: 400, height: 400, fill: '#f0f0f0' });
 

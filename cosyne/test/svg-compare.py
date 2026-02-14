@@ -118,7 +118,7 @@ def transpile_all_cosyne(svg_paths: list[Path]) -> dict[str, str]:
     """Batch-transpile SVGs to Cosyne TypeScript source via the transpiler."""
     paths_arg = json.dumps([str(p) for p in svg_paths])
     script = (
-        "import{transpileSvgToModule}from'./cosyne/src/svg/transpiler';"
+        "import{transpileSvgToModule}from'./cosyne/src/cvg/transpiler';"
         "import{readFileSync}from'fs';"
         "const r:any={};"
         "for(const p of JSON.parse(process.argv[1])){"
