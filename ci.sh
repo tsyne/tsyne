@@ -743,8 +743,11 @@ if [ "$SKIP_TESTS" = false ] && [ "$UNIT_ONLY" = false ] && [ "$QUICK_MODE" = fa
   test_ported_app "solitaire" || true
   test_ported_app "slider-puzzle" || true
   test_ported_app "sudoku" || true
+  test_ported_app "svg-tetris" || true
   test_ported_app "tango-puzzle" || true
   test_ported_app "terminal" || true
+  test_ported_app "trajans-column" || true
+  test_ported_app "tumbling-cube" || true
   test_ported_app "zip-puzzle" || true
 
   set -e  # Re-enable exit-on-error
