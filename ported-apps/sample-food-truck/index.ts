@@ -409,7 +409,6 @@ export function buildFoodTruckApp(a: any, windowWidth?: number, windowHeight?: n
           }).when(() => selectedView === 'weather');
         });
       });
-    });
   };
 
   async function showView(view: string) {

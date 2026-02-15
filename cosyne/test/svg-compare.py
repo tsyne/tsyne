@@ -431,7 +431,13 @@ def main():
     output_dir.mkdir(parents=True, exist_ok=True)
 
     if args.files:
-        svg_files = [SVG_DIR / (f if f.endswith('.svg') else f + '.svg') for f in args.files]
+        svg_files = []
+        for f in args.files:
+            p = Path(f)
+            if p.is_absolute() or p.exists():
+                svg_files.append(p if p.suffix == '.svg' else p.with_suffix('.svg'))
+            else:
+                svg_files.append(SVG_DIR / (f if f.endswith('.svg') else f + '.svg'))
     else:
         svg_files = sorted(SVG_DIR.glob('*.svg'))
 

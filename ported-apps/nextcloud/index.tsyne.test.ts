@@ -5,7 +5,7 @@
  * Tests user interactions, file management, and tab navigation.
  */
 
-import { TsyneTest, TestContext } from '../../src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { buildNextCloudApp } from './index';
 
 describe('NextCloud App UI Tests', () => {

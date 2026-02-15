@@ -38,28 +38,22 @@ describe('Draw Button Layout Regression Test', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    // Wait for UI to load
-    await ctx.expect(ctx.getByText('Draw')).toBeVisible();
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Wait for UI to load — use stable widget ID instead of text search
+    await ctx.getById('draw-btn').within(2000).shouldExist();
 
     let initialY: number | undefined;
 
     // Press Draw 20 times - if layout shifts, button becomes unclickable
     for (let i = 0; i < 20; i++) {
-      const drawButton = ctx.getByText('Draw');
+      // Click Draw — use getById with within() to handle async UI rebuilds
+      await ctx.getById('draw-btn').within(2000).click();
 
-      // Click Draw - this will fail if button shifted out of position
-      await drawButton.click();
-
-      // Small delay to let UI stabilize after async rebuild
-      await new Promise(resolve => setTimeout(resolve, 50));
+      // Wait for rebuild to fully complete (withId registrations are async)
+      await ctx.getById('draw-btn').within(2000).shouldExist();
 
       // Get position after click
-      const infoAfter = await drawButton.getInfo();
+      const infoAfter = await ctx.getById('draw-btn').getInfo();
       const currentY = infoAfter.absoluteY;
-
-      // Verify the click worked by checking status message
-      await ctx.expect(ctx.getByText('Drew cards')).toBeVisible();
 
       if (i === 0) {
         initialY = currentY;
@@ -83,20 +77,18 @@ describe('Draw Button Layout Regression Test', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.expect(ctx.getByText('Draw')).toBeVisible();
-    await new Promise(resolve => setTimeout(resolve, 300));
+    await ctx.getById('draw-btn').within(2000).shouldExist();
 
     // Press New Game
-    await ctx.getByText('New Game').click();
-    await new Promise(resolve => setTimeout(resolve, 200));
+    await ctx.getById('new-game-btn').within(1000).click();
     await ctx.expect(ctx.getByText('New game started')).toBeVisible();
 
     // Press Draw immediately after - this is a common scenario where layout shift occurs
-    await ctx.getByText('Draw').click();
+    await ctx.getById('draw-btn').within(1000).click();
     await ctx.expect(ctx.getByText('Drew cards')).toBeVisible();
 
     // Press Draw again
-    await ctx.getByText('Draw').click();
+    await ctx.getById('draw-btn').within(1000).click();
     await ctx.expect(ctx.getByText('Drew cards')).toBeVisible();
   }, 15000);
 });

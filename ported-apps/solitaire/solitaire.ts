@@ -20,242 +20,24 @@
 import { app, resolveTransport  , standaloneShutdownStrategy } from 'tsyne';
 import type { App } from 'tsyne';
 import type { Window } from 'tsyne';
-import * as path from 'path';
-import * as fs from 'fs';
-import { Resvg } from '@resvg/resvg-js';
+import { cvg } from 'cosyne';
+import type { CvgContext } from 'cosyne';
+import { CARD_DRAW_MAP, CARD_VB_WIDTH, CARD_VB_HEIGHT } from './solitaire-cards-cvg';
 import { detectDropZone } from './drop-zone';
 
 // ============================================================================
-// Card Image Provider Interface (Dependency Injection)
+// Board layout constants for CVG rendering
 // ============================================================================
 
-/**
- * Interface for providing card images.
- * Production uses SvgCardImageProvider (renders SVGs to PNG).
- * Tests can inject StubCardImageProvider for fast execution.
- */
-export interface CardImageProvider {
-  getCardImage(filename: string): string;
-  getOverlappedCardsImage(
-    cardImages: string[],
-    cardWidth: number,
-    cardHeight: number,
-    overlapOffset: number
-  ): string;
-}
-
-// ============================================================================
-// Pseudo-declarative Observable System (like todomvc-ngshow.ts)
-// ============================================================================
-
-type GameChangeType = 'draw' | 'move' | 'newgame' | 'shuffle';
-type GameChangeListener = (changeType: GameChangeType) => void;
-
-// ============================================================================
-// SVG to PNG Rendering (merged from svg-renderer.ts)
-// ============================================================================
-
-/**
- * Cache for pre-rendered card faces Map (shared across all SolitaireUI instances)
- */
-let cardFacesCache: Map<string, string> | null = null;
-
-/**
- * Render an SVG file to a base64-encoded PNG
- * @param svgPath Path to the SVG file
- * @param width Target width (optional, maintains aspect ratio)
- * @param height Target height (optional, maintains aspect ratio)
- * @returns Base64-encoded PNG data with data URI prefix
- */
-function renderSVGToBase64(svgPath: string, width?: number, height?: number): string {
-  // Read SVG file
-  const svgBuffer = fs.readFileSync(svgPath);
-
-  // Render using resvg
-  const opts: any = {
-    fitTo: {
-      mode: width && height ? 'width' : 'original',
-      value: width || undefined,
-    },
-  };
-
-  const resvg = new Resvg(svgBuffer, opts);
-  const pngData = resvg.render();
-  const pngBuffer = pngData.asPng();
-
-  // Convert to base64
-  const base64 = pngBuffer.toString('base64');
-  return `data:image/png;base64,${base64}`;
-}
-
-/**
- * Pre-render all card face SVGs to base64 PNG
- * @param facesDir Directory containing the SVG files
- * @param cardWidth Width to render cards at (default: 100)
- * @param cardHeight Height to render cards at (default: 145)
- * @returns Map of filename to base64 PNG data
- */
-function preRenderAllCards(
-  facesDir: string,
-  cardWidth: number = 200,
-  cardHeight: number = 290
-): Map<string, string> {
-  // Return cached cards if already rendered
-  if (cardFacesCache) {
-    return cardFacesCache;
-  }
-
-  const renderedCards = new Map<string, string>();
-
-  // Get all SVG files
-  const files = fs.readdirSync(facesDir).filter(f => f.endsWith('.svg'));
-
-  for (const file of files) {
-    const svgPath = path.join(facesDir, file);
-    const base64 = renderSVGToBase64(svgPath, cardWidth, cardHeight);
-    renderedCards.set(file, base64);
-  }
-
-  // Cache for future instances
-  cardFacesCache = renderedCards;
-
-  return renderedCards;
-}
-
-/**
- * Create a composite image of multiple cards overlapping vertically
- * @param cardImages Array of base64 PNG data URIs for each card
- * @param cardWidth Width of each card
- * @param cardHeight Height of each card
- * @param overlapOffset Vertical offset between cards (e.g., cardHeight / 2)
- * @returns Base64-encoded PNG data URI of the composite image
- */
-function createOverlappedCardsImage(
-  cardImages: string[],
-  cardWidth: number,
-  cardHeight: number,
-  overlapOffset: number
-): string {
-  if (cardImages.length === 0) {
-    return '';
-  }
-
-  // For a single card, just return it as-is
-  if (cardImages.length === 1) {
-    return cardImages[0];
-  }
-
-  // Calculate total height: first card full height + remaining cards at offset
-  const totalHeight = cardHeight + (cardImages.length - 1) * overlapOffset;
-
-  // Create a simple SVG that layers the images
-  // We'll decode the base64 PNGs and embed them in an SVG, then render that SVG
-  const svgParts: string[] = [
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${cardWidth}" height="${totalHeight}">`,
-  ];
-
-  for (let i = 0; i < cardImages.length; i++) {
-    const y = i * overlapOffset;
-    // Embed the image directly (data URI is already in the right format)
-    svgParts.push(
-      `<image href="${cardImages[i]}" x="0" y="${y}" width="${cardWidth}" height="${cardHeight}"/>`
-    );
-  }
-
-  svgParts.push('</svg>');
-
-  const svgString = svgParts.join('\n');
-  const svgBuffer = Buffer.from(svgString, 'utf-8');
-
-  // Render the composite SVG to PNG
-  const resvg = new Resvg(svgBuffer, {
-    fitTo: {
-      mode: 'width',
-      value: cardWidth,
-    },
-  });
-  const pngData = resvg.render();
-  const pngBuffer = pngData.asPng();
-
-  // Convert to base64
-  const base64 = pngBuffer.toString('base64');
-  return `data:image/png;base64,${base64}`;
-}
-
-// ============================================================================
-// Card Image Provider Implementations
-// ============================================================================
-
-/**
- * Production card image provider that renders SVGs to PNG.
- * Expensive but produces real card images.
- */
-export class SvgCardImageProvider implements CardImageProvider {
-  private renderedCards: Map<string, string>;
-
-  constructor(facesDir: string, cardWidth: number = 120, cardHeight: number = 174) {
-    this.renderedCards = preRenderAllCards(facesDir, cardWidth, cardHeight);
-  }
-
-  getCardImage(filename: string): string {
-    const data = this.renderedCards.get(filename);
-    if (!data) {
-      console.warn(`Card image not found: ${filename}`);
-      return this.renderedCards.get('back.svg') || '';
-    }
-    return data;
-  }
-
-  getOverlappedCardsImage(
-    cardImages: string[],
-    cardWidth: number,
-    cardHeight: number,
-    overlapOffset: number
-  ): string {
-    return createOverlappedCardsImage(cardImages, cardWidth, cardHeight, overlapOffset);
-  }
-}
-
-/**
- * Stub card image provider for fast tests.
- * Returns minimal placeholder images instantly.
- */
-export class StubCardImageProvider implements CardImageProvider {
-  private static placeholder: string | null = null;
-
-  private getPlaceholder(): string {
-    if (!StubCardImageProvider.placeholder) {
-      // Minimal valid 1x1 transparent PNG (67 bytes)
-      const minimalPng = Buffer.from([
-        0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
-        0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
-        0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
-        0x08, 0x06, 0x00, 0x00, 0x00, 0x1f, 0x15, 0xc4,
-        0x89, 0x00, 0x00, 0x00, 0x0a, 0x49, 0x44, 0x41,
-        0x54, 0x78, 0x9c, 0x63, 0x00, 0x01, 0x00, 0x00,
-        0x05, 0x00, 0x01, 0x0d, 0x0a, 0x2d, 0xb4, 0x00,
-        0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae,
-        0x42, 0x60, 0x82
-      ]);
-      StubCardImageProvider.placeholder = `data:image/png;base64,${minimalPng.toString('base64')}`;
-    }
-    return StubCardImageProvider.placeholder;
-  }
-
-  getCardImage(_filename: string): string {
-    return this.getPlaceholder();
-  }
-
-  getOverlappedCardsImage(
-    cardImages: string[],
-    _cardWidth: number,
-    _cardHeight: number,
-    _overlapOffset: number
-  ): string {
-    // Just return first image - no expensive composite rendering
-    return cardImages.length > 0 ? cardImages[0] : this.getPlaceholder();
-  }
-}
+const CW = 120;                          // card display width
+const CH = 174;                          // card display height
+const GAP = 10;                          // spacing between elements
+const COL_W = CW + GAP;                 // column width (130)
+const FNDTN_X = 530;                    // foundation area x start
+const TABLEAU_Y = CH + GAP * 3;         // tableau top (204)
+const OVERLAP = 50;                      // vertical overlap for stacked cards
+const BOARD_W = FNDTN_X + 4 * COL_W;   // board width (1050)
+const BOARD_H = 900;                     // board height
 
 // ============================================================================
 // Solitaire Card Game Logic
@@ -780,64 +562,19 @@ export class Game {
 }
 
 /**
- * Solitaire UI
+ * Solitaire UI — renders the entire game board as a CVG canvas
  */
 class SolitaireUI {
   private game: Game;
   private statusLabel: any = null;
-  private currentStatus: string = 'New game started'; // Current status message preserved across rebuilds
-  private cardImageProvider: CardImageProvider;
+  private currentStatus: string = 'New game started';
   private selectedCard: { type: 'draw' | 'stack' | 'build', index: number, cardIndex?: number } | null = null;
   private draggedCard: { type: 'draw' | 'stack' | 'build', index: number } | null = null;
   private window: Window | null = null;
+  private cvgCtx: CvgContext = null as any;
 
-  // Widget references for incremental updates (avoid full rebuilds)
-  private handPileImage: any = null;
-  private draw1Image: any = null;
-  private draw2Image: any = null;
-  private draw3Image: any = null;
-
-  // Card dimensions - responsive based on layout scale
-  private cardWidth: number = 120;
-  private cardHeight: number = 174;
-
-  constructor(private a: App, cardImageProvider?: CardImageProvider) {
+  constructor(private a: App) {
     this.game = new Game();
-
-    // Calculate responsive card size based on layout scale
-    // On mobile (scale 0.5): use smaller cards (80x116)
-    // On desktop (scale 1.0): use full cards (120x174)
-    const layoutScale = (this.a.getContext() as any).getLayoutScale?.() || 1.0;
-    const isMobile = layoutScale < 1.0;
-
-    if (cardImageProvider) {
-      // Use injected provider (e.g., StubCardImageProvider for tests)
-      this.cardImageProvider = cardImageProvider;
-    } else {
-      // Default: use SVG renderer (production)
-      const possiblePaths = [
-        path.join(process.cwd(), 'faces'),
-        path.join(process.cwd(), 'examples/solitaire/faces'),
-        path.join(process.cwd(), '../examples/solitaire/faces'),
-        path.join(__dirname, 'faces')
-      ];
-      const facesDir = possiblePaths.find(p => fs.existsSync(p)) || possiblePaths[3];
-
-      // Use smaller cards on mobile (2/3 of desktop size: 80x116)
-      if (isMobile) {
-        this.cardWidth = 80;
-        this.cardHeight = 116;
-      }
-
-      this.cardImageProvider = new SvgCardImageProvider(facesDir, this.cardWidth, this.cardHeight);
-    }
-  }
-
-  /**
-   * Get the base64 PNG data for a card
-   */
-  private getCardImage(filename: string): string {
-    return this.cardImageProvider.getCardImage(filename);
   }
 
   /**
@@ -857,7 +594,6 @@ class SolitaireUI {
     if (!this.selectedCard) {
       this.selectedCard = { type, index };
 
-      // Get the card details for the status message
       let card: Card | null = null;
       let statusMessage = '';
 
@@ -868,13 +604,10 @@ class SolitaireUI {
         statusMessage = `Selected ${cardDesc} from draw pile`;
       } else if (type === 'stack') {
         const cards = this.game.getStackCards(index);
-        // Find the first face-up card
         const firstFaceUpIndex = cards.findIndex(c => c.faceUp);
 
         if (firstFaceUpIndex >= 0) {
-          // Store the index of the first face-up card for multi-card moves
           this.selectedCard.cardIndex = firstFaceUpIndex;
-
           const faceUpCards = cards.slice(firstFaceUpIndex);
           const cardDescs = faceUpCards.map(c => this.getCardDescription(c));
 
@@ -919,7 +652,6 @@ class SolitaireUI {
       moved = this.game.moveStackToBuild(from.index, index);
       message = moved ? `Moved card to foundation ${index}` : 'Cannot move card there';
     } else if (from.type === 'stack' && type === 'stack') {
-      // Try to move sequence of cards if cardIndex is available
       if (from.cardIndex !== undefined) {
         moved = this.game.moveStackSequenceToStack(from.index, index, from.cardIndex);
         if (moved) {
@@ -932,7 +664,6 @@ class SolitaireUI {
           message = 'Cannot move cards there';
         }
       } else {
-        // Fall back to single card move
         moved = this.game.moveStackToStack(from.index, index);
         message = moved ? `Moved card to tableau ${index}` : 'Cannot move card there';
       }
@@ -940,10 +671,6 @@ class SolitaireUI {
       moved = this.game.moveBuildToStack(from.index, index);
       message = moved ? `Moved card to tableau ${index}` : 'Cannot move card there';
     } else {
-      // Invalid move combination - instead of just clearing selection,
-      // select the newly clicked card if it's a valid source
-
-      // Check if the clicked location has a valid card to select
       let canSelect = false;
       if (type === 'draw') {
         const draws = this.game.getDrawCards();
@@ -952,11 +679,10 @@ class SolitaireUI {
         const cards = this.game.getStackCards(index);
         canSelect = cards.length > 0 && cards[cards.length - 1].faceUp;
       } else if (type === 'build') {
-        canSelect = true; // Can always select foundations (even empty ones for placing)
+        canSelect = true;
       }
 
       if (canSelect) {
-        // Reselect the clicked card
         this.selectedCard = { type, index };
         let card: Card | null = null;
         let statusMessage = '';
@@ -997,14 +723,11 @@ class SolitaireUI {
       }
     }
 
-    // Clear selection
     this.selectedCard = null;
 
     await this.updateStatus(message);
 
-    // Rebuild UI to show the move
     if (moved) {
-      // Check for win and update status before rebuilding
       if (this.game.hasWon()) {
         this.currentStatus = 'Congratulations! You won!';
       }
@@ -1013,10 +736,9 @@ class SolitaireUI {
   }
 
   /**
-   * Handle drag start on a card - tracks what's being dragged
+   * Handle drag start on a card
    */
-  private handleCardDrag(type: 'draw' | 'stack' | 'build', index: number, x: number, y: number): void {
-    // Only set draggedCard once per drag operation
+  private handleCardDrag(type: 'draw' | 'stack' | 'build', index: number, _x: number, _y: number): void {
     if (!this.draggedCard) {
       this.draggedCard = { type, index };
       this.updateStatus(`Dragging card from ${type} ${index}...`);
@@ -1024,28 +746,21 @@ class SolitaireUI {
   }
 
   /**
-   * Handle drag end on a card - determine drop target and move card
+   * Handle drag end on a card — determine drop target and move
    */
   private async handleCardDragEnd(x: number, y: number): Promise<void> {
-    if (!this.draggedCard) {
-      return;
-    }
+    if (!this.draggedCard) return;
 
     const from = this.draggedCard;
     this.draggedCard = null;
 
-    // Use the tested drop zone detection logic with responsive window dimensions
-    // Scale coordinates based on card size ratio
-    const scaledX = x * (120 / this.cardWidth);
-    const scaledY = y * (174 / this.cardHeight);
-    const dropZone = detectDropZone(scaledX, scaledY, 1000, 700);
+    const dropZone = detectDropZone(x, y, 1000, 700);
 
     let moved = false;
     let message = '';
 
     if (dropZone.zone === 'foundation') {
       const buildIndex = dropZone.index;
-
       if (from.type === 'draw') {
         moved = this.game.moveDrawToBuild(buildIndex);
         message = moved ? `Moved card to foundation ${buildIndex}` : 'Cannot move card there';
@@ -1053,12 +768,10 @@ class SolitaireUI {
         moved = this.game.moveStackToBuild(from.index, buildIndex);
         message = moved ? `Moved card to foundation ${buildIndex}` : 'Cannot move card there';
       } else if (from.type === 'build') {
-        // Can't move from foundation to foundation
         message = 'Cannot move foundation cards to another foundation';
       }
     } else if (dropZone.zone === 'tableau') {
       const stackIndex = dropZone.index;
-
       if (from.type === 'draw') {
         moved = this.game.moveDrawToStack(stackIndex);
         message = moved ? `Moved card to tableau ${stackIndex}` : 'Cannot move card there';
@@ -1075,9 +788,7 @@ class SolitaireUI {
 
     await this.updateStatus(message);
 
-    // Rebuild UI to show the move
     if (moved) {
-      // Check for win and update status before rebuilding
       if (this.game.hasWon()) {
         this.currentStatus = 'Congratulations! You won!';
       }
@@ -1090,152 +801,126 @@ class SolitaireUI {
    */
   private async rebuildUI(): Promise<void> {
     if (!this.window) return;
-
     await this.window.setContent(() => {
       this.buildUI(this.window!);
     });
   }
 
+  /**
+   * Draw a card at the given position with proper scaling from card viewBox
+   */
+  private drawCardAt(s: CvgContext, filename: string, x: number, y: number): void {
+    const fn = CARD_DRAW_MAP[filename];
+    if (!fn) return;
+    s.g({ transform: { translate: [x, y], scale: [CW / CARD_VB_WIDTH, CH / CARD_VB_HEIGHT] } }, () => {
+      fn(s);
+    });
+  }
+
+  /**
+   * Draw an empty slot outline at the given position
+   */
+  private drawEmptySlot(s: CvgContext, x: number, y: number): void {
+    s.rect({ x, y, width: CW, height: CH, fill: 'none', stroke: '#888', 'stroke-width': 2, rx: 8 });
+  }
+
   buildUI(win: Window | null): void {
     this.window = win;
 
-    // Get base64-rendered images
-    const emptySlotImage = this.getCardImage('back.svg');
-    const backCardImage = this.getCardImage('back.svg');
-
     this.a.vbox(() => {
-      // Action buttons
+      // Action buttons (still Tsyne widgets for accessibility)
       this.a.hbox(() => {
         this.a.button('New Game', { onClick: () => this.newGame() }).withId('new-game-btn');
         this.a.button('Shuffle', { onClick: () => this.shuffle() }).withId('shuffle-btn');
         this.a.button('Draw', { onClick: () => this.draw() }).withId('draw-btn');
       });
 
-      // Game area
-      this.a.vbox(() => {
-        // Draw pile and builds
-          this.a.hbox(() => {
-            const draws = this.game.getDrawCards();
+      // Entire game board as one CVG canvas
+      this.cvgCtx = cvg(this.a, {
+        viewBox: `0 0 ${BOARD_W} ${BOARD_H}`,
+        width: 1000, height: 860
+      }, (s) => {
+        const draws = this.game.getDrawCards();
 
-            // Draw pile - show face-down cards or empty
-            // Make it clickable to draw cards
-            const handPileImg = this.game.getHandCount() > 0 ? backCardImage : emptySlotImage;
-            this.handPileImage = this.a.image(handPileImg, 'original', () => this.draw()).withId('hand-pile');
+        // --- Hand pile ---
+        if (this.game.getHandCount() > 0) {
+          this.drawCardAt(s, 'back.svg', GAP, GAP);
+        } else {
+          this.drawEmptySlot(s, GAP, GAP);
+        }
+        s.rect({ x: GAP, y: GAP, width: CW, height: CH,
+          fill: 'transparent', onClick: () => this.draw() });
 
-            // Draw slots - show drawn cards or empty slots
-            const draw1Img = draws.draw1 ? this.getCardImage(draws.draw1.imageFilename()) : emptySlotImage;
-            const draw2Img = draws.draw2 ? this.getCardImage(draws.draw2.imageFilename()) : emptySlotImage;
-            const draw3Img = draws.draw3 ? this.getCardImage(draws.draw3.imageFilename()) : emptySlotImage;
+        // --- Draw slots ---
+        // Draw1 (non-interactive)
+        if (draws.draw1) {
+          this.drawCardAt(s, draws.draw1.imageFilename(), GAP + COL_W, GAP);
+        } else {
+          this.drawEmptySlot(s, GAP + COL_W, GAP);
+        }
 
-            this.draw1Image = this.a.image(draw1Img, 'original');
-            this.draw2Image = this.a.image(draw2Img, 'original');
-            // pseudo-declarative lines: imperative if/else for conditional rendering
-            // Make draw3 clickable and draggable if there's a card there
-            if (draws.draw3) {
-              this.draw3Image = this.a.image(
-                draw3Img,
-                'original',
-                () => this.handleCardClick('draw', 0),
-                (x: number, y: number) => this.handleCardDrag('draw', 0, x, y),
-                (x: number, y: number) => this.handleCardDragEnd(x, y)
-              ).withId('draw3');
-            } else {
-              this.draw3Image = this.a.image(draw3Img, 'original');
+        // Draw2 (non-interactive)
+        if (draws.draw2) {
+          this.drawCardAt(s, draws.draw2.imageFilename(), GAP + COL_W * 2, GAP);
+        } else {
+          this.drawEmptySlot(s, GAP + COL_W * 2, GAP);
+        }
+
+        // Draw3 (clickable — the active draw card)
+        const d3x = GAP + COL_W * 3;
+        if (draws.draw3) {
+          this.drawCardAt(s, draws.draw3.imageFilename(), d3x, GAP);
+          s.rect({ x: d3x, y: GAP, width: CW, height: CH,
+            fill: 'transparent',
+            onClick: () => this.handleCardClick('draw', 0) });
+        } else {
+          this.drawEmptySlot(s, d3x, GAP);
+        }
+
+        // --- Foundations (4) ---
+        for (let i = 0; i < 4; i++) {
+          const fx = FNDTN_X + i * COL_W;
+          const cards = this.game.getBuildCards(i);
+          const top = cards.length > 0 ? cards[cards.length - 1] : null;
+          if (top) {
+            this.drawCardAt(s, top.imageFilename(), fx, GAP);
+          } else {
+            this.drawEmptySlot(s, fx, GAP);
+          }
+          s.rect({ x: fx, y: GAP, width: CW, height: CH,
+            fill: 'transparent',
+            onClick: () => this.handleCardClick('build', i) });
+        }
+
+        // --- Tableau (7 columns) ---
+        for (let i = 0; i < 7; i++) {
+          const tx = GAP + i * COL_W;
+          const cards = this.game.getStackCards(i);
+          if (cards.length === 0) {
+            this.drawEmptySlot(s, tx, TABLEAU_Y);
+            s.rect({ x: tx, y: TABLEAU_Y, width: CW, height: CH,
+              fill: 'transparent',
+              onClick: () => this.handleCardClick('stack', i) });
+          } else {
+            // Draw each card in the stack with vertical overlap
+            for (let j = 0; j < cards.length; j++) {
+              const ty = TABLEAU_Y + j * OVERLAP;
+              this.drawCardAt(s, cards[j].imageFilename(), tx, ty);
             }
-          });
+            // Click target covers the full stack height
+            const stackH = CH + (cards.length - 1) * OVERLAP;
+            s.rect({ x: tx, y: TABLEAU_Y, width: CW, height: stackH,
+              fill: 'transparent',
+              onClick: () => this.handleCardClick('stack', i) });
+          }
+        }
 
-          // Build piles (foundations)
-          this.a.label('Foundations:');
-          // More pseudo-declarative: use array method instead of for loop
-          this.a.hbox(() => {
-            [0, 1, 2, 3].forEach(buildIndex => {
-              const cards = this.game.getBuildCards(buildIndex);
-              const topCard = cards.length > 0 ? cards[cards.length - 1] : null;
-              const cardImg = topCard ? this.getCardImage(topCard.imageFilename()) : emptySlotImage;
-              // Always clickable and draggable - can place cards on empty or occupied foundations
-              this.a.image(
-                cardImg,
-                'original',
-                () => this.handleCardClick('build', buildIndex),
-                (x: number, y: number) => this.handleCardDrag('build', buildIndex, x, y),
-                (x: number, y: number) => this.handleCardDragEnd(x, y)
-              ).withId(`foundation-${buildIndex}`);
-            });
-          });
+        s.enableEvents();
+      });
 
-          // Tableau stacks
-          this.a.label('Tableau:');
-          // More pseudo-declarative: use array method instead of for loop
-          this.a.hbox(() => {
-            [0, 1, 2, 3, 4, 5, 6].forEach(stackIndex => {
-              this.a.vbox(() => {
-                const cards = this.game.getStackCards(stackIndex);
-                // pseudo-declarative lines: imperative if/else for conditional rendering
-                if (cards.length === 0) {
-                  // Empty stack - clickable to place Kings
-                  this.a.image(emptySlotImage, 'original', () => this.handleCardClick('stack', stackIndex)).withId(`empty-stack-${stackIndex}`);
-                } else {
-                  // pseudo-declarative lines: pre-computed values before declarative use
-                  // Create overlapped composite image with responsive card dimensions
-                  const cardImages = cards.map(card => this.getCardImage(card.imageFilename()));
-                  const overlapOffset = this.cardHeight / 2; // Half the card height for overlap
-                  const compositeImage = this.cardImageProvider.getOverlappedCardsImage(cardImages, this.cardWidth, this.cardHeight, overlapOffset);
-
-                  // Display composite image with click handler for top card
-                  const topCard = cards[cards.length - 1];
-                  // pseudo-declarative lines: imperative if/else for conditional rendering
-                  if (topCard.faceUp) {
-                    this.a.image(
-                      compositeImage,
-                      'original',
-                      () => this.handleCardClick('stack', stackIndex),
-                      (x: number, y: number) => this.handleCardDrag('stack', stackIndex, x, y),
-                      (x: number, y: number) => this.handleCardDragEnd(x, y)
-                    ).withId(`stack-${stackIndex}`);
-                  } else {
-                    this.a.image(compositeImage, 'original');
-                  }
-                }
-              });
-            });
-          });
-        });
-
-      // Status
+      // Status label
       this.statusLabel = this.a.label(this.currentStatus).withId('status-label');
-    });
-  }
-
-  /**
-   * Update only the draw pile widgets without rebuilding the entire UI
-   * Kent Beck approach: update what changes, not everything
-   */
-  private async updateDrawPileUI(): Promise<void> {
-    const emptySlotImage = this.getCardImage('back.svg');
-    const backCardImage = this.getCardImage('back.svg');
-    const draws = this.game.getDrawCards();
-
-    // Update hand pile image
-    if (this.handPileImage) {
-      const handPileImg = this.game.getHandCount() > 0 ? backCardImage : emptySlotImage;
-      await this.handPileImage.updateImage(handPileImg);
-    }
-
-    // Update draw slot images
-    if (this.draw1Image) {
-      const draw1Img = draws.draw1 ? this.getCardImage(draws.draw1.imageFilename()) : emptySlotImage;
-      await this.draw1Image.updateImage(draw1Img);
-    }
-
-    if (this.draw2Image) {
-      const draw2Img = draws.draw2 ? this.getCardImage(draws.draw2.imageFilename()) : emptySlotImage;
-      await this.draw2Image.updateImage(draw2Img);
-    }
-
-    if (this.draw3Image) {
-      const draw3Img = draws.draw3 ? this.getCardImage(draws.draw3.imageFilename()) : emptySlotImage;
-      await this.draw3Image.updateImage(draw3Img);
-    }
+    }, { spacing: 0 });
   }
 
   private newGame(): void {
@@ -1265,40 +950,85 @@ class SolitaireUI {
   }
 
   private async updateStatus(message: string): Promise<void> {
-    this.currentStatus = message; // Store for rebuilds
+    this.currentStatus = message;
     if (this.statusLabel) {
       await this.statusLabel.setText(message);
     }
   }
 
-  /**
-   * Get the game instance (for testing)
-   */
+  // ============================================================================
+  // Public methods (for testing)
+  // ============================================================================
+
   getGame(): Game {
     return this.game;
   }
 
-  /**
-   * Refresh the UI to reflect game state changes (for testing)
-   */
   refreshUI(): void {
     this.rebuildUI();
+  }
+
+  /**
+   * Get the CVG context for dispatchTap in tests
+   */
+  getCvgCtx(): CvgContext {
+    return this.cvgCtx;
+  }
+
+  /**
+   * Simulate a click on the hand pile (for tests)
+   */
+  clickHandPile(): void {
+    const m = this.cvgCtx.getMapping();
+    const [cx, cy] = m.transform.apply(GAP + CW / 2, GAP + CH / 2);
+    this.cvgCtx.dispatchTap(cx, cy);
+  }
+
+  /**
+   * Simulate a click on draw3 card (for tests)
+   */
+  clickDraw3(): void {
+    const d3x = GAP + COL_W * 3;
+    const m = this.cvgCtx.getMapping();
+    const [cx, cy] = m.transform.apply(d3x + CW / 2, GAP + CH / 2);
+    this.cvgCtx.dispatchTap(cx, cy);
+  }
+
+  /**
+   * Simulate a click on a tableau stack (for tests)
+   */
+  clickStack(index: number): void {
+    const tx = GAP + index * COL_W;
+    const cards = this.game.getStackCards(index);
+    // Click near bottom of the stack (where the top card is)
+    const lastCardY = cards.length > 0
+      ? TABLEAU_Y + (cards.length - 1) * OVERLAP
+      : TABLEAU_Y;
+    const m = this.cvgCtx.getMapping();
+    const [cx, cy] = m.transform.apply(tx + CW / 2, lastCardY + CH / 2);
+    this.cvgCtx.dispatchTap(cx, cy);
+  }
+
+  /**
+   * Simulate a click on a foundation pile (for tests)
+   */
+  clickFoundation(index: number): void {
+    const fx = FNDTN_X + index * COL_W;
+    const m = this.cvgCtx.getMapping();
+    const [cx, cy] = m.transform.apply(fx + CW / 2, GAP + CH / 2);
+    this.cvgCtx.dispatchTap(cx, cy);
   }
 }
 
 /**
  * Create the solitaire app
- * Based on: main.go
  * @param a The Tsyne App instance
  * @param windowWidth - Optional window width from PhoneTop
  * @param windowHeight - Optional window height from PhoneTop
- * @param cardImageProvider Optional card image provider (inject StubCardImageProvider for fast tests)
  */
-export function createSolitaireApp(a: App, windowWidth?: number, windowHeight?: number, cardImageProvider?: CardImageProvider): SolitaireUI {
-  const ui = new SolitaireUI(a, cardImageProvider);
+export function createSolitaireApp(a: App, windowWidth?: number, windowHeight?: number): SolitaireUI {
+  const ui = new SolitaireUI(a);
 
-  // Always create a window - PhoneTop intercepts this to create a StackPaneAdapter
-  // Determine window size - use phone-sized window when running on mobile
   const layoutScale = (a.getContext() as any).getLayoutScale?.() || 1.0;
   const isMobile = layoutScale < 1.0;
   const width = isMobile ? 1040 : 1000;
@@ -1320,5 +1050,6 @@ export function createSolitaireApp(a: App, windowWidth?: number, windowHeight?: 
 if (require.main === module) {
   const appInstance = app(resolveTransport(), { title: 'Solitaire' }, (a: App) => {
     createSolitaireApp(a);
-  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));  });
+  });
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));
 }

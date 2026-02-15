@@ -7895,6 +7895,7 @@ type CreateCanvasRasterRequest struct {
 	Height        int32                  `protobuf:"varint,3,opt,name=height,proto3" json:"height,omitempty"`
 	Pixels        []byte                 `protobuf:"bytes,4,opt,name=pixels,proto3" json:"pixels,omitempty"` // RGBA pixel data
 	BlendMode     BlendMode              `protobuf:"varint,5,opt,name=blend_mode,json=blendMode,proto3,enum=bridge.BlendMode" json:"blend_mode,omitempty"`
+	RawPixels     []byte                 `protobuf:"bytes,6,opt,name=raw_pixels,json=rawPixels,proto3" json:"raw_pixels,omitempty"` // base64-encoded RGBA buffer (faster for large buffers)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7962,6 +7963,13 @@ func (x *CreateCanvasRasterRequest) GetBlendMode() BlendMode {
 		return x.BlendMode
 	}
 	return BlendMode_BLEND_NORMAL
+}
+
+func (x *CreateCanvasRasterRequest) GetRawPixels() []byte {
+	if x != nil {
+		return x.RawPixels
+	}
+	return nil
 }
 
 type CreateCanvasLinearGradientRequest struct {
@@ -8393,20 +8401,22 @@ func (x *CreateCanvasPolygonRequest) GetStrokeWidth() float32 {
 }
 
 type CreateTappableCanvasRasterRequest struct {
-	state                 protoimpl.MessageState `protogen:"open.v1"`
-	WidgetId              string                 `protobuf:"bytes,1,opt,name=widget_id,json=widgetId,proto3" json:"widget_id,omitempty"`
-	Width                 int32                  `protobuf:"varint,2,opt,name=width,proto3" json:"width,omitempty"`
-	Height                int32                  `protobuf:"varint,3,opt,name=height,proto3" json:"height,omitempty"`
-	Pixels                []byte                 `protobuf:"bytes,4,opt,name=pixels,proto3" json:"pixels,omitempty"`
-	OnKeyDownCallbackId   string                 `protobuf:"bytes,5,opt,name=on_key_down_callback_id,json=onKeyDownCallbackId,proto3" json:"on_key_down_callback_id,omitempty"`
-	OnKeyUpCallbackId     string                 `protobuf:"bytes,6,opt,name=on_key_up_callback_id,json=onKeyUpCallbackId,proto3" json:"on_key_up_callback_id,omitempty"`
-	OnScrollCallbackId    string                 `protobuf:"bytes,7,opt,name=on_scroll_callback_id,json=onScrollCallbackId,proto3" json:"on_scroll_callback_id,omitempty"`
-	OnMouseMoveCallbackId string                 `protobuf:"bytes,8,opt,name=on_mouse_move_callback_id,json=onMouseMoveCallbackId,proto3" json:"on_mouse_move_callback_id,omitempty"`
-	DragCallbackId        string                 `protobuf:"bytes,9,opt,name=drag_callback_id,json=dragCallbackId,proto3" json:"drag_callback_id,omitempty"`             // no "on_" prefix for drag callbacks (matches Image convention)
-	DragEndCallbackId     string                 `protobuf:"bytes,10,opt,name=drag_end_callback_id,json=dragEndCallbackId,proto3" json:"drag_end_callback_id,omitempty"` // no "on_" prefix for drag callbacks (matches Image convention)
-	BlendMode             BlendMode              `protobuf:"varint,11,opt,name=blend_mode,json=blendMode,proto3,enum=bridge.BlendMode" json:"blend_mode,omitempty"`
-	unknownFields         protoimpl.UnknownFields
-	sizeCache             protoimpl.SizeCache
+	state                    protoimpl.MessageState `protogen:"open.v1"`
+	WidgetId                 string                 `protobuf:"bytes,1,opt,name=widget_id,json=widgetId,proto3" json:"widget_id,omitempty"`
+	Width                    int32                  `protobuf:"varint,2,opt,name=width,proto3" json:"width,omitempty"`
+	Height                   int32                  `protobuf:"varint,3,opt,name=height,proto3" json:"height,omitempty"`
+	Pixels                   []byte                 `protobuf:"bytes,4,opt,name=pixels,proto3" json:"pixels,omitempty"`
+	OnKeyDownCallbackId      string                 `protobuf:"bytes,5,opt,name=on_key_down_callback_id,json=onKeyDownCallbackId,proto3" json:"on_key_down_callback_id,omitempty"`
+	OnKeyUpCallbackId        string                 `protobuf:"bytes,6,opt,name=on_key_up_callback_id,json=onKeyUpCallbackId,proto3" json:"on_key_up_callback_id,omitempty"`
+	OnScrollCallbackId       string                 `protobuf:"bytes,7,opt,name=on_scroll_callback_id,json=onScrollCallbackId,proto3" json:"on_scroll_callback_id,omitempty"`
+	OnMouseMoveCallbackId    string                 `protobuf:"bytes,8,opt,name=on_mouse_move_callback_id,json=onMouseMoveCallbackId,proto3" json:"on_mouse_move_callback_id,omitempty"`
+	DragCallbackId           string                 `protobuf:"bytes,9,opt,name=drag_callback_id,json=dragCallbackId,proto3" json:"drag_callback_id,omitempty"`             // no "on_" prefix for drag callbacks (matches Image convention)
+	DragEndCallbackId        string                 `protobuf:"bytes,10,opt,name=drag_end_callback_id,json=dragEndCallbackId,proto3" json:"drag_end_callback_id,omitempty"` // no "on_" prefix for drag callbacks (matches Image convention)
+	BlendMode                BlendMode              `protobuf:"varint,11,opt,name=blend_mode,json=blendMode,proto3,enum=bridge.BlendMode" json:"blend_mode,omitempty"`
+	OnDoubleTapCallbackId    string                 `protobuf:"bytes,12,opt,name=on_double_tap_callback_id,json=onDoubleTapCallbackId,proto3" json:"on_double_tap_callback_id,omitempty"`
+	OnSecondaryTapCallbackId string                 `protobuf:"bytes,13,opt,name=on_secondary_tap_callback_id,json=onSecondaryTapCallbackId,proto3" json:"on_secondary_tap_callback_id,omitempty"`
+	unknownFields            protoimpl.UnknownFields
+	sizeCache                protoimpl.SizeCache
 }
 
 func (x *CreateTappableCanvasRasterRequest) Reset() {
@@ -8514,6 +8524,20 @@ func (x *CreateTappableCanvasRasterRequest) GetBlendMode() BlendMode {
 		return x.BlendMode
 	}
 	return BlendMode_BLEND_NORMAL
+}
+
+func (x *CreateTappableCanvasRasterRequest) GetOnDoubleTapCallbackId() string {
+	if x != nil {
+		return x.OnDoubleTapCallbackId
+	}
+	return ""
+}
+
+func (x *CreateTappableCanvasRasterRequest) GetOnSecondaryTapCallbackId() string {
+	if x != nil {
+		return x.OnSecondaryTapCallbackId
+	}
+	return ""
 }
 
 // Shader uniform value (supports float, vec2, vec3, vec4)
@@ -17846,14 +17870,16 @@ const file_proto_bridge_proto_rawDesc = "" +
 	"\x01r\x18\x03 \x01(\x05R\x01r\x12\f\n" +
 	"\x01g\x18\x04 \x01(\x05R\x01g\x12\f\n" +
 	"\x01b\x18\x05 \x01(\x05R\x01b\x12\f\n" +
-	"\x01a\x18\x06 \x01(\x05R\x01a\"\xb0\x01\n" +
+	"\x01a\x18\x06 \x01(\x05R\x01a\"\xcf\x01\n" +
 	"\x19CreateCanvasRasterRequest\x12\x1b\n" +
 	"\twidget_id\x18\x01 \x01(\tR\bwidgetId\x12\x14\n" +
 	"\x05width\x18\x02 \x01(\x05R\x05width\x12\x16\n" +
 	"\x06height\x18\x03 \x01(\x05R\x06height\x12\x16\n" +
 	"\x06pixels\x18\x04 \x01(\fR\x06pixels\x120\n" +
 	"\n" +
-	"blend_mode\x18\x05 \x01(\x0e2\x11.bridge.BlendModeR\tblendMode\"\xc2\x01\n" +
+	"blend_mode\x18\x05 \x01(\x0e2\x11.bridge.BlendModeR\tblendMode\x12\x1d\n" +
+	"\n" +
+	"raw_pixels\x18\x06 \x01(\fR\trawPixels\"\xc2\x01\n" +
 	"!CreateCanvasLinearGradientRequest\x12\x1b\n" +
 	"\twidget_id\x18\x01 \x01(\tR\bwidgetId\x12\x1f\n" +
 	"\vstart_color\x18\x02 \x01(\tR\n" +
@@ -17896,7 +17922,7 @@ const file_proto_bridge_proto_rawDesc = "" +
 	"\n" +
 	"fill_color\x18\x03 \x01(\tR\tfillColor\x12!\n" +
 	"\fstroke_color\x18\x04 \x01(\tR\vstrokeColor\x12!\n" +
-	"\fstroke_width\x18\x05 \x01(\x02R\vstrokeWidth\"\xe8\x03\n" +
+	"\fstroke_width\x18\x05 \x01(\x02R\vstrokeWidth\"\xe2\x04\n" +
 	"!CreateTappableCanvasRasterRequest\x12\x1b\n" +
 	"\twidget_id\x18\x01 \x01(\tR\bwidgetId\x12\x14\n" +
 	"\x05width\x18\x02 \x01(\x05R\x05width\x12\x16\n" +
@@ -17910,7 +17936,9 @@ const file_proto_bridge_proto_rawDesc = "" +
 	"\x14drag_end_callback_id\x18\n" +
 	" \x01(\tR\x11dragEndCallbackId\x120\n" +
 	"\n" +
-	"blend_mode\x18\v \x01(\x0e2\x11.bridge.BlendModeR\tblendMode\";\n" +
+	"blend_mode\x18\v \x01(\x0e2\x11.bridge.BlendModeR\tblendMode\x128\n" +
+	"\x19on_double_tap_callback_id\x18\f \x01(\tR\x15onDoubleTapCallbackId\x12>\n" +
+	"\x1con_secondary_tap_callback_id\x18\r \x01(\tR\x18onSecondaryTapCallbackId\";\n" +
 	"\rShaderUniform\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x16\n" +
 	"\x06values\x18\x02 \x03(\x02R\x06values\"\xc2\x01\n" +

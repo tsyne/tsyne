@@ -500,7 +500,6 @@ export function buildExpenseTrackerApp(a: any, windowWidth?: number, windowHeigh
           }).when(() => selectedTab === 'analytics');
         });
       });
-    });
   };
 
   // Subscribe to store changes

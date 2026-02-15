@@ -657,7 +657,6 @@ export function buildElementApp(a: any, windowWidth?: number, windowHeight?: num
           });
         }).withPadding(10);
       });
-    });
   };
 
   store.subscribe(async () => {

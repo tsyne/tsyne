@@ -5,7 +5,7 @@
  * Tests messaging, rooms, and user management.
  */
 
-import { TsyneTest, TestContext } from '../../src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { buildElementApp } from './index';
 
 describe('Element App UI Tests', () => {

@@ -893,6 +893,13 @@ export class CvgContext {
     return this;
   }
 
+  /** Request keyboard focus on the event overlay (created by enableEvents). */
+  async requestFocus(): Promise<void> {
+    if (this.tappableRaster?.requestFocus) {
+      await this.tappableRaster.requestFocus();
+    }
+  }
+
   // ─── Dynamic Binding Regions ──────────────────────────────────
 
   /** Remove an element from hit-test tracking (used when destroying bindTo elements). */
@@ -2374,7 +2381,15 @@ export class CvgContext {
     // xlink:href inheritance — inherit stops and geometry from referenced gradient
     const href = node.attrs['xlink:href'] ?? node.attrs.href;
     const refId = href?.replace(/^#/, '');
-    const ref = refId ? this.getGradient(refId) : undefined;
+    let ref = refId ? this.getGradient(refId) : undefined;
+    // Forward reference: referenced gradient not yet registered — process it now
+    if (!ref && refId) {
+      const refNode = this.nodesById.get(refId);
+      if (refNode && (refNode.tag === 'linearGradient' || refNode.tag === 'radialGradient')) {
+        this.linearGradient(refNode);
+        ref = this.getGradient(refId);
+      }
+    }
     if (stops.length === 0 && ref) {
       stops = ref.stops;
     }

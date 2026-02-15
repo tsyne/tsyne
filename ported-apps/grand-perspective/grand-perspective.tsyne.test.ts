@@ -8,7 +8,7 @@
  * Licensed under MIT License
  */
 
-import { TsyneTest } from '../../src/index-test';
+import { TsyneTest } from 'tsyne';
 import { buildGrandPerspectiveApp } from './grand-perspective';
 
 describe('GrandPerspectiveApp UI Tests', () => {

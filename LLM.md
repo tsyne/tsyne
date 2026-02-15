@@ -452,8 +452,49 @@ class Store {
 1. `ported-apps/[app]/index.ts` (single file, 400-730 lines)
 2. `ported-apps/[app]/index.test.ts` (Jest tests, co-located)
 3. `ported-apps/[app]/index.tsyne.test.ts` (tab navigation + screenshot)
-4. `ported-apps/[app]/README.md` (ASCII diagrams)
-5. `ported-apps/[app]/LICENSE` (MIT/Apache)
+4. `ported-apps/[app]/package.json` (workspace package — **required**, see below)
+5. `ported-apps/[app]/jest.config.js` (test config — **required**, see below)
+6. `ported-apps/[app]/README.md` (ASCII diagrams)
+7. `ported-apps/[app]/LICENSE` (MIT/Apache)
+
+**Workspace Registration (Critical):**
+
+Every new app module **must** have its own `package.json` and be registered in `pnpm-workspace.yaml`. Without this, `pnpm test` walks up to the repo root and runs the **entire** root test suite (~900+ tests) instead of the app's own tests. This silently wastes CI time (8 missing packages = 7,000+ redundant test runs).
+
+```json
+// ported-apps/[app]/package.json
+{
+  "name": "tsyne-[app-name]",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": { "test": "jest" },
+  "dependencies": { "tsyne": "workspace:*" },
+  "devDependencies": {
+    "@types/jest": "^29.5.0", "@types/node": "^20.0.0",
+    "jest": "^29.7.0", "ts-jest": "^29.4.6", "typescript": "^5.0.0"
+  }
+}
+```
+
+```yaml
+# pnpm-workspace.yaml — add the new entry alphabetically
+packages:
+  - 'ported-apps/[app-name]'
+```
+
+```javascript
+// ported-apps/[app]/jest.config.js
+module.exports = {
+  preset: 'ts-jest',
+  testEnvironment: '../../jest-environment-tsyne.js',
+  testMatch: ['**/?(*.)+(spec|test).ts'],
+  testPathIgnorePatterns: ['/node_modules/', '/dist/'],
+  transform: { '^.+\\.ts$': ['ts-jest', { diagnostics: false }] },
+  moduleFileExtensions: ['ts', 'js', 'json'],
+};
+```
+
+After creating these files, run `pnpm install` to wire up the workspace symlinks.
 
 **See Also:** `/docs/pseudo-declarative-ui-composition.md` → "Lessons from Ported Apps" for detailed patterns
 

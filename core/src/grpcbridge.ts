@@ -1001,7 +1001,9 @@ export class GrpcBridgeConnection implements BridgeInterface {
             widgetId: payload.widgetId || payload.id,
             width: payload.width || 0,
             height: payload.height || 0,
-            pixels: payload.pixels ? Buffer.from(String(payload.pixels), 'base64') : Buffer.alloc(0)
+            pixels: payload.pixels ? Buffer.from(String(payload.pixels), 'base64') : Buffer.alloc(0),
+            blendMode: 0,
+            rawPixels: payload.rawPixels ? Buffer.from(String(payload.rawPixels), 'base64') : Buffer.alloc(0)
           }
         };
       case 'createCanvasLinearGradient':
@@ -1064,7 +1066,15 @@ export class GrpcBridgeConnection implements BridgeInterface {
             width: payload.width || 0,
             height: payload.height || 0,
             pixels: payload.pixels ? Buffer.from(String(payload.pixels), 'base64') : Buffer.alloc(0),
-            callbackId: payload.callbackId || ''
+            onKeyDownCallbackId: payload.onKeyDownCallbackId || '',
+            onKeyUpCallbackId: payload.onKeyUpCallbackId || '',
+            onScrollCallbackId: payload.onScrollCallbackId || '',
+            onMouseMoveCallbackId: payload.onMouseMoveCallbackId || '',
+            dragCallbackId: payload.onDragCallbackId || '',
+            dragEndCallbackId: payload.onDragEndCallbackId || '',
+            blendMode: 0,
+            onDoubleTapCallbackId: payload.onDoubleTapCallbackId || '',
+            onSecondaryTapCallbackId: payload.onSecondaryTapCallbackId || ''
           }
         };
 

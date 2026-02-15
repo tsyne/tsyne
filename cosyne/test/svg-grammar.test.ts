@@ -26,6 +26,11 @@ function createMockWidget(type: string, initialProps: any) {
   };
 }
 
+/** Return only user-drawn calls, skipping the transparent sizing shim created by cvg(). */
+function userCalls(app: { calls: MockCall[] }): MockCall[] {
+  return app.calls.filter(c => !(c.method === 'canvasRectangle' && c.args[0]?.fillColor === 'transparent'));
+}
+
 function createMockApp() {
   const calls: MockCall[] = [];
   const app = {
@@ -50,6 +55,9 @@ function createMockApp() {
       calls.push({ method: 'canvasLine', args: [x1, y1, x2, y2, opts] });
       return createMockWidget('line', { x1, y1, x2, y2, ...opts });
     },
+    clip(builder: () => void) { builder(); return createMockWidget('clip', {}); },
+    stack(builder: () => void) { builder(); return createMockWidget('stack', {}); },
+    canvasStack(builder: () => void) { builder(); return createMockWidget('canvasStack', {}); },
   };
   return app;
 }
@@ -77,7 +85,7 @@ describe('svg factory', () => {
       // Without viewBox, 1:1 mapping
       s.path({ d: 'M 10 10 L 20 20' });
     });
-    expect(app.calls).toHaveLength(1);
+    expect(userCalls(app)).toHaveLength(1);
   });
 
   it('should handle viewBox as object', () => {
@@ -85,8 +93,8 @@ describe('svg factory', () => {
     cvg(app, { viewBox: { minX: 0, minY: 0, width: 100, height: 100 }, width: 400, height: 400 }, (s) => {
       s.circle({ cx: 50, cy: 50, r: 10 });
     });
-    expect(app.calls).toHaveLength(1);
-    expect(app.calls[0].method).toBe('canvasCircle');
+    expect(userCalls(app)).toHaveLength(1);
+    expect(userCalls(app)[0].method).toBe('canvasCircle');
   });
 });
 
@@ -97,7 +105,7 @@ describe('CvgContext coordinate mapping', () => {
       // viewBox 100x100 → canvas 400x400, scale=4
       s.circle({ cx: 50, cy: 50, r: 10 });
     });
-    const call = app.calls[0];
+    const call = userCalls(app)[0];
     expect(call.method).toBe('canvasCircle');
     // cx=50 → 50*4=200, r=10 → 10*4=40
     expect(call.args[0].x).toBeCloseTo(160); // 200 - 40
@@ -115,7 +123,7 @@ describe('CvgContext coordinate mapping', () => {
     cvg(app, { viewBox: '0 0 200 100', width: 400, height: 400 }, (s) => {
       s.circle({ cx: 0, cy: 0, r: 10 });
     });
-    const call = app.calls[0];
+    const call = userCalls(app)[0];
     // cx=0 → 0*2 + 0 = 0, cy=0 → 0*2 + 100 = 100
     expect(call.args[0].x).toBeCloseTo(-20); // 0 - 10*2
     expect(call.args[0].y).toBeCloseTo(80);  // 100 - 10*2
@@ -127,7 +135,7 @@ describe('CvgContext coordinate mapping', () => {
     cvg(app, { viewBox: '10 20 100 100', width: 400, height: 400 }, (s) => {
       s.circle({ cx: 10, cy: 20, r: 5 });
     });
-    const call = app.calls[0];
+    const call = userCalls(app)[0];
     // (10 - 10)*4 + 0 = 0, (20 - 20)*4 + 0 = 0
     // r = 5*4 = 20
     expect(call.args[0].x).toBeCloseTo(-20); // 0 - 20
@@ -141,8 +149,8 @@ describe('CvgContext.path', () => {
     cvg(app, { viewBox: '0 0 100 100', width: 400, height: 400 }, (s) => {
       s.path({ d: 'M 10 10 L 20 20 Z', fill: '#F00' });
     });
-    expect(app.calls).toHaveLength(1);
-    const call = app.calls[0];
+    expect(userCalls(app)).toHaveLength(1);
+    const call = userCalls(app)[0];
     expect(call.method).toBe('canvasPath');
     // Path should be normalized and mapped
     expect(call.args[0].path).toContain('M');
@@ -157,7 +165,7 @@ describe('CvgContext.path', () => {
       // 1:1 mapping for easy verification
       s.path({ d: 'M 10 10 l 5 5' });
     });
-    const path = app.calls[0].args[0].path;
+    const path = userCalls(app)[0].args[0].path;
     // Should be absolute — no lowercase
     expect(path).not.toMatch(/[a-z]/);
   });
@@ -170,7 +178,7 @@ describe('CvgContext.path', () => {
     });
     expect(result).toBeInstanceOf(CvgElement);
     expect(result.getUnderlying()).toBeNull();
-    expect(app.calls).toHaveLength(0);
+    expect(userCalls(app)).toHaveLength(0);
   });
 });
 
@@ -180,9 +188,9 @@ describe('CvgContext.circle', () => {
     cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.circle({ cx: 50, cy: 50, r: 20, fill: 'red', stroke: 'black', 'stroke-width': '3' });
     });
-    const call = app.calls[0];
-    expect(call.args[0].fillColor).toBe('red');
-    expect(call.args[0].strokeColor).toBe('black');
+    const call = userCalls(app)[0];
+    expect(call.args[0].fillColor).toBe('#ff0000');
+    expect(call.args[0].strokeColor).toBe('#000000');
     expect(call.args[0].strokeWidth).toBe(3);
   });
 
@@ -191,7 +199,7 @@ describe('CvgContext.circle', () => {
     cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.circle({ cx: 50, cy: 50, r: 20, fill: 'none', stroke: '#000', 'stroke-width': '10' });
     });
-    const call = app.calls[0];
+    const call = userCalls(app)[0];
     expect(call.args[0].fillColor).toBeUndefined();
     expect(call.args[0].strokeColor).toBe('#000');
     expect(call.args[0].strokeWidth).toBe(10);
@@ -202,8 +210,8 @@ describe('CvgContext.circle', () => {
     cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.circle({ cx: 50, cy: 50, r: 20 });
     });
-    const call = app.calls[0];
-    expect(call.args[0].fillColor).toBe('black');
+    const call = userCalls(app)[0];
+    expect(call.args[0].fillColor).toBe('#000000');
   });
 });
 
@@ -213,9 +221,9 @@ describe('CvgContext.rect', () => {
     cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.rect({ x: 10, y: 20, width: 50, height: 30, fill: 'blue' });
     });
-    const call = app.calls[0];
+    const call = userCalls(app)[0];
     expect(call.method).toBe('canvasRectangle');
-    expect(call.args[0].fillColor).toBe('blue');
+    expect(call.args[0].fillColor).toBe('#0000ff');
     expect(call.args[0].x).toBeCloseTo(10);
     expect(call.args[0].y).toBeCloseTo(20);
     expect(call.args[0].x2).toBeCloseTo(60);
@@ -229,13 +237,13 @@ describe('CvgContext.line', () => {
     cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.line({ x1: 10, y1: 20, x2: 90, y2: 80, stroke: 'red', 'stroke-width': '2' });
     });
-    const call = app.calls[0];
+    const call = userCalls(app)[0];
     expect(call.method).toBe('canvasLine');
     expect(call.args[0]).toBeCloseTo(10);
     expect(call.args[1]).toBeCloseTo(20);
     expect(call.args[2]).toBeCloseTo(90);
     expect(call.args[3]).toBeCloseTo(80);
-    expect(call.args[4].strokeColor).toBe('red');
+    expect(call.args[4].strokeColor).toBe('#ff0000');
   });
 });
 
@@ -247,7 +255,7 @@ describe('CvgContext.g (groups)', () => {
         s.circle({ cx: 50, cy: 50, r: 10 });
       });
     });
-    expect(app.calls[0].args[0].fillColor).toBe('red');
+    expect(userCalls(app)[0].args[0].fillColor).toBe('#ff0000');
   });
 
   it('should inherit stroke from group', () => {
@@ -257,7 +265,7 @@ describe('CvgContext.g (groups)', () => {
         s.circle({ cx: 43, cy: 58, r: 34 });
       });
     });
-    const call = app.calls[0];
+    const call = userCalls(app)[0];
     expect(call.args[0].fillColor).toBeUndefined(); // fill=none
     expect(call.args[0].strokeColor).toBe('#B13');
     expect(call.args[0].strokeWidth).toBe(9);
@@ -270,7 +278,7 @@ describe('CvgContext.g (groups)', () => {
         s.circle({ cx: 50, cy: 50, r: 10, fill: 'blue' });
       });
     });
-    expect(app.calls[0].args[0].fillColor).toBe('blue');
+    expect(userCalls(app)[0].args[0].fillColor).toBe('#0000ff');
   });
 
   it('should pop style after group exits', () => {
@@ -282,8 +290,8 @@ describe('CvgContext.g (groups)', () => {
       // After group, should revert to default (black)
       s.circle({ cx: 20, cy: 20, r: 5 });
     });
-    expect(app.calls[0].args[0].fillColor).toBe('red');
-    expect(app.calls[1].args[0].fillColor).toBe('black');
+    expect(userCalls(app)[0].args[0].fillColor).toBe('#ff0000');
+    expect(userCalls(app)[1].args[0].fillColor).toBe('#000000');
   });
 
   it('should support nested groups', () => {
@@ -295,8 +303,8 @@ describe('CvgContext.g (groups)', () => {
         });
       });
     });
-    expect(app.calls[0].args[0].fillColor).toBe('red');
-    expect(app.calls[0].args[0].strokeColor).toBe('blue');
+    expect(userCalls(app)[0].args[0].fillColor).toBe('#ff0000');
+    expect(userCalls(app)[0].args[0].strokeColor).toBe('#0000ff');
   });
 });
 
@@ -306,10 +314,10 @@ describe('CvgContext.polyline and polygon', () => {
     cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.polyline({ points: '10,10 20,20 30,10', stroke: 'black', fill: 'none' });
     });
-    expect(app.calls).toHaveLength(1);
-    expect(app.calls[0].method).toBe('canvasPath');
+    expect(userCalls(app)).toHaveLength(1);
+    expect(userCalls(app)[0].method).toBe('canvasPath');
     // Should contain M and L commands
-    const path = app.calls[0].args[0].path;
+    const path = userCalls(app)[0].args[0].path;
     expect(path).toContain('M');
     expect(path).toContain('L');
   });
@@ -319,8 +327,8 @@ describe('CvgContext.polyline and polygon', () => {
     cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.polygon({ points: '10,10 20,20 30,10', fill: 'green' });
     });
-    expect(app.calls).toHaveLength(1);
-    const path = app.calls[0].args[0].path;
+    expect(userCalls(app)).toHaveLength(1);
+    const path = userCalls(app)[0].args[0].path;
     expect(path).toContain('Z');
   });
 });
@@ -331,7 +339,7 @@ describe('CvgContext.desc and defs', () => {
     cvg(app, { viewBox: '0 0 100 100' }, (s) => {
       s.desc({});
     });
-    expect(app.calls).toHaveLength(0);
+    expect(userCalls(app)).toHaveLength(0);
   });
 
   it('defs should not create any canvas elements', () => {
@@ -339,7 +347,7 @@ describe('CvgContext.desc and defs', () => {
     cvg(app, { viewBox: '0 0 100 100' }, (s) => {
       s.defs({}, () => {});
     });
-    expect(app.calls).toHaveLength(0);
+    expect(userCalls(app)).toHaveLength(0);
   });
 });
 
@@ -354,10 +362,10 @@ describe('PathBuilder', () => {
         .close()
         .fill('#F00');
     });
-    expect(app.calls).toHaveLength(1);
-    expect(app.calls[0].method).toBe('canvasPath');
-    expect(app.calls[0].args[0].fillColor).toBe('#F00');
-    const path = app.calls[0].args[0].path;
+    expect(userCalls(app)).toHaveLength(1);
+    expect(userCalls(app)[0].method).toBe('canvasPath');
+    expect(userCalls(app)[0].args[0].fillColor).toBe('#F00');
+    const path = userCalls(app)[0].args[0].path;
     expect(path).toContain('M');
     expect(path).toContain('L');
     expect(path).toContain('Z');
@@ -371,9 +379,9 @@ describe('PathBuilder', () => {
         .lineTo(100, 100)
         .stroke('blue', 3);
     });
-    expect(app.calls).toHaveLength(1);
-    expect(app.calls[0].args[0].strokeColor).toBe('blue');
-    expect(app.calls[0].args[0].strokeWidth).toBe(3);
+    expect(userCalls(app)).toHaveLength(1);
+    expect(userCalls(app)[0].args[0].strokeColor).toBe('blue');
+    expect(userCalls(app)[0].args[0].strokeWidth).toBe(3);
   });
 
   it('should handle cubicTo', () => {
@@ -385,7 +393,7 @@ describe('PathBuilder', () => {
         .close()
         .fill('#F00');
     });
-    const path = app.calls[0].args[0].path;
+    const path = userCalls(app)[0].args[0].path;
     expect(path).toContain('C');
   });
 
@@ -397,9 +405,9 @@ describe('PathBuilder', () => {
         .arc(25, 25, 0, 0, 1, 75, 75)
         .fill('green');
     });
-    expect(app.calls).toHaveLength(1);
+    expect(userCalls(app)).toHaveLength(1);
     // Arc should have been converted to cubic
-    const path = app.calls[0].args[0].path;
+    const path = userCalls(app)[0].args[0].path;
     expect(path).toContain('C');
     expect(path).not.toContain('A');
   });
@@ -412,7 +420,7 @@ describe('PathBuilder', () => {
         .quadraticTo(95, 10, 180, 80)
         .fill('red');
     });
-    const path = app.calls[0].args[0].path;
+    const path = userCalls(app)[0].args[0].path;
     // Should have been promoted to cubic
     expect(path).toContain('C');
     expect(path).not.toContain('Q');
@@ -428,7 +436,7 @@ describe('PathBuilder', () => {
         .stroke('#000', 2);
     });
     // fill() and stroke() each render, so 2 calls
-    expect(app.calls).toHaveLength(2);
+    expect(userCalls(app)).toHaveLength(2);
   });
 });
 
@@ -438,9 +446,9 @@ describe('CvgElement fluent chaining', () => {
     cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.circle({ r: 15, cx: 50, cy: 18 }).fill('#900');
     });
-    expect(app.calls).toHaveLength(1);
+    expect(userCalls(app)).toHaveLength(1);
     // The initial circle is created with default fill (black), then .fill() updates it
-    const widget = app.calls[0].args[0];
+    const widget = userCalls(app)[0].args[0];
     // After .fill('#900'), the underlying widget's props should be updated
   });
 
@@ -472,15 +480,15 @@ describe('CvgElement fluent chaining', () => {
       // Should not throw even though underlying is null
       s.path({}).fill('red');
     });
-    expect(app.calls).toHaveLength(0);
+    expect(userCalls(app)).toHaveLength(0);
   });
 });
 
 describe('CvgBuilder (builder-style API)', () => {
-  it('should create svg context via s.svg()', () => {
+  it('should create svg context via s.cvg()', () => {
     const app = createMockApp();
     const s = cvgBuilder(app);
-    const ctx = s.svg({ viewBox: '0 0 100 100', width: 400, height: 400 }, () => {
+    const ctx = s.cvg({ viewBox: '0 0 100 100', width: 400, height: 400 }, () => {
       s.circle({ cx: 50, cy: 50, r: 10 });
     });
     expect(ctx).toBeInstanceOf(CvgContext);
@@ -492,7 +500,7 @@ describe('CvgBuilder (builder-style API)', () => {
     const app = createMockApp();
     const s = cvgBuilder(app);
     let receivedCtx: CvgContext | null = null;
-    s.svg({ viewBox: '0 0 100 100' }, (ctx) => {
+    s.cvg({ viewBox: '0 0 100 100' }, (ctx) => {
       receivedCtx = ctx;
       ctx.circle({ cx: 50, cy: 50, r: 10 });
     });
@@ -502,7 +510,7 @@ describe('CvgBuilder (builder-style API)', () => {
   it('should support the full user-facing pattern', () => {
     const app = createMockApp();
     const s = cvgBuilder(app);
-    s.svg({ viewBox: '0 0 100 100' }, () => {
+    s.cvg({ viewBox: '0 0 100 100' }, () => {
       s.path({
         d: 'M19,16a46,46 0,1,0 62,0l-8,8a34,34 0,1,1-46,0z',
         fill: '#069',
@@ -514,26 +522,26 @@ describe('CvgBuilder (builder-style API)', () => {
     expect(app.calls[0].args[0].fillColor).toBe('#069');
     expect(app.calls[1].method).toBe('canvasCircle');
     // .fill('#900') updates the underlying widget
-    expect(app.calls[1].args[0].fillColor).toBe('black'); // initial creation is black
+    expect(app.calls[1].args[0].fillColor).toBe('#000000'); // initial creation is black (normalized)
     // But after .fill(), the widget's props should have been updated
   });
 
   it('should support groups via builder', () => {
     const app = createMockApp();
     const s = cvgBuilder(app);
-    s.svg({ viewBox: '0 0 100 100' }, () => {
+    s.cvg({ viewBox: '0 0 100 100' }, () => {
       s.g({ fill: 'red', stroke: '#000' }, () => {
         s.circle({ cx: 50, cy: 50, r: 20 });
       });
     });
-    expect(app.calls[0].args[0].fillColor).toBe('red');
+    expect(app.calls[0].args[0].fillColor).toBe('#ff0000');
     expect(app.calls[0].args[0].strokeColor).toBe('#000');
   });
 
   it('should support pathBuilder via builder', () => {
     const app = createMockApp();
     const s = cvgBuilder(app);
-    s.svg({ viewBox: '0 0 100 100' }, () => {
+    s.cvg({ viewBox: '0 0 100 100' }, () => {
       s.pathBuilder()
         .moveTo(10, 10)
         .lineTo(90, 90)

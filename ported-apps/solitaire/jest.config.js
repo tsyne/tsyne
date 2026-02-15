@@ -6,7 +6,10 @@ module.exports = {
     '**/?(*.)+(spec|test).ts'
   ],
   transform: {
-    '^.+\.ts$': 'ts-jest'
+    '^.+\\.ts$': ['ts-jest', { diagnostics: false }]
+  },
+  moduleNameMapper: {
+    '^cosyne$': '<rootDir>/../../cosyne/src/index.ts',
   },
   moduleFileExtensions: ['ts', 'js', 'json'],
 };

@@ -1,5 +1,5 @@
 import { Context } from '../context';
-import { Widget, registerGlobalBinding } from './base';
+import { Widget } from './base';
 
 /**
  * Button options
@@ -160,7 +160,7 @@ export class Button extends Widget {
     };
 
     this.ghostCondition = updateGhost;
-    registerGlobalBinding(updateGhost);
+    this.ctx.registerBinding(updateGhost);
     updateGhost();
 
     return this;
@@ -338,7 +338,7 @@ export class ImageButton extends Widget {
     };
 
     this.ghostCondition = updateGhost;
-    registerGlobalBinding(updateGhost);
+    this.ctx.registerBinding(updateGhost);
     updateGhost();
 
     return this;
@@ -466,7 +466,7 @@ export class Entry extends Widget {
     };
 
     this.ghostCondition = updateGhost;
-    registerGlobalBinding(updateGhost);
+    this.ctx.registerBinding(updateGhost);
     updateGhost();
 
     return this;

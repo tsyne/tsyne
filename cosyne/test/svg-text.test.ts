@@ -11,6 +11,11 @@ interface MockCall {
   args: any[];
 }
 
+/** Return only user-drawn calls, skipping the transparent sizing shim created by cvg(). */
+function userCalls(app: { calls: MockCall[] }): MockCall[] {
+  return app.calls.filter(c => !(c.method === 'canvasRectangle' && c.args[0]?.fillColor === 'transparent'));
+}
+
 function createMockWidget(type: string, initialProps: any) {
   const props = { ...initialProps };
   return {
@@ -52,6 +57,9 @@ function createMockApp() {
       calls.push({ method: 'canvasText', args: [text, opts] });
       return createMockWidget('text', { text, ...opts });
     },
+    clip(builder: () => void) { builder(); return createMockWidget('clip', {}); },
+    stack(builder: () => void) { builder(); return createMockWidget('stack', {}); },
+    canvasStack(builder: () => void) { builder(); return createMockWidget('canvasStack', {}); },
   };
   return app;
 }
@@ -99,13 +107,13 @@ describe('CvgContext.text', () => {
     cvg(app, { viewBox: '0 0 100 100', width: 400, height: 400 }, (s) => {
       s.text({ x: '50', y: '60', fill: '#FFF', 'font-size': '24' }, 'Hello');
     });
-    expect(app.calls).toHaveLength(1);
-    const call = app.calls[0];
+    expect(userCalls(app)).toHaveLength(1);
+    const call = userCalls(app)[0];
     expect(call.method).toBe('canvasText');
     expect(call.args[0]).toBe('Hello');
-    // x=50 → (50-0)*4 + 0 = 200, y=60 → (60-0)*4 + 0 = 240
+    // x=50 → (50-0)*4 + 0 = 200, y=60 → mapped with baseline adjustment
     expect(call.args[1].x).toBeCloseTo(200);
-    expect(call.args[1].y).toBeCloseTo(240);
+    expect(call.args[1].y).toBeCloseTo(137.28);
     expect(call.args[1].color).toBe('#FFF');
     // font-size 24 * scale 4 = 96
     expect(call.args[1].textSize).toBeCloseTo(96);
@@ -119,7 +127,7 @@ describe('CvgContext.text', () => {
     });
     expect(result).toBeInstanceOf(CvgElement);
     expect(result.getUnderlying()).toBeNull();
-    expect(app.calls).toHaveLength(0);
+    expect(userCalls(app)).toHaveLength(0);
   });
 
   it('should return CvgElement with null for undefined content', () => {
@@ -137,7 +145,7 @@ describe('CvgContext.text', () => {
       s.text({ x: '0', y: '20' }, 'Test');
     });
     // 1:1 mapping, default fontSize=16, transform scale=1
-    expect(app.calls[0].args[1].textSize).toBeCloseTo(16);
+    expect(userCalls(app)[0].args[1].textSize).toBeCloseTo(16);
   });
 
   it('should map text-anchor "middle" to alignment "center"', () => {
@@ -145,7 +153,7 @@ describe('CvgContext.text', () => {
     cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.text({ x: '50', y: '50', 'text-anchor': 'middle' }, 'Centered');
     });
-    expect(app.calls[0].args[1].alignment).toBe('center');
+    expect(userCalls(app)[0].args[1].alignment).toBe('center');
   });
 
   it('should map text-anchor "end" to alignment "trailing"', () => {
@@ -153,7 +161,7 @@ describe('CvgContext.text', () => {
     cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.text({ x: '50', y: '50', 'text-anchor': 'end' }, 'Right');
     });
-    expect(app.calls[0].args[1].alignment).toBe('trailing');
+    expect(userCalls(app)[0].args[1].alignment).toBe('trailing');
   });
 
   it('should default to alignment "leading"', () => {
@@ -161,7 +169,7 @@ describe('CvgContext.text', () => {
     cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.text({ x: '10', y: '20' }, 'Default');
     });
-    expect(app.calls[0].args[1].alignment).toBe('leading');
+    expect(userCalls(app)[0].args[1].alignment).toBe('leading');
   });
 
   it('should detect bold font-weight', () => {
@@ -169,7 +177,7 @@ describe('CvgContext.text', () => {
     cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.text({ x: '10', y: '20', 'font-weight': 'bold' }, 'Bold');
     });
-    expect(app.calls[0].args[1].bold).toBe(true);
+    expect(userCalls(app)[0].args[1].bold).toBe(true);
   });
 
   it('should detect bold from numeric weight >= 600', () => {
@@ -177,7 +185,7 @@ describe('CvgContext.text', () => {
     cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.text({ x: '10', y: '20', 'font-weight': '700' }, 'Bold');
     });
-    expect(app.calls[0].args[1].bold).toBe(true);
+    expect(userCalls(app)[0].args[1].bold).toBe(true);
   });
 
   it('should not be bold for normal weight', () => {
@@ -185,7 +193,7 @@ describe('CvgContext.text', () => {
     cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.text({ x: '10', y: '20', 'font-weight': '400' }, 'Normal');
     });
-    expect(app.calls[0].args[1].bold).toBe(false);
+    expect(userCalls(app)[0].args[1].bold).toBe(false);
   });
 
   it('should detect italic', () => {
@@ -193,7 +201,7 @@ describe('CvgContext.text', () => {
     cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.text({ x: '10', y: '20', 'font-style': 'italic' }, 'Italic');
     });
-    expect(app.calls[0].args[1].italic).toBe(true);
+    expect(userCalls(app)[0].args[1].italic).toBe(true);
   });
 
   it('should detect oblique as italic', () => {
@@ -201,7 +209,7 @@ describe('CvgContext.text', () => {
     cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.text({ x: '10', y: '20', 'font-style': 'oblique' }, 'Oblique');
     });
-    expect(app.calls[0].args[1].italic).toBe(true);
+    expect(userCalls(app)[0].args[1].italic).toBe(true);
   });
 
   it('should detect monospace font family', () => {
@@ -209,7 +217,7 @@ describe('CvgContext.text', () => {
     cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.text({ x: '10', y: '20', 'font-family': 'Courier New' }, 'Code');
     });
-    expect(app.calls[0].args[1].monospace).toBe(true);
+    expect(userCalls(app)[0].args[1].monospace).toBe(true);
   });
 
   it('should not be monospace for serif', () => {
@@ -217,7 +225,7 @@ describe('CvgContext.text', () => {
     cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.text({ x: '10', y: '20', 'font-family': 'serif' }, 'Serif');
     });
-    expect(app.calls[0].args[1].monospace).toBe(false);
+    expect(userCalls(app)[0].args[1].monospace).toBe(false);
   });
 
   it('should use fill color from style, default to black', () => {
@@ -227,9 +235,9 @@ describe('CvgContext.text', () => {
       s.text({ x: '10', y: '40', fill: 'red' }, 'Red');
       s.text({ x: '10', y: '60', fill: 'none' }, 'None');
     });
-    expect(app.calls[0].args[1].color).toBe('black');
-    expect(app.calls[1].args[1].color).toBe('red');
-    expect(app.calls[2].args[1].color).toBe('black'); // fill=none falls back to black
+    expect(userCalls(app)[0].args[1].color).toBe('#000000');
+    expect(userCalls(app)[1].args[1].color).toBe('#ff0000');
+    expect(userCalls(app)[2].args[1].color).toBe('black'); // fill=none falls back to hardcoded 'black'
   });
 });
 
@@ -243,7 +251,7 @@ describe('text style inheritance', () => {
         s.text({ x: '10', y: '20' }, 'Inherited');
       });
     });
-    expect(app.calls[0].args[1].textSize).toBeCloseTo(24);
+    expect(userCalls(app)[0].args[1].textSize).toBeCloseTo(24);
   });
 
   it('should inherit text-anchor from group', () => {
@@ -253,7 +261,7 @@ describe('text style inheritance', () => {
         s.text({ x: '50', y: '50' }, 'Centered');
       });
     });
-    expect(app.calls[0].args[1].alignment).toBe('center');
+    expect(userCalls(app)[0].args[1].alignment).toBe('center');
   });
 
   it('should inherit font-weight from group', () => {
@@ -263,7 +271,7 @@ describe('text style inheritance', () => {
         s.text({ x: '10', y: '20' }, 'Bold');
       });
     });
-    expect(app.calls[0].args[1].bold).toBe(true);
+    expect(userCalls(app)[0].args[1].bold).toBe(true);
   });
 
   it('should inherit fill from group for text color', () => {
@@ -273,7 +281,7 @@ describe('text style inheritance', () => {
         s.text({ x: '10', y: '20' }, 'Blue');
       });
     });
-    expect(app.calls[0].args[1].color).toBe('blue');
+    expect(userCalls(app)[0].args[1].color).toBe('#0000ff');
   });
 
   it('should allow text element to override inherited font-size', () => {
@@ -283,7 +291,7 @@ describe('text style inheritance', () => {
         s.text({ x: '10', y: '20', 'font-size': '12' }, 'Smaller');
       });
     });
-    expect(app.calls[0].args[1].textSize).toBeCloseTo(12);
+    expect(userCalls(app)[0].args[1].textSize).toBeCloseTo(12);
   });
 
   it('should inherit style attribute properties on group', () => {
@@ -293,9 +301,9 @@ describe('text style inheritance', () => {
         s.text({ x: '50', y: '50' }, 'Styled');
       });
     });
-    expect(app.calls[0].args[1].textSize).toBeCloseTo(18);
-    expect(app.calls[0].args[1].alignment).toBe('center');
-    expect(app.calls[0].args[1].monospace).toBe(false);
+    expect(userCalls(app)[0].args[1].textSize).toBeCloseTo(18);
+    expect(userCalls(app)[0].args[1].alignment).toBe('center');
+    expect(userCalls(app)[0].args[1].monospace).toBe(false);
   });
 });
 
@@ -307,9 +315,9 @@ describe('text with transform', () => {
     cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.text({ x: '10', y: '20', transform: 'translate(5, 10)' }, 'Moved');
     });
-    // transform: translate(5,10) → point (10,20) → (15,30), then viewBox 1:1 → (15,30)
-    expect(app.calls[0].args[1].x).toBeCloseTo(15);
-    expect(app.calls[0].args[1].y).toBeCloseTo(30);
+    // transform: translate(5,10) → point (10,20) → (15,30), then baseline adjustment
+    expect(userCalls(app)[0].args[1].x).toBeCloseTo(15);
+    expect(userCalls(app)[0].args[1].y).toBeCloseTo(12.88);
   });
 
   it('should scale font size with transform', () => {
@@ -318,7 +326,7 @@ describe('text with transform', () => {
       s.text({ x: '10', y: '20', 'font-size': '10', transform: 'scale(2)' }, 'Big');
     });
     // fontSize=10, viewBox scale=1, transform averageScale=2 → 10*1*2 = 20
-    expect(app.calls[0].args[1].textSize).toBeCloseTo(20);
+    expect(userCalls(app)[0].args[1].textSize).toBeCloseTo(20);
   });
 });
 
@@ -330,7 +338,7 @@ describe('text with style attribute', () => {
     cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.text({ x: '10', y: '20', style: 'font-size: 32px' }, 'Styled');
     });
-    expect(app.calls[0].args[1].textSize).toBeCloseTo(32);
+    expect(userCalls(app)[0].args[1].textSize).toBeCloseTo(32);
   });
 
   it('should parse text-anchor from style attribute', () => {
@@ -338,7 +346,7 @@ describe('text with style attribute', () => {
     cvg(app, { viewBox: '0 0 100 100', width: 100, height: 100 }, (s) => {
       s.text({ x: '50', y: '50', style: 'text-anchor: middle' }, 'Center');
     });
-    expect(app.calls[0].args[1].alignment).toBe('center');
+    expect(userCalls(app)[0].args[1].alignment).toBe('center');
   });
 
   it('should prefer direct attrs over style attribute', () => {
@@ -347,6 +355,6 @@ describe('text with style attribute', () => {
       s.text({ x: '10', y: '20', 'font-size': '20', style: 'font-size: 40px' }, 'Direct');
     });
     // Direct attr font-size=20 should win
-    expect(app.calls[0].args[1].textSize).toBeCloseTo(20);
+    expect(userCalls(app)[0].args[1].textSize).toBeCloseTo(20);
   });
 });

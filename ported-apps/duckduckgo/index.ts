@@ -769,7 +769,6 @@ export function buildDuckDuckGoApp(a: any, windowWidth?: number, windowHeight?: 
             .when(() => selectedTab === 'settings');
         });
       });
-    });
   };
 
   // Observable subscription

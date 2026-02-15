@@ -30,6 +30,19 @@ export class Context {
   private _inspectorEnabled: boolean = true;
   private _currentContainerId: string | null = null;  // Current container being built
 
+  /**
+   * Per-context registry of widgets by custom ID (set via withId()).
+   * Uses WeakRef so destroyed widgets can be garbage collected.
+   * Scoped per App/Context so multiple app instances don't collide.
+   */
+  private widgetIdRegistry: Map<string, WeakRef<any>> = new Map();
+
+  /**
+   * Per-context reactive bindings (scoped replacement for module-level globalBindings).
+   * Each App/Context tracks its own bindings so refreshAllBindings() is app-scoped.
+   */
+  private bindings: Set<() => void | Promise<void>> = new Set();
+
   constructor(bridge: BridgeInterface, resourceMap?: Map<string, string>) {
     this.bridge = bridge;
     if (resourceMap) {
@@ -244,6 +257,63 @@ export class Context {
    */
   getCurrentContainerId(): string | null {
     return this._currentContainerId;
+  }
+
+  /**
+   * Register a widget by custom ID for scoped refreshBindings() lookup.
+   */
+  registerWidgetId(id: string, widget: any): void {
+    this.widgetIdRegistry.set(id, new WeakRef(widget));
+  }
+
+  /**
+   * Look up a widget by custom ID. Returns undefined if not found or GC'd.
+   */
+  getWidgetById(id: string): any | undefined {
+    const ref = this.widgetIdRegistry.get(id);
+    if (!ref) return undefined;
+    const widget = ref.deref();
+    if (!widget) {
+      this.widgetIdRegistry.delete(id);
+      return undefined;
+    }
+    return widget;
+  }
+
+  /**
+   * Clear the widget ID registry (called on UI rebuild).
+   */
+  clearWidgetIdRegistry(): void {
+    this.widgetIdRegistry.clear();
+  }
+
+  /**
+   * Register a reactive binding on this context.
+   */
+  registerBinding(binding: () => void | Promise<void>): void {
+    this.bindings.add(binding);
+  }
+
+  /**
+   * Refresh all reactive bindings registered on this context.
+   */
+  async refreshAllBindings(): Promise<void> {
+    const snapshot = Array.from(this.bindings);
+    for (const binding of snapshot) {
+      try {
+        await binding();
+      } catch (err) {
+        // Widget may have been destroyed - remove stale binding
+        this.bindings.delete(binding);
+      }
+    }
+  }
+
+  /**
+   * Clear all reactive bindings on this context.
+   */
+  clearBindings(): void {
+    this.bindings.clear();
   }
 
   /**

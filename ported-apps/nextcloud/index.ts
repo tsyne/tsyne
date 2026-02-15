@@ -613,7 +613,6 @@ export function buildNextCloudApp(a: any, windowWidth?: number, windowHeight?: n
           }).when(() => selectedTab === 'account');
         });
       });
-    });
   };
 
   // Subscribe to store changes

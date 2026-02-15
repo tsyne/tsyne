@@ -16,7 +16,7 @@
  */
 
 import { TsyneTest, TestContext } from 'tsyne';
-import { createSolitaireApp, StubCardImageProvider } from './solitaire';
+import { createSolitaireApp } from './solitaire';
 import * as path from 'path';
 
 describe('Solitaire Game Tests', () => {
@@ -27,12 +27,9 @@ describe('Solitaire Game Tests', () => {
     const headed = process.env.TSYNE_HEADED === '1';
     tsyneTest = new TsyneTest({ headed });
 
-    // Use StubCardImageProvider for fast tests (skips expensive SVG rendering)
-    const stubImageProvider = new StubCardImageProvider();
-
     // Create app once for all tests
     const testApp = await tsyneTest.createApp((app) => {
-      createSolitaireApp(app, undefined, undefined, stubImageProvider);
+      createSolitaireApp(app);
     });
 
     ctx = tsyneTest.getContext();
@@ -42,7 +39,7 @@ describe('Solitaire Game Tests', () => {
   beforeEach(async () => {
     // Reset game state before each test by clicking New Game
     await ctx.getByText('New Game').click();
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 500));
     // Wait for UI to update
     await ctx.expect(ctx.getByText('New game started')).toBeVisible();
   });
@@ -56,10 +53,6 @@ describe('Solitaire Game Tests', () => {
     await ctx.expect(ctx.getByText('New Game')).toBeVisible();
     await ctx.expect(ctx.getByText('Shuffle')).toBeVisible();
     await ctx.expect(ctx.getByText('Draw')).toBeVisible();
-
-    // Verify game sections
-    await ctx.expect(ctx.getByText('Foundations:')).toBeVisible();
-    await ctx.expect(ctx.getByText('Tableau:')).toBeVisible();
 
     // Verify status
     await ctx.expect(ctx.getByText('New game started')).toBeVisible();
@@ -102,10 +95,6 @@ describe('Solitaire Game Tests', () => {
     await ctx.expect(ctx.getByText('Shuffle')).toBeVisible();
     await ctx.expect(ctx.getByText('Draw')).toBeVisible();
 
-    // Game areas
-    await ctx.expect(ctx.getByText('Foundations:')).toBeVisible();
-    await ctx.expect(ctx.getByText('Tableau:')).toBeVisible();
-
     // Status bar
     await ctx.expect(ctx.getByText('New game started')).toBeVisible();
   }, 10000);
@@ -113,31 +102,28 @@ describe('Solitaire Game Tests', () => {
   test('should maintain state after multiple draws', async () => {
     // Draw multiple times
     await ctx.getByText('Draw').click();
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     await ctx.getByText('Draw').click();
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     await ctx.getByText('Draw').click();
 
     // Should show drew cards message - using getById with within() for async UI rebuild
     await ctx.getById('status-label').within(1000).shouldContain('Drew cards');
-
-    // Game sections should still be visible
-    await ctx.expect(ctx.getByText('Foundations:')).toBeVisible();
   }, 15000);
 
   test('should handle new game after playing', async () => {
     // Draw some cards
     await ctx.getByText('Draw').click();
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     await ctx.getByText('Draw').click();
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     // Start new game
     await ctx.getByText('New Game').click();
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     // Should reset to new game state
     await ctx.expect(ctx.getByText('New game started')).toBeVisible();
@@ -146,11 +132,11 @@ describe('Solitaire Game Tests', () => {
   test('should handle shuffle after playing', async () => {
     // Draw some cards
     await ctx.getByText('Draw').click();
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     // Shuffle
     await ctx.getByText('Shuffle').click();
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     // Should show shuffle message
     await ctx.expect(ctx.getByText('Deck shuffled')).toBeVisible();

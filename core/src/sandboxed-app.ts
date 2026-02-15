@@ -137,6 +137,9 @@ export interface IApp {
   quit(): void;
   registerCleanup(callback: () => void | Promise<void>): void;
 
+  // Reactive bindings (scoped per app instance)
+  refreshBindings(...targets: (string | any)[]): Promise<void>;
+
   // Theme
   setTheme(theme: 'dark' | 'light'): Promise<void>;
   getTheme(): Promise<'dark' | 'light'>;
@@ -527,6 +530,24 @@ export class SandboxedApp implements IApp {
 
   registerCleanup(callback: () => void | Promise<void>): void {
     this.realApp.registerCleanup(callback);
+  }
+
+  async refreshBindings(...targets: (string | any)[]): Promise<void> {
+    if (targets.length === 0) {
+      // Refresh only this sandbox's bindings (not other apps')
+      return this.ctx.refreshAllBindings();
+    }
+    for (const target of targets) {
+      if (typeof target === 'string') {
+        // Look up in this sandbox's scoped context
+        const widget = this.ctx.getWidgetById(target);
+        if (widget && typeof widget.refreshBindings === 'function') {
+          await widget.refreshBindings();
+        }
+      } else {
+        await target.refreshBindings();
+      }
+    }
   }
 
   // ============================================================================

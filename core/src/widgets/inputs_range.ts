@@ -1,5 +1,5 @@
 import { Context } from '../context';
-import { Widget, registerGlobalBinding } from './base';
+import { Widget } from './base';
 
 /**
  * Slider widget
@@ -146,7 +146,7 @@ export class DateEntry extends Widget {
     };
 
     this.ghostCondition = updateGhost;
-    registerGlobalBinding(updateGhost);
+    this.ctx.registerBinding(updateGhost);
     updateGhost();
 
     return this;

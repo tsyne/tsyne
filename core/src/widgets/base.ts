@@ -35,41 +35,34 @@ export interface AccessibilityOptions {
 export type ReactiveBinding = () => void | Promise<void>;
 
 /**
- * Global registry of all reactive bindings (for MVC-style updates)
- */
-const globalBindings: Set<ReactiveBinding> = new Set();
-
-/**
- * Register a binding in the global registry
+ * Register a binding on a specific context.
+ * Bindings are scoped per-Context so apps can't trigger each other's bindings.
+ * @param ctx The context to register the binding on
  * @param binding The binding function to register
  */
-export function registerGlobalBinding(binding: ReactiveBinding): void {
-  globalBindings.add(binding);
+export function registerGlobalBinding(ctx: Context, binding: ReactiveBinding): void {
+  ctx.registerBinding(binding);
 }
 
 /**
- * Refresh all reactive bindings globally
- * Call this to trigger all MVC-style bindings to re-evaluate
+ * Refresh all reactive bindings on a specific context.
+ * @param ctx The context whose bindings to refresh
  */
-export async function refreshAllBindings(): Promise<void> {
-  // Copy to array to avoid issues if bindings are removed during iteration
-  const bindings = Array.from(globalBindings);
-  for (const binding of bindings) {
-    try {
-      await binding();
-    } catch (err) {
-      // Widget may have been destroyed - remove stale binding
-      globalBindings.delete(binding);
-    }
+export async function refreshAllBindings(ctx?: Context): Promise<void> {
+  if (ctx) {
+    return ctx.refreshAllBindings();
   }
+  // No-arg form: legacy fallback — should not be used in contained mode
 }
 
 /**
- * Clear all global bindings
- * Call this when rebuilding UI to prevent stale bindings from causing errors
+ * Clear all bindings on a specific context.
+ * @param ctx The context to clear (if omitted, no-op)
  */
-export function clearAllBindings(): void {
-  globalBindings.clear();
+export function clearAllBindings(ctx?: Context): void {
+  if (ctx) {
+    ctx.clearBindings();
+  }
 }
 
 export abstract class Widget {
@@ -92,7 +85,7 @@ export abstract class Widget {
    */
   protected registerBinding(binding: ReactiveBinding): void {
     this.bindings.push(binding);
-    globalBindings.add(binding);
+    this.ctx.registerBinding(binding);
   }
 
   /**
@@ -235,6 +228,9 @@ export abstract class Widget {
    * // In tests: ctx.getById('statusLabel')
    */
   withId(customId: string): this {
+    // Register in context-scoped registry for a.refreshBindings() lookup
+    this.ctx.registerWidgetId(customId, this);
+
     // Send registration and track the promise so app.run() can wait for it
     const registrationPromise = this.ctx.bridge.send('registerCustomId', {
       widgetId: this.id,
@@ -267,8 +263,8 @@ export abstract class Widget {
     // Store for reactive re-evaluation
     this.visibilityCondition = updateVisibility;
 
-    // Register as global binding for MVC-style auto-refresh
-    registerGlobalBinding(updateVisibility);
+    // Register on this widget's context for scoped auto-refresh
+    this.ctx.registerBinding(updateVisibility);
 
     updateVisibility(); // Initial evaluation
 

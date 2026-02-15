@@ -15,8 +15,8 @@
  * @tsyne-app:count single
  */
 
-import { app, resolveTransport  , standaloneShutdownStrategy } from 'tsyne';
-import type { App, Window, Label } from 'tsyne';
+import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
+import type { App, Window } from 'tsyne';
 import {
   IClockService,
   INotificationService,
@@ -38,8 +38,6 @@ import {
  * Clock UI class - displays analog and digital clock
  */
 export class ClockUI {
-  private timeLabel: Label | null = null;
-  private dateLabel: Label | null = null;
   private window: Window | null = null;
 
   // Bound clock hands - updated automatically by the clock loop
@@ -64,29 +62,15 @@ export class ClockUI {
 
   private startClockUpdate(): void {
     this.clockUpdateInterval = setInterval(() => {
-      this.updateTimeDisplay();
+      this.refreshDisplay();
     }, 1000);
   }
 
-  private updateTimeDisplay(): void {
-    const now = this.clock.getCurrentTime();
-
-    if (this.timeLabel) {
-      this.timeLabel.setText(now.toLocaleTimeString());
-    }
-    if (this.dateLabel) {
-      this.dateLabel.setText(now.toLocaleDateString(undefined, {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      }));
-    }
-
-    // Update all bound clock hands
+  private refreshDisplay(): void {
     for (const binding of this.handBindings) {
       binding.line.update(calcHandLine(binding.rotation(), binding.length));
     }
+    this.a.refreshBindings('time-display', 'date-display');
   }
 
   /**
@@ -186,10 +170,15 @@ export class ClockUI {
 
       this.a.separator();
 
-      // Digital time display
-      this.timeLabel = this.a.label(this.clock.getCurrentTime().toLocaleTimeString()).withId('time-display');
-      this.dateLabel = this.a.label('').withId('date-display');
-      this.updateTimeDisplay();
+      // Digital time display — bindings re-evaluated by the clock loop
+      this.a.label('').bindText(() =>
+        this.clock.getCurrentTime().toLocaleTimeString()
+      ).withId('time-display');
+      this.a.label('').bindText(() =>
+        this.clock.getCurrentTime().toLocaleDateString(undefined, {
+          weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+        })
+      ).withId('date-display');
       this.a.label(`Timezone: ${this.clock.getTimezone()}`);
     });
   }

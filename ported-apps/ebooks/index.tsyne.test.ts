@@ -5,7 +5,7 @@
  * Tests tab navigation, UI interactions, and screenshot capture.
  */
 
-import { TsyneTest, TestContext } from '../../src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { buildEbookApp } from './index';
 
 describe('Ebook App UI Tests', () => {

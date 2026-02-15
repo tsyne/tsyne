@@ -125,6 +125,7 @@ import {
 export type { TextGridOptions, TextGridStyle, NavigationOptions, ThemeIconName, VBoxOptions, HBoxOptions, GridOptions, CustomThemeOptions, LabelOptions };
 import { initializeGlobals } from './globals';
 import { ResourceManager } from './resources';
+import { Widget } from './widgets/base';
 
 export type BridgeMode = 'stdio' | 'grpc' | 'msgpack-uds' | 'ffi' | 'web-renderer';
 
@@ -388,6 +389,34 @@ export class App {
 
   setOnLastWindowClose(callback: (() => void | Promise<void>) | undefined): void {
     this.onLastWindowClose = callback;
+  }
+
+  /**
+   * Refresh bindings on specific widgets by ID or reference.
+   * IDs are scoped to this App instance, so multiple instances of
+   * the same app can use the same IDs without collision.
+   *
+   * With no arguments, refreshes all bindings on this App's context.
+   *
+   * @example
+   * await a.refreshBindings('status');          // by ID
+   * await a.refreshBindings('score', 'timer');  // multiple IDs
+   * await a.refreshBindings(myWidget);          // by reference
+   */
+  async refreshBindings(...targets: (string | Widget)[]): Promise<void> {
+    if (targets.length === 0) {
+      return this.ctx.refreshAllBindings();
+    }
+    for (const target of targets) {
+      if (typeof target === 'string') {
+        const widget = this.ctx.getWidgetById(target);
+        if (widget && typeof widget.refreshBindings === 'function') {
+          await widget.refreshBindings();
+        }
+      } else {
+        await target.refreshBindings();
+      }
+    }
   }
 
   /**

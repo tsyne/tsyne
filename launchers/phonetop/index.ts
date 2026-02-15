@@ -211,11 +211,9 @@ class PhoneTop {
 
     // Set font size (larger for high-DPI phone screens)
     this.fontSize = options.fontSize || 14;
-    console.log(`[phonetop] Font size: ${this.fontSize}px`);
 
     // ImageButton support (default true, set false for older bridges)
     this.useImageButton = options.useImageButton !== false;
-    console.log(`[phonetop] useImageButton: ${this.useImageButton}`);
 
     ICON_SIZE = Math.round(ICON_SIZE_BASE * iconScale);
 
@@ -268,11 +266,7 @@ class PhoneTop {
       this.appsPerPage = this.cols * this.rows;
     }
 
-    const orientationChanged = wasLandscape !== this.isLandscape;
-    if (orientationChanged) {
-      console.log(`[phonetop] Orientation changed to ${this.isLandscape ? 'landscape' : 'portrait'} (${width}x${height})`);
-    }
-    return orientationChanged;
+    return wasLandscape !== this.isLandscape;
   }
 
   /**
@@ -433,7 +427,6 @@ class PhoneTop {
    * Create a label with the configured font size
    */
   private sizedLabel(text: string, id?: string): Label {
-    console.log(`[phonetop] sizedLabel: "${text}" with fontSize=${this.fontSize}`);
     const label = this.a.label(text, { textSize: this.fontSize });
     if (id) label.withId(id);
     return label;
@@ -477,7 +470,6 @@ class PhoneTop {
 
     // Process static apps (for Android/iOS where dynamic loading isn't available)
     if (this.options.staticApps && this.options.staticApps.length > 0) {
-      console.log(`[phonetop] Processing ${this.options.staticApps.length} static apps`);
       for (const staticApp of this.options.staticApps) {
         // Create a synthetic AppMetadata for the static app
         const metadata: AppMetadata = {
@@ -549,8 +541,6 @@ class PhoneTop {
 
     // Position grid items across pages
     this.layoutGridItems();
-
-    console.log(`Found ${apps.length} apps: ${this.folders.size} folders, ${uncategorizedApps.length} uncategorized`);
 
     // Start debug server if port specified
     if (this.options.debugPort) {
@@ -1009,16 +999,12 @@ class PhoneTop {
    */
   private relayoutIconsForNewGrid() {
     this.layoutGridItems();
-    console.log(`[phonetop] Relaid out ${this.gridItems.length} items for ${this.cols}x${this.rows} grid across ${this.totalPages} pages`);
   }
 
   /**
    * Build the phone UI
    */
   async build() {
-
-    // Log build timestamp for debugging APK versions
-    console.log(`[phonetop] BUILD: ${BUILD_TIMESTAMP}`);
 
     // Use phone-sized window or fullscreen for embedded mode (Android)
     const windowOpts: { title: string; width?: number; height?: number; padded?: boolean } = { title: 'Tsyne Phone' };
@@ -1557,14 +1543,10 @@ class PhoneTop {
       if (icon?.staticBuilder) {
         // Use pre-loaded static builder (Android/iOS)
         builder = icon.staticBuilder;
-        console.log(`[phonetop] Using static builder for: ${metadata.name}`);
       } else {
         // Use cached loading for faster app startup
         const result = await loadAppBuilderCached(metadata);
         builder = result.builder;
-        if (!result.cached) {
-          console.log(`[phonetop] Transpiled and cached: ${metadata.name}`);
-        }
       }
 
       if (!builder) {
@@ -1621,10 +1603,8 @@ class PhoneTop {
       this.a.getContext().setResourceScope(null);
       this.a.getContext().setLayoutScale(1.0);
 
-      console.log('[launchApp] createdAdapter:', !!createdAdapter);
       if (createdAdapter) {
         const adapter = createdAdapter as StackPaneAdapter;
-        console.log('[launchApp] adapter.contentBuilder:', !!adapter.contentBuilder);
         if (adapter.contentBuilder) {
           // Store the running app with its resource scope
           this.runningApps.set(appId, {
@@ -1636,9 +1616,7 @@ class PhoneTop {
           });
 
           // Switch to show this app
-          console.log('[launchApp] Calling switchToApp');
           this.switchToApp(appId);
-          console.log(`Launched: ${metadata.name}`);
         }
       }
     } finally {

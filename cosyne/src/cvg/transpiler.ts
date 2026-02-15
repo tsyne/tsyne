@@ -14,6 +14,9 @@ import { parseTransform } from './transform';
 /** Attributes to omit from generated code (not meaningful for rendering). */
 const OMIT_ATTRS = new Set(['xmlns', 'xmlns:xlink', 'version', 'xml:space', 'id']);
 
+/** Namespace prefixes for editor metadata — attributes with these prefixes are omitted. */
+const OMIT_NS_PREFIXES = ['inkscape:', 'sodipodi:', 'xmlns:', 'xml:'];
+
 /**
  * Transpile an SVG string to a TypeScript source code string.
  *
@@ -42,6 +45,9 @@ export function transpileSvgToModule(
     || (svgW && svgH ? `0 0 ${svgW} ${svgH}` : '0 0 100 100');
   const lines: string[] = [];
 
+  // Build gradient node map for xlink:href resolution
+  const gradientMap = buildGradientMap(root);
+
   // Collect style-relevant attributes from root <svg> for inheritance
   const STYLE_ATTRS = ['fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'font-size', 'font-family'];
   const rootStyleEntries: string[] = [];
@@ -60,7 +66,7 @@ export function transpileSvgToModule(
   lines.push(`  return cvg(app, { viewBox: '${escapeStr(viewBox)}', width, height${rootAttrsStr} }, (s) => {`);
 
   for (const child of root.children) {
-    emitNode(lines, child, 2);
+    emitNode(lines, child, 2, gradientMap);
   }
 
   lines.push('  });');
@@ -81,17 +87,18 @@ export function transpileSvgToModule(
  */
 export function transpileSvg(svgString: string): string {
   const root = parseSvg(svgString);
+  const gradientMap = buildGradientMap(root);
   const lines: string[] = [];
 
   for (const child of root.children) {
-    emitNode(lines, child, 0);
+    emitNode(lines, child, 0, gradientMap);
   }
 
   return lines.join('\n');
 }
 
 /** Emit TypeScript for a single SvgNode and its children. */
-function emitNode(lines: string[], node: SvgNode, indent: number): void {
+function emitNode(lines: string[], node: SvgNode, indent: number, gradientMap: Map<string, SvgNode> = new Map()): void {
   const pad = '  '.repeat(indent);
 
   switch (node.tag) {
@@ -106,7 +113,7 @@ function emitNode(lines: string[], node: SvgNode, indent: number): void {
       const attrs = formatAttrs(node.attrs);
       lines.push(`${pad}s.defs(${attrs}, () => {`);
       for (const child of node.children) {
-        emitNode(lines, child, indent + 1);
+        emitNode(lines, child, indent + 1, gradientMap);
       }
       lines.push(`${pad}});`);
       break;
@@ -116,7 +123,8 @@ function emitNode(lines: string[], node: SvgNode, indent: number): void {
     case 'radialGradient': {
       const id = node.attrs.id;
       if (!id) break;
-      const stops = node.children.filter(c => c.tag === 'stop');
+      // Resolve stops: use inline children, or follow xlink:href chain
+      const stops = resolveGradientStops(node, gradientMap);
       const stopLiterals = stops.map(c => {
         const color = resolveStopColor(c.attrs);
         const offsetStr = c.attrs.offset ?? '0';
@@ -153,7 +161,7 @@ function emitNode(lines: string[], node: SvgNode, indent: number): void {
       const attrs = formatAttrs(node.attrs);
       lines.push(`${pad}s.g(${attrs}, () => {`);
       for (const child of node.children) {
-        emitNode(lines, child, indent + 1);
+        emitNode(lines, child, indent + 1, gradientMap);
       }
       lines.push(`${pad}});`);
       break;
@@ -211,10 +219,43 @@ function emitNode(lines: string[], node: SvgNode, indent: number): void {
     default:
       // Unknown element — emit children if any
       for (const child of node.children) {
-        emitNode(lines, child, indent);
+        emitNode(lines, child, indent, gradientMap);
       }
       break;
   }
+}
+
+/** Build a map of gradient ID → SvgNode for xlink:href resolution. */
+function buildGradientMap(root: SvgNode): Map<string, SvgNode> {
+  const map = new Map<string, SvgNode>();
+  function walk(node: SvgNode) {
+    if ((node.tag === 'linearGradient' || node.tag === 'radialGradient') && node.attrs.id) {
+      map.set(node.attrs.id, node);
+    }
+    for (const child of node.children) {
+      walk(child);
+    }
+  }
+  walk(root);
+  return map;
+}
+
+/** Resolve gradient stops, following xlink:href if the gradient has no inline stops. */
+function resolveGradientStops(node: SvgNode, gradientMap: Map<string, SvgNode>): SvgNode[] {
+  const stops = node.children.filter(c => c.tag === 'stop');
+  if (stops.length > 0) return stops;
+
+  // Follow xlink:href chain (up to 10 levels to prevent cycles)
+  const href = node.attrs['xlink:href'] || node.attrs.href;
+  if (href) {
+    const refId = href.replace(/^#/, '');
+    const refNode = gradientMap.get(refId);
+    if (refNode) {
+      return resolveGradientStops(refNode, gradientMap);
+    }
+  }
+
+  return [];
 }
 
 /** Format attributes as a TypeScript object literal. */
@@ -223,10 +264,11 @@ function formatAttrs(attrs: Record<string, string>, normalizePaths = false): str
 
   for (const [key, value] of Object.entries(attrs)) {
     if (OMIT_ATTRS.has(key)) continue;
+    if (OMIT_NS_PREFIXES.some(p => key.startsWith(p))) continue;
 
     let formattedKey = key;
-    // Hyphenated keys need quoting
-    if (key.includes('-')) {
+    // Keys with hyphens or colons need quoting
+    if (key.includes('-') || key.includes(':')) {
       formattedKey = `'${key}'`;
     }
 
@@ -261,12 +303,54 @@ function escapeStr(s: string): string {
   return s.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 }
 
-/** Extract stop-color from a <stop> element's attributes or inline style. */
+/** Extract stop-color (with opacity) from a <stop> element's attributes or inline style. */
 function resolveStopColor(attrs: Record<string, string>): string {
-  if (attrs['stop-color']) return attrs['stop-color'];
-  if (attrs.style) {
-    const m = attrs.style.match(/stop-color\s*:\s*([^;]+)/);
-    if (m) return m[1].trim();
+  let color = 'black';
+  let opacity = 1;
+
+  if (attrs['stop-color']) {
+    color = attrs['stop-color'];
   }
-  return 'black';
+  if (attrs['stop-opacity'] !== undefined) {
+    opacity = parseFloat(attrs['stop-opacity']);
+  }
+  if (attrs.style) {
+    const cm = attrs.style.match(/stop-color\s*:\s*([^;]+)/);
+    if (cm) color = cm[1].trim();
+    const om = attrs.style.match(/stop-opacity\s*:\s*([^;]+)/);
+    if (om) opacity = parseFloat(om[1].trim());
+  }
+
+  // Apply opacity to color if not fully opaque
+  if (!isNaN(opacity) && opacity < 1) {
+    return applyOpacityToColor(color, opacity);
+  }
+  return color;
+}
+
+/** Apply opacity to a CSS color, producing an rgba() string. */
+function applyOpacityToColor(color: string, opacity: number): string {
+  // Parse hex colors
+  const hex6 = color.match(/^#([0-9a-fA-F]{6})$/);
+  if (hex6) {
+    const r = parseInt(hex6[1].slice(0, 2), 16);
+    const g = parseInt(hex6[1].slice(2, 4), 16);
+    const b = parseInt(hex6[1].slice(4, 6), 16);
+    const a = Math.round(opacity * 10000) / 10000;
+    return `rgba(${r},${g},${b},${a})`;
+  }
+  const hex3 = color.match(/^#([0-9a-fA-F]{3})$/);
+  if (hex3) {
+    const r = parseInt(hex3[1][0] + hex3[1][0], 16);
+    const g = parseInt(hex3[1][1] + hex3[1][1], 16);
+    const b = parseInt(hex3[1][2] + hex3[1][2], 16);
+    const a = Math.round(opacity * 10000) / 10000;
+    return `rgba(${r},${g},${b},${a})`;
+  }
+  // For named colors or rgb(), just append alpha
+  if (color.startsWith('rgb(')) {
+    return color.replace('rgb(', 'rgba(').replace(')', `,${opacity})`);
+  }
+  // Fallback: return as-is (opacity will be lost for named colors)
+  return color;
 }

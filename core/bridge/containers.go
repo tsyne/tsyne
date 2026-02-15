@@ -160,7 +160,12 @@ func (b *Bridge) removeWidgetTree(widgetID string) {
 
 	// Remove from customIds using O(1) reverse lookup (optimized GC)
 	if customID, exists := b.widgetToCustomId[widgetID]; exists {
-		delete(b.customIds, customID)
+		// Only delete forward mapping if it still points to this widget.
+		// During setContent rebuilds, a new widget may reuse the same custom ID
+		// before the old tree is cleaned up.
+		if b.customIds[customID] == widgetID {
+			delete(b.customIds, customID)
+		}
 		delete(b.widgetToCustomId, widgetID)
 	}
 }

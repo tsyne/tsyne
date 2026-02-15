@@ -19,8 +19,7 @@
  */
 
 import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
-import type { App } from 'tsyne';
-import type { Window } from 'tsyne';
+import type { App, Window } from 'tsyne';
 import { cvg } from 'cosyne';
 import type { CvgContext } from 'cosyne';
 import { Chess } from 'chess.js';
@@ -59,7 +58,6 @@ const SQUARE = 45;
 
 class ChessUI {
   private game: Chess;
-  private statusLabel: any = null;
   private currentStatus: string = 'White to move';
   private selectedSquare: Square | null = null;
   private window: Window | null = null;
@@ -133,17 +131,18 @@ class ChessUI {
       this.selectedSquare = null;
 
       if (move) {
-        await this.updateStatus(`${this.getPieceName(move.piece)} ${from} → ${to}`);
+        if (this.game.isGameOver()) {
+          await this.setGameOverStatus();
+        } else {
+          await this.updateStatus(`${this.getPieceName(move.piece)} ${from} → ${to}`);
+        }
         await this.refreshBoard();
 
-        if (this.game.isGameOver()) {
-          await this.handleGameOver();
-        } else {
+        if (!this.game.isGameOver()) {
           await this.makeComputerMove();
         }
       }
     } catch (e) {
-      const previouslySelected = this.selectedSquare;
       if (piece && piece.color === this.playerColor) {
         this.selectedSquare = square;
         await this.updateStatus(`Selected ${this.getPieceName(piece.type)} at ${square}`);
@@ -181,7 +180,7 @@ class ChessUI {
       this.isComputerThinking = false;
 
       if (this.game.isGameOver()) {
-        await this.handleGameOver();
+        await this.setGameOverStatus();
       } else {
         await this.updateStatus(this.getGameStatus());
       }
@@ -191,7 +190,7 @@ class ChessUI {
     }
   }
 
-  private async handleGameOver(): Promise<void> {
+  private async setGameOverStatus(): Promise<void> {
     let message = 'Game Over! ';
 
     if (this.game.isCheckmate()) {
@@ -225,7 +224,7 @@ class ChessUI {
     this.window = win;
 
     this.a.vbox(() => {
-      this.statusLabel = this.a.label(this.currentStatus);
+      this.a.label('').bindText(() => this.currentStatus).withId('status');
 
       this.cvgCtx = cvg(this.a, {
         viewBox: `0 0 ${8 * SQUARE} ${8 * SQUARE}`,
@@ -283,9 +282,8 @@ class ChessUI {
     this.game.reset();
     this.selectedSquare = null;
     this.isComputerThinking = false;
-    this.currentStatus = 'White to move';
-    await this.refreshBoard();
     await this.updateStatus('White to move');
+    await this.refreshBoard();
   }
 
   // ============================================================================
@@ -351,9 +349,7 @@ class ChessUI {
 
   private async updateStatus(message: string): Promise<void> {
     this.currentStatus = message;
-    if (this.statusLabel) {
-      await this.statusLabel.setText(message);
-    }
+    await this.a.refreshBindings('status');
   }
 
   getGame(): Chess {

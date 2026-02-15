@@ -171,6 +171,9 @@ func (s *grpcBridgeService) CreateCanvasRaster(ctx context.Context, req *pb.Crea
 		"height": float64(req.Height),
 		"pixels": pixelData,
 	}
+	if len(req.RawPixels) > 0 {
+		payload["rawPixels"] = base64.StdEncoding.EncodeToString(req.RawPixels)
+	}
 	if blendMode := convertBlendMode(req.BlendMode); blendMode != "" {
 		payload["blendMode"] = blendMode
 	}
@@ -383,8 +386,10 @@ func (s *grpcBridgeService) CreateTappableCanvasRaster(ctx context.Context, req 
 		"onKeyUpCallbackId":     req.OnKeyUpCallbackId,
 		"onScrollCallbackId":    req.OnScrollCallbackId,
 		"onMouseMoveCallbackId": req.OnMouseMoveCallbackId,
-		"onDragCallbackId":      req.DragCallbackId,
-		"onDragEndCallbackId":   req.DragEndCallbackId,
+		"onDragCallbackId":          req.DragCallbackId,
+		"onDragEndCallbackId":       req.DragEndCallbackId,
+		"onDoubleTapCallbackId":     req.OnDoubleTapCallbackId,
+		"onSecondaryTapCallbackId":  req.OnSecondaryTapCallbackId,
 	}
 	if blendMode := convertBlendMode(req.BlendMode); blendMode != "" {
 		payload["blendMode"] = blendMode

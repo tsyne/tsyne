@@ -154,7 +154,6 @@ type GLCommand struct {
 // ═══════════════════════════════════════════════════════════════
 
 func (b *Bridge) handleCreateGLCanvas(msg Message) Response {
-	log.Println("[GL] handleCreateGLCanvas called")
 	payload := msg.Payload
 
 	// Use toFloat32 helper to handle msgpack numeric encoding (int64, uint16, etc.)
@@ -167,9 +166,6 @@ func (b *Bridge) handleCreateGLCanvas(msg Message) Response {
 
 	width := toFloat32(widthVal)
 	height := toFloat32(heightVal)
-
-	reqWindowID, _ := payload["windowId"].(string)
-	log.Printf("[GL] Creating GL canvas %dx%d for window: %s", int(width), int(height), reqWindowID)
 
 	glCanvasCounter++
 	canvasID := fmt.Sprintf("gl_canvas_%d", glCanvasCounter)
@@ -296,7 +292,7 @@ void main() {
 		})
 	}
 
-	log.Printf("[GL] Successfully created GL canvas %s, returning response", canvasID)
+	// log.Printf("[GL] Successfully created GL canvas %s, returning response", canvasID)
 	return Response{
 		Success: true,
 		Result: map[string]interface{}{
@@ -872,12 +868,12 @@ func (b *Bridge) glLinkProgram(canvas *GLCanvas, args map[string]interface{}) er
 		_ = writeShaderDebugFile(fmt.Sprintf("/tmp/vertex_shader_%d.glsl", programId), program.vertexSrc)
 		_ = writeShaderDebugFile(fmt.Sprintf("/tmp/vertex_shader_%d_converted.glsl", programId), program.convertedVertexSrc)
 
-		// Check for USE_COLOR in vertex shader
-		if strings.Contains(program.vertexSrc, "#define USE_COLOR") {
-			log.Printf("[GL-DEBUG] Program %d: HAS USE_COLOR defined in vertex shader", programId)
-		} else if strings.Contains(program.vertexSrc, "USE_COLOR") {
-			log.Printf("[GL-DEBUG] Program %d: Uses USE_COLOR but NOT defined (conditional will be false)", programId)
-		}
+		// Debug: check for USE_COLOR in vertex shader
+		// if strings.Contains(program.vertexSrc, "#define USE_COLOR") {
+		// 	log.Printf("[GL-DEBUG] Program %d: HAS USE_COLOR defined in vertex shader", programId)
+		// } else if strings.Contains(program.vertexSrc, "USE_COLOR") {
+		// 	log.Printf("[GL-DEBUG] Program %d: Uses USE_COLOR but NOT defined (conditional will be false)", programId)
+		// }
 	}
 
 	// Convert and store fragment shader source if available
@@ -889,23 +885,20 @@ func (b *Bridge) glLinkProgram(canvas *GLCanvas, args map[string]interface{}) er
 		_ = writeShaderDebugFile(fmt.Sprintf("/tmp/fragment_shader_%d.glsl", programId), program.fragSrc)
 		_ = writeShaderDebugFile(fmt.Sprintf("/tmp/fragment_shader_%d_converted.glsl", programId), program.convertedFragSrc)
 
-		// Check for light defines in the original shader
-		hasLightDefines := false
-		lines := strings.Split(program.fragSrc, "\n")
-		for _, line := range lines {
-			if strings.Contains(line, "NUM_DIR_LIGHTS") ||
-				strings.Contains(line, "NUM_POINT_LIGHTS") ||
-				strings.Contains(line, "NUM_SPOT_LIGHTS") ||
-				strings.Contains(line, "DirectionalLight") {
-				log.Printf("[GL-DEBUG] Light line: %s", line)
-				hasLightDefines = true
-			}
-		}
-		if !hasLightDefines {
-			log.Printf("[GL-DEBUG] WARNING: No NUM_DIR_LIGHTS/NUM_POINT_LIGHTS/NUM_SPOT_LIGHTS defines found in shader!")
-		}
-
-		log.Printf("[GL-DEBUG] Program %d: Fragment shader CONVERTED (%d bytes)", programId, len(program.convertedFragSrc))
+		// Debug logging for shader analysis (enable when debugging shader issues)
+		// hasLightDefines := false
+		// lines := strings.Split(program.fragSrc, "\n")
+		// for _, line := range lines {
+		// 	if strings.Contains(line, "NUM_DIR_LIGHTS") || strings.Contains(line, "NUM_POINT_LIGHTS") ||
+		// 		strings.Contains(line, "NUM_SPOT_LIGHTS") || strings.Contains(line, "DirectionalLight") {
+		// 		log.Printf("[GL-DEBUG] Light line: %s", line)
+		// 		hasLightDefines = true
+		// 	}
+		// }
+		// if !hasLightDefines {
+		// 	log.Printf("[GL-DEBUG] WARNING: No light defines found in shader!")
+		// }
+		// log.Printf("[GL-DEBUG] Program %d: Fragment shader CONVERTED (%d bytes)", programId, len(program.convertedFragSrc))
 	}
 
 	program.linked = true
@@ -1277,23 +1270,23 @@ func (b *Bridge) glUniformFloatv(canvas *GLCanvas, cmd string, args map[string]i
 		floats[i] = math.Float32frombits(bits)
 	}
 
-	// Set uniform based on type
+	// Queue uniform (don't use SetUniform — it calls Refresh() which needs the main thread)
 	switch cmd {
 	case "uniform1fv":
 		if len(floats) >= 1 {
-			canvas.ShaderObject.SetUniform(name, floats[0])
+			canvas.ShaderObject.QueueUniform(name, floats[0])
 		}
 	case "uniform2fv":
 		if len(floats) >= 2 {
-			canvas.ShaderObject.SetUniform(name, [2]float32{floats[0], floats[1]})
+			canvas.ShaderObject.QueueUniform(name, [2]float32{floats[0], floats[1]})
 		}
 	case "uniform3fv":
 		if len(floats) >= 3 {
-			canvas.ShaderObject.SetUniform(name, [3]float32{floats[0], floats[1], floats[2]})
+			canvas.ShaderObject.QueueUniform(name, [3]float32{floats[0], floats[1], floats[2]})
 		}
 	case "uniform4fv":
 		if len(floats) >= 4 {
-			canvas.ShaderObject.SetUniform(name, [4]float32{floats[0], floats[1], floats[2], floats[3]})
+			canvas.ShaderObject.QueueUniform(name, [4]float32{floats[0], floats[1], floats[2], floats[3]})
 		}
 	}
 	return nil
@@ -1527,7 +1520,7 @@ func (b *Bridge) glTexImage2D(canvas *GLCanvas, args map[string]interface{}) err
 
 	// Store the image in the texture
 	texture.image = img
-	log.Printf("[GL] texImage2D: stored %dx%d texture in id=%d (unit=%d)", w, h, textureId, canvas.activeTextureUnit)
+	// log.Printf("[GL] texImage2D: stored %dx%d texture in id=%d (unit=%d)", w, h, textureId, canvas.activeTextureUnit)
 
 	// Link sampler uniforms to this texture
 	// This handles the case where uniform1i is called before the texture is uploaded

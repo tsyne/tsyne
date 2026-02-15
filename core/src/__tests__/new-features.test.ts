@@ -93,7 +93,7 @@ describe('New Features', () => {
       let dialogHidden = false;
 
       const createTestApp = (app: App) => {
-        app.window({ title: 'Dialog Test' }, async (win) => {
+        app.window({ title: 'Dialog Test' }, (win) => {
           win.setContent(() => {
             app.button('Show Dialog', { onClick: async () => {
               const dialog = await win.showCustomWithoutButtons(
@@ -111,7 +111,7 @@ describe('New Features', () => {
               }, 100);
             } });
           });
-          await win.show();
+          win.show();
         });
       };
 
@@ -133,7 +133,7 @@ describe('New Features', () => {
 
     it('should show dialog with custom content', async () => {
       const createTestApp = (app: App) => {
-        app.window({ title: 'Content Dialog Test' }, async (win) => {
+        app.window({ title: 'Content Dialog Test' }, (win) => {
           win.setContent(() => {
             app.button('Show Custom Dialog', { onClick: async () => {
               const dialog = await win.showCustomWithoutButtons(
@@ -151,7 +151,7 @@ describe('New Features', () => {
               }, 100);
             } });
           });
-          await win.show();
+          win.show();
         });
       };
 

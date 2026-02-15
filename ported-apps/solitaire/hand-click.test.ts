@@ -10,6 +10,8 @@ import { createSolitaireApp } from './solitaire';
 import { Game, Card, Suit } from './solitaire';
 import { App } from 'tsyne';
 
+type SolitaireUI = ReturnType<typeof createSolitaireApp>;
+
 describe('Hand Pile Click Tests', () => {
   let tsyneTest: TsyneTest;
   let ctx: TestContext;
@@ -24,9 +26,9 @@ describe('Hand Pile Click Tests', () => {
   });
 
   test('should draw cards when clicking hand pile', async () => {
+    let ui: SolitaireUI;
     const testApp = await tsyneTest.createApp((app: App) => {
-      const ui = createSolitaireApp(app);
-      // Setup hand with 3 cards
+      ui = createSolitaireApp(app);
       ui.getGame().setupFixedState({
         handCards: [
           new Card(5, Suit.Hearts),
@@ -41,17 +43,14 @@ describe('Hand Pile Click Tests', () => {
     await testApp.run();
 
     try {
-      // Wait for UI to load
-      await ctx.expect(ctx.getByText('Tableau:')).toBeVisible();
+      await ctx.expect(ctx.getByText('New game started')).toBeVisible();
 
-      // Click hand pile to draw cards
-      await ctx.getById('hand-pile').click();
+      // Click hand pile to draw cards via CVG dispatchTap
+      ui!.clickHandPile();
       await new Promise(resolve => setTimeout(resolve, 200));
 
-      // Verify status shows drew cards
       await ctx.expect(ctx.getByText('Drew cards')).toBeVisible();
     } catch (error) {
-      // Take screenshot on timeout/failure
       const screenshotPath = '/tmp/hand-click-timeout.png';
       try {
         await tsyneTest.screenshot(screenshotPath);
@@ -60,7 +59,6 @@ describe('Hand Pile Click Tests', () => {
         console.error(`Failed to capture screenshot: ${screenshotError}`);
       }
 
-      // Log current UI state for debugging
       try {
         const allText = await ctx.getAllTextAsString();
         console.error(`\nUI state at timeout:\n${allText}`);
@@ -73,9 +71,9 @@ describe('Hand Pile Click Tests', () => {
   }, 30000);
 
   test('should select and move draw3 card to tableau', async () => {
+    let ui: SolitaireUI;
     const testApp = await tsyneTest.createApp((app: App) => {
-      const ui = createSolitaireApp(app);
-      // Setup: King in draw3, empty tableau
+      ui = createSolitaireApp(app);
       ui.getGame().setupFixedState({
         draw3: new Card(13, Suit.Spades, true), // King
         stacks: [[], [], [], [], [], [], []]
@@ -86,23 +84,23 @@ describe('Hand Pile Click Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.expect(ctx.getByText('Tableau:')).toBeVisible();
+    await ctx.expect(ctx.getByText('New game started')).toBeVisible();
 
     // Click draw3 to select
-    await ctx.getById('draw3').click();
+    ui!.clickDraw3();
     await new Promise(resolve => setTimeout(resolve, 100));
     await ctx.expect(ctx.getByText('Selected King of Spades from draw pile')).toBeVisible();
 
     // Click empty stack to place
-    await ctx.getById('empty-stack-0').click();
+    ui!.clickStack(0);
     await new Promise(resolve => setTimeout(resolve, 100));
     await ctx.expect(ctx.getByText('Moved card to tableau 0')).toBeVisible();
   }, 10000);
 
   test('should drag draw3 card to tableau', async () => {
+    let ui: SolitaireUI;
     const testApp = await tsyneTest.createApp((app: App) => {
-      const ui = createSolitaireApp(app);
-      // Setup: 6 of Hearts in draw3, 7 of Clubs on stack 0
+      ui = createSolitaireApp(app);
       ui.getGame().setupFixedState({
         draw3: new Card(6, Suit.Hearts, true), // Red 6
         stacks: [
@@ -116,22 +114,14 @@ describe('Hand Pile Click Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.expect(ctx.getByText('Tableau:')).toBeVisible();
+    await ctx.expect(ctx.getByText('New game started')).toBeVisible();
 
-    // Drag draw3 to tableau stack 0
-    // Note: In a real drag, we'd get the position of stack-0 and drag there
-    // For now, we'll use fixed coordinates that should land in the tableau area
-    // Based on drop-zone.ts: tableau starts at y=250, each column is width 1000/7 ≈ 143px
-    const dropX = 70;  // Center of first tableau column
-    const dropY = 350; // Middle of tableau area
-
-    // We can't actually test drag visually here, but we can verify the logic works
-    // by checking that after clicking draw3 and then clicking stack-0, it moves
-    await ctx.getById('draw3').click();
+    // Use click-to-select + click-to-place (same game logic as drag)
+    ui!.clickDraw3();
     await new Promise(resolve => setTimeout(resolve, 100));
     await ctx.expect(ctx.getByText('Selected 6 of Hearts from draw pile')).toBeVisible();
 
-    await ctx.getById('stack-0').click();
+    ui!.clickStack(0);
     await new Promise(resolve => setTimeout(resolve, 100));
     await ctx.expect(ctx.getByText('Moved card to tableau 0')).toBeVisible();
   }, 10000);

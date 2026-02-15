@@ -5,7 +5,7 @@
  * Tests user interactions, order management, and view switching.
  */
 
-import { TsyneTest, TestContext } from '../../src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { buildFoodTruckApp, FoodTruckStore } from './index';
 
 describe('Food Truck App UI Tests', () => {

@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"strconv"
-	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -82,14 +81,7 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 			}
 		}
 	} else if needsCompile || shader.Program() == 0 || !hasCachedProg {
-		log.Printf("[drawShader] COMPILING shader (needsCompile=%v, program=%d, cached=%v)", needsCompile, shader.Program(), hasCachedProg)
-
-		// Log first 200 chars of vertex shader to see which one we're compiling
-		logSrc := vertexSrc
-		if len(logSrc) > 200 {
-			logSrc = logSrc[:200]
-		}
-		log.Printf("[drawShader] Vertex shader preview: %s", strings.ReplaceAll(logSrc, "\n", " "))
+		// log.Printf("[drawShader] COMPILING shader (needsCompile=%v, program=%d, cached=%v)", needsCompile, shader.Program(), hasCachedProg)
 
 		prog := p.compileShaderProgram(vertexSrc, shader.FragmentSource)
 		if prog == 0 {
@@ -273,7 +265,7 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 					unsignedByte,
 					rgba.Pix,
 				)
-				log.Printf("[drawShader] Uploaded texture %s: %dx%d", texName, rgba.Rect.Dx(), rgba.Rect.Dy())
+				// log.Printf("[drawShader] Uploaded texture %s: %dx%d", texName, rgba.Rect.Dx(), rgba.Rect.Dy())
 			}
 		}
 
@@ -364,34 +356,34 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 	// Parse vertex shader to find attributes dynamically
 	// (vertexSrc was already computed above for the compilation check)
 	attrs := parseVertexAttributes(vertexSrc)
-	if shaderDebug {
-		log.Printf("[drawShader] Parsed %d attributes from vertex shader", len(attrs))
-		for _, a := range attrs {
-			log.Printf("[drawShader]   parsed attr: %s (%s, size=%d)", a.name, a.glslType, a.size)
-		}
-	}
+	// if shaderDebug {
+	// 	log.Printf("[drawShader] Parsed %d attributes from vertex shader", len(attrs))
+	// 	for _, a := range attrs {
+	// 		log.Printf("[drawShader]   parsed attr: %s (%s, size=%d)", a.name, a.glslType, a.size)
+	// 	}
+	// }
 
 	// Track enabled attributes for cleanup
 	var enabledAttribs []Attribute
 
 	// Check if we have separate attribute buffers (three.js style)
 	useSeparateBuffers := shader.HasAttributeBuffers()
-	if shaderDebug {
-		log.Printf("[drawShader] useSeparateBuffers=%v, HasAttributeBuffers=%v", useSeparateBuffers, shader.HasAttributeBuffers())
-		if shader.AttributeBuffers != nil {
-			log.Printf("[drawShader] AttributeBuffers count: %d", len(shader.AttributeBuffers))
-			for name, buf := range shader.AttributeBuffers {
-				if buf != nil {
-					log.Printf("[drawShader]   attr %s: %d floats, size=%d", name, len(buf.Data), buf.Size)
-				}
-			}
-		}
-	}
+	// if shaderDebug {
+	// 	log.Printf("[drawShader] useSeparateBuffers=%v, HasAttributeBuffers=%v", useSeparateBuffers, shader.HasAttributeBuffers())
+	// 	if shader.AttributeBuffers != nil {
+	// 		log.Printf("[drawShader] AttributeBuffers count: %d", len(shader.AttributeBuffers))
+	// 		for name, buf := range shader.AttributeBuffers {
+	// 			if buf != nil {
+	// 				log.Printf("[drawShader]   attr %s: %d floats, size=%d", name, len(buf.Data), buf.Size)
+	// 			}
+	// 		}
+	// 	}
+	// }
 
 	var vertexCount int
 	indexCount := shader.GetIndexCount()
 	if shaderDebug {
-		log.Printf("[drawShader] indexCount=%d", indexCount)
+		// log.Printf("[drawShader] indexCount=%d", indexCount)
 	}
 
 	// Get attribute buffers at function scope so they're accessible in command loop
@@ -411,7 +403,7 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 			buf := attrBuffers[attr.name]
 			if buf == nil || len(buf.Data) == 0 {
 				if shaderDebug {
-					log.Printf("[drawShader] Skipping attr %s: no buffer data", attr.name)
+					// log.Printf("[drawShader] Skipping attr %s: no buffer data", attr.name)
 				}
 				continue
 			}
@@ -421,10 +413,10 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 			if buf.Size > 0 && expectedVertexCount > 0 && attr.name != "position" {
 				bufferVertexCount := len(buf.Data) / buf.Size
 				if bufferVertexCount != expectedVertexCount {
-					if shaderDebug {
-						log.Printf("[drawShader] Skipping attr %s: vertex count mismatch (buffer=%d, expected=%d)",
-							attr.name, bufferVertexCount, expectedVertexCount)
-					}
+					// if shaderDebug {
+					// log.Printf("[drawShader] Skipping attr %s: vertex count mismatch (buffer=%d, expected=%d)",
+					// 	attr.name, bufferVertexCount, expectedVertexCount)
+					// }
 					continue
 				}
 			}
@@ -439,11 +431,11 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 				}
 			}
 			if shaderDebug {
-				log.Printf("[drawShader] GetAttribLocation(%s) = %d", attr.name, attribLoc)
+				// log.Printf("[drawShader] GetAttribLocation(%s) = %d", attr.name, attribLoc)
 			}
 			if attribLoc < 0 {
 				if shaderDebug {
-					log.Printf("[drawShader] Skipping attr %s: location < 0", attr.name)
+					// log.Printf("[drawShader] Skipping attr %s: location < 0", attr.name)
 				}
 				continue
 			}
@@ -452,17 +444,17 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 			if buf.VBO == 0 {
 				buf.VBO = uint32(p.ctx.CreateBuffer())
 				if shaderDebug {
-					log.Printf("[drawShader] Created VBO %d for attr %s", buf.VBO, attr.name)
+					// log.Printf("[drawShader] Created VBO %d for attr %s", buf.VBO, attr.name)
 				}
 			}
 
 			// Bind and upload data for this attribute
 			p.ctx.BindBuffer(arrayBuffer, Buffer(buf.VBO))
 			p.ctx.BufferData(arrayBuffer, buf.Data, dynamicDraw)
-			if shaderDebug {
-				log.Printf("[drawShader] Bound attr %s: VBO=%d, loc=%d, size=%d, count=%d",
-					attr.name, buf.VBO, attribLoc, buf.Size, len(buf.Data)/buf.Size)
-			}
+			// if shaderDebug {
+			// 	log.Printf("[drawShader] Bound attr %s: VBO=%d, loc=%d, size=%d, count=%d",
+			// 		attr.name, buf.VBO, attribLoc, buf.Size, len(buf.Data)/buf.Size)
+			// }
 
 			// Enable and set up vertex attribute pointer
 			// Each attribute has its own tightly-packed buffer (stride=0)

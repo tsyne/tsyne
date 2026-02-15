@@ -1,5 +1,4 @@
 import { Context } from '../context';
-import { refreshAllBindings, registerGlobalBinding } from './base';
 
 // ============================================================================
 // Shared container interaction helpers
@@ -345,7 +344,7 @@ export class VBox {
     this.visibilityCondition = updateVisibility;
 
     // Register as global binding for MVC-style auto-refresh
-    registerGlobalBinding(updateVisibility);
+    this.ctx.registerBinding(updateVisibility);
 
     updateVisibility(); // Initial evaluation
 
@@ -521,7 +520,7 @@ export class HBox {
     this.visibilityCondition = updateVisibility;
 
     // Register as global binding for MVC-style auto-refresh
-    registerGlobalBinding(updateVisibility);
+    this.ctx.registerBinding(updateVisibility);
 
     updateVisibility(); // Initial evaluation
 
@@ -700,7 +699,7 @@ export class BoundList<T, W = any> {
     if (toRemove.length === 0 && toAdd.length === 0 && !this.showingEmpty) {
       if (this.mvcMode) {
         // MVC mode: just refresh all bindings (View updates from Model automatically)
-        refreshAllBindings();
+        this.ctx.refreshAllBindings();
       } else {
         // MVVM mode: call renderItem with existing widgets for manual updates
         items.forEach((item, index) => {

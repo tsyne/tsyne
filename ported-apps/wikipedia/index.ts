@@ -705,7 +705,6 @@ export function buildWikipediaApp(a: any, windowWidth?: number, windowHeight?: n
             .when(() => selectedTab === 'history');
         });
       });
-    });
   };
 
   // Observable subscription

@@ -1,5 +1,5 @@
 import { Context } from '../context';
-import { ReactiveBinding, registerGlobalBinding } from './base';
+import { ReactiveBinding } from './base';
 
 // ============================================================================
 // Animation System - D3/QML-inspired declarative animations
@@ -480,7 +480,7 @@ export class CanvasRectangle {
     };
 
     this.bindings.push(binding);
-    registerGlobalBinding(binding);
+    this.ctx.registerBinding(binding);
     binding(); // Initial evaluation
 
     return this;
@@ -584,7 +584,7 @@ export class CanvasText {
     };
 
     this.bindings.push(binding);
-    registerGlobalBinding(binding);
+    this.ctx.registerBinding(binding);
     binding(); // Initial evaluation
 
     return this;
@@ -1612,7 +1612,7 @@ export class CanvasPath {
     };
 
     this.bindings.push(binding);
-    registerGlobalBinding(binding);
+    this.ctx.registerBinding(binding);
     binding(); // Initial evaluation
 
     return this;
@@ -1627,7 +1627,7 @@ export class CanvasPath {
     };
 
     this.bindings.push(binding);
-    registerGlobalBinding(binding);
+    this.ctx.registerBinding(binding);
     binding();
 
     return this;

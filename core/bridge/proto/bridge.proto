@@ -1195,6 +1195,7 @@ message CreateCanvasRasterRequest {
   int32 height = 3;
   bytes pixels = 4;  // RGBA pixel data
   BlendMode blend_mode = 5;
+  bytes raw_pixels = 6;  // base64-encoded RGBA buffer (faster for large buffers)
 }
 
 message CreateCanvasLinearGradientRequest {
@@ -1255,6 +1256,8 @@ message CreateTappableCanvasRasterRequest {
   string drag_callback_id = 9;         // no "on_" prefix for drag callbacks (matches Image convention)
   string drag_end_callback_id = 10;    // no "on_" prefix for drag callbacks (matches Image convention)
   BlendMode blend_mode = 11;
+  string on_double_tap_callback_id = 12;
+  string on_secondary_tap_callback_id = 13;
 }
 
 // Shader uniform value (supports float, vec2, vec3, vec4)

@@ -5,7 +5,7 @@
  * Tests user interactions, search functionality, and tab navigation.
  */
 
-import { TsyneTest, TestContext } from '../../src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { buildDuckDuckGoApp } from './index';
 
 describe('DuckDuckGo Privacy Browser UI Tests', () => {

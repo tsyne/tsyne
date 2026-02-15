@@ -4,7 +4,7 @@
  * Tests UI rendering, keyboard input, and game interaction.
  */
 
-import { TsyneTest, TestContext } from '../../src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { buildSphericalSnakeApp } from './spherical-snake';
 
 describe('SphericalSnake UI Integration Tests', () => {

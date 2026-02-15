@@ -4,7 +4,7 @@
  * End-to-end tests for the FPS app UI using TsyneTest framework.
  */
 
-import { TsyneTest } from '../../src/index-test';
+import { TsyneTest } from 'tsyne';
 import buildFPSAdvancedApp from './index';
 
 describe('FPS Advanced TsyneTest', () => {

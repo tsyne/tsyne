@@ -1,5 +1,5 @@
 import { Context } from '../context';
-import { AccessibilityOptions, registerGlobalBinding } from './base';
+import { AccessibilityOptions } from './base';
 import { BoundList } from './containers_box';
 
 // Shared container interaction helpers (same bridge commands work on any CanvasObject by ID)
@@ -388,7 +388,7 @@ export class Grid {
     };
 
     this.visibilityCondition = updateVisibility;
-    registerGlobalBinding(updateVisibility);
+    this.ctx.registerBinding(updateVisibility);
     updateVisibility();
 
     return this;
@@ -812,7 +812,7 @@ export class GridWrap {
     };
 
     this.visibilityCondition = updateVisibility;
-    registerGlobalBinding(updateVisibility);
+    this.ctx.registerBinding(updateVisibility);
     updateVisibility();
 
     return this;
@@ -1001,7 +1001,7 @@ export class AdaptiveGrid {
     };
 
     this.visibilityCondition = updateVisibility;
-    registerGlobalBinding(updateVisibility);
+    this.ctx.registerBinding(updateVisibility);
     updateVisibility();
 
     return this;

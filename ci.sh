@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+# Kill entire process group on Ctrl-C or SIGTERM (prevents orphaned children)
+trap 'echo ""; echo "Interrupted — killing child processes..."; kill 0; exit 130' INT TERM
+
 # ============================================================================
 # Command Line Options
 # ============================================================================
@@ -678,8 +681,15 @@ if [ "$SKIP_TESTS" = false ] && [ "$UNIT_ONLY" = false ] && [ "$QUICK_MODE" = fa
     local app_name=$1
     local bridge_mode=$2
     local json_file="/tmp/ported-${app_name}-test-results.json"
+    local app_dir="${BUILDKITE_BUILD_CHECKOUT_PATH}/ported-apps/${app_name}"
+
+    if [ ! -f "${app_dir}/package.json" ]; then
+      echo "⚠️  ${app_name}: No package.json - skipping"
+      return 0
+    fi
+
     echo "--- :package: Ported App: ${app_name}"
-    cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/ported-apps/${app_name}
+    cd "${app_dir}"
     pnpm install --ignore-scripts
     if [ -n "$bridge_mode" ]; then
       echo "Using bridge mode: $bridge_mode"

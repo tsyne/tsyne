@@ -28,22 +28,24 @@ describe('Draw Button Layout Test (No Status Label Dependency)', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    // Wait for UI to load
-    await ctx.expect(ctx.getByText('Draw')).toBeVisible();
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Wait for UI to load — use stable widget ID with retry
+    await ctx.getById('draw-btn').within(2000).shouldExist();
 
     let initialY: number | undefined;
     const yPositions: number[] = [];
 
     // Press Draw 20 times and track Y position
     for (let i = 0; i < 20; i++) {
-      const drawButton = ctx.getByText('Draw');
+      // Use getById with within() to handle async UI rebuilds
+      await ctx.getById('draw-btn').within(2000).click();
 
-      const infoBefore = await drawButton.getInfo();
-      await drawButton.click();
-      await new Promise(resolve => setTimeout(resolve, 100)); // Small delay for UI update
+      // Wait for rebuild to fully complete (withId registrations are async)
+      await ctx.getById('draw-btn').within(2000).shouldExist();
+      // Extra wait for setContent to finish processing old widget removal
+      await new Promise(resolve => setTimeout(resolve, 200));
 
-      const infoAfter = await drawButton.getInfo();
+      // Get position after rebuild
+      const infoAfter = await ctx.getById('draw-btn').within(1000).getInfo();
       const currentY = infoAfter.absoluteY;
 
       if (currentY === undefined) {

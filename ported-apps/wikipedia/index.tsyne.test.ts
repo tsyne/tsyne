@@ -5,7 +5,7 @@
  * Tests search, reading lists, history, and tab navigation.
  */
 
-import { TsyneTest, TestContext } from '../../src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { buildWikipediaApp } from './index';
 
 describe('Wikipedia App UI Tests', () => {
