@@ -47,9 +47,9 @@ func (b *Bridge) handleCreateCanvasPolygon(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 
 	// Parse fill color
-	fillColor := color.RGBA{R: 100, G: 100, B: 255, A: 255} // Default blue
+	var fillColor color.Color = color.RGBA{R: 100, G: 100, B: 255, A: 255} // Default blue
 	if fillHex, ok := msg.Payload["fillColor"].(string); ok {
-		fillColor = parseHexColorSimple(fillHex).(color.RGBA)
+		fillColor = parseHexColorSimple(fillHex)
 	}
 
 	// Parse stroke color
@@ -104,7 +104,7 @@ func (b *Bridge) handleCreateCanvasPolygon(msg Message) Response {
 		polyData, ok := b.polygonData[widgetID]
 		// Copy data to avoid holding lock during rendering
 		var currentPoints []fyne.Position
-		var currentFill color.RGBA
+		var currentFill color.Color
 		if ok {
 			currentPoints = make([]fyne.Position, len(polyData.Points))
 			copy(currentPoints, polyData.Points)
@@ -219,7 +219,7 @@ func (b *Bridge) handleUpdateCanvasPolygon(msg Message) Response {
 		polyInfo.Points = points
 	}
 	if fillHex, ok := msg.Payload["fillColor"].(string); ok {
-		polyInfo.FillColor = parseHexColorSimple(fillHex).(color.RGBA)
+		polyInfo.FillColor = parseHexColorSimple(fillHex)
 	}
 	if strokeHex, ok := msg.Payload["strokeColor"].(string); ok {
 		polyInfo.StrokeColor = parseHexColorSimple(strokeHex)

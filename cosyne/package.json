@@ -2,17 +2,10 @@
   "name": "cosyne",
   "version": "0.1.0",
   "description": "Declarative canvas grammar for Tsyne",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "src/index.ts",
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
-    },
-    "./index3d": {
-      "types": "./dist/index3d.d.ts",
-      "default": "./dist/index3d.js"
-    }
+    ".": "./src/index.ts",
+    "./index3d": "./src/index3d.ts"
   },
   "scripts": {
     "build": "tsc",

@@ -242,7 +242,7 @@ type ArcData struct {
 // PolygonData stores data for canvas polygon primitives
 type PolygonData struct {
 	Points      []fyne.Position
-	FillColor   color.RGBA
+	FillColor   color.Color
 	StrokeColor color.Color
 	StrokeWidth float32
 }
