@@ -161,6 +161,51 @@ a.canvasStack(() => {
 - ✅ Mockable hit testers (inject custom logic for tests)
 - ✅ No backward compatibility concerns (free to refactor)
 
+## CVG: Cosyne Vector Graphics (SVG-peer with Reactivity)
+
+**SVG-inspired vector graphics system** with reactive bindings, perspective transforms, animation, and interactivity. Renders through Tsyne's canvas primitives. Not an SVG renderer — it's its own system that shares SVG's element vocabulary (`circle`, `rect`, `path`, `g`, `text`, `use`/`defs`).
+
+**What CVG adds beyond SVG:**
+- Reactive bindings: `.bindFill(() => color)`, `.bindPos(() => coords)`, `.bindOpacity(() => n)`
+- Data-driven lists: `.bindTo(items, render, { trackBy, update })` — D3-style enter/update/exit
+- Perspective transforms: `cosynePerspective` on groups (pseudo-3D without a 3D pipeline)
+- Hit testing + events: `onClick`, `onHover`, `onDrag`, `onScroll`, `onKeyDown`
+- Animation: `.animate()`, `.transition()`, keyframes, 7 easing functions
+- Conditional rendering: `.when(predicate)` — show/hide elements reactively
+- Named element lookup: `.name('hour')` + `ctx.find('hour')`
+
+**Two entry points:**
+```typescript
+// 1. Standalone factory
+cvg(app, { viewBox: '0 0 100 100', width: 400, height: 400 }, (s) => {
+  s.circle({ cx: 50, cy: 50, r: 20, fill: '#F00', onClick: (e) => {...} });
+  s.rect({ x: 10, y: 10, width: 80, height: 80 }).fill('#069').bindFill(() => color);
+  s.path({ d: 'M10 10 L90 90', stroke: '#000' });
+  s.g({ transform: { translate: [50, 50], cosynePerspective: { rotateY: 30, distance: 500 } } }, () => {
+    s.rect({ width: 40, height: 40 });  // rendered with perspective
+  });
+});
+
+// 2. Builder-style
+const s = cvgBuilder(app);
+s.svg({ viewBox: "0 0 100 100" }, () => {
+  s.circle({ r: 15, cx: 50, cy: 18 }).fill("#900");
+});
+```
+
+**SVG import pipeline:** Can load `.svg` files via `loadSvg(app, svgString)` (runtime) or `transpileSvg()` (SVG → editable TypeScript). All path commands normalized to absolute M/L/C/Z. Tested against 199 SVG files (W3C test suite).
+
+**Architecture:**
+- `cosyne/src/cvg/grammar.ts` — CvgContext, CvgElement, CvgBuilder, PathBuilder
+- `cosyne/src/cvg/parser.ts` — Regex-based SVG XML parser (no dependencies)
+- `cosyne/src/cvg/normalizer.ts` — Path d-string normalizer: all commands → M/L/C/Z
+- `cosyne/src/cvg/transform.ts` — AffineMatrix, ProjectiveMatrix, perspective
+- `cosyne/src/cvg/loader.ts` — Runtime SVG string rendering
+- `cosyne/src/cvg/transpiler.ts` — SVG → TypeScript source code
+- `cosyne/src/cvg/rasterize.ts` — CPU rasterizer for clipPath, gradients, blur
+- `cosyne/src/cvg/types.ts` — Shared types
+- `cosyne/src/cvg/README.md` — Full reference
+
 ## Cosyne 3D: Declarative Scene Graphs (~300 Tests, ~4000 Lines)
 
 **3D extension** of Cosyne with the same fluent API patterns. Includes primitives, materials, lighting, camera, ray casting, and reactive bindings.

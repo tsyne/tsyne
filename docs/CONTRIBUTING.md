@@ -61,16 +61,16 @@ TSYNE_HEADED=1 npx jest path/to/test.ts
 ## Pull Request Process
 
 1. Create feature branch: `git checkout -b feature/my-feature`
-2. Make changes and add tests
-3. Run `./ci.sh` to verify
+2. Make changes and add tests - we love tests - you may be asked to add more or refine
+3. Run `./ci.sh` to verify - is very long now
 4. Push and create PR
 
 ## Design Principles
 
-1. **Pseudo-declarative MVC** - Declarative UI where model changes update the view
+1. **Pseudo-declarative MVC** - Declarative TypeScript UI where model changes update the view
 2. **Elegant Syntax** - Terse API (e.g., `a` for app instance)
 3. **Type Safety** - Full TypeScript support
-4. **Cross-Platform** - macOS, Windows, Linux
+4. **Cross-Platform** - macOS, Windows, Linux, phones too maybe
 
 We're open to "Tsyne could also have..." modes that don't break existing functionality.
 
@@ -87,4 +87,4 @@ We're open to "Tsyne could also have..." modes that don't break existing functio
 
 ## License
 
-Contributions are licensed under the MIT License.
+Core Tsyne contributions are licensed under the MIT License.  Apps in examples/ and other folders may be other licenses including GPL varients - they won't egt bundled with a binary distribution though

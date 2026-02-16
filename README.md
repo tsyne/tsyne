@@ -111,6 +111,10 @@ No, but demoing it is the price of admission for the long list of could-be 3rd p
 
 QML was a genuine inspiration — its declarative syntax with inline JavaScript was visionary and close to what I wanted. But it hit a glass ceiling: anything beyond simple UI required dropping into C++, a language most developers won't pick up casually. The tooling and examples never made it accessible enough, and Qt's licensing story kept changing. I [wrote about QML's squandered opportunity](https://paulhammant.com/2016/11/15/qmls-squandered-opportunity/) back in 2016. Flutter is impressive engineering but it's Google's walled garden — Dart never caught on outside Flutter, you can't leverage npm's 2M+ packages, and it's a compile-to-native approach that trades iteration speed for distribution simplicity. Tsyne chose the opposite trade-off: interpreted TypeScript for rapid iteration and access to the Node.js ecosystem, with compiled Go/Fyne for native rendering. You lose single-binary distribution but gain the ability to write a complete app in one `.ts` file, test it with Jest, pull in any npm package, and iterate without a compile step. The pseudo-declarative syntax is also more terse than either QML or Flutter's widget trees.
 
+**Q: Why is this a monorepo instead of separate packages?**
+
+Because everything is alpha and changing constantly. Every method, module, and source file is easier to rename or relocate when it's all in one repo — a single commit can rename a function in the core, update every app that calls it, and fix all the tests. Split across repos, that's a coordinated multi-PR nightmare. Once APIs stabilize, splitting into separate packages might make sense. For now, monorepo keeps the cost of change low.
+
 **Q: Are APIs stable?**
 
 No, anything can be renamed at any moment. If you're making apps right now, you're promising to keep up with the renames/refactorings as if you were co-located in the same repo
@@ -548,6 +552,60 @@ Tsyne uses a unique architecture to bridge TypeScript and Go:
 1. **Tsyne Client** (TypeScript): Provides the pseudo-declarative API and spawns the bridge process
 2. **Tsyne Bridge** (Go): Manages Fyne widgets and communicates via say Unix-domain sockets but it has alternates. Bidirectional
 3. **Message Protocol**: MsgPack  or other
+
+## Repository Structure
+
+This is a pnpm monorepo. The major constituent parts:
+
+### Core Framework
+
+| Package | Directory | What it is |
+|---------|-----------|------------|
+| **Tsyne** | `core/` | The main framework — pseudo-declarative TypeScript API, widget system, state management, data binding, testing (TsyneTest), browser mode. The TypeScript side of everything. |
+| **Tsyne Bridge** | `core/bridge/` | The Go+Fyne process that does the actual native rendering. Communicates via stdio/gRPC/msgpack-UDS. Includes the shader compiler (`shader_converter.go`) and all widget creator handlers. Build with `pnpm run build:bridge`. |
+
+### Canvas & Graphics
+
+| Package | Directory | What it is |
+|---------|-----------|------------|
+| **Cosyne** | `cosyne/` | Declarative canvas grammar with reactive bindings. The main canvas layer for Tsyne. |
+| **Cosyne Primitives** | `cosyne/src/primitives/` | The original shape library: circle, rect, line, arc, polygon, star, ellipse, wedge, gauge, dial, heatmap, grid, sprite, text. These predate CVG and some overlap — over time the older ones may be retired in favor of CVG equivalents. |
+| **CVG** (Cosyne Vector Graphics) | `cosyne/src/cvg/` | SVG-peer system with reactive bindings, animations, hit-testing, perspective transforms. Newer than the primitives above and more capable — includes an SVG parser/transpiler, CPU rasterizer, and affine/projective transforms. Tested against 199 W3C SVG test files. |
+| **Cosyne 3D** | `cosyne/src/context3d.ts`, `cosyne/src/renderer3d*.ts` | Declarative 3D scene graphs with software rendering — cameras, lights, materials, ray-cast hit detection. Uses the same fluent API patterns as 2D Cosyne. |
+| **CanvasShader** (GLSL) | `core/src/widgets/canvas.ts`, `core/bridge/handlers_gl.go` | Fragment shader support — write GLSL, upload it once, bridge renders at 60fps via OpenGL. Currently fragment-only (fullscreen quad), no vertex shaders. Used for fractals, raymarching, procedural effects. |
+| **Trine** | `trine/` | Three.js integration — a WebGL2 API proxy that intercepts Three.js GL calls and routes them through the bridge to native OpenGL. Patches Three.js's canvas factory so it gets a TsyneCanvas instead of a browser canvas. 80+ WebGL example ports. |
+
+### Applications & Launchers
+
+| Directory | What it is |
+|-----------|------------|
+| `examples/` | 100+ educational examples from hello-world to 3D scenes |
+| `ported-apps/` | 45+ production-quality app ports — chess, solitaire, terminal, file browser, fractal renderers, Doom clone, etc. |
+| `phone-apps/` | 50+ mobile apps for PhoneTop — clock, calculator, mandelbrot, 3D demos, games |
+| `native-apps/pmOS/` | Phone-native apps for PostmarketOS — camera, dialer, messages. The apps you'd expect a phone OS to ship with. |
+| `larger-apps/` | Ambitious multi-file apps (WhatsApp clone, literate programming, Paris density simulation) |
+| `test-apps/` | Reference implementations demonstrating testing patterns (monolithic vs decomposed) |
+| `launchers/desktop/` | MDI desktop environment with app grid, inner windows, sandboxing |
+| `launchers/phonetop/` | Phone launcher (Android APK via nodejs-mobile, PostmarketOS) |
+| `launchers/tablettop/` | Tablet launcher (TODO) |
+
+### Deployment Targets
+
+| Target | Directory | Status |
+|--------|-----------|--------|
+| **Standalone app** (macOS, Windows, Linux) | `examples/`, `ported-apps/` | First class — a single `.ts` file (or multi-file project) runs as a native window. No launcher, no dock, no desktop shell. Just your app. |
+| **Desktop environment** (macOS, Windows, Linux) | `launchers/desktop/` | First class — MDI desktop with app grid, inner windows, sandboxing. Runs multiple apps within one shell. |
+| **PostmarketOS** | `native-apps/pmOS/` | First class — phone-native apps (camera, dialer, messages) purpose-built for pmOS. Tsyne as the launcher/home screen on a Linux phone. |
+| **Android** | `android-native/` | Second class — APK packaging via nodejs-mobile + Go/Fyne cross-compiled for ARM. ~150MB minimum APK. |
+| **iOS** | — | Total question mark — no work done yet. nodejs-mobile supports iOS in theory. |
+| **Chromebook** | — | Works today — Chromebooks run Linux apps natively via Crostini. |
+
+### Tools
+
+| Package | Directory | What it is |
+|---------|-----------|------------|
+| **Designer** | `designer/` | WYSIWYG visual UI builder with widget palette, property inspector, CSS classes editor, live preview, TypeScript persistence. Runs as Tauri desktop app or Node.js dev server. |
+| **CLI** | `cli/` | Command-line tools including `tsynebrowser` |
 
 ## Examples
 
