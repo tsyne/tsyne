@@ -15,6 +15,7 @@ BUILD_BRIDGE_ONLY=false
 
 # Track timing for sections
 declare -A SECTION_TIMES
+declare -A SECTION_DURATIONS
 
 time_section() {
   local name="$1"
@@ -118,14 +119,33 @@ TOTAL_SKIPPED=0
 TOTAL_SUITES=0
 TOTAL_SUITES_PASSED=0
 TOTAL_SUITES_FAILED=0
+TOTAL_DURATION=0
 
 # Wait time tracking file (cleared at start, aggregated at end)
 WAIT_TIME_FILE="/tmp/tsyne-wait-times.json"
+
+# Format seconds as human-readable duration
+format_duration() {
+  local secs=$1
+  if [ "$secs" -ge 60 ]; then
+    echo "$((secs / 60))m$((secs % 60))s"
+  else
+    echo "${secs}s"
+  fi
+}
 
 # Function to capture test results from Jest JSON output
 capture_test_results() {
   local section_name="$1"
   local json_file="$2"
+  local duration=${SECTION_DURATIONS[$section_name]:-""}
+
+  # Format duration
+  local duration_str=""
+  if [ -n "$duration" ] && [ "$duration" -gt 0 ] 2>/dev/null; then
+    TOTAL_DURATION=$((TOTAL_DURATION + duration))
+    duration_str=$(format_duration "$duration")
+  fi
 
   if [ -f "$json_file" ]; then
     local tests=$(jq '.numTotalTests' "$json_file")
@@ -136,7 +156,7 @@ capture_test_results() {
     local suites_passed=$(jq '.numPassedTestSuites' "$json_file")
     local suites_failed=$(jq '.numFailedTestSuites' "$json_file")
 
-    TEST_RESULTS+=("$section_name|$tests|$passed|$failed|$skipped|$suites|$suites_passed|$suites_failed")
+    TEST_RESULTS+=("$section_name|$tests|$passed|$failed|$skipped|$duration_str|$suites|$suites_passed|$suites_failed")
 
     TOTAL_TESTS=$((TOTAL_TESTS + tests))
     TOTAL_PASSED=$((TOTAL_PASSED + passed))
@@ -145,6 +165,9 @@ capture_test_results() {
     TOTAL_SUITES=$((TOTAL_SUITES + suites))
     TOTAL_SUITES_PASSED=$((TOTAL_SUITES_PASSED + suites_passed))
     TOTAL_SUITES_FAILED=$((TOTAL_SUITES_FAILED + suites_failed))
+  elif [ -n "$duration_str" ]; then
+    # No JSON output (e.g., timeout killed process) — still show duration
+    TEST_RESULTS+=("$section_name|0|0|0|0|$duration_str|0|0|0")
   fi
 }
 
@@ -221,16 +244,20 @@ print_test_summary() {
   output_line "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   output_line "📊 CI TEST RESULTS SUMMARY"
   output_line "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  printf "%-30s %8s %8s %8s %8s %8s\n" "Section" "Tests" "Passed" "Failed" "Skipped" "Suites" | tee -a "$output_file"
-  output_line "────────────────────────────────────────────────────────────────────────────"
+  printf "%-30s %8s %8s %8s %8s %9s %8s\n" "Section" "Tests" "Passed" "Failed" "Skipped" "Duration" "Suites" | tee -a "$output_file"
+  output_line "─────────────────────────────────────────────────────────────────────────────────────"
 
   for result in "${TEST_RESULTS[@]}"; do
-    IFS='|' read -r name tests passed failed skipped suites <<< "$result"
-    printf "%-30s %8s %8s %8s %8s %8s\n" "$name" "$tests" "$passed" "$failed" "$skipped" "$suites" | tee -a "$output_file"
+    IFS='|' read -r name tests passed failed skipped duration suites <<< "$result"
+    printf "%-30s %8s %8s %8s %8s %9s %8s\n" "$name" "$tests" "$passed" "$failed" "$skipped" "$duration" "$suites" | tee -a "$output_file"
   done
 
-  output_line "────────────────────────────────────────────────────────────────────────────"
-  printf "%-30s %8s %8s %8s %8s %8s\n" "TOTAL" "$TOTAL_TESTS" "$TOTAL_PASSED" "$TOTAL_FAILED" "$TOTAL_SKIPPED" "$TOTAL_SUITES" | tee -a "$output_file"
+  output_line "─────────────────────────────────────────────────────────────────────────────────────"
+  local total_duration_str=""
+  if [ $TOTAL_DURATION -gt 0 ]; then
+    total_duration_str=$(format_duration "$TOTAL_DURATION")
+  fi
+  printf "%-30s %8s %8s %8s %8s %9s %8s\n" "TOTAL" "$TOTAL_TESTS" "$TOTAL_PASSED" "$TOTAL_FAILED" "$TOTAL_SKIPPED" "$total_duration_str" "$TOTAL_SUITES" | tee -a "$output_file"
   output_line "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
   if [ $TOTAL_SKIPPED -gt 0 ]; then
@@ -507,6 +534,7 @@ if [ "$SKIP_TESTS" = false ]; then
     fi
   fi
 
+  _ts=$(date +%s)
   timeout 600 pnpm run test:unit --json --outputFile=/tmp/core-test-results.json || {
     EXIT_CODE=$?
     if [ $EXIT_CODE -eq 124 ]; then
@@ -515,6 +543,7 @@ if [ "$SKIP_TESTS" = false ]; then
       echo "❌ Core unit tests failed (exit code: $EXIT_CODE)"
     fi
   }
+  SECTION_DURATIONS["Core"]=$(( $(date +%s) - _ts ))
   capture_test_results "Core" "/tmp/core-test-results.json" || true
   report_section_time "Core Tests"
 fi
@@ -534,6 +563,7 @@ report_section_time "Cosyne Build"
 if [ "$SKIP_TESTS" = false ]; then
   echo "--- :test_tube: Cosyne - Unit Tests"
   time_section "Cosyne Tests"
+  _ts=$(date +%s)
   timeout 120 pnpm run test --json --outputFile=/tmp/cosyne-test-results.json || {
     EXIT_CODE=$?
     if [ $EXIT_CODE -eq 124 ]; then
@@ -542,6 +572,7 @@ if [ "$SKIP_TESTS" = false ]; then
       echo "❌ Cosyne tests failed (exit code: $EXIT_CODE)"
     fi
   }
+  SECTION_DURATIONS["Cosyne"]=$(( $(date +%s) - _ts ))
   capture_test_results "Cosyne" "/tmp/cosyne-test-results.json" || true
   report_section_time "Cosyne Tests"
 fi
@@ -566,6 +597,7 @@ else
     time_section "Trine Tests"
     # 228 test files each launch a bridge — run serialized with forceExit so
     # partial results are written even if we hit the timeout.
+    _ts=$(date +%s)
     timeout 600 npx jest --maxWorkers=1 --forceExit \
       --json --outputFile=/tmp/trine-test-results.json || {
       EXIT_CODE=$?
@@ -575,6 +607,7 @@ else
         echo "❌ Trine tests failed (exit code: $EXIT_CODE)"
       fi
     }
+    SECTION_DURATIONS["Trine"]=$(( $(date +%s) - _ts ))
     capture_test_results "Trine" "/tmp/trine-test-results.json" || true
     report_section_time "Trine Tests"
   fi
@@ -596,6 +629,7 @@ if [ -f "package.json" ]; then
 
   if [ "$SKIP_TESTS" = false ]; then
     echo "--- :test_tube: Designer - Unit Tests"
+    _ts=$(date +%s)
     timeout 90 pnpm run test:unit --json --outputFile=/tmp/designer-unit-test-results.json || {
       EXIT_CODE=$?
       if [ $EXIT_CODE -eq 124 ]; then
@@ -604,9 +638,11 @@ if [ -f "package.json" ]; then
         echo "❌ Designer unit tests failed (exit code: $EXIT_CODE)"
       fi
     }
+    SECTION_DURATIONS["Designer: Unit"]=$(( $(date +%s) - _ts ))
     capture_test_results "Designer: Unit" "/tmp/designer-unit-test-results.json" || true
 
     echo "--- :test_tube: Designer - GUI Tests"
+    _ts=$(date +%s)
     timeout 90 pnpm run test:gui --json --outputFile=/tmp/designer-gui-test-results.json || {
       EXIT_CODE=$?
       if [ $EXIT_CODE -eq 124 ]; then
@@ -615,6 +651,7 @@ if [ -f "package.json" ]; then
         echo "❌ Designer GUI tests failed (exit code: $EXIT_CODE)"
       fi
     }
+    SECTION_DURATIONS["Designer: GUI"]=$(( $(date +%s) - _ts ))
     capture_test_results "Designer: GUI" "/tmp/designer-gui-test-results.json" || true
   fi
 else
@@ -633,6 +670,7 @@ cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/examples
 
 if [ "$SKIP_TESTS" = false ]; then
   echo "--- :test_tube: Examples - Logic Tests"
+  _ts=$(date +%s)
   timeout 150 pnpm run test:logic --json --outputFile=/tmp/examples-logic-test-results.json || {
     EXIT_CODE=$?
     if [ $EXIT_CODE -eq 124 ]; then
@@ -641,9 +679,11 @@ if [ "$SKIP_TESTS" = false ]; then
       echo "❌ Examples logic tests failed (exit code: $EXIT_CODE)"
     fi
   }
+  SECTION_DURATIONS["Examples: Logic"]=$(( $(date +%s) - _ts ))
   capture_test_results "Examples: Logic" "/tmp/examples-logic-test-results.json" || true
 
   echo "--- :test_tube: Examples - GUI Tests"
+  _ts=$(date +%s)
   timeout 150 npx jest --maxWorkers=1 --forceExit \
     --json --outputFile=/tmp/examples-gui-test-results.json || {
     EXIT_CODE=$?
@@ -653,6 +693,7 @@ if [ "$SKIP_TESTS" = false ]; then
       echo "❌ Examples GUI tests failed (exit code: $EXIT_CODE)"
     fi
   }
+  SECTION_DURATIONS["Examples: GUI"]=$(( $(date +%s) - _ts ))
   capture_test_results "Examples: GUI" "/tmp/examples-gui-test-results.json" || true
 fi
 fi
@@ -683,19 +724,17 @@ if [ "$SKIP_TESTS" = false ] && [ "$UNIT_ONLY" = false ] && [ "$QUICK_MODE" = fa
 
     echo "--- :package: Ported App: ${app_name}"
     cd "${app_dir}"
+    local _ts=$(date +%s)
+    local _exit=0
     if [ -n "$bridge_mode" ]; then
       echo "Using bridge mode: $bridge_mode"
-      TSYNE_BRIDGE_MODE=$bridge_mode timeout 300 pnpm test --json --outputFile="$json_file" || {
-        capture_test_results "Ported: ${app_name}" "$json_file"
-        return 1
-      }
+      TSYNE_BRIDGE_MODE=$bridge_mode timeout 300 pnpm test --json --outputFile="$json_file" || _exit=$?
     else
-      timeout 300 pnpm test --json --outputFile="$json_file" || {
-        capture_test_results "Ported: ${app_name}" "$json_file"
-        return 1
-      }
+      timeout 300 pnpm test --json --outputFile="$json_file" || _exit=$?
     fi
+    SECTION_DURATIONS["Ported: ${app_name}"]=$(( $(date +%s) - _ts ))
     capture_test_results "Ported: ${app_name}" "$json_file"
+    return $_exit
   }
 
   # Test each ported app (continue even if some fail to collect all results)
@@ -769,11 +808,12 @@ if [ "$SKIP_TESTS" = false ] && [ "$UNIT_ONLY" = false ] && [ "$QUICK_MODE" = fa
 
     echo "--- :iphone: Phone App: ${app_name}"
     cd "${app_dir}"
-    timeout 300 pnpm test --json --outputFile="$json_file" || {
-      capture_test_results "Phone: ${app_name}" "$json_file"
-      return 1
-    }
+    local _ts=$(date +%s)
+    local _exit=0
+    timeout 300 pnpm test --json --outputFile="$json_file" || _exit=$?
+    SECTION_DURATIONS["Phone: ${app_name}"]=$(( $(date +%s) - _ts ))
     capture_test_results "Phone: ${app_name}" "$json_file"
+    return $_exit
   }
 
   # Test each phone app (continue even if some fail to collect all results)
@@ -839,11 +879,12 @@ if [ "$SKIP_TESTS" = false ] && [ "$UNIT_ONLY" = false ] && [ "$QUICK_MODE" = fa
 
     echo "--- :computer: Launcher: ${launcher_name}"
     cd "${launcher_dir}"
-    timeout 300 npx jest --json --outputFile="$json_file" || {
-      capture_test_results "Launcher: ${launcher_name}" "$json_file"
-      return 1
-    }
+    local _ts=$(date +%s)
+    local _exit=0
+    timeout 300 npx jest --json --outputFile="$json_file" || _exit=$?
+    SECTION_DURATIONS["Launcher: ${launcher_name}"]=$(( $(date +%s) - _ts ))
     capture_test_results "Launcher: ${launcher_name}" "$json_file"
+    return $_exit
   }
 
   # Test each launcher (continue even if some fail to collect all results)
@@ -877,11 +918,12 @@ if [ "$SKIP_TESTS" = false ] && [ "$UNIT_ONLY" = false ] && [ "$QUICK_MODE" = fa
 
     echo "--- :rocket: Larger App: ${app_name}"
     cd "${app_dir}"
-    timeout 300 pnpm test --json --outputFile="$json_file" || {
-      capture_test_results "Larger: ${app_name}" "$json_file"
-      return 1
-    }
+    local _ts=$(date +%s)
+    local _exit=0
+    timeout 300 pnpm test --json --outputFile="$json_file" || _exit=$?
+    SECTION_DURATIONS["Larger: ${app_name}"]=$(( $(date +%s) - _ts ))
     capture_test_results "Larger: ${app_name}" "$json_file"
+    return $_exit
   }
 
   # Test each larger app (continue even if some fail to collect all results)
@@ -912,12 +954,13 @@ if [ "$SKIP_TESTS" = false ]; then
     cd "${BUILDKITE_BUILD_CHECKOUT_PATH}/core"
 
     # Run pure logic tests using roots override to include test-apps directory
+    local _ts=$(date +%s)
+    local _exit=0
     timeout 60 npx jest --roots="${app_dir}" --testMatch='**/*-logic.test.ts' \
-      --json --outputFile="$json_file" || {
-      capture_test_results "TestApp: ${app_name} Logic" "$json_file"
-      return 1
-    }
+      --json --outputFile="$json_file" || _exit=$?
+    SECTION_DURATIONS["TestApp: ${app_name} Logic"]=$(( $(date +%s) - _ts ))
     capture_test_results "TestApp: ${app_name} Logic" "$json_file"
+    return $_exit
   }
 
   # Helper function to test a test-app with GUI tests (requires Tsyne bridge)
@@ -941,12 +984,13 @@ if [ "$SKIP_TESTS" = false ]; then
     cd "${BUILDKITE_BUILD_CHECKOUT_PATH}/core"
 
     # Run GUI tests using roots override
+    local _ts=$(date +%s)
+    local _exit=0
     timeout 120 npx jest --roots="${app_dir}" --testMatch='**/calculator.test.ts' \
-      --json --outputFile="$json_file" || {
-      capture_test_results "TestApp: ${app_name} GUI" "$json_file"
-      return 1
-    }
+      --json --outputFile="$json_file" || _exit=$?
+    SECTION_DURATIONS["TestApp: ${app_name} GUI"]=$(( $(date +%s) - _ts ))
     capture_test_results "TestApp: ${app_name} GUI" "$json_file"
+    return $_exit
   }
 
   # Test each test-app (continue even if some fail to collect all results)
