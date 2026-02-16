@@ -492,10 +492,9 @@ export function buildWikipediaApp(a: any, windowWidth?: number, windowHeight?: n
 
         // Search Bar
         a.hbox(() => {
-          searchInput = a.textEntry('').withPlaceholder('🔍 Search Wikipedia...').withId('search-input');
-          searchInput.onChange(async (value: string) => {
+          searchInput = a.entry({ placeholder: '🔍 Search Wikipedia...', onChange: (value: string) => {
             searchInputValue = value;
-          });
+          } }).withId('search-input');
 
           a.button('Search', { onClick: async () => {
             if (searchInputValue.trim()) {
@@ -518,22 +517,22 @@ export function buildWikipediaApp(a: any, windowWidth?: number, windowHeight?: n
           a.button('🔍 Search', { onClick: async () => {
             selectedTab = 'search';
             await viewStack.refresh();
-          } });
+          } }).withId('tab-search');
 
           a.button('✨ Explore', { onClick: async () => {
             selectedTab = 'explore';
             await viewStack.refresh();
-          } });
+          } }).withId('tab-explore');
 
           a.button('💾 Saved', { onClick: async () => {
             selectedTab = 'saved';
             await viewStack.refresh();
-          } });
+          } }).withId('tab-saved');
 
           a.button('📜 History', { onClick: async () => {
             selectedTab = 'history';
             await viewStack.refresh();
-          } });
+          } }).withId('tab-history');
         });
 
         a.separator();

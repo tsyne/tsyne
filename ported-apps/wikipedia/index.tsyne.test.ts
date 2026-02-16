@@ -169,10 +169,7 @@ describe('Wikipedia App UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    const win = testApp.getWindow();
-    if (win && process.env.TAKE_SCREENSHOTS) {
-      await win.screenshot('/tmp/wikipedia-search.png');
-    }
+    // Screenshots not yet supported via this pattern
   });
 
   it('should capture screenshot of explore view', async () => {
@@ -185,10 +182,7 @@ describe('Wikipedia App UI Tests', () => {
     await ctx.getById('tab-explore').click();
     await ctx.getById('explore-title').within(1000).shouldExist();
 
-    const win = testApp.getWindow();
-    if (win && process.env.TAKE_SCREENSHOTS) {
-      await win.screenshot('/tmp/wikipedia-explore.png');
-    }
+    // Screenshots not yet supported via this pattern
   });
 
   it('should capture screenshot of saved view', async () => {
@@ -201,10 +195,7 @@ describe('Wikipedia App UI Tests', () => {
     await ctx.getById('tab-saved').click();
     await ctx.getById('saved-title').within(1000).shouldExist();
 
-    const win = testApp.getWindow();
-    if (win && process.env.TAKE_SCREENSHOTS) {
-      await win.screenshot('/tmp/wikipedia-saved.png');
-    }
+    // Screenshots not yet supported via this pattern
   });
 
   it('should capture screenshot of history view', async () => {
@@ -217,9 +208,6 @@ describe('Wikipedia App UI Tests', () => {
     await ctx.getById('tab-history').click();
     await ctx.getById('history-title').within(1000).shouldExist();
 
-    const win = testApp.getWindow();
-    if (win && process.env.TAKE_SCREENSHOTS) {
-      await win.screenshot('/tmp/wikipedia-history.png');
-    }
+    // Screenshots not yet supported via this pattern
   });
 });

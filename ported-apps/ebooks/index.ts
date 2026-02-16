@@ -529,8 +529,7 @@ class EbookStore {
 }
 
 // UI Builder
-export async function buildEbookApp(app: any) {
-  const a = app.getAppBuilder();
+export async function buildEbookApp(a: any) {
   const store = new EbookStore();
   let selectedTab = 'library';
 
@@ -559,17 +558,15 @@ export async function buildEbookApp(app: any) {
   const libraryContainer = a
     .vbox(() => {
       userLabel = a
-        .label(() => '📚 Ebook Reader')
+        .label('📚 Ebook Reader')
         .withId('user-label');
 
-      a.label(() => 'Library').withBold().withId('library-title');
+      a.label('Library').withBold().withId('library-title');
 
-      a.entry()
-        .withPlaceholder('Search books...')
-        .onChange(async (query: string) => {
+      a.entry({ placeholder: 'Search books...', onChange: async (query: string) => {
           await updateLabels();
           await viewStack.refresh();
-        });
+        } });
 
       a.vbox(() => {})
         .withId('books-list')
@@ -577,40 +574,31 @@ export async function buildEbookApp(app: any) {
           items: () => store.getBooks(),
           render: (book: Ebook) => {
             return a.hbox(() => {
-              a.label(() => book.coverEmoji);
+              a.label(book.coverEmoji);
               a.vbox(() => {
-                a.label(() => book.title).withBold().withId(`book-title-${book.id}`);
-                a.label(() => `by ${book.author}`).withId(`book-author-${book.id}`);
+                a.label(book.title).withBold().withId(`book-title-${book.id}`);
+                a.label(`by ${book.author}`).withId(`book-author-${book.id}`);
 
                 if (book.downloadProgress < 100) {
-                  a.label(() => `⬇️ ${Math.round(book.downloadProgress)}%`);
-                  const btn = a.button(
-                    () => `Cancel`,
-                    async () => {
+                  a.label(`⬇️ ${Math.round(book.downloadProgress)}%`);
+                  const btn = a.button('Cancel', { onClick: async () => {
                       store.cancelDownload(book.id);
                       await updateLabels();
                       await viewStack.refresh();
-                    }
-                  );
+                    } });
                 } else if (!book.isDownloaded) {
-                  a.button(
-                    () => '⬇️ Download',
-                    async () => {
+                  a.button('⬇️ Download', { onClick: async () => {
                       store.startDownload(book.id);
                       await updateLabels();
                       await viewStack.refresh();
-                    }
-                  );
+                    } });
                 }
 
-                const favBtn = a.button(
-                  () => (book.isFavorite ? '❤️ Unfavorite' : '🤍 Favorite'),
-                  async () => {
+                const favBtn = a.button('❤️ Favorite', { onClick: async () => {
                     store.toggleFavorite(book.id);
                     await updateLabels();
                     await viewStack.refresh();
-                  }
-                );
+                  } });
               });
             });
           },
@@ -621,18 +609,17 @@ export async function buildEbookApp(app: any) {
 
   const readingContainer = a
     .vbox(() => {
-      a.label(() => 'Currently Reading').withBold().withId('reading-title');
+      a.label('Currently Reading').withBold().withId('reading-title');
 
       const currentId = store.getCurrentlyReading();
       const currentBook = currentId ? store.getBookById(currentId) : null;
 
       if (currentBook) {
-        a.label(() => currentBook.coverEmoji).withSize(48);
-        a.label(() => currentBook.title).withBold();
-        a.label(() => `by ${currentBook.author}`);
+        a.label(currentBook.coverEmoji).withSize(48);
+        a.label(currentBook.title).withBold();
+        a.label(`by ${currentBook.author}`);
         a.label(
-          () =>
-            `Progress: ${currentBook.currentPage}/${currentBook.totalPages} (${Math.round(currentBook.lastReadPosition)}%)`
+          `Progress: ${currentBook.currentPage}/${currentBook.totalPages} (${Math.round(currentBook.lastReadPosition)}%)`
         );
 
         a.vbox(() => {})
@@ -644,16 +631,14 @@ export async function buildEbookApp(app: any) {
             },
             render: (stats: ReadingStats) => {
               return a.hbox(() => {
-                a.label(() => `Read Time: ${stats.totalReadTime} min | Sessions: ${stats.sessionCount}`);
+                a.label(`Read Time: ${stats.totalReadTime} min | Sessions: ${stats.sessionCount}`);
               });
             },
             trackBy: (stats: ReadingStats) => stats.ebookId,
           });
 
         a.hbox(() => {
-          a.button(
-            () => '-10 Pages',
-            async () => {
+          a.button('-10 Pages', { onClick: async () => {
               const newPage = Math.max(0, currentBook.currentPage - 10);
               store.updateReadingProgress(
                 currentBook.id,
@@ -662,12 +647,9 @@ export async function buildEbookApp(app: any) {
               );
               await updateLabels();
               await viewStack.refresh();
-            }
-          );
+            } });
 
-          a.button(
-            () => '+10 Pages',
-            async () => {
+          a.button('+10 Pages', { onClick: async () => {
               const newPage = Math.min(currentBook.totalPages, currentBook.currentPage + 10);
               store.updateReadingProgress(
                 currentBook.id,
@@ -676,11 +658,10 @@ export async function buildEbookApp(app: any) {
               );
               await updateLabels();
               await viewStack.refresh();
-            }
-          );
+            } });
         });
 
-        a.label(() => 'Bookmarks').withBold();
+        a.label('Bookmarks').withBold();
         a.vbox(() => {})
           .withId('bookmarks-list')
           .bindTo({
@@ -688,51 +669,42 @@ export async function buildEbookApp(app: any) {
             render: (bm: Bookmark) => {
               return a.hbox(() => {
                 a.vbox(() => {
-                  a.label(() => `Page ${bm.pageNumber}: ${bm.note}`);
+                  a.label(`Page ${bm.pageNumber}: ${bm.note}`);
                 });
-                a.button(
-                  () => '✕',
-                  async () => {
+                a.button('✕', { onClick: async () => {
                     store.deleteBookmark(bm.id);
                     await updateLabels();
                     await viewStack.refresh();
-                  }
-                );
+                  } });
               });
             },
             trackBy: (bm: Bookmark) => bm.id,
           });
 
-        a.button(
-          () => '📌 Add Bookmark',
-          async () => {
+        a.button('📌 Add Bookmark', { onClick: async () => {
             const note = `Bookmark at page ${currentBook.currentPage}`;
             store.addBookmark(currentBook.id, currentBook.currentPage, note);
             await updateLabels();
             await viewStack.refresh();
-          }
-        );
+          } });
       } else {
-        a.label(() => 'No book selected for reading');
-        a.button(
-          () => 'Select from Library',
-          async () => {
+        a.label('No book selected for reading');
+        a.button('Select from Library', { onClick: async () => {
             selectedTab = 'library';
             await updateLabels();
             await viewStack.refresh();
-          }
-        );
+          } });
       }
     })
     .when(() => selectedTab === 'reading');
 
   const favoritesContainer = a
     .vbox(() => {
-      a.label(() => 'Favorites').withBold().withId('favorites-title');
+      a.label('Favorites').withBold().withId('favorites-title');
 
       const favorites = store.getFavorites();
       if (favorites.length === 0) {
-        a.label(() => 'No favorite books yet');
+        a.label('No favorite books yet');
       }
 
       a.vbox(() => {})
@@ -741,19 +713,16 @@ export async function buildEbookApp(app: any) {
           items: () => store.getFavorites(),
           render: (book: Ebook) => {
             return a.hbox(() => {
-              a.label(() => book.coverEmoji);
+              a.label(book.coverEmoji);
               a.vbox(() => {
-                a.label(() => book.title).withBold();
-                a.label(() => `by ${book.author}`);
+                a.label(book.title).withBold();
+                a.label(`by ${book.author}`);
               });
-              a.button(
-                () => '❤️',
-                async () => {
+              a.button('❤️', { onClick: async () => {
                   store.toggleFavorite(book.id);
                   await updateLabels();
                   await viewStack.refresh();
-                }
-              );
+                } });
             });
           },
           trackBy: (book: Ebook) => book.id,
@@ -763,10 +732,10 @@ export async function buildEbookApp(app: any) {
 
   const downloadsContainer = a
     .vbox(() => {
-      a.label(() => 'Downloads').withBold().withId('downloads-title');
+      a.label('Downloads').withBold().withId('downloads-title');
 
       const downloaded = store.getDownloadedBooks();
-      a.label(() => `${downloaded.length} downloaded books`);
+      a.label(`${downloaded.length} downloaded books`);
 
       a.vbox(() => {})
         .withId('downloads-list')
@@ -774,20 +743,17 @@ export async function buildEbookApp(app: any) {
           items: () => store.getDownloadedBooks(),
           render: (book: Ebook) => {
             return a.hbox(() => {
-              a.label(() => book.coverEmoji);
+              a.label(book.coverEmoji);
               a.vbox(() => {
-                a.label(() => book.title).withBold();
-                a.label(() => `${book.fileSize} MB`);
+                a.label(book.title).withBold();
+                a.label(`${book.fileSize} MB`);
               });
-              a.button(
-                () => '📖 Read',
-                async () => {
+              a.button('📖 Read', { onClick: async () => {
                   store.setCurrentlyReading(book.id);
                   selectedTab = 'reading';
                   await updateLabels();
                   await viewStack.refresh();
-                }
-              );
+                } });
             });
           },
           trackBy: (book: Ebook) => book.id,
@@ -797,111 +763,80 @@ export async function buildEbookApp(app: any) {
 
   const settingsContainer = a
     .vbox(() => {
-      a.label(() => 'Settings').withBold().withId('settings-title');
+      a.label('Settings').withBold().withId('settings-title');
 
       const prefs = store.getPreferences();
 
-      a.label(() => '🌓 Theme');
+      a.label('🌓 Theme');
       a.hbox(() => {
-        a.button(
-          () => `${prefs.theme === 'light' ? '☀️ Light' : '☀️ Light'}`,
-          async () => {
+        a.button('☀️ Light', { onClick: async () => {
             store.setTheme('light');
             await updateLabels();
             await viewStack.refresh();
-          }
-        );
-        a.button(
-          () => `${prefs.theme === 'dark' ? '🌙 Dark' : '🌙 Dark'}`,
-          async () => {
+          } });
+        a.button('🌙 Dark', { onClick: async () => {
             store.setTheme('dark');
             await updateLabels();
             await viewStack.refresh();
-          }
-        );
+          } });
       });
 
-      a.label(() => '🔤 Font Size');
+      a.label('🔤 Font Size');
       a.hbox(() => {
-        a.button(
-          () => `${prefs.fontSize === 'small' ? '▼' : '▽'} Small`,
-          async () => {
+        a.button('▽ Small', { onClick: async () => {
             store.setFontSize('small');
             await updateLabels();
             await viewStack.refresh();
-          }
-        );
-        a.button(
-          () => `${prefs.fontSize === 'medium' ? '▼' : '▽'} Medium`,
-          async () => {
+          } });
+        a.button('▽ Medium', { onClick: async () => {
             store.setFontSize('medium');
             await updateLabels();
             await viewStack.refresh();
-          }
-        );
-        a.button(
-          () => `${prefs.fontSize === 'large' ? '▼' : '▽'} Large`,
-          async () => {
+          } });
+        a.button('▽ Large', { onClick: async () => {
             store.setFontSize('large');
             await updateLabels();
             await viewStack.refresh();
-          }
-        );
+          } });
       });
 
-      a.label(() => '━━━━━━━━━━━━━━━━━━━━━━');
-      a.label(() => '📊 Statistics');
+      a.label('━━━━━━━━━━━━━━━━━━━━━━');
+      a.label('📊 Statistics');
       a.label(
-        () =>
-          `Total Books: ${store.getBookCount()} | Downloaded: ${store.getDownloadedCount()} | Favorites: ${store.getFavoriteCount()}`
+        `Total Books: ${store.getBookCount()} | Downloaded: ${store.getDownloadedCount()} | Favorites: ${store.getFavoriteCount()}`
       );
     })
     .when(() => selectedTab === 'settings');
 
-  statsLabel = a.label(() => '');
+  statsLabel = a.label('');
 
   const viewStack = a.vbox(() => {
     userLabel = a
-      .label(() => '📚 Ebook Reader')
+      .label('📚 Ebook Reader')
       .withId('user-label');
-    statsLabel = a.label(() => '').withId('stats-label');
+    statsLabel = a.label('').withId('stats-label');
 
     a.hbox(() => {
-      a.button(
-        () => '📚 Library',
-        async () => {
+      a.button('📚 Library', { onClick: async () => {
           selectedTab = 'library';
           await viewStack.refresh();
-        }
-      );
-      a.button(
-        () => '📖 Reading',
-        async () => {
+        } }).withId('tab-library');
+      a.button('📖 Reading', { onClick: async () => {
           selectedTab = 'reading';
           await viewStack.refresh();
-        }
-      );
-      a.button(
-        () => '❤️ Favorites',
-        async () => {
+        } }).withId('tab-reading');
+      a.button('❤️ Favorites', { onClick: async () => {
           selectedTab = 'favorites';
           await viewStack.refresh();
-        }
-      );
-      a.button(
-        () => '⬇️ Downloads',
-        async () => {
+        } }).withId('tab-favorites');
+      a.button('⬇️ Downloads', { onClick: async () => {
           selectedTab = 'downloads';
           await viewStack.refresh();
-        }
-      );
-      a.button(
-        () => '⚙️ Settings',
-        async () => {
+        } }).withId('tab-downloads');
+      a.button('⚙️ Settings', { onClick: async () => {
           selectedTab = 'settings';
           await viewStack.refresh();
-        }
-      );
+        } }).withId('tab-settings');
     });
 
     libraryContainer;

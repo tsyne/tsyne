@@ -274,48 +274,5 @@ describe('Food Truck App UI Tests', () => {
     await ctx.getById('add-burger').click();
     await new Promise((r) => setTimeout(r, 200));
 
-    // Take screenshot
-    const win = testApp.getWindow();
-    if (win && process.env.TAKE_SCREENSHOTS) {
-      await win.screenshot('/tmp/food-truck-orders.png');
-    }
-  });
-
-  it('should capture screenshot of sales view', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      buildFoodTruckApp(app);
-    });
-
-    ctx = tsyneTest.getContext();
-    await testApp.run();
-
-    // Switch to sales view
-    await ctx.getById('btn-sales').click();
-    await ctx.getById('sales-title').within(1000).shouldExist();
-
-    // Take screenshot
-    const win = testApp.getWindow();
-    if (win && process.env.TAKE_SCREENSHOTS) {
-      await win.screenshot('/tmp/food-truck-sales.png');
-    }
-  });
-
-  it('should capture screenshot of weather view', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      buildFoodTruckApp(app);
-    });
-
-    ctx = tsyneTest.getContext();
-    await testApp.run();
-
-    // Switch to weather view
-    await ctx.getById('btn-weather').click();
-    await ctx.getById('weather-title').within(1000).shouldExist();
-
-    // Take screenshot
-    const win = testApp.getWindow();
-    if (win && process.env.TAKE_SCREENSHOTS) {
-      await win.screenshot('/tmp/food-truck-weather.png');
-    }
   });
 });

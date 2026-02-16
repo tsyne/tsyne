@@ -509,10 +509,9 @@ export function buildDuckDuckGoApp(a: any, windowWidth?: number, windowHeight?: 
 
         // Search Bar
         a.hbox(() => {
-          searchInput = a.textEntry('').withPlaceholder('🔍 Search privately...').withId('search-input');
-          searchInput.onChange(async (value: string) => {
+          searchInput = a.entry({ placeholder: '🔍 Search privately...', onChange: (value: string) => {
             searchInputValue = value;
-          });
+          } }).withId('search-input');
 
           a.button('Search', { onClick: async () => {
             if (searchInputValue.trim()) {
@@ -539,22 +538,22 @@ export function buildDuckDuckGoApp(a: any, windowWidth?: number, windowHeight?: 
           a.button('🔍 Search', { onClick: async () => {
             selectedTab = 'search';
             await viewStack.refresh();
-          } });
+          } }).withId('tab-search');
 
           a.button('🛡️ Privacy', { onClick: async () => {
             selectedTab = 'privacy';
             await viewStack.refresh();
-          } });
+          } }).withId('tab-privacy');
 
           a.button('🔖 Bookmarks', { onClick: async () => {
             selectedTab = 'bookmarks';
             await viewStack.refresh();
-          } });
+          } }).withId('tab-bookmarks');
 
           a.button('⚙️ Settings', { onClick: async () => {
             selectedTab = 'settings';
             await viewStack.refresh();
-          } });
+          } }).withId('tab-settings');
         });
 
         a.separator();
@@ -707,28 +706,28 @@ export function buildDuckDuckGoApp(a: any, windowWidth?: number, windowHeight?: 
 
             a.label('🔒 PRIVACY SETTINGS').withBold();
             a.hbox(() => {
-              a.checkbox('Block Trackers', settings.blockTrackers).onChange(async (value: boolean) => {
+              a.checkbox('Block Trackers', async (value: boolean) => {
                 store.updateSetting('blockTrackers', value);
                 await viewStack.refresh();
               });
             });
 
             a.hbox(() => {
-              a.checkbox('Block Ads', settings.blockAds).onChange(async (value: boolean) => {
+              a.checkbox('Block Ads', async (value: boolean) => {
                 store.updateSetting('blockAds', value);
                 await viewStack.refresh();
               });
             });
 
             a.hbox(() => {
-              a.checkbox('Auto HTTPS', settings.autoHttpsUpgrade).onChange(async (value: boolean) => {
+              a.checkbox('Auto HTTPS', async (value: boolean) => {
                 store.updateSetting('autoHttpsUpgrade', value);
                 await viewStack.refresh();
               });
             });
 
             a.hbox(() => {
-              a.checkbox('Safe Search', settings.safeSearch).onChange(async (value: boolean) => {
+              a.checkbox('Safe Search', async (value: boolean) => {
                 store.updateSetting('safeSearch', value);
                 await viewStack.refresh();
               });

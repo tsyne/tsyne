@@ -428,21 +428,21 @@ export function buildElementApp(a: any, windowWidth?: number, windowHeight?: num
               currentRoom = null;
               await updateLabels();
               await viewStack.refresh();
-            } });
+            } }).withId('tab-rooms');
 
             a.button('👥 Direct Messages', { onClick: async () => {
               selectedTab = 'directs';
               currentRoom = null;
               await updateLabels();
               await viewStack.refresh();
-            } });
+            } }).withId('tab-directs');
 
             a.button('⚙️ Settings', { onClick: async () => {
               selectedTab = 'settings';
               currentRoom = null;
               await updateLabels();
               await viewStack.refresh();
-            } });
+            } }).withId('tab-settings');
           });
 
           a.separator();
@@ -534,10 +534,9 @@ export function buildElementApp(a: any, windowWidth?: number, windowHeight?: num
 
                 // Message input
                 a.hbox(() => {
-                  messageInput = a.textEntry('').withPlaceholder('Type a message...').withId('message-input');
-                  messageInput.onChange(async (value: string) => {
+                  messageInput = a.entry({ placeholder: 'Type a message...', onChange: (value: string) => {
                     messageInputValue = value;
-                  });
+                  } }).withId('message-input');
 
                   a.button('Send', { onClick: async () => {
                     if (messageInputValue.trim() && currentRoom) {

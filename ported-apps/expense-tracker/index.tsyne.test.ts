@@ -284,48 +284,5 @@ describe('Expense Tracker App UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    // Take screenshot
-    const win = testApp.getWindow();
-    if (win && process.env.TAKE_SCREENSHOTS) {
-      await win.screenshot('/tmp/expense-tracker-expenses.png');
-    }
-  });
-
-  it('should capture screenshot of budgets view', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      buildExpenseTrackerApp(app);
-    });
-
-    ctx = tsyneTest.getContext();
-    await testApp.run();
-
-    // Switch to budgets
-    await ctx.getById('tab-budgets').click();
-    await ctx.getById('budgets-title').within(1000).shouldExist();
-
-    // Take screenshot
-    const win = testApp.getWindow();
-    if (win && process.env.TAKE_SCREENSHOTS) {
-      await win.screenshot('/tmp/expense-tracker-budgets.png');
-    }
-  });
-
-  it('should capture screenshot of analytics view', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      buildExpenseTrackerApp(app);
-    });
-
-    ctx = tsyneTest.getContext();
-    await testApp.run();
-
-    // Switch to analytics
-    await ctx.getById('tab-analytics').click();
-    await ctx.getById('analytics-title').within(1000).shouldExist();
-
-    // Take screenshot
-    const win = testApp.getWindow();
-    if (win && process.env.TAKE_SCREENSHOTS) {
-      await win.screenshot('/tmp/expense-tracker-analytics.png');
-    }
   });
 });

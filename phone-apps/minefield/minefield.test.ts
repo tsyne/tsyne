@@ -201,7 +201,7 @@ describe('Minefield UI', () => {
 
     ctx = tsyneTest.getContext();
     await testApp.run();
-    await ctx.wait(500);
+    await ctx.wait(100);
 
     // Check difficulty buttons exist
     await ctx.getById('beginnerBtn').shouldExist();
@@ -219,7 +219,7 @@ describe('Minefield UI', () => {
 
     ctx = tsyneTest.getContext();
     await testApp.run();
-    await ctx.wait(500);
+    await ctx.wait(100);
 
     const status = await ctx.getById('statusLabel');
     const text = await status.getText();
@@ -233,7 +233,7 @@ describe('Minefield UI', () => {
 
     ctx = tsyneTest.getContext();
     await testApp.run();
-    await ctx.wait(500);
+    await ctx.wait(100);
 
     await ctx.getById('newGameBtn').shouldExist();
   }, 30000);
@@ -245,7 +245,7 @@ describe('Minefield UI', () => {
 
     ctx = tsyneTest.getContext();
     await testApp.run();
-    await ctx.wait(500);
+    await ctx.wait(100);
 
     const mineLabel = await ctx.getById('mineCountLabel');
     const text = await mineLabel.getText();
@@ -259,7 +259,7 @@ describe('Minefield UI', () => {
 
     ctx = tsyneTest.getContext();
     await testApp.run();
-    await ctx.wait(1000);
+    await ctx.wait(100);
 
     const screenshotDir = path.join(__dirname, 'screenshots');
     if (!fs.existsSync(screenshotDir)) fs.mkdirSync(screenshotDir, { recursive: true });
@@ -273,12 +273,12 @@ describe('Minefield UI', () => {
 
     ctx = tsyneTest.getContext();
     await testApp.run();
-    await ctx.wait(500);
+    await ctx.wait(100);
 
     // Click on a few cells to start gameplay
     // Click on center-ish cells for better visual
     await ctx.getById('cell-27').click(); // Row 3, col 3
-    await ctx.wait(300);
+    await ctx.wait(100);
 
     const screenshotDir = path.join(__dirname, 'screenshots');
     if (!fs.existsSync(screenshotDir)) fs.mkdirSync(screenshotDir, { recursive: true });
