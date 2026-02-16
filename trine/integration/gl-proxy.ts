@@ -2010,9 +2010,9 @@ export class TsyneGLProxy implements WebGL2RenderingContext {
       case this.MAX_VERTEX_ATTRIBS:
         return 16;
       case this.MAX_VERTEX_UNIFORM_VECTORS:
-        return 128;
+        return 256;
       case this.MAX_FRAGMENT_UNIFORM_VECTORS:
-        return 64;
+        return 256;
       case this.MAX_VARYING_VECTORS:
         return 8;
       case this.MAX_COMBINED_TEXTURE_IMAGE_UNITS:

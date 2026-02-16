@@ -2,6 +2,10 @@
 
 199 test SVGs, median MAE ~0.5, 169 below MAE 5.
 
+## Source file splits to ease LLM token use
+
+* grammar.ts - split into four?
+
 ## Missing Features
 
 ### `<pattern>` fills

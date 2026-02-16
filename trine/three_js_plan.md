@@ -767,14 +767,28 @@ The Go-side handlers in `handlers_gl.go` turned out to be a **metadata accumulat
 - [x] Three.js basic test: `examples/webgl_basic_test.ts` — 3 colored rotating cubes ✅
 - [x] Three.js screenshots: `examples/screenshots/webgl_basic_test-t0.png`, `webgl_basic_test-t1000.png` ✅
 
-### Sprint 6: Fork Maintenance ⏳ PLANNED (after 5b)
-- [ ] Patch three.js utils.js for Tsyne integration
-- [ ] Add Tsyne exports to three.js main
-- [ ] Upstream sync strategy documentation
-- [ ] Version pinning strategy
+### Sprint 6: Fork Maintenance ✅ COMPLETE
+- [x] Patch three.js utils.js for Tsyne integration — `setup-three.sh` applies `patches/utils.js.patch` (canvas factory hook)
+- [x] Add Tsyne exports to three.js main — kept separate in `trine/integration/` (correct design: no fork pollution)
+- [x] Upstream sync strategy — documented in plan doc (Phase 6); three.js uses `dev` branch, no release tags
+- [x] Version pinning — `setup-three.sh` pins to `dev` branch, checks cloned version against tested `0.182.0`
 
-### Sprint 7: Production Integration ⏳ FUTURE
-- [ ] Full three.js scene rendering
+### Sprint 7: Advanced Materials (MeshPhongMaterial + Lighting) ✅ COMPLETE
+
+- [x] MeshPhongMaterial with Blinn-Phong shading renders correctly
+- [x] AmbientLight, PointLight, DirectionalLight all working
+- [x] VAO (Vertex Array Object) tracking implemented in Go bridge
+  - Root cause: Three.js uses `bindVertexArray` to restore buffer bindings on subsequent frames; Go side was ignoring these commands, causing all geometries to render with the last buffer's index data
+  - Fix: Track VAO state (attrib bindings, attrib locations, element buffer) and restore on `bindVertexArray`
+- [x] Multi-geometry scenes render correctly (16 different geometry types in `webgl_geometries`)
+- [x] Vertex colors work with MeshPhongMaterial (`webgl_buffergeometry_indexed`)
+- [x] Complex Phong shaders (~47KB fragment, ~22KB vertex) compile and render
+- [x] Structured uniforms (`pointLights[0].color`, `ambientLightColor`, etc.) work correctly
+- [x] Updated `webgl_buffergeometry_indexed.ts` from MeshBasicMaterial wireframe to MeshPhongMaterial with lighting
+- [x] Debug logging cleaned up
+
+### Sprint 8: Production Integration ⏳ FUTURE
+- [ ] Full three.js scene rendering (more complex examples)
 - [ ] Performance profiling
 - [ ] Error handling and recovery
 - [ ] Documentation and examples
@@ -958,7 +972,8 @@ The implementation now provides:
 
 **Remaining work:**
 - ~~Scene background color~~: ✅ FIXED — Fyne's `painter.Clear()` was resetting `glClearColor` to theme bg each frame; fix re-applies stored clear color before every `gl.Clear()` in `shader_painter.go`
-- Advanced materials (MeshStandardMaterial, MeshPhongMaterial with lighting)
+- ~~Advanced materials (MeshPhongMaterial with lighting)~~: ✅ FIXED — VAO tracking was the root cause; implemented in Sprint 7
+- MeshStandardMaterial (PBR) support
 - Performance profiling and optimization
 
 ---
@@ -1019,21 +1034,20 @@ The implementation now provides:
 - **Drawing**: Can issue draw calls that trigger Fyne rendering
 - **Testing**: Full integration tests validate the pipeline
 
-### What Needs Next (Phase 7+)
+### What Needs Next (Phase 8+)
 
-1. **Patch three.js**:
-   - Modify `utils.js` to use TsyneCanvas
-   - Add initialization code
-   - Test with actual three.js examples
+1. **Advanced Materials**:
+   - MeshStandardMaterial (PBR)
+   - Environment maps, IBL
 
 2. **Optimize**:
    - Profile command batching
    - Implement better geometry handling
-   - Cache shader compilations
+   - Reduce per-frame GL command count
 
 3. **Edge Cases**:
-   - Framebuffer operations (off-screen rendering)
-   - Advanced texture features
+   - Shadow maps (framebuffer rendering)
+   - Advanced texture features (mipmaps, anisotropic filtering)
    - Performance-critical operations
 
 4. **Polish**:
@@ -1096,12 +1110,12 @@ describe('Three.js on Tsyne', () => {
 
 ## Success Criteria
 
-1. **Basic rendering works**: Box, sphere, plane geometry renders correctly
-2. **Materials work**: MeshBasicMaterial, MeshStandardMaterial, MeshPhongMaterial
-3. **Textures work**: 2D textures, cubemaps
-4. **Lighting works**: Ambient, directional, point lights
-5. **Performance acceptable**: 60fps for moderate scenes
-6. **Examples run**: Key three.js examples render correctly
+1. ✅ **Basic rendering works**: Box, sphere, plane geometry renders correctly
+2. ✅ **Materials work**: MeshBasicMaterial, MeshPhongMaterial (MeshStandardMaterial TBD)
+3. ✅ **Textures work**: 2D textures, cubemaps
+4. ✅ **Lighting works**: Ambient, directional, point lights
+5. **Performance acceptable**: 60fps for moderate scenes (TBD profiling)
+6. ✅ **Examples run**: webgl_basic_test, webgl_geometries, webgl_buffergeometry, webgl_buffergeometry_indexed all render correctly
 
 ---
 

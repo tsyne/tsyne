@@ -8,8 +8,7 @@
  * - Vertex colors on indexed triangles
  *
  * Adaptations for Tsyne:
- * - Uses MeshBasicMaterial with wireframe instead of MeshPhongMaterial
- *   (MeshPhongMaterial lighting uniforms don't work yet)
+ * - Uses MeshPhongMaterial with vertex colors and lighting
  * - Removes Stats and GUI
  */
 
@@ -108,11 +107,22 @@ export async function buildWebGLBufferGeometryIndexed(
   geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
   geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
 
-  // Use MeshBasicMaterial with wireframe since MeshPhongMaterial lighting doesn't work yet
-  const material = new THREE.MeshBasicMaterial({
+  // Lights (matches canonical three.js example)
+  const ambientLight = new THREE.AmbientLight(0x444444);
+  scene.add(ambientLight);
+
+  const light1 = new THREE.DirectionalLight(0xffffff, 1.5);
+  light1.position.set(1, 1, 1);
+  scene.add(light1);
+
+  const light2 = new THREE.DirectionalLight(0xffffff, 0.75);
+  light2.position.set(-1, -0.5, -1);
+  scene.add(light2);
+
+  const material = new THREE.MeshPhongMaterial({
     side: THREE.DoubleSide,
     vertexColors: true,
-    wireframe: true,
+    shininess: 80,
   });
 
   const mesh = new THREE.Mesh(geometry, material);

@@ -81,11 +81,8 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 			}
 		}
 	} else if needsCompile || shader.Program() == 0 || !hasCachedProg {
-		// log.Printf("[drawShader] COMPILING shader (needsCompile=%v, program=%d, cached=%v)", needsCompile, shader.Program(), hasCachedProg)
-
 		prog := p.compileShaderProgram(vertexSrc, shader.FragmentSource)
 		if prog == 0 {
-			log.Printf("[drawShader] Shader compilation failed!")
 			return
 		}
 		shader.SetProgram(uint32(prog))

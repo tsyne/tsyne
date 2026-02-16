@@ -55,6 +55,10 @@ type GLCanvas struct {
 		size     int
 	}
 
+	// VAO (Vertex Array Object) tracking
+	vaos       map[uint32]*vaoState // Maps VAO ID → saved state
+	currentVAO uint32               // Currently bound VAO (0 = default)
+
 	// Vertex data accumulation (legacy)
 	vertexData  []float32
 	indexData   []uint16
@@ -91,6 +95,17 @@ func (l *centerNoMinLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) 
 
 func (l *centerNoMinLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
 	return fyne.NewSize(1, 1)
+}
+
+// vaoState captures the GL state that a Vertex Array Object tracks:
+// attribute bindings, attribute locations, and element array buffer binding.
+type vaoState struct {
+	attribBindings  map[int32]struct {
+		bufferId uint32
+		size     int
+	}
+	attribLocations map[int32]string
+	elementBuffer   uint32
 }
 
 // shaderProgram represents a compiled shader program
@@ -220,6 +235,7 @@ void main() {
 		uniformLocs:     make(map[uint32]*uniformInfo),
 		attribLocations: make(map[int32]string),
 		attribBindings:  make(map[int32]struct{ bufferId uint32; size int }),
+		vaos:            make(map[uint32]*vaoState),
 		vertexData:      make([]float32, 0),
 		indexData:       make([]uint16, 0),
 	}
@@ -401,7 +417,9 @@ func (b *Bridge) handleExecuteBatch(msg Message) Response {
 	// This maps attribute locations to buffer IDs with component sizes
 	attrCount := 0
 	// Per-batch logging disabled for performance
-	// log.Printf("[GL] Processing %d attrib bindings, %d buffers", len(canvas.attribBindings), len(canvas.buffers))
+	// log.Printf("[GL] Processing %d attrib bindings, %d buffers, FragSrc=%d bytes, VertSrc=%d bytes",
+	//	len(canvas.attribBindings), len(canvas.buffers),
+	//	len(canvas.ShaderObject.FragmentSource), len(canvas.ShaderObject.VertexSource))
 
 	for location, binding := range canvas.attribBindings {
 		// Get the attribute name for this location
@@ -544,9 +562,6 @@ func (b *Bridge) handleGetError(msg Message) Response {
 // ═══════════════════════════════════════════════════════════════
 
 func (b *Bridge) executeGLCommand(canvas *GLCanvas, cmd string, args map[string]interface{}) error {
-	// Per-command logging disabled for performance (was causing stutter)
-	// log.Printf("[GL] Executing command: %s", cmd)
-
 	switch cmd {
 	// Shader operations
 	case "createShader":
@@ -694,8 +709,12 @@ func (b *Bridge) executeGLCommand(canvas *GLCanvas, cmd string, args map[string]
 		return b.glRenderbufferStorage(canvas, args)
 
 	// Vertex array operations
-	case "createVertexArray", "deleteVertexArray", "bindVertexArray":
-		return nil // VAO - handled by painter
+	case "createVertexArray":
+		return b.glCreateVertexArray(canvas, args)
+	case "deleteVertexArray":
+		return b.glDeleteVertexArray(canvas, args)
+	case "bindVertexArray":
+		return b.glBindVertexArray(canvas, args)
 
 	// 3D texture operations
 	case "texImage3D", "texSubImage3D":
@@ -1000,6 +1019,104 @@ func (b *Bridge) glVertexAttribPointer(canvas *GLCanvas, args map[string]interfa
 	// else {
 	//	log.Printf("[GL] vertexAttribPointer: no currentBuffer bound!")
 	// }
+
+	return nil
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Vertex Array Object (VAO) Operations
+// ═══════════════════════════════════════════════════════════════
+
+// saveCurrentVAOState saves the current attrib bindings and element buffer to the
+// currently bound VAO. Called before switching away from a VAO.
+func (b *Bridge) saveCurrentVAOState(canvas *GLCanvas) {
+	vaoId := canvas.currentVAO
+	vao := canvas.vaos[vaoId]
+	if vao == nil {
+		vao = &vaoState{
+			attribBindings: make(map[int32]struct{ bufferId uint32; size int }),
+			attribLocations: make(map[int32]string),
+		}
+		canvas.vaos[vaoId] = vao
+	}
+	// Save attrib bindings
+	for k, v := range canvas.attribBindings {
+		vao.attribBindings[k] = v
+	}
+	// Save attrib locations
+	for k, v := range canvas.attribLocations {
+		vao.attribLocations[k] = v
+	}
+	// Save element buffer binding
+	vao.elementBuffer = canvas.elementBuffer
+}
+
+// restoreVAOState restores attrib bindings and element buffer from the given VAO.
+func (b *Bridge) restoreVAOState(canvas *GLCanvas, vaoId uint32) {
+	vao := canvas.vaos[vaoId]
+	if vao == nil {
+		// New/empty VAO — clear bindings
+		canvas.attribBindings = make(map[int32]struct{ bufferId uint32; size int })
+		canvas.elementBuffer = 0
+		return
+	}
+
+	// Restore attrib bindings
+	canvas.attribBindings = make(map[int32]struct{ bufferId uint32; size int })
+	for k, v := range vao.attribBindings {
+		canvas.attribBindings[k] = v
+	}
+	// Restore attrib locations
+	for k, v := range vao.attribLocations {
+		canvas.attribLocations[k] = v
+	}
+	// Restore element buffer binding and its index data
+	canvas.elementBuffer = vao.elementBuffer
+	if vao.elementBuffer > 0 {
+		if buf, exists := canvas.buffers[vao.elementBuffer]; exists && len(buf.indexData) > 0 {
+			canvas.indexData = buf.indexData
+		}
+	}
+}
+
+func (b *Bridge) glCreateVertexArray(canvas *GLCanvas, args map[string]interface{}) error {
+	vaIdVal, ok := args["vaId"]
+	if !ok {
+		return fmt.Errorf("missing vaId")
+	}
+	vaId := uint32(toFloat64(vaIdVal))
+	canvas.vaos[vaId] = &vaoState{
+		attribBindings: make(map[int32]struct{ bufferId uint32; size int }),
+		attribLocations: make(map[int32]string),
+	}
+	return nil
+}
+
+func (b *Bridge) glDeleteVertexArray(canvas *GLCanvas, args map[string]interface{}) error {
+	vaIdVal, ok := args["vaId"]
+	if !ok {
+		return fmt.Errorf("missing vaId")
+	}
+	vaId := uint32(toFloat64(vaIdVal))
+	delete(canvas.vaos, vaId)
+	return nil
+}
+
+func (b *Bridge) glBindVertexArray(canvas *GLCanvas, args map[string]interface{}) error {
+	vaIdVal, ok := args["vaId"]
+	if !ok {
+		return fmt.Errorf("missing vaId")
+	}
+	vaId := uint32(toFloat64(vaIdVal))
+
+	// Save current state to the currently bound VAO
+	b.saveCurrentVAOState(canvas)
+
+	// Switch to new VAO
+	canvas.currentVAO = vaId
+
+	// Restore state from the new VAO
+	b.restoreVAOState(canvas, vaId)
 
 	return nil
 }
