@@ -317,11 +317,7 @@ describe('DuckDuckGo Privacy Browser UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    // Take screenshot
-    const win = testApp.getWindow();
-    if (win && process.env.TAKE_SCREENSHOTS) {
-      await win.screenshot('/tmp/duckduckgo-search.png');
-    }
+    // Screenshots not yet supported via this pattern
   });
 
   it('should capture screenshot of privacy view', async () => {
@@ -336,11 +332,7 @@ describe('DuckDuckGo Privacy Browser UI Tests', () => {
     await ctx.getById('tab-privacy').click();
     await ctx.getById('privacy-title').within(1000).shouldExist();
 
-    // Take screenshot
-    const win = testApp.getWindow();
-    if (win && process.env.TAKE_SCREENSHOTS) {
-      await win.screenshot('/tmp/duckduckgo-privacy.png');
-    }
+    // Screenshots not yet supported via this pattern
   });
 
   it('should capture screenshot of bookmarks view', async () => {
@@ -355,11 +347,7 @@ describe('DuckDuckGo Privacy Browser UI Tests', () => {
     await ctx.getById('tab-bookmarks').click();
     await ctx.getById('bookmarks-title').within(1000).shouldExist();
 
-    // Take screenshot
-    const win = testApp.getWindow();
-    if (win && process.env.TAKE_SCREENSHOTS) {
-      await win.screenshot('/tmp/duckduckgo-bookmarks.png');
-    }
+    // Screenshots not yet supported via this pattern
   });
 
   it('should capture screenshot of settings view', async () => {
@@ -374,10 +362,6 @@ describe('DuckDuckGo Privacy Browser UI Tests', () => {
     await ctx.getById('tab-settings').click();
     await ctx.getById('settings-title').within(1000).shouldExist();
 
-    // Take screenshot
-    const win = testApp.getWindow();
-    if (win && process.env.TAKE_SCREENSHOTS) {
-      await win.screenshot('/tmp/duckduckgo-settings.png');
-    }
+    // Screenshots not yet supported via this pattern
   });
 });

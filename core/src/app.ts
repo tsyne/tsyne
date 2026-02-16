@@ -610,6 +610,13 @@ export class App {
   }
 
   /**
+   * Alias for entry() - create a single-line text input.
+   */
+  textEntry(placeholder?: string): Entry {
+    return this.entry(placeholder);
+  }
+
+  /**
    * Create a multi-line text input (text area).
    * @param placeholder - Placeholder text
    * @param wrapping - Text wrapping mode ('off', 'word', 'break')

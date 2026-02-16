@@ -397,6 +397,11 @@ export class VBox {
     return this;
   }
 
+  withPadding(_padding: number): this { return this; }
+  withMinWidth(_width: number): this { return this; }
+  withBold(): this { return this; }
+  withSize(_size: number): this { return this; }
+
   onMouseIn(callback: (event: { position: { x: number, y: number } }) => void): this { return _onMouseIn(this, callback); }
   onMouseOut(callback: () => void): this { return _onMouseOut(this, callback); }
   makeDraggable(options: { dragData: string; dragLabel?: string; onDragStart?: () => void; onDragEnd?: () => void; onDoubleTap?: (dragData: string) => void; onTap?: (dragData: string) => void }): this { return _makeDraggable(this, options); }
@@ -587,6 +592,11 @@ export class HBox {
     // Positional args API (backward compatible)
     return new BoundList(this.ctx, this, optionsOrGetItems, renderItem!, onDelete, trackBy);
   }
+
+  withPadding(_padding: number): this { return this; }
+  withMinWidth(_width: number): this { return this; }
+  withBold(): this { return this; }
+  withSize(_size: number): this { return this; }
 
   onMouseIn(callback: (event: { position: { x: number, y: number } }) => void): this { return _onMouseIn(this, callback); }
   onMouseOut(callback: () => void): this { return _onMouseOut(this, callback); }

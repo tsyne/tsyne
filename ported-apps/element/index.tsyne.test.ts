@@ -56,8 +56,7 @@ describe('Element App UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    const dmBtn = await ctx.getByPattern(/Direct Messages/);
-    await dmBtn.click();
+    await ctx.getById('tab-directs').click();
 
     const title = await ctx.getById('directs-title').within(1000).getText();
     expect(title).toContain('Direct Messages');
@@ -70,8 +69,7 @@ describe('Element App UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    const settingsBtn = await ctx.getByPattern(/Settings/);
-    await settingsBtn.click();
+    await ctx.getById('tab-settings').click();
 
     const title = await ctx.getById('settings-title').within(1000).getText();
     expect(title).toContain('Settings');
@@ -97,14 +95,11 @@ describe('Element App UI Tests', () => {
 
     const initialStats = await ctx.getById('stats-label').getText();
 
-    const dmBtn = await ctx.getByPattern(/Direct Messages/);
-    await dmBtn.click();
+    await ctx.getById('tab-directs').click();
 
-    const settingsBtn = await ctx.getByPattern(/Settings/);
-    await settingsBtn.click();
+    await ctx.getById('tab-settings').click();
 
-    const roomsBtn = await ctx.getByPattern(/Rooms/);
-    await roomsBtn.click();
+    await ctx.getById('tab-rooms').click();
 
     const finalStats = await ctx.getById('stats-label').within(500).getText();
     expect(finalStats).toBe(initialStats);
@@ -117,10 +112,7 @@ describe('Element App UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    const win = testApp.getWindow();
-    if (win && process.env.TAKE_SCREENSHOTS) {
-      await win.screenshot('/tmp/element-rooms.png');
-    }
+    // Screenshots handled via tsyneTest.screenshot()
   });
 
   it('should capture screenshot of direct messages view', async () => {
@@ -130,14 +122,10 @@ describe('Element App UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    const dmBtn = await ctx.getByPattern(/Direct Messages/);
-    await dmBtn.click();
+    await ctx.getById('tab-directs').click();
     await ctx.getById('directs-title').within(1000).shouldExist();
 
-    const win = testApp.getWindow();
-    if (win && process.env.TAKE_SCREENSHOTS) {
-      await win.screenshot('/tmp/element-directs.png');
-    }
+    // Screenshots handled via tsyneTest.screenshot()
   });
 
   it('should capture screenshot of settings view', async () => {
@@ -147,13 +135,9 @@ describe('Element App UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    const settingsBtn = await ctx.getByPattern(/Settings/);
-    await settingsBtn.click();
+    await ctx.getById('tab-settings').click();
     await ctx.getById('settings-title').within(1000).shouldExist();
 
-    const win = testApp.getWindow();
-    if (win && process.env.TAKE_SCREENSHOTS) {
-      await win.screenshot('/tmp/element-settings.png');
-    }
+    // Screenshots handled via tsyneTest.screenshot()
   });
 });

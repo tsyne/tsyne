@@ -470,10 +470,9 @@ echo "Testing tsyne failure modes..."
 # ============================================================================
 # STEP 2: Core (Tsyne Core Library)
 # ============================================================================
-echo "--- :nodejs: Core - Install & Build"
+echo "--- :nodejs: Core - Build"
 time_section "Core Build"
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/core
-pnpm install --ignore-scripts
 pnpm run build
 report_section_time "Core Build"
 
@@ -523,10 +522,9 @@ fi
 # ============================================================================
 # STEP 2.5: Cosyne - Declarative Canvas Library
 # ============================================================================
-echo "--- :art: Cosyne - Install & Build"
+echo "--- :art: Cosyne - Build"
 time_section "Cosyne Build"
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/cosyne
-pnpm install --ignore-scripts
 pnpm run build || {
   echo "❌ Cosyne build failed"
   exit 1
@@ -557,7 +555,6 @@ else
   echo "--- :three: Trine - Setup & Test"
   time_section "Trine Setup"
   cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/trine
-  pnpm install --ignore-scripts
 
   # Setup three.js (clone and apply patch)
   echo "Setting up three.js..."
@@ -567,10 +564,13 @@ else
   if [ "$SKIP_TESTS" = false ]; then
     echo "--- :test_tube: Trine - Tests"
     time_section "Trine Tests"
-    timeout 300 pnpm test --json --outputFile=/tmp/trine-test-results.json || {
+    # 228 test files each launch a bridge — run serialized with forceExit so
+    # partial results are written even if we hit the timeout.
+    timeout 600 npx jest --maxWorkers=1 --forceExit \
+      --json --outputFile=/tmp/trine-test-results.json || {
       EXIT_CODE=$?
       if [ $EXIT_CODE -eq 124 ]; then
-        echo "❌ Trine tests timed out after 300 seconds"
+        echo "❌ Trine tests timed out after 600 seconds"
       else
         echo "❌ Trine tests failed (exit code: $EXIT_CODE)"
       fi
@@ -586,10 +586,9 @@ fi
 if [ "$UNIT_ONLY" = true ]; then
   echo "⏭️  Designer - Skipping (--unit-only mode)"
 else
-  echo "--- :art: Designer - Install & Build"
+  echo "--- :art: Designer - Build"
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/designer
 if [ -f "package.json" ]; then
-  pnpm install --ignore-scripts
   pnpm run build || {
     echo "❌ Designer build failed"
     exit 1
@@ -629,9 +628,8 @@ fi
 if [ "$UNIT_ONLY" = true ]; then
   echo "⏭️  Examples - Skipping (--unit-only mode)"
 else
-  echo "--- :bulb: Examples - Install"
+  echo "--- :bulb: Examples - Tests"
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/examples
-pnpm install --ignore-scripts
 
 if [ "$SKIP_TESTS" = false ]; then
   echo "--- :test_tube: Examples - Logic Tests"
@@ -646,7 +644,8 @@ if [ "$SKIP_TESTS" = false ]; then
   capture_test_results "Examples: Logic" "/tmp/examples-logic-test-results.json" || true
 
   echo "--- :test_tube: Examples - GUI Tests"
-  timeout 150 pnpm run test:gui --json --outputFile=/tmp/examples-gui-test-results.json || {
+  timeout 150 npx jest --maxWorkers=1 --forceExit \
+    --json --outputFile=/tmp/examples-gui-test-results.json || {
     EXIT_CODE=$?
     if [ $EXIT_CODE -eq 124 ]; then
       echo "❌ Examples GUI tests timed out after 150 seconds"
@@ -662,19 +661,13 @@ fi
 # STEP 5: Ported Apps Sub-Projects
 # ============================================================================
 if [ "$SKIP_TESTS" = false ] && [ "$UNIT_ONLY" = false ] && [ "$QUICK_MODE" = false ]; then
-  echo "--- :package: Ported Apps - Install & Test"
+  echo "--- :package: Ported Apps - Test"
 elif [ "$UNIT_ONLY" = true ] || [ "$QUICK_MODE" = true ]; then
   echo "⏭️  Ported Apps - Skipping ($([ "$UNIT_ONLY" = true ] && echo '--unit-only' || echo '--quick') mode)"
 fi
 
 if [ "$SKIP_TESTS" = false ] && [ "$UNIT_ONLY" = false ] && [ "$QUICK_MODE" = false ]; then
   cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/ported-apps
-
-  # Install root ported-apps dependencies (shared by all apps)
-  if [ -f "package.json" ]; then
-    echo "Installing ported-apps shared dependencies..."
-    pnpm install --ignore-scripts
-  fi
 
   # Helper function to build and test a ported app
   test_ported_app() {
@@ -690,7 +683,6 @@ if [ "$SKIP_TESTS" = false ] && [ "$UNIT_ONLY" = false ] && [ "$QUICK_MODE" = fa
 
     echo "--- :package: Ported App: ${app_name}"
     cd "${app_dir}"
-    pnpm install --ignore-scripts
     if [ -n "$bridge_mode" ]; then
       echo "Using bridge mode: $bridge_mode"
       TSYNE_BRIDGE_MODE=$bridge_mode timeout 300 pnpm test --json --outputFile="$json_file" || {
@@ -757,7 +749,7 @@ fi
 # STEP 6: Phone Apps Sub-Projects
 # ============================================================================
 if [ "$SKIP_TESTS" = false ] && [ "$UNIT_ONLY" = false ] && [ "$QUICK_MODE" = false ]; then
-  echo "--- :iphone: Phone Apps - Install & Test"
+  echo "--- :iphone: Phone Apps - Test"
 elif [ "$UNIT_ONLY" = true ] || [ "$QUICK_MODE" = true ]; then
   echo "⏭️  Phone Apps - Skipping ($([ "$UNIT_ONLY" = true ] && echo '--unit-only' || echo '--quick') mode)"
 fi
@@ -777,7 +769,6 @@ if [ "$SKIP_TESTS" = false ] && [ "$UNIT_ONLY" = false ] && [ "$QUICK_MODE" = fa
 
     echo "--- :iphone: Phone App: ${app_name}"
     cd "${app_dir}"
-    pnpm install --ignore-scripts
     timeout 300 pnpm test --json --outputFile="$json_file" || {
       capture_test_results "Phone: ${app_name}" "$json_file"
       return 1
@@ -828,16 +819,12 @@ fi
 # STEP 6.5: Launchers (Desktop, PhoneTop)
 # ============================================================================
 if [ "$SKIP_TESTS" = false ] && [ "$UNIT_ONLY" = false ] && [ "$QUICK_MODE" = false ]; then
-  echo "--- :computer: Launchers - Install & Test"
+  echo "--- :computer: Launchers - Test"
 elif [ "$UNIT_ONLY" = true ] || [ "$QUICK_MODE" = true ]; then
   echo "⏭️  Launchers - Skipping ($([ "$UNIT_ONLY" = true ] && echo '--unit-only' || echo '--quick') mode)"
 fi
 
 if [ "$SKIP_TESTS" = false ] && [ "$UNIT_ONLY" = false ] && [ "$QUICK_MODE" = false ]; then
-
-  # Install shared launcher dependencies
-  cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/launchers
-  pnpm install --ignore-scripts
 
   # Helper function to build and test a launcher
   test_launcher() {
@@ -870,7 +857,7 @@ fi
 # STEP 7: Larger Apps Sub-Projects
 # ============================================================================
 if [ "$SKIP_TESTS" = false ] && [ "$UNIT_ONLY" = false ] && [ "$QUICK_MODE" = false ]; then
-  echo "--- :rocket: Larger Apps - Install & Test"
+  echo "--- :rocket: Larger Apps - Test"
 elif [ "$UNIT_ONLY" = true ] || [ "$QUICK_MODE" = true ]; then
   echo "⏭️  Larger Apps - Skipping ($([ "$UNIT_ONLY" = true ] && echo '--unit-only' || echo '--quick') mode)"
 fi
@@ -890,7 +877,6 @@ if [ "$SKIP_TESTS" = false ] && [ "$UNIT_ONLY" = false ] && [ "$QUICK_MODE" = fa
 
     echo "--- :rocket: Larger App: ${app_name}"
     cd "${app_dir}"
-    pnpm install --ignore-scripts
     timeout 300 pnpm test --json --outputFile="$json_file" || {
       capture_test_results "Larger: ${app_name}" "$json_file"
       return 1

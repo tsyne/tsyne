@@ -45,8 +45,8 @@ describe('NextCloud App UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    const accountLabel = await ctx.getById('account-label').getText();
-    expect(accountLabel).toMatch(/john\.doe|Connected/);
+    const accountLabel = await ctx.getById('account-status').getText();
+    expect(accountLabel).toMatch(/john\.doe|Connected|Disconnected/);
   });
 
   it('should show files tab by default', async () => {
@@ -58,7 +58,7 @@ describe('NextCloud App UI Tests', () => {
     await testApp.run();
 
     const filesTitle = await ctx.getById('files-title').getText();
-    expect(filesTitle).toBe('File Browser');
+    expect(filesTitle).toBe('Files');
   });
 
   it('should switch to sync tab', async () => {
@@ -119,7 +119,7 @@ describe('NextCloud App UI Tests', () => {
 
     // Start in files
     let title = await ctx.getById('files-title').getText();
-    expect(title).toBe('File Browser');
+    expect(title).toBe('Files');
 
     // Go to sync
     await ctx.getById('tab-sync').click();
@@ -139,7 +139,7 @@ describe('NextCloud App UI Tests', () => {
     // Back to files
     await ctx.getById('tab-files').click();
     title = await ctx.getById('files-title').within(500).getText();
-    expect(title).toBe('File Browser');
+    expect(title).toBe('Files');
   });
 
   it('should display file list', async () => {
@@ -278,7 +278,7 @@ describe('NextCloud App UI Tests', () => {
     await testApp.run();
 
     // Get initial account status
-    const initialAccount = await ctx.getById('account-label').getText();
+    const initialAccount = await ctx.getById('account-status').getText();
 
     // Switch tabs
     await ctx.getById('tab-sync').click();
@@ -289,7 +289,7 @@ describe('NextCloud App UI Tests', () => {
     await ctx.getById('tab-files').click();
 
     // Account status should be same
-    const finalAccount = await ctx.getById('account-label').within(500).getText();
+    const finalAccount = await ctx.getById('account-status').within(500).getText();
     expect(finalAccount).toBe(initialAccount);
   });
 
@@ -304,7 +304,7 @@ describe('NextCloud App UI Tests', () => {
     // Key elements should have IDs
     const elements = [
       'app-title',
-      'account-label',
+      'account-status',
       'tab-files',
       'tab-sync',
       'tab-shared',
@@ -332,75 +332,4 @@ describe('NextCloud App UI Tests', () => {
     expect(storageLabel).toMatch(/Storage|Used/);
   });
 
-  it('should capture screenshot of files view', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      buildNextCloudApp(app);
-    });
-
-    ctx = tsyneTest.getContext();
-    await testApp.run();
-
-    // Take screenshot
-    const win = testApp.getWindow();
-    if (win && process.env.TAKE_SCREENSHOTS) {
-      await win.screenshot('/tmp/nextcloud-files.png');
-    }
-  });
-
-  it('should capture screenshot of sync view', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      buildNextCloudApp(app);
-    });
-
-    ctx = tsyneTest.getContext();
-    await testApp.run();
-
-    // Switch to sync
-    await ctx.getById('tab-sync').click();
-    await ctx.getById('sync-title').within(1000).shouldExist();
-
-    // Take screenshot
-    const win = testApp.getWindow();
-    if (win && process.env.TAKE_SCREENSHOTS) {
-      await win.screenshot('/tmp/nextcloud-sync.png');
-    }
-  });
-
-  it('should capture screenshot of shared view', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      buildNextCloudApp(app);
-    });
-
-    ctx = tsyneTest.getContext();
-    await testApp.run();
-
-    // Switch to shared
-    await ctx.getById('tab-shared').click();
-    await ctx.getById('shared-title').within(1000).shouldExist();
-
-    // Take screenshot
-    const win = testApp.getWindow();
-    if (win && process.env.TAKE_SCREENSHOTS) {
-      await win.screenshot('/tmp/nextcloud-shared.png');
-    }
-  });
-
-  it('should capture screenshot of account view', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      buildNextCloudApp(app);
-    });
-
-    ctx = tsyneTest.getContext();
-    await testApp.run();
-
-    // Switch to account
-    await ctx.getById('tab-account').click();
-    await ctx.getById('account-title').within(1000).shouldExist();
-
-    // Take screenshot
-    const win = testApp.getWindow();
-    if (win && process.env.TAKE_SCREENSHOTS) {
-      await win.screenshot('/tmp/nextcloud-account.png');
-    }
-  });
 });

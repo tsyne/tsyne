@@ -25,7 +25,7 @@ describe('Julia Set Explorer', () => {
     const testApp = await tsyneTest.createApp(createJuliaSetApp);
     ctx = tsyneTest.getContext();
     await testApp.run();
-    await ctx.wait(1000);
+    await ctx.wait(100);
 
     await ctx.getById('zoom-in').shouldExist();
     await ctx.getById('zoom-out').shouldExist();
@@ -38,7 +38,7 @@ describe('Julia Set Explorer', () => {
     const testApp = await tsyneTest.createApp(createJuliaSetApp);
     ctx = tsyneTest.getContext();
     await testApp.run();
-    await ctx.wait(1000);
+    await ctx.wait(100);
 
     // Initial preset is Classic
     let status = await ctx.getById('status');
@@ -47,7 +47,7 @@ describe('Julia Set Explorer', () => {
 
     // Click next preset
     await ctx.getById('next-preset').click();
-    await ctx.wait(1000);
+    await ctx.wait(100);
 
     status = await ctx.getById('status');
     text = await status.getText();
@@ -58,10 +58,10 @@ describe('Julia Set Explorer', () => {
     const testApp = await tsyneTest.createApp(createJuliaSetApp);
     ctx = tsyneTest.getContext();
     await testApp.run();
-    await ctx.wait(1000);
+    await ctx.wait(100);
 
     await ctx.getById('zoom-in').click();
-    await ctx.wait(1000);
+    await ctx.wait(100);
 
     // Take screenshot for visual verification
     const screenshotDir = path.join(__dirname, 'screenshots');

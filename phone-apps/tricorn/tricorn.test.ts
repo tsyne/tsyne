@@ -25,7 +25,7 @@ describe('Tricorn Explorer', () => {
     const testApp = await tsyneTest.createApp(createTricornApp);
     ctx = tsyneTest.getContext();
     await testApp.run();
-    await ctx.wait(1000);
+    await ctx.wait(100);
 
     await ctx.getById('zoom-in').shouldExist();
     await ctx.getById('zoom-out').shouldExist();
@@ -41,7 +41,7 @@ describe('Tricorn Explorer', () => {
     const testApp = await tsyneTest.createApp(createTricornApp);
     ctx = tsyneTest.getContext();
     await testApp.run();
-    await ctx.wait(1000);
+    await ctx.wait(100);
 
     // Initial palette is ice
     let status = await ctx.getById('status');
@@ -49,7 +49,7 @@ describe('Tricorn Explorer', () => {
     expect(text).toContain('ice');
 
     await ctx.getById('next-palette').click();
-    await ctx.wait(1000);
+    await ctx.wait(100);
 
     status = await ctx.getById('status');
     text = await status.getText();
@@ -60,10 +60,10 @@ describe('Tricorn Explorer', () => {
     const testApp = await tsyneTest.createApp(createTricornApp);
     ctx = tsyneTest.getContext();
     await testApp.run();
-    await ctx.wait(1000);
+    await ctx.wait(100);
 
     await ctx.getById('zoom-in').click();
-    await ctx.wait(1000);
+    await ctx.wait(100);
 
     const screenshotDir = path.join(__dirname, 'screenshots');
     if (!fs.existsSync(screenshotDir)) fs.mkdirSync(screenshotDir, { recursive: true });

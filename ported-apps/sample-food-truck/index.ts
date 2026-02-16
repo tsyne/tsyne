@@ -198,6 +198,7 @@ export function buildFoodTruckApp(a: any, windowWidth?: number, windowHeight?: n
   let statusSummary: any;
   let ordersContainer: any;
   let salesContainer: any;
+  let totalSalesLabel: any;
   let weatherContainer: any;
   let viewStack: any;
 
@@ -336,7 +337,6 @@ export function buildFoodTruckApp(a: any, windowWidth?: number, windowHeight?: n
             a.label('📊 Sales Analytics').withId('sales-title');
             a.separator();
 
-            let totalSalesLabel: any;
             totalSalesLabel = a.label('').withId('total-sales');
 
             a.label('Top Menu Items:').withId('top-items-label');
@@ -414,7 +414,7 @@ export function buildFoodTruckApp(a: any, windowWidth?: number, windowHeight?: n
   async function showView(view: string) {
     await viewStack.refresh();
     if (view === 'sales') {
-      await salesContainer.setText(
+      await totalSalesLabel.setText(
         `Total Sales: $${store.getTotalSales().toFixed(2)}`
       );
     }

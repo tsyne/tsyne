@@ -602,6 +602,40 @@ export abstract class Widget {
   }
 
   /**
+   * Make this widget's text bold
+   * @returns this for method chaining
+   * @example
+   * a.label('Title').withBold();
+   */
+  withBold(): this {
+    return this.withStyle({ font_weight: 'bold' });
+  }
+
+  /**
+   * Set font size for this widget
+   * @returns this for method chaining
+   */
+  withSize(size: number): this {
+    return this.withStyle({ font_size: size });
+  }
+
+  /**
+   * Set padding (visual hint, no-op in current renderer)
+   * @returns this for method chaining
+   */
+  withPadding(_padding: number): this {
+    return this;
+  }
+
+  /**
+   * Set minimum width (visual hint, no-op in current renderer)
+   * @returns this for method chaining
+   */
+  withMinWidth(_width: number): this {
+    return this;
+  }
+
+  /**
    * Declarative conditional styling - apply different styles based on condition
    * @param conditionFn Function that returns true/false for condition
    * @param trueStyle Style to apply when condition is true

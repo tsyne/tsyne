@@ -25,7 +25,7 @@ describe('Mandelbrot Explorer', () => {
 
     ctx = tsyneTest.getContext();
     await testApp.run();
-    await ctx.wait(1000);
+    await ctx.wait(100);
 
     // Control buttons should exist
     await ctx.getById('zoom-in').shouldExist();
@@ -47,11 +47,11 @@ describe('Mandelbrot Explorer', () => {
 
     ctx = tsyneTest.getContext();
     await testApp.run();
-    await ctx.wait(1000);  // Wait for initial render
+    await ctx.wait(100);  // Wait for initial render
 
     // Click zoom in
     await ctx.getById('zoom-in').click();
-    await ctx.wait(1000);
+    await ctx.wait(100);
 
     // Status should show zoom level 2x
     const status = await ctx.getById('status');
@@ -66,13 +66,13 @@ describe('Mandelbrot Explorer', () => {
 
     ctx = tsyneTest.getContext();
     await testApp.run();
-    await ctx.wait(1000);
+    await ctx.wait(100);
 
     // Zoom in first, then out
     await ctx.getById('zoom-in').click();
-    await ctx.wait(1000);
+    await ctx.wait(100);
     await ctx.getById('zoom-out').click();
-    await ctx.wait(1000);
+    await ctx.wait(100);
 
     // Should be back to 1x
     const status = await ctx.getById('status');
@@ -87,7 +87,7 @@ describe('Mandelbrot Explorer', () => {
 
     ctx = tsyneTest.getContext();
     await testApp.run();
-    await ctx.wait(1000);
+    await ctx.wait(100);
 
     // Initial palette is 'classic'
     let status = await ctx.getById('status');
@@ -96,7 +96,7 @@ describe('Mandelbrot Explorer', () => {
 
     // Click next palette
     await ctx.getById('next-palette').click();
-    await ctx.wait(1000);
+    await ctx.wait(100);
 
     // Should now show 'fire'
     status = await ctx.getById('status');
@@ -111,13 +111,13 @@ describe('Mandelbrot Explorer', () => {
 
     ctx = tsyneTest.getContext();
     await testApp.run();
-    await ctx.wait(1000);
+    await ctx.wait(100);
 
     // Zoom in a few times
     await ctx.getById('zoom-in').click();
-    await ctx.wait(1000);
+    await ctx.wait(100);
     await ctx.getById('zoom-in').click();
-    await ctx.wait(1000);
+    await ctx.wait(100);
 
     // Verify zoomed
     let status = await ctx.getById('status');
@@ -126,7 +126,7 @@ describe('Mandelbrot Explorer', () => {
 
     // Reset
     await ctx.getById('reset').click();
-    await ctx.wait(1000);
+    await ctx.wait(100);
 
     // Should be back to 1x
     status = await ctx.getById('status');
@@ -141,7 +141,7 @@ describe('Mandelbrot Explorer', () => {
 
     ctx = tsyneTest.getContext();
     await testApp.run();
-    await ctx.wait(1000);
+    await ctx.wait(100);
 
     // Initial center is -0.5
     let status = await ctx.getById('status');
@@ -150,7 +150,7 @@ describe('Mandelbrot Explorer', () => {
 
     // Pan left
     await ctx.getById('pan-left').click();
-    await ctx.wait(1000);
+    await ctx.wait(100);
 
     // Center X should decrease (more negative than -0.5)
     // The exact amount depends on canvas size (dynamic with window resize)
