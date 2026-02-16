@@ -673,6 +673,11 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 				}
 			case "clear":
 				if mask, ok := cmd.Value.(uint32); ok {
+					// Re-apply stored clear color before clearing
+					// Fyne's painter.Clear() resets glClearColor to the theme bg each frame,
+					// but Three.js only sends clearColor when the value changes (WebGLState caching)
+					cc := shader.GetClearColor()
+					p.ctx.ClearColor(cc[0], cc[1], cc[2], cc[3])
 					p.ctx.Clear(mask)
 				} else {
 					// Legacy path (QueueClear without mask)

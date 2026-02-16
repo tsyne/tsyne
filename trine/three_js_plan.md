@@ -729,7 +729,7 @@ Pin to stable three.js releases (e.g., r170). Update periodically:
   - [x] Base implementations for all command types (stubs for GPU work)
 - [x] Add Go bridge handler routes to main.go - **4 routes added**
 - [x] Command buffer infrastructure in TsyneGLProxy - **pushCommand/flush pattern**
-- [ ] Test with simple triangle rendering - **NEXT STEP**
+- [x] Test with simple triangle rendering - **DONE** (raw_triangle.ts + webgl_basic_test.ts)
 
 ### Sprint 3: Extended WebGL2 ✅ COMPLETE
 - [x] Add texture support (implemented in gl-proxy.ts)
@@ -755,7 +755,19 @@ Pin to stable three.js releases (e.g., r170). Update periodically:
 - [x] MockBridgeTransport for testing without IPC
 - [x] Validation of command structure and batching
 
-### Sprint 6: Fork Maintenance ⏳ PLANNED
+### Sprint 5b: First Real Render ✅ COMPLETE
+
+The Go-side handlers in `handlers_gl.go` turned out to be a **metadata accumulation layer** (not stubs) that pushes data to Fyne's Shader canvas. The Fyne fork's `shader_painter.go` does the real GL calls. The pipeline works end-to-end.
+
+- [x] Wire up real GL calls in `handlers_gl.go` — already connected via Fyne Shader canvas
+- [x] Verify GLSL 300 ES → GLSL 110 conversion works at runtime against a real GPU
+- [x] Confirm command batching round-trip: TS serializes → Go deserializes → GL executes → pixels appear
+- [x] Raw triangle test (no Three.js): `examples/raw_triangle.ts` — red triangle on black background ✅
+- [x] Screenshot test to verify output — `examples/screenshots/raw_triangle-t0.png` ✅
+- [x] Three.js basic test: `examples/webgl_basic_test.ts` — 3 colored rotating cubes ✅
+- [x] Three.js screenshots: `examples/screenshots/webgl_basic_test-t0.png`, `webgl_basic_test-t1000.png` ✅
+
+### Sprint 6: Fork Maintenance ⏳ PLANNED (after 5b)
 - [ ] Patch three.js utils.js for Tsyne integration
 - [ ] Add Tsyne exports to three.js main
 - [ ] Upstream sync strategy documentation
@@ -939,26 +951,15 @@ The implementation now provides:
 
 ### What Still Needs Implementation
 
-1. **Actual OpenGL Calls in handlers_gl.go**:
-   - Currently all command handlers are stubs
-   - Need to wire up to actual go-gl bindings
-   - Example: `glCreateBuffer()` needs to call `gl.CreateBuffer()` and track the actual GL object
-   - Requires integration with setup-fyne-fork.sh GL layer
+1. ~~**Actual OpenGL Calls in handlers_gl.go**~~: ✅ DONE — handlers accumulate metadata and push to Fyne Shader canvas
+2. ~~**GLSL Shader Conversion**~~: ✅ DONE — `shader_converter.go` handles 300 ES → 110/130 with Three.js macro detection
+3. ~~**three.js Integration Points**~~: ✅ DONE — `setup-three.sh` patches `utils.js`, `initThreeJS()` handles init
+4. ~~**Testing**~~: ✅ DONE — raw triangle + Three.js basic test with screenshots
 
-2. **GLSL Shader Conversion**:
-   - Shader source arrives at Go side as GLSL 300 ES
-   - Need to convert to GLSL 110 for desktop or GLSL ES for mobile
-   - Phase 5 task
-
-3. **three.js Integration Points**:
-   - Patch `three/src/utils.js` to use TsyneCanvas
-   - Patch WebGLRenderer to call flush() after render
-   - Integrate event handling
-
-4. **Testing**:
-   - Simple test scene (triangle, cube)
-   - Verify command flow end-to-end
-   - Performance profiling
+**Remaining work:**
+- ~~Scene background color~~: ✅ FIXED — Fyne's `painter.Clear()` was resetting `glClearColor` to theme bg each frame; fix re-applies stored clear color before every `gl.Clear()` in `shader_painter.go`
+- Advanced materials (MeshStandardMaterial, MeshPhongMaterial with lighting)
+- Performance profiling and optimization
 
 ---
 
