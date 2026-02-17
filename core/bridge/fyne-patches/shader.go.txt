@@ -29,6 +29,7 @@ type DrawElementsParams struct {
 	Mode             uint32
 	Count            int
 	Offset           int
+	InstanceCount    int                         // 0 means non-instanced
 	AttributeBuffers map[string]*AttributeBuffer // Snapshot of attribute buffers at draw time
 	Indices          []uint16                    // Snapshot of index buffer at draw time
 }
@@ -44,6 +45,7 @@ type DrawArraysParams struct {
 	Mode             uint32
 	First            int
 	Count            int
+	InstanceCount    int                         // 0 means non-instanced
 	AttributeBuffers map[string]*AttributeBuffer // Snapshot of attribute buffers at draw time
 }
 
@@ -186,6 +188,18 @@ type Shader struct {
 	jsTexForSampler  map[string]int       // sampler uniform name → JS texture ID
 	cpuTexImages     map[int]interface{}  // JS texture ID → CPU image (image.Image)
 	gpuTexUploaded   map[int]bool         // JS texture ID → whether GPU texture has real data
+	gpuTexFormats    map[int]GPUTextureFormat // JS texture ID → format info for upload
+
+	// Instanced drawing
+	attribDivisors   map[string]uint32    // attribute name → divisor value
+}
+
+// GPUTextureFormat stores the GL format info for a texture so the painter
+// can upload with the correct format (e.g., GL_RED vs GL_RGBA).
+type GPUTextureFormat struct {
+	Internalformat uint32
+	Format         uint32
+	Type           uint32
 }
 
 // PendingProgram holds shader sources queued for compilation by the painter
@@ -235,6 +249,8 @@ func NewShader(width, height float32, fragmentSrc string) *Shader {
 		jsTexForSampler:    make(map[string]int),
 		cpuTexImages:       make(map[int]interface{}),
 		gpuTexUploaded:     make(map[int]bool),
+		gpuTexFormats:      make(map[int]GPUTextureFormat),
+		attribDivisors:     make(map[string]uint32),
 	}
 	s.size = fyne.NewSize(width, height)
 	return s

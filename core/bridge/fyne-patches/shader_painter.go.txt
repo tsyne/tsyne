@@ -260,16 +260,20 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 			// Convert texture data to RGBA
 			rgba := p.textureToRGBA(texData)
 			if rgba != nil && len(rgba.Pix) > 0 {
-				p.ctx.TexImage2D(
-					texture2D,
-					0,
-					rgba.Rect.Size().X,
-					rgba.Rect.Size().Y,
-					colorFormatRGBA,
-					unsignedByte,
-					rgba.Pix,
-				)
-				// log.Printf("[drawShader] Uploaded texture %s: %dx%d", texName, rgba.Rect.Dx(), rgba.Rect.Dy())
+				// Check if this texture has a JS ID with RED format info
+				jsTexId := shader.GetJSTexForSampler(texName)
+				texFmt := shader.GetGPUTexFormat(jsTexId)
+				w := rgba.Rect.Size().X
+				h := rgba.Rect.Size().Y
+				if texFmt.Format == 0x1903 { // GL_RED
+					redData := make([]byte, w*h)
+					for i := 0; i < w*h; i++ {
+						redData[i] = rgba.Pix[i*4]
+					}
+					p.ctx.TexImage2D(texture2D, 0, w, h, texFmt.Format, unsignedByte, redData)
+				} else {
+					p.ctx.TexImage2D(texture2D, 0, w, h, colorFormatRGBA, unsignedByte, rgba.Pix)
+				}
 			}
 		}
 
@@ -375,8 +379,30 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 	// 	}
 	// }
 
+	// Build a set of GL locations reserved by mat4 attributes.
+	// mat4 attributes occupy 4 consecutive locations (one per column).
+	// We must prevent the stored-location fallback from binding other
+	// attributes to locations that overlap with mat4 columns.
+	mat4Locs := make(map[int]bool)
+	for _, a := range attrs {
+		if a.glslType == "mat4" {
+			glLoc := p.ctx.GetAttribLocation(prog, a.name)
+			if glLoc >= 0 {
+				for col := 0; col < 4; col++ {
+					mat4Locs[int(glLoc)+col] = true
+				}
+			}
+		}
+	}
+
 	// Track enabled attributes for cleanup
 	var enabledAttribs []Attribute
+
+	// Create a VAO for this shader draw.
+	// On modern GL contexts (3.0+), vertex attribute state (including divisors)
+	// is per-VAO. Without a bound VAO, VertexAttribDivisor may not take effect.
+	shaderVAO := p.ctx.GenVertexArray()
+	p.ctx.BindVertexArray(shaderVAO)
 
 	// Check if we have separate attribute buffers (three.js style)
 	useSeparateBuffers := shader.HasAttributeBuffers()
@@ -401,6 +427,9 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 	// Get attribute buffers at function scope so they're accessible in command loop
 	attrBuffers := shader.GetAttributeBuffers()
 
+	// Get attribute divisors for instanced rendering (at function scope for command loop)
+	attribDivisors := shader.GetAttribDivisors()
+
 	if useSeparateBuffers {
 		// First, determine expected vertex count from position attribute
 		positionBuf := attrBuffers["position"]
@@ -409,70 +438,107 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 			expectedVertexCount = len(positionBuf.Data) / positionBuf.Size
 		}
 
-		// Use separate VBOs for each attribute (three.js style)
+	// Use separate VBOs for each attribute (three.js style)
+		if shaderDebug {
+			log.Printf("[drawShader] attrs from shader: %d, attrBuffers: %d, divisors: %v", len(attrs), len(attrBuffers), attribDivisors)
+			for _, a := range attrs {
+				glLoc := p.ctx.GetAttribLocation(prog, a.name)
+				log.Printf("[drawShader]   GL location: %s -> %d", a.name, glLoc)
+			}
+			for _, a := range attrs {
+				log.Printf("[drawShader]   attr: name=%s type=%s size=%d", a.name, a.glslType, a.size)
+			}
+			for name, b := range attrBuffers {
+				if b != nil {
+					log.Printf("[drawShader]   buf: %s = %d floats, size=%d stride=%d offset=%d", name, len(b.Data), b.Size, b.Stride, b.Offset)
+				}
+			}
+		}
 		for _, attr := range attrs {
 			// Look for a buffer matching this attribute name
 			buf := attrBuffers[attr.name]
 			if buf == nil || len(buf.Data) == 0 {
 				if shaderDebug {
-					// log.Printf("[drawShader] Skipping attr %s: no buffer data", attr.name)
+					log.Printf("[drawShader] Skipping attr %s: no buffer data", attr.name)
 				}
 				continue
-			}
-
-			// Validate buffer vertex count matches position (skip mismatched buffers)
-			// This prevents using stale buffers from previous geometry
-			if buf.Size > 0 && expectedVertexCount > 0 && attr.name != "position" {
-				bufferVertexCount := len(buf.Data) / buf.Size
-				if bufferVertexCount != expectedVertexCount {
-					// if shaderDebug {
-					// log.Printf("[drawShader] Skipping attr %s: vertex count mismatch (buffer=%d, expected=%d)",
-					// 	attr.name, bufferVertexCount, expectedVertexCount)
-					// }
-					continue
-				}
 			}
 
 			// Get attribute location - prefer GL query for the compiled program,
 			// fall back to JS-stored location only if GL returns -1 (optimized out)
+			// and the stored location doesn't conflict with a mat4 attribute's columns.
 			attribLoc := p.ctx.GetAttribLocation(prog, attr.name)
 			if attribLoc < 0 {
 				storedLoc := shader.GetAttributeLocation(attr.name)
-				if storedLoc >= 0 {
+				if storedLoc >= 0 && !mat4Locs[int(storedLoc)] {
 					attribLoc = Attribute(storedLoc)
 				}
 			}
-			if shaderDebug {
-				// log.Printf("[drawShader] GetAttribLocation(%s) = %d", attr.name, attribLoc)
-			}
 			if attribLoc < 0 {
-				if shaderDebug {
-					// log.Printf("[drawShader] Skipping attr %s: location < 0", attr.name)
-				}
 				continue
+			}
+
+			// Check if this is an instanced attribute (divisor > 0)
+			isInstanced := attribDivisors[attr.name] > 0
+
+			// Validate buffer vertex count matches position (skip mismatched buffers)
+			// This prevents using stale buffers from previous geometry.
+			// Skip this check for instanced attributes which have instance count, not vertex count.
+			if !isInstanced && buf.Size > 0 && expectedVertexCount > 0 && attr.name != "position" {
+				bufferVertexCount := len(buf.Data) / buf.Size
+				if bufferVertexCount != expectedVertexCount {
+					continue
+				}
 			}
 
 			// Create VBO for this attribute if needed
 			if buf.VBO == 0 {
 				buf.VBO = uint32(p.ctx.CreateBuffer())
-				if shaderDebug {
-					// log.Printf("[drawShader] Created VBO %d for attr %s", buf.VBO, attr.name)
-				}
 			}
 
 			// Bind and upload data for this attribute
 			p.ctx.BindBuffer(arrayBuffer, Buffer(buf.VBO))
 			p.ctx.BufferData(arrayBuffer, buf.Data, dynamicDraw)
-			// if shaderDebug {
-			// 	log.Printf("[drawShader] Bound attr %s: VBO=%d, loc=%d, size=%d, count=%d",
-			// 		attr.name, buf.VBO, attribLoc, buf.Size, len(buf.Data)/buf.Size)
-			// }
 
-			// Enable and set up vertex attribute pointer
-			// Use stride/offset from the buffer (0,0 = tightly packed)
-			p.ctx.EnableVertexAttribArray(attribLoc)
-			enabledAttribs = append(enabledAttribs, attribLoc)
-			p.ctx.VertexAttribPointerWithOffset(attribLoc, buf.Size, float, false, buf.Stride, buf.Offset)
+			// Handle mat4 attributes: 4 consecutive vec4 columns sharing one VBO
+			if attr.glslType == "mat4" {
+				div := attribDivisors[attr.name]
+				if shaderDebug {
+					log.Printf("[drawShader] mat4 %s: GL loc=%d, div=%d, data=%d floats, stride=%d offset=%d",
+						attr.name, attribLoc, div, len(buf.Data), buf.Stride, buf.Offset)
+				}
+				for col := 0; col < 4; col++ {
+					loc := Attribute(int(attribLoc) + col)
+					p.ctx.EnableVertexAttribArray(loc)
+					enabledAttribs = append(enabledAttribs, loc)
+					p.ctx.VertexAttribPointerWithOffset(loc, 4, float, false, buf.Stride, buf.Offset+col*16)
+					if div > 0 {
+						p.ctx.VertexAttribDivisor(uint32(loc), div)
+						if shaderDebug {
+							glErr := p.ctx.GetError()
+							log.Printf("[drawShader] VertexAttribDivisor(%d, %d) -> glErr=0x%04X", uint32(loc), div, glErr)
+						}
+					}
+				}
+			} else {
+				// Enable and set up vertex attribute pointer
+				// Use stride/offset from the buffer (0,0 = tightly packed)
+				p.ctx.EnableVertexAttribArray(attribLoc)
+				enabledAttribs = append(enabledAttribs, attribLoc)
+				p.ctx.VertexAttribPointerWithOffset(attribLoc, buf.Size, float, false, buf.Stride, buf.Offset)
+
+				// Set divisor for instanced attributes
+				if isInstanced {
+					if shaderDebug {
+						log.Printf("[drawShader] instanced %s: GL loc=%d, div=%d", attr.name, attribLoc, attribDivisors[attr.name])
+					}
+					p.ctx.VertexAttribDivisor(uint32(attribLoc), attribDivisors[attr.name])
+					if shaderDebug {
+						glErr := p.ctx.GetError()
+						log.Printf("[drawShader] VertexAttribDivisor(%d, %d) -> glErr=0x%04X", uint32(attribLoc), attribDivisors[attr.name], glErr)
+					}
+				}
+			}
 
 			// Calculate vertex count from position attribute (most reliable)
 			if attr.name == "position" && buf.Size > 0 {
@@ -614,6 +680,16 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 			case "drawElements":
 				if params, ok := cmd.Value.(canvas.DrawElementsParams); ok {
 					if params.Count > 0 {
+						if shaderDebug {
+							log.Printf("[drawShader] drawElements: count=%d mode=%d inst=%d attrs=%d indices=%d",
+								params.Count, params.Mode, params.InstanceCount, len(params.AttributeBuffers), len(params.Indices))
+							for name, buf := range params.AttributeBuffers {
+								if buf != nil {
+									log.Printf("[drawShader]   cmdAttr %s: %d floats, size=%d stride=%d offset=%d",
+										name, len(buf.Data), buf.Size, buf.Stride, buf.Offset)
+								}
+							}
+						}
 						// Use captured geometry from the draw command if available
 						cmdAttrBuffers := params.AttributeBuffers
 						cmdIndices := params.Indices
@@ -627,7 +703,7 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 								attribLoc := p.ctx.GetAttribLocation(prog, attr.name)
 								if attribLoc < 0 {
 									storedLoc := shader.GetAttributeLocation(attr.name)
-									if storedLoc >= 0 {
+									if storedLoc >= 0 && !mat4Locs[int(storedLoc)] {
 										attribLoc = Attribute(storedLoc)
 									}
 								}
@@ -640,8 +716,25 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 								}
 								p.ctx.BindBuffer(arrayBuffer, Buffer(buf.VBO))
 								p.ctx.BufferData(arrayBuffer, buf.Data, dynamicDraw)
-								p.ctx.EnableVertexAttribArray(attribLoc)
-								p.ctx.VertexAttribPointerWithOffset(attribLoc, buf.Size, float, false, buf.Stride, buf.Offset)
+								// Handle mat4: 4 consecutive vec4 columns sharing one VBO
+								if attr.glslType == "mat4" {
+									div := attribDivisors[attr.name]
+									for col := 0; col < 4; col++ {
+										loc := Attribute(int(attribLoc) + col)
+										p.ctx.EnableVertexAttribArray(loc)
+										p.ctx.VertexAttribPointerWithOffset(loc, 4, float, false, buf.Stride, buf.Offset+col*16)
+										if div > 0 {
+											p.ctx.VertexAttribDivisor(uint32(loc), div)
+										}
+									}
+								} else {
+									p.ctx.EnableVertexAttribArray(attribLoc)
+									p.ctx.VertexAttribPointerWithOffset(attribLoc, buf.Size, float, false, buf.Stride, buf.Offset)
+									// Set divisor for instanced attributes
+									if div := attribDivisors[attr.name]; div > 0 {
+										p.ctx.VertexAttribDivisor(uint32(attribLoc), div)
+									}
+								}
 							}
 						}
 						if len(cmdIndices) > 0 {
@@ -653,10 +746,18 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 							}
 							p.ctx.BindBuffer(elementArrayBuffer, Buffer(ibo))
 							p.ctx.BufferDataUint16(elementArrayBuffer, cmdIndices, dynamicDraw)
-									p.ctx.DrawElements(params.Mode, int32(params.Count), unsignedShort, params.Offset)
+							if params.InstanceCount > 0 {
+								p.ctx.DrawElementsInstanced(params.Mode, int32(params.Count), unsignedShort, params.Offset, int32(params.InstanceCount))
+							} else {
+								p.ctx.DrawElements(params.Mode, int32(params.Count), unsignedShort, params.Offset)
+							}
 						} else if useIndexedDrawing {
 							// Fall back to pre-uploaded indices
-							p.ctx.DrawElements(params.Mode, int32(params.Count), unsignedShort, params.Offset)
+							if params.InstanceCount > 0 {
+								p.ctx.DrawElementsInstanced(params.Mode, int32(params.Count), unsignedShort, params.Offset, int32(params.InstanceCount))
+							} else {
+								p.ctx.DrawElements(params.Mode, int32(params.Count), unsignedShort, params.Offset)
+							}
 						}
 					}
 				}
@@ -675,7 +776,7 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 								attribLoc := p.ctx.GetAttribLocation(prog, attr.name)
 								if attribLoc < 0 {
 									storedLoc := shader.GetAttributeLocation(attr.name)
-									if storedLoc >= 0 {
+									if storedLoc >= 0 && !mat4Locs[int(storedLoc)] {
 										attribLoc = Attribute(storedLoc)
 									}
 								}
@@ -688,11 +789,32 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 								}
 								p.ctx.BindBuffer(arrayBuffer, Buffer(buf.VBO))
 								p.ctx.BufferData(arrayBuffer, buf.Data, dynamicDraw)
-								p.ctx.EnableVertexAttribArray(attribLoc)
-								p.ctx.VertexAttribPointerWithOffset(attribLoc, buf.Size, float, false, buf.Stride, buf.Offset)
+								// Handle mat4: 4 consecutive vec4 columns sharing one VBO
+								if attr.glslType == "mat4" {
+									div := attribDivisors[attr.name]
+									for col := 0; col < 4; col++ {
+										loc := Attribute(int(attribLoc) + col)
+										p.ctx.EnableVertexAttribArray(loc)
+										p.ctx.VertexAttribPointerWithOffset(loc, 4, float, false, buf.Stride, buf.Offset+col*16)
+										if div > 0 {
+											p.ctx.VertexAttribDivisor(uint32(loc), div)
+										}
+									}
+								} else {
+									p.ctx.EnableVertexAttribArray(attribLoc)
+									p.ctx.VertexAttribPointerWithOffset(attribLoc, buf.Size, float, false, buf.Stride, buf.Offset)
+									// Set divisor for instanced attributes
+									if div := attribDivisors[attr.name]; div > 0 {
+										p.ctx.VertexAttribDivisor(uint32(attribLoc), div)
+									}
+								}
 							}
 						}
-						p.ctx.DrawArrays(params.Mode, params.First, params.Count)
+						if params.InstanceCount > 0 {
+							p.ctx.DrawArraysInstanced(params.Mode, int32(params.First), int32(params.Count), int32(params.InstanceCount))
+						} else {
+							p.ctx.DrawArrays(params.Mode, params.First, params.Count)
+						}
 					}
 				}
 			case "clearColor":
@@ -861,21 +983,30 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 				// texture unit is active, making Phase 2.1 textures invisible.
 				jsTexId, _ := strconv.Atoi(cmd.Name)
 				if params, ok := cmd.Value.(canvas.TexImage2DGPUParams); ok {
-					p.ctx.ActiveTexture(texture0 + 15) // scratch unit
-					tex := p.ctx.CreateTexture()
-					p.ctx.BindTexture(params.Target, tex)
-					// Set appropriate filtering and wrapping
-					p.ctx.TexParameteri(params.Target, textureMinFilter, nearest)
-					p.ctx.TexParameteri(params.Target, textureMagFilter, nearest)
-					p.ctx.TexParameteri(params.Target, textureWrapS, clampToEdge)
-					p.ctx.TexParameteri(params.Target, textureWrapT, clampToEdge)
-					// Allocate texture storage without data
-					p.ctx.TexImage2DEmpty(params.Target, params.Level, params.Internalformat, params.Width, params.Height, params.Format, params.Type)
-					p.ctx.BindTexture(params.Target, Texture(0)) // unbind from scratch unit
-					p.ctx.ActiveTexture(texture0) // restore to unit 0
-					shader.SetGPUTexCache(jsTexId, uint32(tex))
-					if shaderDebug {
-						log.Printf("[drawShader] texImage2D_gpu: js=%d -> gl=%d (%dx%d, fmt=0x%x)", jsTexId, tex, params.Width, params.Height, params.Format)
+					// Skip if Phase 2.1 already created and uploaded a texture for this JS ID.
+					// This prevents overwriting a real texture with an empty one when
+					// texStorage2D render commands execute after Phase 2.1.
+					if existingGlId := shader.GetGPUTexCache(jsTexId); existingGlId != 0 {
+						if shaderDebug {
+							log.Printf("[drawShader] texImage2D_gpu: SKIPPED js=%d (already have gl=%d)", jsTexId, existingGlId)
+						}
+					} else {
+						p.ctx.ActiveTexture(texture0 + 15) // scratch unit
+						tex := p.ctx.CreateTexture()
+						p.ctx.BindTexture(params.Target, tex)
+						// Set appropriate filtering and wrapping
+						p.ctx.TexParameteri(params.Target, textureMinFilter, nearest)
+						p.ctx.TexParameteri(params.Target, textureMagFilter, nearest)
+						p.ctx.TexParameteri(params.Target, textureWrapS, clampToEdge)
+						p.ctx.TexParameteri(params.Target, textureWrapT, clampToEdge)
+						// Allocate texture storage without data
+						p.ctx.TexImage2DEmpty(params.Target, params.Level, params.Internalformat, params.Width, params.Height, params.Format, params.Type)
+						p.ctx.BindTexture(params.Target, Texture(0)) // unbind from scratch unit
+						p.ctx.ActiveTexture(texture0) // restore to unit 0
+						shader.SetGPUTexCache(jsTexId, uint32(tex))
+						if shaderDebug {
+							log.Printf("[drawShader] texImage2D_gpu: js=%d -> gl=%d (%dx%d, fmt=0x%x)", jsTexId, tex, params.Width, params.Height, params.Format)
+						}
 					}
 				}
 
@@ -908,14 +1039,22 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 								if rgba != nil && len(rgba.Pix) > 0 {
 									p.ctx.TexParameteri(target, textureMinFilter, linear)
 									p.ctx.TexParameteri(target, textureMagFilter, linear)
-									p.ctx.TexImage2D(
-										target, 0,
-										rgba.Rect.Size().X, rgba.Rect.Size().Y,
-										colorFormatRGBA, unsignedByte, rgba.Pix,
-									)
+									texFmt := shader.GetGPUTexFormat(jsTexId)
+									w := rgba.Rect.Size().X
+									h := rgba.Rect.Size().Y
+									if texFmt.Format == 0x1903 { // GL_RED
+										// Extract R channel only (1 byte/pixel)
+										redData := make([]byte, w*h)
+										for i := 0; i < w*h; i++ {
+											redData[i] = rgba.Pix[i*4]
+										}
+										p.ctx.TexImage2D(target, 0, w, h, texFmt.Format, unsignedByte, redData)
+									} else {
+										p.ctx.TexImage2D(target, 0, w, h, colorFormatRGBA, unsignedByte, rgba.Pix)
+									}
 									shader.SetGPUTexUploaded(jsTexId)
 									if shaderDebug {
-										log.Printf("[drawShader] bindTexture: ON-DEMAND uploaded %dx%d to js=%d gl=%d", rgba.Rect.Dx(), rgba.Rect.Dy(), jsTexId, glId)
+										log.Printf("[drawShader] bindTexture: ON-DEMAND uploaded %dx%d to js=%d gl=%d (fmt=0x%x)", w, h, jsTexId, glId, texFmt.Format)
 									}
 								}
 							}
@@ -986,6 +1125,38 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 				if packed, ok := cmd.Value.([]float32); ok && len(packed) >= 5 {
 					p.ctx.VertexAttrib4f(uint32(packed[0]), packed[1], packed[2], packed[3], packed[4])
 				}
+			case "vertexAttribDivisor":
+				if packed, ok := cmd.Value.([2]uint32); ok {
+					p.ctx.VertexAttribDivisor(packed[0], packed[1])
+				}
+			case "stencilFunc":
+				if params, ok := cmd.Value.([3]uint32); ok {
+					p.ctx.StencilFunc(params[0], int32(params[1]), params[2])
+				}
+			case "stencilOp":
+				if params, ok := cmd.Value.([3]uint32); ok {
+					p.ctx.StencilOp(params[0], params[1], params[2])
+				}
+			case "stencilMask":
+				if mask, ok := cmd.Value.(uint32); ok {
+					p.ctx.StencilMask(mask)
+				}
+			case "stencilFuncSeparate":
+				if params, ok := cmd.Value.([4]uint32); ok {
+					p.ctx.StencilFuncSeparate(params[0], params[1], int32(params[2]), params[3])
+				}
+			case "stencilOpSeparate":
+				if params, ok := cmd.Value.([4]uint32); ok {
+					p.ctx.StencilOpSeparate(params[0], params[1], params[2], params[3])
+				}
+			case "stencilMaskSeparate":
+				if params, ok := cmd.Value.([2]uint32); ok {
+					p.ctx.StencilMaskSeparate(params[0], params[1])
+				}
+			case "clearStencil":
+				if val, ok := cmd.Value.(int32); ok {
+					p.ctx.ClearStencil(val)
+				}
 			}
 		}
 
@@ -1013,6 +1184,10 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 	for _, attrib := range enabledAttribs {
 		p.ctx.DisableVertexAttribArray(attrib)
 	}
+
+	// Unbind and delete the shader VAO, restore VAO 0 for Fyne's default rendering
+	p.ctx.BindVertexArray(0)
+	p.ctx.DeleteVertexArray(shaderVAO)
 
 	// Restore original viewport (full frame)
 	frameW := int(p.pixScale * frame.Width)

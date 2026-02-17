@@ -382,3 +382,93 @@ func (s *Shader) IsGPUTexUploaded(jsTexId int) bool {
 func (s *Shader) SetGPUTexUploaded(jsTexId int) {
 	s.gpuTexUploaded[jsTexId] = true
 }
+
+// SetGPUTexFormat stores the GL format info for a JS texture ID.
+func (s *Shader) SetGPUTexFormat(jsTexId int, fmt GPUTextureFormat) {
+	s.gpuTexFormats[jsTexId] = fmt
+}
+
+// GetGPUTexFormat returns the GL format info for a JS texture ID.
+// Returns a zero value if not set (caller should default to RGBA).
+func (s *Shader) GetGPUTexFormat(jsTexId int) GPUTextureFormat {
+	return s.gpuTexFormats[jsTexId]
+}
+
+// SetAttribDivisor stores a vertex attribute divisor value by attribute name.
+func (s *Shader) SetAttribDivisor(name string, divisor uint32) {
+	s.attribDivisors[name] = divisor
+}
+
+// GetAttribDivisors returns the attrib divisors map (name → divisor).
+func (s *Shader) GetAttribDivisors() map[string]uint32 {
+	return s.attribDivisors
+}
+
+// QueueDrawArraysInstanced queues an instanced drawArrays call with a snapshot of current geometry.
+func (s *Shader) QueueDrawArraysInstanced(mode uint32, first int, count int, instanceCount int) {
+	s.attrBuffersMu.RLock()
+	attrSnapshot := make(map[string]*AttributeBuffer)
+	for name, buf := range s.AttributeBuffers {
+		if buf != nil && len(buf.Data) > 0 {
+			dataCopy := make([]float32, len(buf.Data))
+			copy(dataCopy, buf.Data)
+			attrSnapshot[name] = &AttributeBuffer{
+				Data:   dataCopy,
+				Size:   buf.Size,
+				VBO:    buf.VBO,
+				Stride: buf.Stride,
+				Offset: buf.Offset,
+			}
+		}
+	}
+	s.attrBuffersMu.RUnlock()
+
+	s.QueueRenderCommand(RenderCommand{
+		Type: "drawArrays",
+		Value: DrawArraysParams{
+			Mode:             mode,
+			First:            first,
+			Count:            count,
+			InstanceCount:    instanceCount,
+			AttributeBuffers: attrSnapshot,
+		},
+	})
+}
+
+// QueueDrawElementsInstanced queues an instanced drawElements call with a snapshot of current geometry.
+func (s *Shader) QueueDrawElementsInstanced(mode uint32, count int, offset int, instanceCount int) {
+	s.attrBuffersMu.RLock()
+	attrSnapshot := make(map[string]*AttributeBuffer)
+	for name, buf := range s.AttributeBuffers {
+		if buf != nil && len(buf.Data) > 0 {
+			dataCopy := make([]float32, len(buf.Data))
+			copy(dataCopy, buf.Data)
+			attrSnapshot[name] = &AttributeBuffer{
+				Data:   dataCopy,
+				Size:   buf.Size,
+				VBO:    buf.VBO,
+				Stride: buf.Stride,
+				Offset: buf.Offset,
+			}
+		}
+	}
+	s.attrBuffersMu.RUnlock()
+
+	var indicesCopy []uint16
+	if len(s.Indices) > 0 {
+		indicesCopy = make([]uint16, len(s.Indices))
+		copy(indicesCopy, s.Indices)
+	}
+
+	s.QueueRenderCommand(RenderCommand{
+		Type: "drawElements",
+		Value: DrawElementsParams{
+			Mode:             mode,
+			Count:            count,
+			Offset:           offset,
+			InstanceCount:    instanceCount,
+			AttributeBuffers: attrSnapshot,
+			Indices:          indicesCopy,
+		},
+	})
+}

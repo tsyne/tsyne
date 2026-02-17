@@ -638,7 +638,7 @@ func (b *Bridge) executeGLCommand(canvas *GLCanvas, cmd string, args map[string]
 	case "clearDepth":
 		return b.glClearDepth(canvas, args)
 	case "clearStencil":
-		return nil // Stencil clear - not yet needed
+		return b.glClearStencil(canvas, args)
 	case "colorMask":
 		return b.glColorMask(canvas, args)
 	case "viewport":
@@ -653,8 +653,18 @@ func (b *Bridge) executeGLCommand(canvas *GLCanvas, cmd string, args map[string]
 		return b.glDepthMask(canvas, args)
 	case "depthRange":
 		return nil // Depth range - not yet needed
-	case "stencilFunc", "stencilOp", "stencilMask":
-		return nil // Stencil operations - handled by painter
+	case "stencilFunc":
+		return b.glStencilFunc(canvas, args)
+	case "stencilOp":
+		return b.glStencilOp(canvas, args)
+	case "stencilMask":
+		return b.glStencilMask(canvas, args)
+	case "stencilFuncSeparate":
+		return b.glStencilFuncSeparate(canvas, args)
+	case "stencilOpSeparate":
+		return b.glStencilOpSeparate(canvas, args)
+	case "stencilMaskSeparate":
+		return b.glStencilMaskSeparate(canvas, args)
 	case "frontFace":
 		return b.glFrontFace(canvas, args)
 	case "cullFace":
@@ -683,8 +693,10 @@ func (b *Bridge) executeGLCommand(canvas *GLCanvas, cmd string, args map[string]
 		return b.glDrawArrays(canvas, args)
 	case "drawElements":
 		return b.glDrawElements(canvas, args)
-	case "drawArraysInstanced", "drawElementsInstanced":
-		return nil // Instanced drawing - handled by painter
+	case "drawArraysInstanced":
+		return b.glDrawArraysInstanced(canvas, args)
+	case "drawElementsInstanced":
+		return b.glDrawElementsInstanced(canvas, args)
 
 	// Vertex attributes
 	case "enableVertexAttribArray", "disableVertexAttribArray":
@@ -694,7 +706,7 @@ func (b *Bridge) executeGLCommand(canvas *GLCanvas, cmd string, args map[string]
 	case "vertexAttribPointer":
 		return b.glVertexAttribPointer(canvas, args)
 	case "vertexAttribDivisor":
-		return nil // Handled by painter
+		return b.glVertexAttribDivisor(canvas, args)
 	case "vertexAttrib1f", "vertexAttrib2f", "vertexAttrib3f", "vertexAttrib4f",
 		"vertexAttrib1fv", "vertexAttrib2fv", "vertexAttrib3fv", "vertexAttrib4fv":
 		return b.glVertexAttribFv(canvas, cmd, args)
@@ -1247,9 +1259,10 @@ func (b *Bridge) glBufferData(canvas *GLCanvas, args map[string]interface{}) err
 		return fmt.Errorf("failed to decode buffer data: %v", err)
 	}
 
-	if canvas.elementBuffer > 0 {
+	target := uint32(toFloat64(args["target"]))
+
+	if target == 0x8893 { // ELEMENT_ARRAY_BUFFER
 		// Index buffer - convert bytes to uint16
-		// log.Printf("[GL] bufferData: elementBuffer=%d, data size=%d bytes", canvas.elementBuffer, len(data))
 		if buffer, exists := canvas.buffers[canvas.elementBuffer]; exists {
 			indexData := make([]uint16, len(data)/2)
 			for i := 0; i < len(indexData); i++ {
@@ -1259,11 +1272,7 @@ func (b *Bridge) glBufferData(canvas *GLCanvas, args map[string]interface{}) err
 			buffer.indexData = indexData
 			canvas.indexData = indexData
 			canvas.indexDirty = true
-			// log.Printf("[GL] bufferData: stored %d indices in canvas.indexData", len(indexData))
 		}
-		// else {
-		//	log.Printf("[GL] WARNING: elementBuffer %d not found in canvas.buffers", canvas.elementBuffer)
-		// }
 	} else if canvas.currentBuffer > 0 {
 		// Vertex buffer - convert bytes to float32 (little-endian IEEE 754)
 		if buffer, exists := canvas.buffers[canvas.currentBuffer]; exists {
@@ -1286,7 +1295,53 @@ func (b *Bridge) glBufferData(canvas *GLCanvas, args map[string]interface{}) err
 }
 
 func (b *Bridge) glBufferSubData(canvas *GLCanvas, args map[string]interface{}) error {
-	// Similar to bufferData but for partial updates
+	dataStr, ok := args["data"].(string)
+	if !ok {
+		return nil // No data provided
+	}
+
+	// Decode base64 data
+	data, err := base64.StdEncoding.DecodeString(dataStr)
+	if err != nil {
+		return fmt.Errorf("failed to decode bufferSubData: %v", err)
+	}
+
+	dstByteOffset := int(toFloat64(args["dstByteOffset"]))
+	target := uint32(toFloat64(args["target"]))
+
+	if target == 0x8893 { // ELEMENT_ARRAY_BUFFER
+		if buffer, exists := canvas.buffers[canvas.elementBuffer]; exists {
+			dstIdx := dstByteOffset / 2 // byte offset to uint16 index
+			for i := 0; i < len(data)/2; i++ {
+				off := i * 2
+				val := uint16(data[off]) | (uint16(data[off+1]) << 8)
+				idx := dstIdx + i
+				if idx < len(buffer.indexData) {
+					buffer.indexData[idx] = val
+				}
+			}
+			canvas.indexData = buffer.indexData
+			canvas.indexDirty = true
+		}
+	} else if canvas.currentBuffer > 0 {
+		// ARRAY_BUFFER - partial update of vertex data
+		if buffer, exists := canvas.buffers[canvas.currentBuffer]; exists {
+			dstIdx := dstByteOffset / 4 // byte offset to float32 index
+			for i := 0; i < len(data)/4; i++ {
+				off := i * 4
+				bits := uint32(data[off]) |
+					(uint32(data[off+1]) << 8) |
+					(uint32(data[off+2]) << 16) |
+					(uint32(data[off+3]) << 24)
+				idx := dstIdx + i
+				if idx < len(buffer.data) {
+					buffer.data[idx] = math.Float32frombits(bits)
+				}
+			}
+			canvas.vertexDirty = true
+		}
+	}
+
 	return nil
 }
 
@@ -1619,6 +1674,12 @@ func (b *Bridge) glTexImage2D(canvas *GLCanvas, args map[string]interface{}) err
 				Type:           typeVal,
 			},
 		})
+		// Store format info for on-demand upload in the painter
+		canvas.ShaderObject.SetGPUTexFormat(int(textureId), canvasPkg.GPUTextureFormat{
+			Internalformat: uint32(internalformat),
+			Format:         uint32(format),
+			Type:           typeVal,
+		})
 		log.Printf("[GL] texImage2D: GPU-only texture %d (%dx%d, format=0x%x, type=0x%x)", textureId, w, h, uint32(format), typeVal)
 		return nil
 	}
@@ -1895,9 +1956,28 @@ func (b *Bridge) glTexStorage2D(canvas *GLCanvas, args map[string]interface{}) e
 		format = 0x1902 // DEPTH_COMPONENT
 		typ = 0x1405    // UNSIGNED_INT
 	} else {
-		format = 0x1908 // RGBA
-		typ = 0x1401    // UNSIGNED_BYTE
+		switch internalformat {
+		case 0x8229: // GL_R8
+			format = 0x1903 // GL_RED
+			typ = 0x1401    // UNSIGNED_BYTE
+		case 0x822A: // GL_RG8
+			format = 0x8227 // GL_RG
+			typ = 0x1401    // UNSIGNED_BYTE
+		case 0x8051: // GL_RGB8
+			format = 0x1907 // GL_RGB
+			typ = 0x1401    // UNSIGNED_BYTE
+		default: // GL_RGBA8 and others
+			format = 0x1908 // GL_RGBA
+			typ = 0x1401    // UNSIGNED_BYTE
+		}
 	}
+
+	// Store format info so the painter can upload with the correct format
+	canvas.ShaderObject.SetGPUTexFormat(int(textureId), canvasPkg.GPUTextureFormat{
+		Internalformat: internalformat,
+		Format:         format,
+		Type:           typ,
+	})
 
 	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
 		Type: "texImage2D_gpu",
@@ -2148,6 +2228,135 @@ func (b *Bridge) glDrawElements(canvas *GLCanvas, args map[string]interface{}) e
 		canvas.ShaderObject.SetIndicesNoRefresh(canvas.indexData)
 	}
 	canvas.ShaderObject.QueueDrawElements(mode, count, offset)
+	return nil
+}
+
+func (b *Bridge) glDrawArraysInstanced(canvas *GLCanvas, args map[string]interface{}) error {
+	mode := uint32(toFloat64(args["mode"]))
+	first := int(toFloat64(args["first"]))
+	count := int(toFloat64(args["count"]))
+	instanceCount := int(toFloat64(args["instancecount"]))
+	// log.Printf("[GL] drawArraysInstanced: mode=%d first=%d count=%d instances=%d", mode, first, count, instanceCount)
+	b.pushAttribBuffersToShader(canvas)
+	canvas.ShaderObject.QueueDrawArraysInstanced(mode, first, count, instanceCount)
+	return nil
+}
+
+func (b *Bridge) glDrawElementsInstanced(canvas *GLCanvas, args map[string]interface{}) error {
+	mode := uint32(toFloat64(args["mode"]))
+	count := int(toFloat64(args["count"]))
+	offset := int(toFloat64(args["offset"]))
+	instanceCount := int(toFloat64(args["instancecount"]))
+	// log.Printf("[GL] drawElementsInstanced: mode=%d count=%d offset=%d instances=%d", mode, count, offset, instanceCount)
+	b.pushAttribBuffersToShader(canvas)
+	if len(canvas.indexData) > 0 {
+		canvas.ShaderObject.SetIndicesNoRefresh(canvas.indexData)
+	}
+	canvas.ShaderObject.QueueDrawElementsInstanced(mode, count, offset, instanceCount)
+	return nil
+}
+
+func (b *Bridge) glVertexAttribDivisor(canvas *GLCanvas, args map[string]interface{}) error {
+	index := int32(toFloat64(args["index"]))
+	divisor := uint32(toFloat64(args["divisor"]))
+
+	// Find attribute name for this location (may be a mat4 sub-column)
+	attrName := ""
+	if name, ok := canvas.attribLocations[index]; ok {
+		attrName = name
+	} else {
+		// Check if this is a mat4 sub-column (base location has the name)
+		for offset := int32(1); offset <= 3; offset++ {
+			if name, ok := canvas.attribLocations[index-offset]; ok {
+				attrName = name
+				break
+			}
+		}
+	}
+	if attrName == "" {
+		attrName = fmt.Sprintf("attr_%d", index)
+	}
+
+	// Store divisor by attribute name (painter looks up by name, not JS location)
+	canvas.ShaderObject.SetAttribDivisor(attrName, divisor)
+	return nil
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Stencil Operations
+// ═══════════════════════════════════════════════════════════════
+
+func (b *Bridge) glStencilFunc(canvas *GLCanvas, args map[string]interface{}) error {
+	fn := uint32(toFloat64(args["func"]))
+	ref := uint32(toFloat64(args["ref"]))
+	mask := uint32(toFloat64(args["mask"]))
+	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+		Type:  "stencilFunc",
+		Value: [3]uint32{fn, ref, mask},
+	})
+	return nil
+}
+
+func (b *Bridge) glStencilOp(canvas *GLCanvas, args map[string]interface{}) error {
+	sfail := uint32(toFloat64(args["fail"]))
+	dpfail := uint32(toFloat64(args["zfail"]))
+	dppass := uint32(toFloat64(args["zpass"]))
+	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+		Type:  "stencilOp",
+		Value: [3]uint32{sfail, dpfail, dppass},
+	})
+	return nil
+}
+
+func (b *Bridge) glStencilMask(canvas *GLCanvas, args map[string]interface{}) error {
+	mask := uint32(toFloat64(args["mask"]))
+	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+		Type:  "stencilMask",
+		Value: mask,
+	})
+	return nil
+}
+
+func (b *Bridge) glStencilFuncSeparate(canvas *GLCanvas, args map[string]interface{}) error {
+	face := uint32(toFloat64(args["face"]))
+	fn := uint32(toFloat64(args["func"]))
+	ref := uint32(toFloat64(args["ref"]))
+	mask := uint32(toFloat64(args["mask"]))
+	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+		Type:  "stencilFuncSeparate",
+		Value: [4]uint32{face, fn, ref, mask},
+	})
+	return nil
+}
+
+func (b *Bridge) glStencilOpSeparate(canvas *GLCanvas, args map[string]interface{}) error {
+	face := uint32(toFloat64(args["face"]))
+	sfail := uint32(toFloat64(args["sfail"]))
+	dpfail := uint32(toFloat64(args["dpfail"]))
+	dppass := uint32(toFloat64(args["dppass"]))
+	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+		Type:  "stencilOpSeparate",
+		Value: [4]uint32{face, sfail, dpfail, dppass},
+	})
+	return nil
+}
+
+func (b *Bridge) glStencilMaskSeparate(canvas *GLCanvas, args map[string]interface{}) error {
+	face := uint32(toFloat64(args["face"]))
+	mask := uint32(toFloat64(args["mask"]))
+	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+		Type:  "stencilMaskSeparate",
+		Value: [2]uint32{face, mask},
+	})
+	return nil
+}
+
+func (b *Bridge) glClearStencil(canvas *GLCanvas, args map[string]interface{}) error {
+	s := int32(toFloat64(args["s"]))
+	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+		Type:  "clearStencil",
+		Value: s,
+	})
 	return nil
 }
 

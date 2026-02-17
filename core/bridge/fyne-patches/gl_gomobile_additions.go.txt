@@ -142,3 +142,66 @@ func (c *mobileContext) VertexAttrib3f(index uint32, x, y, z float32) {
 func (c *mobileContext) VertexAttrib4f(index uint32, x, y, z, w float32) {
 	c.glContext.VertexAttrib4f(gl.Attrib(index), x, y, z, w)
 }
+
+func (c *mobileContext) DrawArraysInstanced(mode uint32, first, count, instancecount int32) {
+	// gomobile GL doesn't have DrawArraysInstanced - fall back to non-instanced
+	for i := int32(0); i < instancecount; i++ {
+		c.glContext.DrawArrays(gl.Enum(mode), int(first), int(count))
+	}
+}
+
+func (c *mobileContext) DrawElementsInstanced(mode uint32, count int32, typ uint32, offset int, instancecount int32) {
+	// gomobile GL doesn't have DrawElementsInstanced - fall back to non-instanced
+	for i := int32(0); i < instancecount; i++ {
+		c.glContext.DrawElements(gl.Enum(mode), int(count), gl.Enum(typ), offset)
+	}
+}
+
+func (c *mobileContext) VertexAttribDivisor(index uint32, divisor uint32) {
+	// gomobile GL doesn't expose VertexAttribDivisor - no-op
+}
+
+func (c *mobileContext) StencilFunc(xfunc uint32, ref int32, mask uint32) {
+	c.glContext.StencilFunc(gl.Enum(xfunc), int(ref), gl.Enum(mask))
+}
+
+func (c *mobileContext) StencilOp(sfail, dpfail, dppass uint32) {
+	c.glContext.StencilOp(gl.Enum(sfail), gl.Enum(dpfail), gl.Enum(dppass))
+}
+
+func (c *mobileContext) StencilMask(mask uint32) {
+	c.glContext.StencilMask(gl.Enum(mask))
+}
+
+func (c *mobileContext) StencilFuncSeparate(face, xfunc uint32, ref int32, mask uint32) {
+	// gomobile GL doesn't expose StencilFuncSeparate - no-op
+}
+
+func (c *mobileContext) StencilOpSeparate(face, sfail, dpfail, dppass uint32) {
+	// gomobile GL doesn't expose StencilOpSeparate - no-op
+}
+
+func (c *mobileContext) StencilMaskSeparate(face, mask uint32) {
+	// gomobile GL doesn't expose StencilMaskSeparate - no-op
+}
+
+func (c *mobileContext) ClearStencil(s int32) {
+	c.glContext.ClearStencil(int(s))
+}
+
+func (c *mobileContext) GenVertexArray() uint32 {
+	// gomobile GL doesn't expose VAO - return 0
+	return 0
+}
+
+func (c *mobileContext) BindVertexArray(vao uint32) {
+	// gomobile GL doesn't expose VAO - no-op
+}
+
+func (c *mobileContext) DeleteVertexArray(vao uint32) {
+	// gomobile GL doesn't expose VAO - no-op
+}
+
+func (c *mobileContext) GetVertexAttribi(index uint32, pname uint32) int32 {
+	return 0
+}

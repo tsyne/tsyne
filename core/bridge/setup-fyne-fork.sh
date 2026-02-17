@@ -103,7 +103,21 @@ sed -i '/Viewport(x, y, width, height int)/a\
 \	BlendEquation(mode uint32)\
 \	BlendEquationSeparate(modeRGB, modeAlpha uint32)\
 \	PolygonOffset(factor, units float32)\
-\	LineWidth(width float32)' "$FORK_DIR/internal/painter/gl/context.go"
+\	LineWidth(width float32)\
+\	DrawArraysInstanced(mode uint32, first, count, instancecount int32)\
+\	DrawElementsInstanced(mode uint32, count int32, typ uint32, offset int, instancecount int32)\
+\	VertexAttribDivisor(index uint32, divisor uint32)\
+\	StencilFunc(xfunc uint32, ref int32, mask uint32)\
+\	StencilOp(sfail, dpfail, dppass uint32)\
+\	StencilMask(mask uint32)\
+\	StencilFuncSeparate(face, xfunc uint32, ref int32, mask uint32)\
+\	StencilOpSeparate(face, sfail, dpfail, dppass uint32)\
+\	StencilMaskSeparate(face, mask uint32)\
+\	ClearStencil(s int32)\
+\	GenVertexArray() uint32\
+\	BindVertexArray(vao uint32)\
+\	DeleteVertexArray(vao uint32)\
+\	GetVertexAttribi(index uint32, pname uint32) int32' "$FORK_DIR/internal/painter/gl/context.go"
 
 # 6b. Add Framebuffer and Renderbuffer types to gl_core.go and gl_es.go
 echo "[setup-fyne-fork] Adding FBO types..."
@@ -417,6 +431,13 @@ EMBEDDED_DRIVER="$FORK_DIR/internal/driver/embedded/driver.go"
 if [ -f "$EMBEDDED_DRIVER" ]; then
     sed -i '/^func (n \*noosDriver) doRun() {/a\
 \tasync.SetMainGoroutine()' "$EMBEDDED_DRIVER"
+    # Nil-window guard: skip events when no windows exist yet (needed for Android
+    # where touch events can arrive before the first window is created)
+    sed -i '/w := n\.wins\[n\.current\]\.(\*noosWindow)/i\
+\t\t\tif len(n.wins) == 0 || n.current >= len(n.wins) {\
+\t\t\t\tcontinue // no windows yet, ignore event\
+\t\t\t}\
+' "$EMBEDDED_DRIVER"
 fi
 
 TOUCHSCREEN="$FORK_DIR/internal/driver/embedded/touchscreen.go"
