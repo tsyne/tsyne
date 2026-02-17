@@ -102,14 +102,21 @@ func (s *Shader) QueueClear() {
 	})
 }
 
-// GetRenderCommands returns a copy of the render command queue and clears it.
-// This is called by the painter to execute commands.
+// GetRenderCommands returns the render command queue.
+// If new commands have been queued since the last call, they replace the
+// previous frame's commands. Otherwise the previous frame is replayed so
+// that Fyne repaints don't produce a black flash between animation ticks.
 func (s *Shader) GetRenderCommands() []RenderCommand {
 	s.renderMu.Lock()
 	defer s.renderMu.Unlock()
-	cmds := s.renderCommands
-	s.renderCommands = nil
-	return cmds
+	if len(s.renderCommands) > 0 {
+		// New frame — swap into lastRenderCommands for future replays
+		s.lastRenderCommands = s.renderCommands
+		s.renderCommands = nil
+		return s.lastRenderCommands
+	}
+	// No new commands — replay the previous frame
+	return s.lastRenderCommands
 }
 
 // HasRenderCommands returns true if there are queued render commands.

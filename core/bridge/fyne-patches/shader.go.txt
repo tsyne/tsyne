@@ -157,8 +157,9 @@ type Shader struct {
 	indexCount      int                    // Number of indices (if using indexed drawing)
 
 	// Render command queue for immediate-mode GL patterns
-	renderCommands  []RenderCommand
-	renderMu        sync.Mutex
+	renderCommands      []RenderCommand
+	lastRenderCommands  []RenderCommand // preserved from previous frame for replay
+	renderMu            sync.Mutex
 
 	// Paint synchronization - wait for Fyne to actually paint before next frame
 	paintDone       chan struct{}

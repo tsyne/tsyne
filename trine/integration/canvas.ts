@@ -165,6 +165,14 @@ export class TsyneCanvas {
   }
 
   /**
+   * Set a predefined bridge canvas ID.
+   * If set, getBridgeCanvasId will return this ID instead of creating a new one.
+   */
+  setPredefinedId(id: string): void {
+    this.bridgeCanvasId = id;
+  }
+
+  /**
    * Get actual bridge canvas ID (created on first GL operation)
    */
   async getBridgeCanvasId(): Promise<string> {

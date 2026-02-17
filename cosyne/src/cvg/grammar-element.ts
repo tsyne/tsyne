@@ -64,6 +64,7 @@ export class CvgElement {
   private fillBinding?: () => string;
   private strokeBinding?: () => { color: string; width?: number };
   private opacityBinding?: () => number;
+  private textBinding?: () => string;
   private posBinding?: () => Record<string, number>;
   private _context?: CvgContext;
   private _destroyed = false;
@@ -188,6 +189,14 @@ export class CvgElement {
 
   getOpacityBinding() { return this.opacityBinding; }
 
+  /** Bind text content to a reactive function. Re-evaluated on `svgCtx.refresh()`. */
+  bindText(fn: () => string): this {
+    this.textBinding = fn;
+    return this;
+  }
+
+  getTextBinding() { return this.textBinding; }
+
   /** Bind position/size to a reactive function. Re-evaluated on `svgCtx.refresh()`.
    *  Returns an object with numeric properties to update (e.g. { cx: 50, cy: 30, r: 10 }). */
   bindPos(fn: () => Record<string, number>): this {
@@ -242,6 +251,14 @@ export class CvgElement {
     const b = this.bounds;
     return px >= b.x && px <= b.x + b.width &&
            py >= b.y && py <= b.y + b.height;
+  }
+
+  /** Set text content on the element (updates the underlying widget). */
+  text(content: string): this {
+    if (this.underlying?.update) {
+      this.underlying.update({ text: content });
+    }
+    return this;
   }
 
   /** Set fill color on the element (updates the underlying widget). */

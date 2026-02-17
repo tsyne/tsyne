@@ -75,6 +75,7 @@ import {
   CanvasRectangle,
   CanvasShader,
   CanvasText,
+  GLCanvas,
   TappableCanvasRaster,
   // Display extras
   ColorCell,

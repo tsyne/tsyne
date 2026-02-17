@@ -125,6 +125,27 @@ export class Button extends Widget {
     }
   }
 
+  /**
+   * Set the click handler (fluent API)
+   */
+  onClick(handler: (btn: Button) => void | Promise<void>): this {
+    const callbackId = this.ctx.generateId('callback');
+    
+    // Register callback
+    this.ctx.bridge.registerEventHandler(callbackId, async () => {
+      await handler(this);
+    });
+
+    // Update widget with new callback ID
+    this.ctx.bridge.send('setWidgetCallback', {
+      widgetId: this.id,
+      callbackId
+    }).catch(() => {
+      // If send fails (e.g. widget destroyed), just ignore
+    });
+
+    return this;
+  }
 
   async disable(): Promise<void> {
     await this.ctx.bridge.send('disableWidget', {

@@ -143,6 +143,21 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 	viewportH := int(pixelHeight)
 	p.ctx.Viewport(viewportX, viewportY, viewportW, viewportH)
 
+	// For 3D shaders: pre-clear the COLOR buffer only with the stored
+	// clear color.  Fyne's painter.Clear() clears the entire framebuffer
+	// to the theme background (white) before painting widgets.  This
+	// restores the shader's region to the correct scene background so
+	// white never bleeds through.  Only clear color — depth is cleared
+	// by the render commands' own clear call.
+	if shader.VertexSource != "" {
+		cc := shader.GetClearColor()
+		p.ctx.ClearColor(cc[0], cc[1], cc[2], cc[3])
+		p.ctx.Enable(scissorTest)
+		p.ctx.Scissor(int32(viewportX), int32(viewportY), int32(viewportW), int32(viewportH))
+		p.ctx.Clear(colorBufferBit)
+		p.ctx.Disable(scissorTest)
+	}
+
 	// With viewport set, u_position should be 0,0 since gl_FragCoord is now relative to viewport
 	posLoc := getUniformLoc("u_position")
 	if posLoc >= 0 {
@@ -828,12 +843,21 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 					// but Three.js only sends clearColor when the value changes (WebGLState caching)
 					cc := shader.GetClearColor()
 					p.ctx.ClearColor(cc[0], cc[1], cc[2], cc[3])
+					// Use scissor test to limit clear to this shader's viewport region.
+					// glClear ignores glViewport and clears the entire framebuffer,
+					// which would erase other shaders' content in multi-canvas layouts.
+					p.ctx.Enable(scissorTest)
+					p.ctx.Scissor(int32(viewportX), int32(viewportY), int32(viewportW), int32(viewportH))
 					p.ctx.Clear(mask)
+					p.ctx.Disable(scissorTest)
 				} else {
 					// Legacy path (QueueClear without mask)
 					cc := shader.GetClearColor()
 					p.ctx.ClearColor(cc[0], cc[1], cc[2], cc[3])
+					p.ctx.Enable(scissorTest)
+					p.ctx.Scissor(int32(viewportX), int32(viewportY), int32(viewportW), int32(viewportH))
 					p.ctx.Clear(colorBufferBit | depthBufferBit)
+					p.ctx.Disable(scissorTest)
 				}
 			case "enable":
 				if cap, ok := cmd.Value.(uint32); ok {
@@ -1171,8 +1195,11 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 		p.ctx.Disable(depthTest)
 		p.ctx.Disable(cullFace)
 		p.ctx.Disable(programPointSize)
-	} else {
-		// Fallback: single draw (for simple shaders without command queue)
+	} else if shader.VertexSource == "" {
+		// Fallback: single draw (for simple shaders without command queue).
+		// Only for built-in vertex shader (2D effects). 3D shaders with custom
+		// vertex sources must use the render command queue — drawing a fullscreen
+		// quad through a 3D vertex shader produces garbage (white flash).
 		if useIndexedDrawing && indexCount > 0 {
 			p.ctx.DrawElements(triangles, int32(indexCount), unsignedShort, 0)
 		} else if vertexCount > 0 {

@@ -24,6 +24,7 @@
 import type { App, ITsyneWindow } from 'tsyne';
 import { TsyneBridge } from './bridge';
 import { initTsyne, setGlobalBridge } from './three-integration';
+import { TsyneCanvas } from './canvas';
 
 /**
  * Set up three.js to work with Tsyne
@@ -41,6 +42,7 @@ export async function setupTsyneThreeJS(
     autoInject?: boolean;
     interactive?: boolean;
     coreBridge?: any; // Pass the core Tsyne bridge to wire up event handling
+    id?: string;
   } = {}
 ): Promise<{
   bridge: TsyneBridge;
@@ -54,6 +56,7 @@ export async function setupTsyneThreeJS(
     windowId: options.windowId ?? '',
     autoInject: options.autoInject ?? true,
     interactive: options.interactive ?? false,
+    id: options.id,
   });
   setGlobalBridge(bridge);
 
@@ -78,7 +81,7 @@ export async function setupTsyneThreeJS(
     console.warn('[Tsyne] Interactive mode enabled but no coreBridge provided - mouse events will not work');
   }
 
-  console.log('[Tsyne] Three.js setup complete - ready to use THREE module');
+  // console.log('[Tsyne] Three.js setup complete - ready to use THREE module');
 
   return {
     bridge,
@@ -155,6 +158,55 @@ export async function initThreeJS(
     interactive: options.interactive ?? false,
     coreBridge: options.interactive ? coreBridge : undefined,
   });
+}
+
+/**
+ * Initialize Three.js as a Tsyne widget.
+ * This allows embedding a Three.js scene inside a layout container (vbox, grid, etc.)
+ * alongside other Tsyne widgets.
+ */
+export async function initThreeJSWidget(
+  a: App,
+  options: { width?: number; height?: number; interactive?: boolean } = {}
+): Promise<{
+  bridge: TsyneBridge;
+  THREE: any;
+  canvasId: string;
+  widget: any; // GLCanvas
+  canvas: any; // TsyneCanvas
+}> {
+  const width = options.width ?? 400;
+  const height = options.height ?? 300;
+
+  // 1. Create the GLCanvas widget - this adds it to the current container
+  const widget = a.glCanvas(width, height, { interactive: options.interactive });
+
+  // 2. Initialize Three.js integration using the widget's ID
+  const coreBridge = (a as any).getBridge();
+  const sendFn = async (msg: any) => coreBridge.send(msg.type, msg.payload || {});
+
+  const { bridge, THREE, canvasId } = await setupTsyneThreeJS(sendFn, {
+    width,
+    height,
+    id: widget.id,
+    interactive: options.interactive ?? false,
+    coreBridge: options.interactive ? coreBridge : undefined,
+  });
+
+  // 3. Explicitly create a TsyneCanvas bound to this widget ID
+  // This avoids the race condition of global document.createElement factory
+  const canvas = new TsyneCanvas(bridge, { interactive: options.interactive });
+  canvas.width = width;
+  canvas.height = height;
+  canvas.setPredefinedId(widget.id);
+
+  return {
+    bridge,
+    THREE,
+    canvasId,
+    widget,
+    canvas,
+  };
 }
 
 export { enableThreeJSResize } from './resize';

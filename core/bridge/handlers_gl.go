@@ -40,6 +40,7 @@ type GLCanvas struct {
 	currentProgram uint32
 	currentBuffer  uint32
 	elementBuffer  uint32
+	currentFramebuffer uint32 // 0 = default (screen), >0 = FBO
 
 	// Texture state
 	activeTextureUnit uint32                       // Currently active texture unit (0-31)
@@ -187,7 +188,10 @@ func (b *Bridge) handleCreateGLCanvas(msg Message) Response {
 	height := toFloat32(heightVal)
 
 	glCanvasCounter++
-	canvasID := fmt.Sprintf("gl_canvas_%d", glCanvasCounter)
+	canvasID, ok := payload["id"].(string)
+	if !ok {
+		canvasID = fmt.Sprintf("gl_canvas_%d", glCanvasCounter)
+	}
 
 	// Check if this canvas needs mouse interactivity
 	interactive, _ := payload["interactive"].(bool)
@@ -209,16 +213,26 @@ void main() {
 		hoverableObject = canvasPkg.NewHoverableShader(width, height, minimalShader)
 		shaderObject = hoverableObject.Shader
 		shaderContainer = hoverableObject
-		log.Printf("[GL] Creating interactive GL canvas with mouse events")
+		// log.Printf("[GL] Creating interactive GL canvas with mouse events")
 	} else {
 		// Create a regular shader (no mouse events)
 		shaderObject = canvasPkg.NewShader(width, height, minimalShader)
 		shaderContainer = shaderObject
 	}
 
-	// Wrap the shader in a container so it can be added to Fyne widget hierarchies
-	// The container will be added to the window's content
-	glContainer := container.New(&centerNoMinLayout{}, shaderContainer)
+	// Check if we should skip automatic window attachment
+	asWidget, _ := payload["asWidget"].(bool)
+
+	// Wrap the shader in a container so it can be added to Fyne widget hierarchies.
+	// For widget mode, use container.NewStack which passes through child MinSize
+	// so that grid/vbox layouts allocate the correct space.
+	// For full-window mode, use centerNoMinLayout so the window can shrink freely.
+	var glContainer *fyne.Container
+	if asWidget {
+		glContainer = container.NewStack(shaderContainer)
+	} else {
+		glContainer = container.New(&centerNoMinLayout{}, shaderContainer)
+	}
 	// Resize must happen on main thread
 	fyne.DoAndWait(func() {
 		glContainer.Resize(fyne.NewSize(width, height))
@@ -268,48 +282,58 @@ void main() {
 
 	glCanvases[canvasID] = glCanv
 
-	// IoC: Get target window from message, or use first available window
-	windowID, _ := payload["windowId"].(string)
-	if windowID == "" {
-		// If no window specified, find the first window
-		b.mu.RLock()
-		for id := range b.windows {
-			windowID = id
-			break
-		}
-		b.mu.RUnlock()
+	// Register the container as a widget so it can be added to other containers
+	b.mu.Lock()
+	b.widgets[canvasID] = glContainer
+	b.widgetMeta[canvasID] = WidgetMetadata{
+		Type: "glcanvas",
 	}
+	b.mu.Unlock()
 
-	// Add GL canvas to the specified window, or auto-create one if needed
-	if windowID != "" {
-		b.mu.RLock()
-		win, exists := b.windows[windowID]
-		b.mu.RUnlock()
+	if !asWidget {
+		// IoC: Get target window from message, or use first available window
+		windowID, _ := payload["windowId"].(string)
+		if windowID == "" {
+			// If no window specified, find the first window
+			b.mu.RLock()
+			for id := range b.windows {
+				windowID = id
+				break
+			}
+			b.mu.RUnlock()
+		}
 
-		if exists {
-			// Set on main thread to avoid Fyne threading issues
+		// Add GL canvas to the specified window, or auto-create one if needed
+		if windowID != "" {
+			b.mu.RLock()
+			win, exists := b.windows[windowID]
+			b.mu.RUnlock()
+
+			if exists {
+				// Set on main thread to avoid Fyne threading issues
+				fyne.DoAndWait(func() {
+					win.SetContent(glContainer)
+				})
+			}
+		} else {
+			// No window exists and none specified - auto-create one for GL rendering
 			fyne.DoAndWait(func() {
-				win.SetContent(glContainer)
+				// Create default GL rendering window
+				glWindow := b.app.NewWindow("Three.js Rendering")
+				glWindow.Resize(fyne.NewSize(float32(glCanv.Width), float32(glCanv.Height)))
+				glWindow.SetContent(glContainer)
+
+				// Register it in the windows map
+				b.mu.Lock()
+				if windowID == "" {
+					windowID = "gl_window_0"
+				}
+				b.windows[windowID] = glWindow
+				b.mu.Unlock()
+
+				glWindow.Show()
 			})
 		}
-	} else {
-		// No window exists and none specified - auto-create one for GL rendering
-		fyne.DoAndWait(func() {
-			// Create default GL rendering window
-			glWindow := b.app.NewWindow("Three.js Rendering")
-			glWindow.Resize(fyne.NewSize(float32(glCanv.Width), float32(glCanv.Height)))
-			glWindow.SetContent(glContainer)
-
-			// Register it in the windows map
-			b.mu.Lock()
-			if windowID == "" {
-				windowID = "gl_window_0"
-			}
-			b.windows[windowID] = glWindow
-			b.mu.Unlock()
-
-			glWindow.Show()
-		})
 	}
 
 	// log.Printf("[GL] Successfully created GL canvas %s, returning response", canvasID)
@@ -1646,7 +1670,10 @@ func (b *Bridge) glTexImage2D(canvas *GLCanvas, args map[string]interface{}) err
 	h := int(toFloat32(args["height"]))
 	format := toFloat32(args["format"])           // GL_RGBA, GL_RGB, etc.
 	internalformat := toFloat32(args["internalformat"])
-	pixelsStr, hasPixels := args["pixels"].(string)
+	
+	// Check if pixels argument exists
+	pixelsArg := args["pixels"]
+	hasPixels := pixelsArg != nil
 
 	// Get the currently bound texture
 	if canvas.boundTextures == nil {
@@ -1660,7 +1687,7 @@ func (b *Bridge) glTexImage2D(canvas *GLCanvas, args map[string]interface{}) err
 
 	// Check for null pixels (GPU-only texture allocation, e.g., shadow maps)
 	// When pixels is nil/missing, we allocate a texture on the GPU without uploading data
-	if !hasPixels || pixelsStr == "" {
+	if !hasPixels {
 		typeVal := uint32(toFloat32(args["type"]))
 		level := int(toFloat32(args["level"]))
 		canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
@@ -1694,14 +1721,26 @@ func (b *Bridge) glTexImage2D(canvas *GLCanvas, args map[string]interface{}) err
 	// Create the image
 	img := image.NewRGBA(image.Rect(0, 0, w, h))
 
-	if hasPixels && pixelsStr != "" {
+	var pixelData []byte
+
+	// Handle both base64 string and direct array input
+	if pixelsStr, ok := pixelsArg.(string); ok && pixelsStr != "" {
 		// Decode base64 pixel data
-		pixelData, err := base64.StdEncoding.DecodeString(pixelsStr)
+		var err error
+		pixelData, err = base64.StdEncoding.DecodeString(pixelsStr)
 		if err != nil {
 			log.Printf("[GL] texImage2D: failed to decode base64 pixel data: %v", err)
 			return nil
 		}
+	} else if pixelsArr, ok := pixelsArg.([]interface{}); ok {
+		// Convert array of float64 (from JSON) to bytes
+		pixelData = make([]byte, len(pixelsArr))
+		for i, v := range pixelsArr {
+			pixelData[i] = byte(toFloat32(v))
+		}
+	}
 
+	if pixelData != nil {
 		// Interpret format
 		const (
 			GL_RED        = 0x1903
@@ -1897,7 +1936,7 @@ func (b *Bridge) glTexSubImage2D(canvas *GLCanvas, args map[string]interface{}) 
 		}
 	}
 
-	log.Printf("[GL] texSubImage2D: updated %dx%d region at (%d,%d) in texture %d", w, h, xoffset, yoffset, textureId)
+	// log.Printf("[GL] texSubImage2D: updated %dx%d region at (%d,%d) in texture %d", w, h, xoffset, yoffset, textureId)
 
 	// Store CPU image by JS texture ID for on-demand GPU upload in the painter.
 	// This is needed because texStorage2D creates empty GPU textures, and when Three.js
@@ -1916,8 +1955,8 @@ func (b *Bridge) glTexSubImage2D(canvas *GLCanvas, args map[string]interface{}) 
 				// gpuTexCache with the Phase 2.1 uploaded texture (overwriting the empty
 				// GPU texture created by texImage2D_gpu/texStorage2D)
 				canvas.ShaderObject.SetJSTexForSampler(samplerName, int(textureId))
-				log.Printf("[GL] texSubImage2D: linked sampler %s to texture %d (%dx%d)",
-					samplerName, textureId, texture.image.Bounds().Dx(), texture.image.Bounds().Dy())
+				// log.Printf("[GL] texSubImage2D: linked sampler %s to texture %d (%dx%d)",
+				//	samplerName, textureId, texture.image.Bounds().Dx(), texture.image.Bounds().Dy())
 			}
 		}
 	}
@@ -1994,7 +2033,7 @@ func (b *Bridge) glTexStorage2D(canvas *GLCanvas, args map[string]interface{}) e
 			Type:           typ,
 		},
 	})
-	log.Printf("[GL] texStorage2D: GPU texture %d (%dx%d, internalformat=0x%x)", textureId, w, h, internalformat)
+	// log.Printf("[GL] texStorage2D: GPU texture %d (%dx%d, internalformat=0x%x)", textureId, w, h, internalformat)
 
 	// Also keep the CPU-side image for texSubImage2D updates (if not depth)
 	if !isDepthFormat {
@@ -2029,6 +2068,15 @@ func (b *Bridge) glDisable(canvas *GLCanvas, args map[string]interface{}) error 
 		return nil
 	}
 	cap := uint32(toFloat64(capVal))
+	
+	// If targeting default framebuffer (screen), protect scissor test.
+	// Three.js disables scissor test to clear the "whole screen", but in embedded mode
+	// that means the whole window, not just our widget. Fyne handles clipping via scissor.
+	if canvas.currentFramebuffer == 0 && cap == 0x0C11 { // GL_SCISSOR_TEST
+		// log.Printf("[GL] Ignoring glDisable(GL_SCISSOR_TEST) for default framebuffer")
+		return nil
+	}
+
 	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
 		Type:  "disable",
 		Value: cap,
@@ -2418,6 +2466,12 @@ func (b *Bridge) glBindFramebuffer(canvas *GLCanvas, args map[string]interface{}
 			FramebufferId: fbId,
 		},
 	})
+	
+	// Track current framebuffer (0x8D40 is GL_FRAMEBUFFER)
+	if target == 0x8D40 || target == 0x8CA9 { // FRAMEBUFFER or DRAW_FRAMEBUFFER
+		canvas.currentFramebuffer = uint32(fbId)
+	}
+	
 	return nil
 }
 

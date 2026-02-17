@@ -125,6 +125,7 @@ export {
   CanvasGaugeOptions,
   CanvasShader,
   CanvasShaderOptions,
+  GLCanvas,
   TappableCanvasRaster,
   TappableCanvasRasterOptions
 } from './canvas';

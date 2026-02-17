@@ -1,5 +1,5 @@
 import { Context } from '../context';
-import { ReactiveBinding } from './base';
+import { ReactiveBinding, Widget } from './base';
 
 // ============================================================================
 // Animation System - D3/QML-inspired declarative animations
@@ -1331,6 +1331,63 @@ export class TappableCanvasRaster {
     });
     this.ctx.trackRegistration(registrationPromise);
     return this;
+  }
+}
+
+/**
+ * GL Canvas - a widget that provides a WebGL2-compatible rendering context
+ * mapped to a native OpenGL surface via the Tsyne bridge.
+ */
+export class GLCanvas extends Widget {
+  private _width: number;
+  private _height: number;
+  private _interactive: boolean;
+
+  constructor(ctx: Context, width: number, height: number, options?: { interactive?: boolean }) {
+    const id = ctx.generateId('glcanvas');
+    super(ctx, id);
+    this._width = width;
+    this._height = height;
+    this._interactive = options?.interactive ?? false;
+
+    // Send creation command to bridge
+    // We set asWidget: true to avoid auto-attaching to window
+    ctx.bridge.send('createGLCanvas', {
+      id: this.id, // The bridge will use our ID as the canvasId
+      width,
+      height,
+      interactive: this._interactive,
+      asWidget: true
+    });
+
+    // Add to current container
+    ctx.addToCurrentContainer(this.id);
+  }
+
+  get width(): number { return this._width; }
+  get height(): number { return this._height; }
+
+  /**
+   * Execute a batch of GL commands on this canvas
+   */
+  async executeBatch(commands: any[]): Promise<any> {
+    return await this.ctx.bridge.send('executeBatch', {
+      canvasId: this.id,
+      commands
+    });
+  }
+
+  /**
+   * Resize the GL canvas
+   */
+  async resize(width: number, height: number): Promise<void> {
+    this._width = width;
+    this._height = height;
+    await this.ctx.bridge.send('resizeGLCanvas', {
+      canvasId: this.id,
+      width,
+      height
+    });
   }
 }
 

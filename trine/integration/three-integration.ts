@@ -31,9 +31,10 @@ export function initTsyne(
     windowId?: string;
     autoInject?: boolean;
     interactive?: boolean;
+    id?: string;
   } = {}
 ): TsyneBridge {
-  const { width = 800, height = 600, windowId = '', autoInject = true, interactive = false } = options;
+  const { width = 800, height = 600, windowId = '', autoInject = true, interactive = false, id = '' } = options;
 
   // Create and initialize the bridge
   const bridge = new TsyneBridge(sendFn);
@@ -45,10 +46,11 @@ export function initTsyne(
   }
 
   // Patch three.js utilities to use Tsyne canvas
-  patchThreeJSUtils(width, height, windowId, bridge, interactive);
+  patchThreeJSUtils(width, height, windowId, bridge, interactive, id);
 
-  console.log('[Tsyne] Initialized three.js integration');
-  console.log(`[Tsyne] Canvas size: ${width}x${height}, window: ${windowId || 'auto'}${interactive ? ' (interactive)' : ''}`);
+  // Debug logging (uncomment for troubleshooting)
+  // console.log('[Tsyne] Initialized three.js integration');
+  // console.log(`[Tsyne] Canvas size: ${width}x${height}, window: ${windowId || 'auto'}${interactive ? ' (interactive)' : ''}${id ? `, id: ${id}` : ''}`);
 
   return bridge;
 }
@@ -57,7 +59,7 @@ export function initTsyne(
  * Patch three.js utility functions to use Tsyne canvas
  * This must be called before three.js is imported
  */
-function patchThreeJSUtils(width: number, height: number, windowId: string, bridge: TsyneBridge, interactive: boolean = false): void {
+function patchThreeJSUtils(width: number, height: number, windowId: string, bridge: TsyneBridge, interactive: boolean = false, id: string = ''): void {
   // Store reference to create patched canvas elements
   (globalThis as any).__tsyneCanvasWidth = width;
   (globalThis as any).__tsyneCanvasHeight = height;
@@ -70,6 +72,9 @@ function patchThreeJSUtils(width: number, height: number, windowId: string, brid
     canvas.width = width;
     canvas.height = height;
     canvas.setWindowId(windowId);
+    if (id) {
+      canvas.setPredefinedId(id);
+    }
     return canvas;
   };
 
@@ -83,6 +88,9 @@ function patchThreeJSUtils(width: number, height: number, windowId: string, brid
       canvas.width = width;
       canvas.height = height;
       canvas.setWindowId(windowId);
+      if (id) {
+        canvas.setPredefinedId(id);
+      }
       return canvas;
     }
     return originalCreateElement.call(this, tag);
@@ -94,12 +102,15 @@ function patchThreeJSUtils(width: number, height: number, windowId: string, brid
       canvas.width = width;
       canvas.height = height;
       canvas.setWindowId(windowId);
+      if (id) {
+        canvas.setPredefinedId(id);
+      }
       return canvas;
     }
     return originalCreateElementNS.call(this, ns, tag);
   };
 
-  console.log('[Tsyne] Patched three.js canvas creation');
+  // console.log('[Tsyne] Patched three.js canvas creation');
 }
 
 /**

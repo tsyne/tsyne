@@ -112,6 +112,7 @@ import {
   CanvasShader,
   CanvasShaderOptions,
   CanvasText,
+  GLCanvas,
   TappableCanvasRaster,
   TappableCanvasRasterOptions,
   // Desktop
@@ -1069,6 +1070,22 @@ export class App {
     options?: CanvasShaderOptions
   ): CanvasShader {
     return new CanvasShader(this.ctx, width, height, fragmentSource, options);
+  }
+
+  /**
+   * Create a native OpenGL canvas widget.
+   * This widget provides a WebGL2-compatible rendering context via the bridge.
+   * 
+   * @param width Canvas width in pixels
+   * @param height Canvas height in pixels
+   * @param options Optional settings including interactivity
+   */
+  glCanvas(
+    width: number,
+    height: number,
+    options?: { interactive?: boolean }
+  ): GLCanvas {
+    return new GLCanvas(this.ctx, width, height, options);
   }
 
   canvasLinearGradient(options?: {

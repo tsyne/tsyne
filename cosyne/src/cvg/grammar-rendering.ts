@@ -84,6 +84,9 @@ proto.refresh = async function (this: any): Promise<void> {
     const opacityFn = el.getOpacityBinding();
     if (opacityFn) el.opacity(opacityFn());
 
+    const textFn = el.getTextBinding();
+    if (textFn) el.text(textFn());
+
     const posFn = el.getPosBinding();
     if (posFn) {
       const props = posFn();
