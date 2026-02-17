@@ -16,6 +16,9 @@ export DISPLAY
 export FYNE_SCALE=2.5
 export GDK_SCALE=2
 
+# Bridge binary location (esbuild bundles resolve __dirname differently)
+export TSYNE_BRIDGE_PATH=~/tsyne/bin/tsyne-bridge
+
 # Debug token is randomly generated - check ~/phonetop.log for the token
 
 echo "Using DISPLAY=$DISPLAY XAUTHORITY=$XAUTHORITY FYNE_SCALE=$FYNE_SCALE" > ~/phonetop.log

@@ -18,7 +18,6 @@ app('fyne', { title: 'Tsyne Phone' }, async (a) => {
     // So effective resolution is 432x864 in Fyne units
     iconScale: 1.0,  // 64px icons - Fyne scaling handles display size
     fontSize: 14,  // Smaller text under icons
-    useImageButton: true,  // ImageButton works - needed for SVG icons
     debugPort: 9230,  // Remote debug/control API
   });
 

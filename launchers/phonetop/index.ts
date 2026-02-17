@@ -18,7 +18,7 @@ import { parseAppMetadata, loadAppBuilder, loadAppBuilderCached, AppMetadata, re
 import { ALL_APPS } from '../all-apps';
 import { ScopedResourceManager, ResourceManager } from 'tsyne';
 import { Inspector } from 'tsyne';
-import { Resvg, initWasm } from '@resvg/resvg-wasm';
+import { loadSvg } from 'cosyne';
 import * as http from 'http';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -110,8 +110,6 @@ export interface PhoneTopOptions {
   fontSize?: number;
   /** Injected services - if not provided, uses mock services for desktop testing */
   services?: PhoneServices;
-  /** Use ImageButton for app icons (default true). Set false for older bridges without ImageButton support. */
-  useImageButton?: boolean;
   /** Optional filter to exclude/include apps based on metadata */
   appFilter?: (metadata: AppMetadata) => boolean;
 }
@@ -147,9 +145,7 @@ class PhoneTop {
   private rows: number;
   private appsPerPage: number;
   private appInstanceCounter: Map<string, number> = new Map();
-  /** Cache of registered icon resources keyed by source file */
-  private iconResourceCache: Map<string, string> = new Map();
-  /** Cache of registered folder icon resources keyed by category */
+  /** Cache of folder SVG strings keyed by category */
   private folderIconCache: Map<string, string> = new Map();
   /** Keyboard controller using bridge injection for cross-app typing */
   private keyboardController: BridgeKeyboardController | null = null;
@@ -186,8 +182,6 @@ class PhoneTop {
   private isLandscape: boolean = false;
   /** Font size for UI text (default 14, larger for high-DPI) */
   private fontSize: number = 14;
-  /** Use ImageButton for icons (false for older bridges without ImageButton support) */
-  private useImageButton: boolean = true;
   /** Inspector for widget tree queries */
   private inspector: Inspector | null = null;
   /** Debug HTTP server */
@@ -211,9 +205,6 @@ class PhoneTop {
 
     // Set font size (larger for high-DPI phone screens)
     this.fontSize = options.fontSize || 14;
-
-    // ImageButton support (default true, set false for older bridges)
-    this.useImageButton = options.useImageButton !== false;
 
     ICON_SIZE = Math.round(ICON_SIZE_BASE * iconScale);
 
@@ -309,117 +300,21 @@ class PhoneTop {
   }
 
   /**
-   * Render an inline SVG into a PNG data URI for phone icons
+   * Extract SVG icon string from app metadata (no rasterization needed — CVG renders natively)
    */
-  private renderSvgIconToDataUri(svg: string, size: number = ICON_SIZE): string {
-    const normalized = this.normalizeSvg(svg, size);
-    const renderer = new Resvg(normalized, {
-      fitTo: {
-        mode: 'width',
-        value: size
-      },
-      background: 'rgba(0,0,0,0)'
-    });
-    const png = renderer.render().asPng();
-    const buffer = Buffer.from(png);
-    return `data:image/png;base64,${buffer.toString('base64')}`;
-  }
-
-  /**
-   * Ensure inline SVG has the basics resvg expects (xmlns, width/height)
-   */
-  private normalizeSvg(svg: string, size: number): string {
-    let s = svg.trim();
-    if (!s.toLowerCase().startsWith('<svg')) {
-      return s;
-    }
-
-    const match = s.match(/^<svg[^>]*>/i);
-    if (!match) {
-      return s;
-    }
-
-    const originalTag = match[0];
-    const originalTagLength = originalTag.length;
-    let tag = originalTag;
-
-    const ensureAttr = (attr: string, value: string) => {
-      if (tag.toLowerCase().includes(`${attr.toLowerCase()}=`)) {
-        return;
-      }
-      tag = tag.slice(0, -1) + ` ${attr}="${value}">`;
-    };
-
-    ensureAttr('xmlns', 'http://www.w3.org/2000/svg');
-    ensureAttr('width', size.toString());
-    ensureAttr('height', size.toString());
-    if (!/viewbox=/i.test(tag)) {
-      ensureAttr('viewBox', `0 0 ${size} ${size}`);
-    }
-    ensureAttr('preserveAspectRatio', 'xMidYMid meet');
-
-    // Use original tag length to correctly slice the rest of the SVG content
-    s = tag + s.slice(originalTagLength);
-
-    // Replace "currentColor" with a visible color - resvg doesn't resolve CSS currentColor
-    s = s.replace(/currentColor/gi, '#333333');
-
-    return s;
-  }
-
-  /**
-   * Get a sanitized key for an app name (for use in resource names)
-   */
-  private getIconKey(appName: string): string {
-    return appName.toLowerCase().replace(/[^a-z0-9]/g, '_');
-  }
-
-  /**
-   * Convert an app's @tsyne-app:icon into a registered resource
-   */
-  private async prepareIconResource(metadata: AppMetadata): Promise<{ resourceName?: string }> {
-    const cacheKey = metadata.filePath;
-    if (this.iconResourceCache.has(cacheKey)) {
-      return { resourceName: this.iconResourceCache.get(cacheKey)! };
-    }
-
+  private async prepareIconResource(metadata: AppMetadata): Promise<{ svgIcon?: string }> {
     if (!metadata.iconIsSvg || !metadata.icon) {
       return {};
     }
-
-    try {
-      const baseName = path.basename(metadata.filePath, '.ts');
-      const resourceName = `phone-icon-${this.getIconKey(`${metadata.name}-${baseName}`)}`;
-
-      // Register icon at standard size
-      const dataUri = this.renderSvgIconToDataUri(metadata.icon, ICON_SIZE);
-      await this.a.resources.registerResource(resourceName, dataUri);
-
-      this.iconResourceCache.set(cacheKey, resourceName);
-      return { resourceName };
-    } catch (err) {
-      console.error(`Failed to register phone icon for ${metadata.name}:`, err);
-      return {};
-    }
+    return { svgIcon: metadata.icon };
   }
 
   /**
-   * Prepare folder icon resources (render SVG to image at ICON_SIZE)
+   * Store folder SVG strings for CVG rendering (no rasterization needed)
    */
   private async prepareFolderIcons(): Promise<void> {
     for (const [category, config] of Object.entries(CATEGORY_CONFIG)) {
-      if (this.folderIconCache.has(category)) {
-        continue;
-      }
-
-      try {
-        const resourceName = `phone-folder-${category}`;
-        const dataUri = this.renderSvgIconToDataUri(config.icon, ICON_SIZE);
-        await this.a.resources.registerResource(resourceName, dataUri);
-        this.folderIconCache.set(category, resourceName);
-      } catch (err) {
-        console.error(`Failed to register folder icon for ${category}:`, err);
-      }
+      this.folderIconCache.set(category, config.icon);
     }
   }
 
@@ -460,11 +355,11 @@ class PhoneTop {
 
     // Prepare all app icons
     for (const metadata of apps) {
-      const { resourceName } = await this.prepareIconResource(metadata);
+      const { svgIcon } = await this.prepareIconResource(metadata);
       this.icons.push({
         metadata,
         position: { page: 0, row: 0, col: 0 },  // Will be set later
-        resourceName
+        svgIcon
       });
     }
 
@@ -483,11 +378,11 @@ class PhoneTop {
           args: staticApp.args || ['app']
         };
 
-        const { resourceName } = await this.prepareIconResource(metadata);
+        const { svgIcon } = await this.prepareIconResource(metadata);
         this.icons.push({
           metadata,
           position: { page: 0, row: 0, col: 0 },  // Will be set later
-          resourceName,
+          svgIcon,
           staticBuilder: staticApp.builder
         });
       }
@@ -1322,26 +1217,32 @@ class PhoneTop {
   }
 
   /**
-   * Create a folder icon showing an SVG-rendered image
+   * Create a folder icon using CVG (native canvas vector graphics) or text fallback
    * Uses show/hide navigation - tapping opens folder container without destroying home
    */
   private createFolderIcon(folder: Folder) {
     const displayName = this.truncateName(folder.name);
-    const resourceName = this.folderIconCache.get(folder.category);
+    const svgIcon = this.folderIconCache.get(folder.category);
 
     this.a.center(() => {
-      if (resourceName && this.useImageButton) {
-        // Use ImageButton for native tap handling (when supported)
-        this.a.imageButton({
-          resource: resourceName,
-          text: displayName,
-          textSize: this.fontSize,
-          onClick: () => this.openFolderView(folder)
-        })
-          .withId(`folder-${folder.category}`);
+      if (svgIcon) {
+        this.a.vbox(() => {
+          this.a.stack(() => {
+            const ctx = loadSvg(this.a, svgIcon, { width: ICON_SIZE, height: ICON_SIZE });
+            ctx.enableEvents();
+            ctx.onEvent((event: any) => {
+              if (event.type === 'tap-hit' || event.type === 'tap-miss') {
+                this.openFolderView(folder);
+              }
+            });
+          });
+          this.a.center(() => {
+            this.a.label(displayName, { textSize: this.fontSize });
+          });
+        });
       } else {
-        // Fallback: text button (or when ImageButton not supported)
-        this.a.button(`📁 ${displayName}`, { onClick: () => this.openFolderView(folder) }).withId(`folder-${folder.category}`);
+        this.a.button(`📁 ${displayName}`, { onClick: () => this.openFolderView(folder) })
+          .withId(`folder-${folder.category}`);
       }
     });
   }
@@ -1357,29 +1258,33 @@ class PhoneTop {
   }
 
   /**
-   * Create an icon button for an app
-   * Uses ImageButton for reliable touch support on mobile (when useImageButton is true).
+   * Create an icon for an app using CVG (native canvas vector graphics) or text fallback
    * @param icon The grid icon to display
    */
   private createAppIcon(icon: GridIcon) {
     const launchHandler = () => this.launchApp(icon.metadata);
-    const textSize = this.fontSize;  // Use configured font size for labels
     const displayName = this.truncateName(icon.metadata.name);
 
-    // Use ImageButton for native button tap handling (when supported)
     this.a.center(() => {
-      if (icon.resourceName && this.useImageButton) {
-        this.a.imageButton({
-          resource: icon.resourceName,
-          text: displayName,
-          textSize: textSize,
-          onClick: launchHandler
-        })
-          .withId(`icon-${icon.metadata.name}`);
+      if (icon.svgIcon) {
+        this.a.vbox(() => {
+          this.a.stack(() => {
+            const ctx = loadSvg(this.a, icon.svgIcon!, { width: ICON_SIZE, height: ICON_SIZE });
+            ctx.enableEvents();
+            ctx.onEvent((event: any) => {
+              if (event.type === 'tap-hit' || event.type === 'tap-miss') {
+                launchHandler();
+              }
+            });
+          });
+          this.a.center(() => {
+            this.a.label(displayName, { textSize: this.fontSize });
+          });
+        });
       } else {
-        // Fallback: regular button with first letter (or when ImageButton not supported)
         const firstLetter = icon.metadata.name.charAt(0).toUpperCase();
-        this.a.button(`${firstLetter}\n${displayName}`, { onClick: launchHandler }).withId(`icon-${icon.metadata.name}`);
+        this.a.button(`${firstLetter}\n${displayName}`, { onClick: launchHandler })
+          .withId(`icon-${icon.metadata.name}`);
       }
     });
   }
@@ -1846,28 +1751,10 @@ class PhoneTop {
 }
 
 /**
- * Build the phone environment
- */
-// Track if WASM is initialized
-let wasmInitialized = false;
-
-/**
  * Build PhoneTop for desktop (composition root)
  * Creates mock services for testing/development
  */
 export async function buildPhoneTop(a: App, options?: PhoneTopOptions) {
-  // Initialize resvg WASM if not already done
-  if (!wasmInitialized) {
-    try {
-      const wasmPath = require.resolve('@resvg/resvg-wasm/index_bg.wasm');
-      const wasmBuffer = fs.readFileSync(wasmPath);
-      await initWasm(wasmBuffer);
-      wasmInitialized = true;
-    } catch (e) {
-      console.warn('[phonetop] WASM init failed, icons may not render:', e);
-    }
-  }
-
   // Composition root: create services if not injected
   const finalOptions: PhoneTopOptions = {
     ...options,

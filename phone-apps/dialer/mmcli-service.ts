@@ -1,9 +1,9 @@
 import { IModemManagerService, CallState, ModemInfo } from './modemmanager-service';
 import { ITelephonyService, ServiceResult, CallLogEntry } from '../../services';
 import { exec } from 'child_process';
-import { util } from 'util';
+import { promisify } from 'util';
 
-const execPromise = util.promisify(exec);
+const execPromise = promisify(exec);
 
 /**
  * MMCLI (ModemManager CLI) Service

@@ -91,7 +91,7 @@ export function createDialerApp(a: App, modem: IModemManagerService, contacts: I
     updateDisplay('');
   }
 
-  async handleCall() {
+  async function handleCall() {
     if (!currentNumber) return;
 
     if (isInCall) {
