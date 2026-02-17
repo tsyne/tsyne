@@ -445,37 +445,16 @@ fi
 $GO_CMD version
 
 # ============================================================================
-# STEP 0: Clone/Update Fyne with embedded driver patch
-# ============================================================================
-echo "--- :package: Updating Fyne fork"
-log_ts "▶ Fyne fork update"
-
-# Fyne fork is co-located at ../fyne (go.mod uses replace => ../../../fyne)
-FYNE_DIR="${BUILDKITE_BUILD_CHECKOUT_PATH}/../fyne"
-
-if [ -d "$FYNE_DIR" ]; then
-  echo "Pulling latest from Fyne fork..."
-  cd "$FYNE_DIR"
-  git fetch --all
-  git checkout -B tsyne_changes origin/tsyne_changes
-  git pull --ff-only
-  echo "Our fork of Fyne updated ✓"
-else
-  echo "Fyne fork not found at $FYNE_DIR - cloning..."
-  git clone -b tsyne_changes https://github.com/tsyne/fyne.git "$FYNE_DIR"
-  echo "Our fork of Fyne cloned ✓"
-fi
-log_ts "◀ Fyne fork update"
-
-# ============================================================================
 # STEP 1: Go Bridge Build
 # ============================================================================
 echo "--- :golang: Building Go bridge"
 log_ts "▶ Go Bridge Build"
 time_section "Go Bridge Build"
 
-# Build bridge - GOPROXY=direct fetches from VCS repos directly (bypasses Google's proxy)
+# Build bridge - setup-fyne-fork.sh creates a patched Fyne fork in fyne-fork/
+# (go.mod uses replace fyne.io/fyne/v2 => ./fyne-fork)
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/core/bridge
+./setup-fyne-fork.sh
 env GOPROXY=direct $GO_CMD mod tidy
 env CGO_ENABLED=1 GOPROXY=direct $GO_CMD build -o ../bin/tsyne-bridge .
 
