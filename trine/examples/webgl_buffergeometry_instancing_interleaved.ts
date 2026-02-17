@@ -9,14 +9,6 @@
  * - InstancedMesh with 5000 instances
  * - Per-instance matrix updates with quaternion rotation
  * - Texture mapping with MeshBasicMaterial
- *
- * NOTE: This example currently has rendering issues due to incomplete InterleavedBuffer
- * support in the Tsyne bridge. The glVertexAttribPointer handler in handlers_gl.go
- * does not extract or forward stride/offset parameters, which are essential for
- * interleaved buffer layouts. When this is fixed, the example should work correctly.
- *
- * TODO: Add stride/offset support to glVertexAttribPointer in core/bridge/handlers_gl.go
- * and shader_painter.go.txt to properly handle interleaved vertex attributes.
  */
 
 import * as path from 'path';

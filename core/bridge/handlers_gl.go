@@ -49,10 +49,12 @@ type GLCanvas struct {
 	// Attribute location tracking (maps location → attribute name)
 	attribLocations map[int32]string
 
-	// Attribute binding tracking (maps location → buffer/size at time of vertexAttribPointer)
+	// Attribute binding tracking (maps location → buffer/size/stride/offset at time of vertexAttribPointer)
 	attribBindings map[int32]struct {
 		bufferId uint32
 		size     int
+		stride   int // bytes (0 = tightly packed)
+		offset   int // bytes
 	}
 
 	// VAO (Vertex Array Object) tracking
@@ -103,6 +105,8 @@ type vaoState struct {
 	attribBindings  map[int32]struct {
 		bufferId uint32
 		size     int
+		stride   int
+		offset   int
 	}
 	attribLocations map[int32]string
 	elementBuffer   uint32
@@ -234,7 +238,7 @@ void main() {
 		shaders:         make(map[uint32]*shaderSource),
 		uniformLocs:     make(map[uint32]*uniformInfo),
 		attribLocations: make(map[int32]string),
-		attribBindings:  make(map[int32]struct{ bufferId uint32; size int }),
+		attribBindings:  make(map[int32]struct{ bufferId uint32; size int; stride int; offset int }),
 		vaos:            make(map[uint32]*vaoState),
 		vertexData:      make([]float32, 0),
 		indexData:       make([]uint16, 0),
@@ -447,10 +451,10 @@ func (b *Bridge) handleExecuteBatch(msg Message) Response {
 		}
 
 		if len(buffer.data) > 0 {
-			canvas.ShaderObject.SetAttributeBuffer(attrName, buffer.data, binding.size)
+			canvas.ShaderObject.SetAttributeBuffer(attrName, buffer.data, binding.size, binding.stride, binding.offset)
 			// Per-attribute logging disabled for performance
-			// log.Printf("[GL] Set attribute buffer %s: %d floats, size=%d (buffer %d, loc %d)",
-			//	attrName, len(buffer.data), binding.size, binding.bufferId, location)
+			// log.Printf("[GL] Set attribute buffer %s: %d floats, size=%d, stride=%d, offset=%d (buffer %d, loc %d)",
+			//	attrName, len(buffer.data), binding.size, binding.stride, binding.offset, binding.bufferId, location)
 			attrCount++
 		} else {
 			// Warning log disabled for performance
@@ -1008,13 +1012,19 @@ func (b *Bridge) glVertexAttribPointer(canvas *GLCanvas, args map[string]interfa
 	// log.Printf("[GL] vertexAttribPointer: loc=%d, size=%d, currentBuffer=%d",
 	//	location, size, canvas.currentBuffer)
 
+	// Extract stride and offset (bytes; 0 = tightly packed)
+	stride := int(toFloat32(args["stride"]))
+	offset := int(toFloat32(args["offset"]))
+
 	// Store the binding: which buffer is bound to this attribute location
 	if canvas.currentBuffer > 0 {
 		canvas.attribBindings[location] = struct {
 			bufferId uint32
 			size     int
-		}{canvas.currentBuffer, size}
-		// log.Printf("[GL] vertexAttribPointer: bound location %d -> buffer %d, size %d", location, canvas.currentBuffer, size)
+			stride   int
+			offset   int
+		}{canvas.currentBuffer, size, stride, offset}
+		// log.Printf("[GL] vertexAttribPointer: bound location %d -> buffer %d, size %d, stride %d, offset %d", location, canvas.currentBuffer, size, stride, offset)
 	}
 	// else {
 	//	log.Printf("[GL] vertexAttribPointer: no currentBuffer bound!")
@@ -1034,7 +1044,7 @@ func (b *Bridge) saveCurrentVAOState(canvas *GLCanvas) {
 	vao := canvas.vaos[vaoId]
 	if vao == nil {
 		vao = &vaoState{
-			attribBindings: make(map[int32]struct{ bufferId uint32; size int }),
+			attribBindings: make(map[int32]struct{ bufferId uint32; size int; stride int; offset int }),
 			attribLocations: make(map[int32]string),
 		}
 		canvas.vaos[vaoId] = vao
@@ -1056,13 +1066,13 @@ func (b *Bridge) restoreVAOState(canvas *GLCanvas, vaoId uint32) {
 	vao := canvas.vaos[vaoId]
 	if vao == nil {
 		// New/empty VAO — clear bindings
-		canvas.attribBindings = make(map[int32]struct{ bufferId uint32; size int })
+		canvas.attribBindings = make(map[int32]struct{ bufferId uint32; size int; stride int; offset int })
 		canvas.elementBuffer = 0
 		return
 	}
 
 	// Restore attrib bindings
-	canvas.attribBindings = make(map[int32]struct{ bufferId uint32; size int })
+	canvas.attribBindings = make(map[int32]struct{ bufferId uint32; size int; stride int; offset int })
 	for k, v := range vao.attribBindings {
 		canvas.attribBindings[k] = v
 	}
@@ -1086,7 +1096,7 @@ func (b *Bridge) glCreateVertexArray(canvas *GLCanvas, args map[string]interface
 	}
 	vaId := uint32(toFloat64(vaIdVal))
 	canvas.vaos[vaId] = &vaoState{
-		attribBindings: make(map[int32]struct{ bufferId uint32; size int }),
+		attribBindings: make(map[int32]struct{ bufferId uint32; size int; stride int; offset int }),
 		attribLocations: make(map[int32]string),
 	}
 	return nil
@@ -1925,7 +1935,7 @@ func (b *Bridge) pushAttribBuffersToShader(canvas *GLCanvas) {
 		if !exists || len(buffer.data) == 0 {
 			continue
 		}
-		canvas.ShaderObject.SetAttributeBuffer(attrName, buffer.data, binding.size)
+		canvas.ShaderObject.SetAttributeBuffer(attrName, buffer.data, binding.size, binding.stride, binding.offset)
 	}
 }
 

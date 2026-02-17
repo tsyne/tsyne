@@ -34,9 +34,11 @@ func (s *Shader) QueueDrawElements(mode uint32, count int, offset int) {
 			dataCopy := make([]float32, len(buf.Data))
 			copy(dataCopy, buf.Data)
 			attrSnapshot[name] = &AttributeBuffer{
-				Data: dataCopy,
-				Size: buf.Size,
-				VBO:  buf.VBO,
+				Data:   dataCopy,
+				Size:   buf.Size,
+				VBO:    buf.VBO,
+				Stride: buf.Stride,
+				Offset: buf.Offset,
 			}
 		}
 	}
@@ -72,9 +74,11 @@ func (s *Shader) QueueDrawArrays(mode uint32, first int, count int) {
 			dataCopy := make([]float32, len(buf.Data))
 			copy(dataCopy, buf.Data)
 			attrSnapshot[name] = &AttributeBuffer{
-				Data: dataCopy,
-				Size: buf.Size,
-				VBO:  buf.VBO,
+				Data:   dataCopy,
+				Size:   buf.Size,
+				VBO:    buf.VBO,
+				Stride: buf.Stride,
+				Offset: buf.Offset,
 			}
 		}
 	}

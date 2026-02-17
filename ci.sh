@@ -134,6 +134,22 @@ format_duration() {
   fi
 }
 
+# Wall-clock timestamp banner for lost-time analysis
+# Usage: log_ts "▶ Section Name" or log_ts "◀ Section Name" "42s"
+log_ts() {
+  local msg="$1"
+  local extra="$2"
+  local ts=$(date '+%H:%M:%S')
+  if [ -n "$extra" ]; then
+    echo "⏱  [$ts] $msg ($extra)"
+  else
+    echo "⏱  [$ts] $msg"
+  fi
+}
+
+CI_START_TIME=$(date +%s)
+log_ts "▶ CI run started"
+
 # Function to capture test results from Jest JSON output
 capture_test_results() {
   local section_name="$1"
@@ -432,6 +448,7 @@ $GO_CMD version
 # STEP 0: Clone/Update Fyne with embedded driver patch
 # ============================================================================
 echo "--- :package: Updating Fyne fork"
+log_ts "▶ Fyne fork update"
 
 # Fyne fork is co-located at ../fyne (go.mod uses replace => ../../../fyne)
 FYNE_DIR="${BUILDKITE_BUILD_CHECKOUT_PATH}/../fyne"
@@ -448,11 +465,13 @@ else
   git clone -b tsyne_changes https://github.com/tsyne/fyne.git "$FYNE_DIR"
   echo "Our fork of Fyne cloned ✓"
 fi
+log_ts "◀ Fyne fork update"
 
 # ============================================================================
 # STEP 1: Go Bridge Build
 # ============================================================================
 echo "--- :golang: Building Go bridge"
+log_ts "▶ Go Bridge Build"
 time_section "Go Bridge Build"
 
 # Build bridge - GOPROXY=direct fetches from VCS repos directly (bypasses Google's proxy)
@@ -468,6 +487,7 @@ elif [ "$OS" = "macos" ]; then
 fi
 
 report_section_time "Go Bridge Build"
+log_ts "◀ Go Bridge Build"
 
 # Exit early if only building bridge
 if [ "$BUILD_BRIDGE_ONLY" = true ]; then
@@ -479,13 +499,16 @@ fi
 # STEP 1.5: Install root dependencies (needed for install.sh)
 # ============================================================================
 echo "--- :nodejs: Installing root dependencies"
+log_ts "▶ pnpm install"
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}
 pnpm install --ignore-scripts
+log_ts "◀ pnpm install"
 
 # ============================================================================
 # STEP 1.6: Test tsyne install and failure modes
 # ============================================================================
 echo "--- :package: Testing tsyne install"
+log_ts "▶ tsyne install test"
 ./scripts/install.sh
 
 # Test failure modes
@@ -493,18 +516,22 @@ echo "Testing tsyne failure modes..."
 ./scripts/test-failure-modes.sh || {
   echo "⚠️  Failure mode tests failed (non-fatal)"
 }
+log_ts "◀ tsyne install test"
 
 # ============================================================================
 # STEP 2: Core (Tsyne Core Library)
 # ============================================================================
 echo "--- :nodejs: Core - Build"
+log_ts "▶ Core Build"
 time_section "Core Build"
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/core
 pnpm run build
 report_section_time "Core Build"
+log_ts "◀ Core Build"
 
 if [ "$SKIP_TESTS" = false ]; then
   echo "--- :test_tube: Core - Unit Tests"
+  log_ts "▶ Core Tests"
   time_section "Core Tests"
   # Check if headed mode is requested
   if [ "${TSYNE_HEADED}" = "1" ]; then
@@ -543,15 +570,18 @@ if [ "$SKIP_TESTS" = false ]; then
       echo "❌ Core unit tests failed (exit code: $EXIT_CODE)"
     fi
   }
-  SECTION_DURATIONS["Core"]=$(( $(date +%s) - _ts ))
+  _elapsed=$(( $(date +%s) - _ts ))
+  SECTION_DURATIONS["Core"]=$_elapsed
   capture_test_results "Core" "/tmp/core-test-results.json" || true
   report_section_time "Core Tests"
+  log_ts "◀ Core Tests" "$(format_duration $_elapsed)"
 fi
 
 # ============================================================================
 # STEP 2.5: Cosyne - Declarative Canvas Library
 # ============================================================================
 echo "--- :art: Cosyne - Build"
+log_ts "▶ Cosyne Build"
 time_section "Cosyne Build"
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/cosyne
 pnpm run build || {
@@ -559,9 +589,11 @@ pnpm run build || {
   exit 1
 }
 report_section_time "Cosyne Build"
+log_ts "◀ Cosyne Build"
 
 if [ "$SKIP_TESTS" = false ]; then
   echo "--- :test_tube: Cosyne - Unit Tests"
+  log_ts "▶ Cosyne Tests"
   time_section "Cosyne Tests"
   _ts=$(date +%s)
   timeout 120 pnpm run test --json --outputFile=/tmp/cosyne-test-results.json || {
@@ -572,9 +604,11 @@ if [ "$SKIP_TESTS" = false ]; then
       echo "❌ Cosyne tests failed (exit code: $EXIT_CODE)"
     fi
   }
-  SECTION_DURATIONS["Cosyne"]=$(( $(date +%s) - _ts ))
+  _elapsed=$(( $(date +%s) - _ts ))
+  SECTION_DURATIONS["Cosyne"]=$_elapsed
   capture_test_results "Cosyne" "/tmp/cosyne-test-results.json" || true
   report_section_time "Cosyne Tests"
+  log_ts "◀ Cosyne Tests" "$(format_duration $_elapsed)"
 fi
 
 # ============================================================================
@@ -584,6 +618,7 @@ if [ "$UNIT_ONLY" = true ]; then
   echo "⏭️  Trine - Skipping (--unit-only mode)"
 else
   echo "--- :three: Trine - Setup & Test"
+  log_ts "▶ Trine Setup"
   time_section "Trine Setup"
   cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/trine
 
@@ -591,25 +626,29 @@ else
   echo "Setting up three.js..."
   ./setup-three.sh
   report_section_time "Trine Setup"
+  log_ts "◀ Trine Setup"
 
   if [ "$SKIP_TESTS" = false ]; then
     echo "--- :test_tube: Trine - Tests"
+    log_ts "▶ Trine Tests"
     time_section "Trine Tests"
     # 228 test files each launch a bridge — run serialized with forceExit so
     # partial results are written even if we hit the timeout.
     _ts=$(date +%s)
-    timeout 600 npx jest --maxWorkers=1 --forceExit \
+    timeout 120 npx jest --maxWorkers=1 --forceExit \
       --json --outputFile=/tmp/trine-test-results.json || {
       EXIT_CODE=$?
       if [ $EXIT_CODE -eq 124 ]; then
-        echo "❌ Trine tests timed out after 600 seconds"
+        echo "❌ Trine tests timed out after 120 seconds"
       else
         echo "❌ Trine tests failed (exit code: $EXIT_CODE)"
       fi
     }
-    SECTION_DURATIONS["Trine"]=$(( $(date +%s) - _ts ))
+    _elapsed=$(( $(date +%s) - _ts ))
+    SECTION_DURATIONS["Trine"]=$_elapsed
     capture_test_results "Trine" "/tmp/trine-test-results.json" || true
     report_section_time "Trine Tests"
+    log_ts "◀ Trine Tests" "$(format_duration $_elapsed)"
   fi
 fi
 
@@ -620,15 +659,18 @@ if [ "$UNIT_ONLY" = true ]; then
   echo "⏭️  Designer - Skipping (--unit-only mode)"
 else
   echo "--- :art: Designer - Build"
+  log_ts "▶ Designer Build"
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/designer
 if [ -f "package.json" ]; then
   pnpm run build || {
     echo "❌ Designer build failed"
     exit 1
   }
+  log_ts "◀ Designer Build"
 
   if [ "$SKIP_TESTS" = false ]; then
     echo "--- :test_tube: Designer - Unit Tests"
+    log_ts "▶ Designer Unit Tests"
     _ts=$(date +%s)
     timeout 90 pnpm run test:unit --json --outputFile=/tmp/designer-unit-test-results.json || {
       EXIT_CODE=$?
@@ -638,10 +680,13 @@ if [ -f "package.json" ]; then
         echo "❌ Designer unit tests failed (exit code: $EXIT_CODE)"
       fi
     }
-    SECTION_DURATIONS["Designer: Unit"]=$(( $(date +%s) - _ts ))
+    _elapsed=$(( $(date +%s) - _ts ))
+    SECTION_DURATIONS["Designer: Unit"]=$_elapsed
     capture_test_results "Designer: Unit" "/tmp/designer-unit-test-results.json" || true
+    log_ts "◀ Designer Unit Tests" "$(format_duration $_elapsed)"
 
     echo "--- :test_tube: Designer - GUI Tests"
+    log_ts "▶ Designer GUI Tests"
     _ts=$(date +%s)
     timeout 90 pnpm run test:gui --json --outputFile=/tmp/designer-gui-test-results.json || {
       EXIT_CODE=$?
@@ -651,8 +696,10 @@ if [ -f "package.json" ]; then
         echo "❌ Designer GUI tests failed (exit code: $EXIT_CODE)"
       fi
     }
-    SECTION_DURATIONS["Designer: GUI"]=$(( $(date +%s) - _ts ))
+    _elapsed=$(( $(date +%s) - _ts ))
+    SECTION_DURATIONS["Designer: GUI"]=$_elapsed
     capture_test_results "Designer: GUI" "/tmp/designer-gui-test-results.json" || true
+    log_ts "◀ Designer GUI Tests" "$(format_duration $_elapsed)"
   fi
 else
   echo "⚠️  No package.json found in designer/ - skipping"
@@ -670,6 +717,7 @@ cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/examples
 
 if [ "$SKIP_TESTS" = false ]; then
   echo "--- :test_tube: Examples - Logic Tests"
+  log_ts "▶ Examples Logic Tests"
   _ts=$(date +%s)
   timeout 150 pnpm run test:logic --json --outputFile=/tmp/examples-logic-test-results.json || {
     EXIT_CODE=$?
@@ -679,22 +727,27 @@ if [ "$SKIP_TESTS" = false ]; then
       echo "❌ Examples logic tests failed (exit code: $EXIT_CODE)"
     fi
   }
-  SECTION_DURATIONS["Examples: Logic"]=$(( $(date +%s) - _ts ))
+  _elapsed=$(( $(date +%s) - _ts ))
+  SECTION_DURATIONS["Examples: Logic"]=$_elapsed
   capture_test_results "Examples: Logic" "/tmp/examples-logic-test-results.json" || true
+  log_ts "◀ Examples Logic Tests" "$(format_duration $_elapsed)"
 
   echo "--- :test_tube: Examples - GUI Tests"
+  log_ts "▶ Examples GUI Tests"
   _ts=$(date +%s)
-  timeout 150 npx jest --maxWorkers=1 --forceExit \
+  timeout 60 npx jest --maxWorkers=1 --forceExit \
     --json --outputFile=/tmp/examples-gui-test-results.json || {
     EXIT_CODE=$?
     if [ $EXIT_CODE -eq 124 ]; then
-      echo "❌ Examples GUI tests timed out after 150 seconds"
+      echo "❌ Examples GUI tests timed out after 60 seconds"
     else
       echo "❌ Examples GUI tests failed (exit code: $EXIT_CODE)"
     fi
   }
-  SECTION_DURATIONS["Examples: GUI"]=$(( $(date +%s) - _ts ))
+  _elapsed=$(( $(date +%s) - _ts ))
+  SECTION_DURATIONS["Examples: GUI"]=$_elapsed
   capture_test_results "Examples: GUI" "/tmp/examples-gui-test-results.json" || true
+  log_ts "◀ Examples GUI Tests" "$(format_duration $_elapsed)"
 fi
 fi
 
@@ -723,17 +776,20 @@ if [ "$SKIP_TESTS" = false ] && [ "$UNIT_ONLY" = false ] && [ "$QUICK_MODE" = fa
     fi
 
     echo "--- :package: Ported App: ${app_name}"
+    log_ts "▶ Ported: ${app_name}"
     cd "${app_dir}"
     local _ts=$(date +%s)
     local _exit=0
     if [ -n "$bridge_mode" ]; then
       echo "Using bridge mode: $bridge_mode"
-      TSYNE_BRIDGE_MODE=$bridge_mode timeout 300 pnpm test --json --outputFile="$json_file" || _exit=$?
+      TSYNE_BRIDGE_MODE=$bridge_mode timeout 120 pnpm test --json --outputFile="$json_file" || _exit=$?
     else
-      timeout 300 pnpm test --json --outputFile="$json_file" || _exit=$?
+      timeout 120 pnpm test --json --outputFile="$json_file" || _exit=$?
     fi
-    SECTION_DURATIONS["Ported: ${app_name}"]=$(( $(date +%s) - _ts ))
+    local _elapsed=$(( $(date +%s) - _ts ))
+    SECTION_DURATIONS["Ported: ${app_name}"]=$_elapsed
     capture_test_results "Ported: ${app_name}" "$json_file"
+    log_ts "◀ Ported: ${app_name}" "$(format_duration $_elapsed)"
     return $_exit
   }
 
@@ -807,12 +863,15 @@ if [ "$SKIP_TESTS" = false ] && [ "$UNIT_ONLY" = false ] && [ "$QUICK_MODE" = fa
     fi
 
     echo "--- :iphone: Phone App: ${app_name}"
+    log_ts "▶ Phone: ${app_name}"
     cd "${app_dir}"
     local _ts=$(date +%s)
     local _exit=0
-    timeout 300 pnpm test --json --outputFile="$json_file" || _exit=$?
-    SECTION_DURATIONS["Phone: ${app_name}"]=$(( $(date +%s) - _ts ))
+    timeout 120 pnpm test --json --outputFile="$json_file" || _exit=$?
+    local _elapsed=$(( $(date +%s) - _ts ))
+    SECTION_DURATIONS["Phone: ${app_name}"]=$_elapsed
     capture_test_results "Phone: ${app_name}" "$json_file"
+    log_ts "◀ Phone: ${app_name}" "$(format_duration $_elapsed)"
     return $_exit
   }
 
@@ -878,12 +937,15 @@ if [ "$SKIP_TESTS" = false ] && [ "$UNIT_ONLY" = false ] && [ "$QUICK_MODE" = fa
     fi
 
     echo "--- :computer: Launcher: ${launcher_name}"
+    log_ts "▶ Launcher: ${launcher_name}"
     cd "${launcher_dir}"
     local _ts=$(date +%s)
     local _exit=0
-    timeout 300 npx jest --json --outputFile="$json_file" || _exit=$?
-    SECTION_DURATIONS["Launcher: ${launcher_name}"]=$(( $(date +%s) - _ts ))
+    timeout 120 npx jest --json --outputFile="$json_file" || _exit=$?
+    local _elapsed=$(( $(date +%s) - _ts ))
+    SECTION_DURATIONS["Launcher: ${launcher_name}"]=$_elapsed
     capture_test_results "Launcher: ${launcher_name}" "$json_file"
+    log_ts "◀ Launcher: ${launcher_name}" "$(format_duration $_elapsed)"
     return $_exit
   }
 
@@ -917,12 +979,15 @@ if [ "$SKIP_TESTS" = false ] && [ "$UNIT_ONLY" = false ] && [ "$QUICK_MODE" = fa
     fi
 
     echo "--- :rocket: Larger App: ${app_name}"
+    log_ts "▶ Larger: ${app_name}"
     cd "${app_dir}"
     local _ts=$(date +%s)
     local _exit=0
-    timeout 300 pnpm test --json --outputFile="$json_file" || _exit=$?
-    SECTION_DURATIONS["Larger: ${app_name}"]=$(( $(date +%s) - _ts ))
+    timeout 120 pnpm test --json --outputFile="$json_file" || _exit=$?
+    local _elapsed=$(( $(date +%s) - _ts ))
+    SECTION_DURATIONS["Larger: ${app_name}"]=$_elapsed
     capture_test_results "Larger: ${app_name}" "$json_file"
+    log_ts "◀ Larger: ${app_name}" "$(format_duration $_elapsed)"
     return $_exit
   }
 
@@ -951,6 +1016,7 @@ if [ "$SKIP_TESTS" = false ]; then
     fi
 
     echo "--- :test_tube: Test App: ${app_name} (Logic)"
+    log_ts "▶ TestApp: ${app_name} Logic"
     cd "${BUILDKITE_BUILD_CHECKOUT_PATH}/core"
 
     # Run pure logic tests using roots override to include test-apps directory
@@ -958,8 +1024,10 @@ if [ "$SKIP_TESTS" = false ]; then
     local _exit=0
     timeout 60 npx jest --roots="${app_dir}" --testMatch='**/*-logic.test.ts' \
       --json --outputFile="$json_file" || _exit=$?
-    SECTION_DURATIONS["TestApp: ${app_name} Logic"]=$(( $(date +%s) - _ts ))
+    local _elapsed=$(( $(date +%s) - _ts ))
+    SECTION_DURATIONS["TestApp: ${app_name} Logic"]=$_elapsed
     capture_test_results "TestApp: ${app_name} Logic" "$json_file"
+    log_ts "◀ TestApp: ${app_name} Logic" "$(format_duration $_elapsed)"
     return $_exit
   }
 
@@ -981,6 +1049,7 @@ if [ "$SKIP_TESTS" = false ]; then
     fi
 
     echo "--- :test_tube: Test App: ${app_name} (GUI)"
+    log_ts "▶ TestApp: ${app_name} GUI"
     cd "${BUILDKITE_BUILD_CHECKOUT_PATH}/core"
 
     # Run GUI tests using roots override
@@ -988,8 +1057,10 @@ if [ "$SKIP_TESTS" = false ]; then
     local _exit=0
     timeout 120 npx jest --roots="${app_dir}" --testMatch='**/calculator.test.ts' \
       --json --outputFile="$json_file" || _exit=$?
-    SECTION_DURATIONS["TestApp: ${app_name} GUI"]=$(( $(date +%s) - _ts ))
+    local _elapsed=$(( $(date +%s) - _ts ))
+    SECTION_DURATIONS["TestApp: ${app_name} GUI"]=$_elapsed
     capture_test_results "TestApp: ${app_name} GUI" "$json_file"
+    log_ts "◀ TestApp: ${app_name} GUI" "$(format_duration $_elapsed)"
     return $_exit
   }
 
@@ -1004,6 +1075,7 @@ fi
 # STEP 9: Android Native Build (optional - requires Android SDK)
 # ============================================================================
 echo "--- :android: Android Native - Build"
+log_ts "▶ Android Build"
 
 # Check for Android SDK
 if [ -n "$ANDROID_HOME" ] && [ -d "$ANDROID_HOME" ]; then
@@ -1027,6 +1099,7 @@ if [ -n "$ANDROID_HOME" ] && [ -d "$ANDROID_HOME" ]; then
 else
   echo "⚠️  Android SDK not found (ANDROID_HOME not set) - skipping Android build"
 fi
+log_ts "◀ Android Build"
 
 # ============================================================================
 # Cleanup (do this before summary so it always runs)
@@ -1044,4 +1117,5 @@ if [ "$SKIP_TESTS" = false ]; then
   print_test_summary
 fi
 
+log_ts "◀ CI run finished" "$(format_duration $(( $(date +%s) - CI_START_TIME )))"
 echo "--- :white_check_mark: Build complete"

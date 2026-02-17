@@ -454,10 +454,10 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 			// }
 
 			// Enable and set up vertex attribute pointer
-			// Each attribute has its own tightly-packed buffer (stride=0)
+			// Use stride/offset from the buffer (0,0 = tightly packed)
 			p.ctx.EnableVertexAttribArray(attribLoc)
 			enabledAttribs = append(enabledAttribs, attribLoc)
-			p.ctx.VertexAttribPointerWithOffset(attribLoc, buf.Size, float, false, 0, 0)
+			p.ctx.VertexAttribPointerWithOffset(attribLoc, buf.Size, float, false, buf.Stride, buf.Offset)
 
 			// Calculate vertex count from position attribute (most reliable)
 			if attr.name == "position" && buf.Size > 0 {
@@ -610,7 +610,7 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 								p.ctx.BindBuffer(arrayBuffer, Buffer(buf.VBO))
 								p.ctx.BufferData(arrayBuffer, buf.Data, dynamicDraw)
 								p.ctx.EnableVertexAttribArray(attribLoc)
-								p.ctx.VertexAttribPointerWithOffset(attribLoc, buf.Size, float, false, 0, 0)
+								p.ctx.VertexAttribPointerWithOffset(attribLoc, buf.Size, float, false, buf.Stride, buf.Offset)
 							}
 						}
 						if len(cmdIndices) > 0 {
@@ -658,7 +658,7 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 								p.ctx.BindBuffer(arrayBuffer, Buffer(buf.VBO))
 								p.ctx.BufferData(arrayBuffer, buf.Data, dynamicDraw)
 								p.ctx.EnableVertexAttribArray(attribLoc)
-								p.ctx.VertexAttribPointerWithOffset(attribLoc, buf.Size, float, false, 0, 0)
+								p.ctx.VertexAttribPointerWithOffset(attribLoc, buf.Size, float, false, buf.Stride, buf.Offset)
 							}
 						}
 						p.ctx.DrawArrays(params.Mode, params.First, params.Count)

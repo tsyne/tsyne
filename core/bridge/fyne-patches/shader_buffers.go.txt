@@ -179,7 +179,9 @@ func (s *Shader) GetIBO() uint32 {
 
 // SetAttributeBuffer sets data for a named vertex attribute (e.g., "position", "normal", "uv").
 // size is the number of components per vertex (2 for vec2, 3 for vec3, 4 for vec4).
-func (s *Shader) SetAttributeBuffer(name string, data []float32, size int) {
+// stride is the byte stride between consecutive vertices (0 = tightly packed).
+// offset is the byte offset into the buffer for this attribute.
+func (s *Shader) SetAttributeBuffer(name string, data []float32, size int, stride int, offset int) {
 	s.attrBuffersMu.Lock()
 	defer s.attrBuffersMu.Unlock()
 	if s.AttributeBuffers == nil {
@@ -191,9 +193,11 @@ func (s *Shader) SetAttributeBuffer(name string, data []float32, size int) {
 		vbo = existing.VBO
 	}
 	s.AttributeBuffers[name] = &AttributeBuffer{
-		Data: data,
-		Size: size,
-		VBO:  vbo,
+		Data:   data,
+		Size:   size,
+		VBO:    vbo,
+		Stride: stride,
+		Offset: offset,
 	}
 	// Update vertex count based on the number of vertices in this buffer
 	if size > 0 {

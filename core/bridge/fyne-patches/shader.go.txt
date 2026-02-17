@@ -12,6 +12,8 @@ type AttributeBuffer struct {
 	Data       []float32 // The actual vertex data
 	Size       int       // Number of components per vertex (2 for vec2, 3 for vec3, etc.)
 	VBO        uint32    // GL vertex buffer object ID (managed by painter)
+	Stride     int       // Byte stride between consecutive vertices (0 = tightly packed)
+	Offset     int       // Byte offset into the buffer for this attribute
 }
 
 // RenderCommand represents a single render operation (uniform set or draw call)
