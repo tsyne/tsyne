@@ -9,7 +9,9 @@ import { AffineMatrix } from './transform';
 import { parseViewBox } from './parser';
 import { ViewBoxMapping } from './grammar-types';
 import { parseNum, parseLengthToPx, parsePreserveAspectRatio } from './grammar-utils';
-import { CvgContext, CvgElement, PathBuilder } from './grammar';
+import { CvgElement } from './grammar-element';
+import { CvgContext } from './grammar-context';
+import { PathBuilder } from './grammar-defs';
 
 // ─── CvgBuilder — builder-style entry point ─────────────────────
 
