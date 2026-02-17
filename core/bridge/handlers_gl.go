@@ -661,10 +661,18 @@ func (b *Bridge) executeGLCommand(canvas *GLCanvas, cmd string, args map[string]
 		return b.glCullFace(canvas, args)
 	case "blendFunc":
 		return b.glBlendFunc(canvas, args)
-	case "blendFuncSeparate", "blendEquation", "blendEquationSeparate", "blendColor":
-		return nil // Advanced blending - handled by painter
-	case "polygonOffset", "lineWidth":
-		return nil // Polygon/line state - handled by painter
+	case "blendFuncSeparate":
+		return b.glBlendFuncSeparate(canvas, args)
+	case "blendEquation":
+		return b.glBlendEquation(canvas, args)
+	case "blendEquationSeparate":
+		return b.glBlendEquationSeparate(canvas, args)
+	case "blendColor":
+		return b.glBlendColor(canvas, args)
+	case "polygonOffset":
+		return b.glPolygonOffset(canvas, args)
+	case "lineWidth":
+		return b.glLineWidth(canvas, args)
 	case "pixelStorei":
 		return nil // Pixel storage - handled by painter
 	case "hint":
@@ -687,6 +695,9 @@ func (b *Bridge) executeGLCommand(canvas *GLCanvas, cmd string, args map[string]
 		return b.glVertexAttribPointer(canvas, args)
 	case "vertexAttribDivisor":
 		return nil // Handled by painter
+	case "vertexAttrib1f", "vertexAttrib2f", "vertexAttrib3f", "vertexAttrib4f",
+		"vertexAttrib1fv", "vertexAttrib2fv", "vertexAttrib3fv", "vertexAttrib4fv":
+		return b.glVertexAttribFv(canvas, cmd, args)
 
 	// Framebuffer operations
 	case "createFramebuffer":
@@ -737,7 +748,9 @@ func (b *Bridge) executeGLCommand(canvas *GLCanvas, cmd string, args map[string]
 		return b.glTexParameteri(canvas, args)
 
 	// Misc operations
-	case "generateMipmap", "scissor", "readPixels":
+	case "scissor":
+		return b.glScissor(canvas, args)
+	case "generateMipmap", "readPixels":
 		return nil // Misc - handled by painter
 
 	default:
@@ -1030,6 +1043,45 @@ func (b *Bridge) glVertexAttribPointer(canvas *GLCanvas, args map[string]interfa
 	//	log.Printf("[GL] vertexAttribPointer: no currentBuffer bound!")
 	// }
 
+	return nil
+}
+
+func (b *Bridge) glVertexAttribFv(canvas *GLCanvas, cmd string, args map[string]interface{}) error {
+	index := uint32(toFloat32(args["index"]))
+	var values []float32
+
+	switch cmd {
+	case "vertexAttrib1f":
+		values = []float32{toFloat32(args["x"])}
+	case "vertexAttrib2f":
+		values = []float32{toFloat32(args["x"]), toFloat32(args["y"])}
+	case "vertexAttrib3f":
+		values = []float32{toFloat32(args["x"]), toFloat32(args["y"]), toFloat32(args["z"])}
+	case "vertexAttrib4f":
+		values = []float32{toFloat32(args["x"]), toFloat32(args["y"]), toFloat32(args["z"]), toFloat32(args["w"])}
+	case "vertexAttrib1fv", "vertexAttrib2fv", "vertexAttrib3fv", "vertexAttrib4fv":
+		if valsRaw, ok := args["values"]; ok {
+			if arr, ok := valsRaw.([]interface{}); ok {
+				values = make([]float32, len(arr))
+				for i, v := range arr {
+					values[i] = toFloat32(v)
+				}
+			}
+		}
+	}
+	if len(values) == 0 {
+		return nil
+	}
+
+	// Pack index + values into a single float32 slice for the render command
+	packed := make([]float32, 1+len(values))
+	packed[0] = float32(index)
+	copy(packed[1:], values)
+
+	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+		Type:  cmd,
+		Value: packed,
+	})
 	return nil
 }
 
@@ -1587,12 +1639,15 @@ func (b *Bridge) glTexImage2D(canvas *GLCanvas, args map[string]interface{}) err
 			return nil
 		}
 
-		// Interpret format (GL_RGBA = 6408, GL_RGB = 6407, GL_LUMINANCE = 6409, GL_ALPHA = 6406)
+		// Interpret format
 		const (
-			GL_ALPHA     = 6406
-			GL_RGB       = 6407
-			GL_RGBA      = 6408
-			GL_LUMINANCE = 6409
+			GL_RED        = 0x1903
+			GL_ALPHA      = 6406
+			GL_RGB        = 6407
+			GL_RGBA       = 6408
+			GL_LUMINANCE  = 6409
+			GL_RG         = 0x8227
+			GL_HALF_FLOAT = 0x140B
 		)
 
 		formatEnum := uint32(format)
@@ -1635,6 +1690,41 @@ func (b *Bridge) glTexImage2D(canvas *GLCanvas, args map[string]interface{}) err
 					img.Pix[i*4+1] = 255
 					img.Pix[i*4+2] = 255
 					img.Pix[i*4+3] = pixelData[i]
+				}
+			}
+		case GL_RG:
+			// Convert RG to RGBA, handling HalfFloat type for dfgLUT BRDF lookup textures
+			typeVal := uint32(toFloat32(args["type"]))
+			if typeVal == GL_HALF_FLOAT && len(pixelData) >= w*h*4 {
+				// Half-float RG: 2 bytes per component, 2 components = 4 bytes per pixel
+				for i := 0; i < w*h; i++ {
+					offset := i * 4
+					r := halfToFloat(uint16(pixelData[offset]) | uint16(pixelData[offset+1])<<8)
+					g := halfToFloat(uint16(pixelData[offset+2]) | uint16(pixelData[offset+3])<<8)
+					img.Pix[i*4+0] = clampByte(r)
+					img.Pix[i*4+1] = clampByte(g)
+					img.Pix[i*4+2] = 0
+					img.Pix[i*4+3] = 255
+				}
+				log.Printf("[GL] texImage2D: converted RG16F %dx%d half-float texture to RGBA8", w, h)
+			} else if len(pixelData) >= w*h*2 {
+				// Uint8 RG: 1 byte per component
+				for i := 0; i < w*h; i++ {
+					img.Pix[i*4+0] = pixelData[i*2+0]
+					img.Pix[i*4+1] = pixelData[i*2+1]
+					img.Pix[i*4+2] = 0
+					img.Pix[i*4+3] = 255
+				}
+			}
+		case GL_RED:
+			// Convert Red channel (1 byte/pixel) to RGBA grayscale
+			if len(pixelData) >= w*h {
+				for i := 0; i < w*h; i++ {
+					v := pixelData[i]
+					img.Pix[i*4+0] = v
+					img.Pix[i*4+1] = v
+					img.Pix[i*4+2] = v
+					img.Pix[i*4+3] = 255
 				}
 			}
 		default:
@@ -1704,6 +1794,7 @@ func (b *Bridge) glTexSubImage2D(canvas *GLCanvas, args map[string]interface{}) 
 
 	// GL format constants
 	const (
+		GL_RED  = 0x1903
 		GL_RGB  = 6407
 		GL_RGBA = 6408
 	)
@@ -1730,11 +1821,26 @@ func (b *Bridge) glTexSubImage2D(canvas *GLCanvas, args map[string]interface{}) 
 					rgba.Pix[dstIdx+2] = pixelData[srcIdx+2]
 					rgba.Pix[dstIdx+3] = 255
 				}
+			} else if formatEnum == GL_RED {
+				srcIdx := y*w + x
+				if srcIdx < len(pixelData) && dstIdx+3 < len(rgba.Pix) {
+					v := pixelData[srcIdx]
+					rgba.Pix[dstIdx] = v
+					rgba.Pix[dstIdx+1] = v
+					rgba.Pix[dstIdx+2] = v
+					rgba.Pix[dstIdx+3] = 255
+				}
 			}
 		}
 	}
 
 	log.Printf("[GL] texSubImage2D: updated %dx%d region at (%d,%d) in texture %d", w, h, xoffset, yoffset, textureId)
+
+	// Store CPU image by JS texture ID for on-demand GPU upload in the painter.
+	// This is needed because texStorage2D creates empty GPU textures, and when Three.js
+	// binds different textures per draw call, the painter needs to upload the correct
+	// pixel data to each GPU texture on first use.
+	canvas.ShaderObject.SetCPUTexImage(int(textureId), rgba)
 
 	// Check if any sampler uniform uses this texture's unit and set the texture
 	// This handles the case where uniform1i is called before the texture is uploaded
@@ -1743,11 +1849,16 @@ func (b *Bridge) glTexSubImage2D(canvas *GLCanvas, args map[string]interface{}) 
 			// This sampler uses the texture we just updated
 			if texture, exists := canvas.textures[textureId]; exists && texture.image != nil {
 				canvas.ShaderObject.SetTextureUniform(samplerName, texture.image)
+				// Record JS texture ID → sampler mapping so the painter can populate
+				// gpuTexCache with the Phase 2.1 uploaded texture (overwriting the empty
+				// GPU texture created by texImage2D_gpu/texStorage2D)
+				canvas.ShaderObject.SetJSTexForSampler(samplerName, int(textureId))
 				log.Printf("[GL] texSubImage2D: linked sampler %s to texture %d (%dx%d)",
 					samplerName, textureId, texture.image.Bounds().Dx(), texture.image.Bounds().Dy())
 			}
 		}
 	}
+
 	return nil
 }
 
@@ -1870,6 +1981,80 @@ func (b *Bridge) glBlendFunc(canvas *GLCanvas, args map[string]interface{}) erro
 	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
 		Type:  "blendFunc",
 		Value: [2]uint32{sfactor, dfactor},
+	})
+	return nil
+}
+
+func (b *Bridge) glBlendFuncSeparate(canvas *GLCanvas, args map[string]interface{}) error {
+	srcRGB := uint32(toFloat64(args["srcRGB"]))
+	dstRGB := uint32(toFloat64(args["dstRGB"]))
+	srcAlpha := uint32(toFloat64(args["srcAlpha"]))
+	dstAlpha := uint32(toFloat64(args["dstAlpha"]))
+	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+		Type:  "blendFuncSeparate",
+		Value: [4]uint32{srcRGB, dstRGB, srcAlpha, dstAlpha},
+	})
+	return nil
+}
+
+func (b *Bridge) glBlendEquation(canvas *GLCanvas, args map[string]interface{}) error {
+	mode := uint32(toFloat64(args["mode"]))
+	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+		Type:  "blendEquation",
+		Value: mode,
+	})
+	return nil
+}
+
+func (b *Bridge) glBlendEquationSeparate(canvas *GLCanvas, args map[string]interface{}) error {
+	modeRGB := uint32(toFloat64(args["modeRGB"]))
+	modeAlpha := uint32(toFloat64(args["modeAlpha"]))
+	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+		Type:  "blendEquationSeparate",
+		Value: [2]uint32{modeRGB, modeAlpha},
+	})
+	return nil
+}
+
+func (b *Bridge) glBlendColor(canvas *GLCanvas, args map[string]interface{}) error {
+	r := float32(toFloat64(args["red"]))
+	g := float32(toFloat64(args["green"]))
+	b2 := float32(toFloat64(args["blue"]))
+	a := float32(toFloat64(args["alpha"]))
+	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+		Type:  "blendColor",
+		Value: [4]float32{r, g, b2, a},
+	})
+	return nil
+}
+
+func (b *Bridge) glPolygonOffset(canvas *GLCanvas, args map[string]interface{}) error {
+	factor := float32(toFloat64(args["factor"]))
+	units := float32(toFloat64(args["units"]))
+	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+		Type:  "polygonOffset",
+		Value: [2]float32{factor, units},
+	})
+	return nil
+}
+
+func (b *Bridge) glLineWidth(canvas *GLCanvas, args map[string]interface{}) error {
+	width := float32(toFloat64(args["width"]))
+	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+		Type:  "lineWidth",
+		Value: width,
+	})
+	return nil
+}
+
+func (b *Bridge) glScissor(canvas *GLCanvas, args map[string]interface{}) error {
+	x := int32(toFloat64(args["x"]))
+	y := int32(toFloat64(args["y"]))
+	w := int32(toFloat64(args["width"]))
+	h := int32(toFloat64(args["height"]))
+	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+		Type:  "scissor",
+		Value: [4]int32{x, y, w, h},
 	})
 	return nil
 }
@@ -2309,4 +2494,42 @@ func hasPendingMouseEvents(canvasID string) bool {
 	defer canvas.mouseEventMu.Unlock()
 
 	return len(canvas.pendingMouseEvents) > 0
+}
+
+// halfToFloat converts an IEEE 754 binary16 half-precision float to float32
+func halfToFloat(h uint16) float32 {
+	sign := uint32(h>>15) & 0x1
+	exp := uint32(h>>10) & 0x1f
+	mant := uint32(h) & 0x3ff
+
+	if exp == 0 {
+		if mant == 0 {
+			// Zero
+			return math.Float32frombits(sign << 31)
+		}
+		// Subnormal: normalize
+		for mant&0x400 == 0 {
+			mant <<= 1
+			exp--
+		}
+		exp++
+		mant &= 0x3ff
+	} else if exp == 31 {
+		// Inf / NaN
+		return math.Float32frombits((sign << 31) | 0x7f800000 | (mant << 13))
+	}
+
+	exp = exp + (127 - 15) // rebias exponent
+	return math.Float32frombits((sign << 31) | (exp << 23) | (mant << 13))
+}
+
+// clampByte converts a float32 [0,1] to a uint8 [0,255], clamped
+func clampByte(f float32) uint8 {
+	if f <= 0 {
+		return 0
+	}
+	if f >= 1 {
+		return 255
+	}
+	return uint8(f * 255)
 }

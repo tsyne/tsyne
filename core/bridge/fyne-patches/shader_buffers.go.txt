@@ -351,3 +351,34 @@ func (s *Shader) SetGPUTexCache(jsId int, glId uint32) {
 func (s *Shader) DeleteGPUTexCache(jsId int) {
 	delete(s.gpuTexCache, jsId)
 }
+
+// SetJSTexForSampler records that a JS texture ID is associated with a sampler uniform.
+// This allows the painter to populate gpuTexCache with Phase 2.1 uploaded textures.
+func (s *Shader) SetJSTexForSampler(samplerName string, jsTexId int) {
+	s.jsTexForSampler[samplerName] = jsTexId
+}
+
+// GetJSTexForSampler returns the JS texture ID for a sampler uniform name (0 if not set).
+func (s *Shader) GetJSTexForSampler(samplerName string) int {
+	return s.jsTexForSampler[samplerName]
+}
+
+// SetCPUTexImage stores a CPU image for a JS texture ID (for on-demand GPU upload).
+func (s *Shader) SetCPUTexImage(jsTexId int, img interface{}) {
+	s.cpuTexImages[jsTexId] = img
+}
+
+// GetCPUTexImage returns the CPU image for a JS texture ID (nil if not set).
+func (s *Shader) GetCPUTexImage(jsTexId int) interface{} {
+	return s.cpuTexImages[jsTexId]
+}
+
+// IsGPUTexUploaded returns whether a GPU texture has been uploaded with real data.
+func (s *Shader) IsGPUTexUploaded(jsTexId int) bool {
+	return s.gpuTexUploaded[jsTexId]
+}
+
+// SetGPUTexUploaded marks a GPU texture as having been uploaded with real data.
+func (s *Shader) SetGPUTexUploaded(jsTexId int) {
+	s.gpuTexUploaded[jsTexId] = true
+}

@@ -105,6 +105,7 @@ export async function buildWebGLMaterialsBumpmap(
 
   const camera = new THREE.PerspectiveCamera(40, width / height, 1, 1000);
   camera.position.set(0, 0, 300);
+  camera.lookAt(0, 0, 0);
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x0a0a1a);
@@ -113,15 +114,15 @@ export async function buildWebGLMaterialsBumpmap(
   const ambientLight = new THREE.AmbientLight(0x333333);
   scene.add(ambientLight);
 
-  const pointLight1 = new THREE.PointLight(0xff4422, 200, 500);
+  const pointLight1 = new THREE.PointLight(0xff4422, 60000, 500);
   pointLight1.position.set(100, 100, 100);
   scene.add(pointLight1);
 
-  const pointLight2 = new THREE.PointLight(0x2244ff, 200, 500);
+  const pointLight2 = new THREE.PointLight(0x2244ff, 60000, 500);
   pointLight2.position.set(-100, -100, 100);
   scene.add(pointLight2);
 
-  const pointLight3 = new THREE.PointLight(0x44ff22, 150, 500);
+  const pointLight3 = new THREE.PointLight(0x44ff22, 40000, 500);
   pointLight3.position.set(0, 100, -100);
   scene.add(pointLight3);
 

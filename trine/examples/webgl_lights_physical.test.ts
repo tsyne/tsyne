@@ -39,7 +39,13 @@ describe('three.js webgl - lights - physical', () => {
           win.show();
 
           setTimeout(async () => {
-            demo = await buildWebGLLightsPhysical(app, win, { width: WIDTH, height: HEIGHT });
+            demo = await buildWebGLLightsPhysical(app, win, {
+              width: WIDTH,
+              height: HEIGHT,
+              bulbPower: 1700,       // 100W bulb for visible scene
+              hemiIrradiance: 3.4,   // city twilight ambient
+              exposure: 0.85,        // moderate tone mapping (0.85^5 ≈ 0.44)
+            });
           }, 100);
         }
       );

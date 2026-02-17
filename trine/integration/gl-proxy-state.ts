@@ -419,13 +419,31 @@ proto.getContextAttributes = function (): WebGLContextAttributes {
 // ═══════════════════════════════════════════════════════════════
 
 proto.getExtension = function (name: string): any {
-  // Return null for unsupported extensions for now
-  // Can be extended to support specific extensions
-  return null;
+  switch (name) {
+    case 'EXT_color_buffer_half_float':
+    case 'EXT_color_buffer_float':
+    case 'OES_texture_float_linear':
+      return {};  // Empty stub — signals "supported"
+    case 'EXT_texture_filter_anisotropic':
+    case 'WEBKIT_EXT_texture_filter_anisotropic':
+    case 'MOZ_EXT_texture_filter_anisotropic':
+      return { MAX_TEXTURE_MAX_ANISOTROPY_EXT: 16 };
+    case 'WEBGL_clip_cull_distance':
+    case 'WEBGL_multisampled_render_to_texture':
+    case 'WEBGL_render_shared_exponent':
+      return {};
+    default:
+      return null;
+  }
 };
 
 proto.getSupportedExtensions = function (): string[] {
-  return [];
+  return [
+    'EXT_color_buffer_half_float',
+    'EXT_color_buffer_float',
+    'OES_texture_float_linear',
+    'EXT_texture_filter_anisotropic',
+  ];
 };
 
 proto.hint = function (target: GLenum, mode: GLenum): void {

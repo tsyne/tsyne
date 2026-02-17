@@ -94,7 +94,16 @@ sed -i '/Viewport(x, y, width, height int)/a\
 \	ColorMask(r, g, b, a bool)\
 \	ClearDepthf(depth float32)\
 \	DrawBuffers(bufs []uint32)\
-\	TexImage2DEmpty(target uint32, level int, internalformat uint32, width, height int, format, typ uint32)' "$FORK_DIR/internal/painter/gl/context.go"
+\	TexImage2DEmpty(target uint32, level int, internalformat uint32, width, height int, format, typ uint32)\
+\	VertexAttrib1f(index uint32, x float32)\
+\	VertexAttrib2f(index uint32, x, y float32)\
+\	VertexAttrib3f(index uint32, x, y, z float32)\
+\	VertexAttrib4f(index uint32, x, y, z, w float32)\
+\	BlendFuncSeparate(srcRGB, dstRGB, srcAlpha, dstAlpha uint32)\
+\	BlendEquation(mode uint32)\
+\	BlendEquationSeparate(modeRGB, modeAlpha uint32)\
+\	PolygonOffset(factor, units float32)\
+\	LineWidth(width float32)' "$FORK_DIR/internal/painter/gl/context.go"
 
 # 6b. Add Framebuffer and Renderbuffer types to gl_core.go and gl_es.go
 echo "[setup-fyne-fork] Adding FBO types..."

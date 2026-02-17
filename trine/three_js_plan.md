@@ -787,11 +787,21 @@ The Go-side handlers in `handlers_gl.go` turned out to be a **metadata accumulat
 - [x] Updated `webgl_buffergeometry_indexed.ts` from MeshBasicMaterial wireframe to MeshPhongMaterial with lighting
 - [x] Debug logging cleaned up
 
-### Sprint 8: Production Integration ⏳ FUTURE
-- [ ] Full three.js scene rendering (more complex examples)
+### Sprint 8: Infrastructure & Robustness ✅ COMPLETE
+
+- [x] Interleaved buffer stride/offset support — unblocked `webgl_buffergeometry_instancing_interleaved`, `webgl_buffergeometry_points_interleaved`
+- [x] Split gl-proxy.ts (2396 lines → 6 files) for LLM context efficiency
+  - `gl-constants.ts` (366 lines), `gl-proxy-core.ts` (699 lines), `gl-proxy-uniforms.ts` (274 lines), `gl-proxy-textures.ts` (448 lines), `gl-proxy-state.ts` (694 lines), `gl-proxy.ts` (27 lines barrel)
+- [x] CI speed optimization — reduced timeouts from 300-600s to 60-120s, estimated ~40 min savings
+
+### Sprint 9: Advanced Materials ⏳ FUTURE
+- [ ] MeshStandardMaterial (PBR) — ~15 examples use this
+- [ ] MeshToonMaterial — 3 examples
+- [ ] MeshNormalMaterial — ~8 examples
+- [ ] SpriteMaterial — ~3 examples
+- [ ] MeshPhysicalMaterial — ~2 examples
+- [ ] Environment maps, IBL
 - [ ] Performance profiling
-- [ ] Error handling and recovery
-- [ ] Documentation and examples
 
 ---
 
@@ -855,29 +865,13 @@ Three.js → Bridge Handlers → Fyne Shader Canvas → Fyne Painter → Native 
 - `setSize()`: Updates canvas dimensions
 - Lazy bridge canvas creation via `getBridgeCanvasId()`
 
-**gl-proxy.ts** (~900 lines)
-- `TsyneGLProxy`: Fake WebGL2RenderingContext
-- **~150 WebGL2 constants**: All buffer, texture, primitive, blend, test constants
-- **Buffer operations** (8 methods): createBuffer, deleteBuffer, bindBuffer, bufferData, bufferSubData, + state tracking
-- **Shader operations** (5 methods): createShader, deleteShader, shaderSource, compileShader, getShaderParameter, getShaderInfoLog
-- **Program operations** (7 methods): createProgram, deleteProgram, attachShader, detachShader, linkProgram, useProgram, getProgramParameter, getProgramInfoLog, getAttribLocation
-- **Uniform operations** (15 methods): getUniformLocation, uniform1f/2f/3f/4f/1i/2i/3i/4i, uniform*v variants (1-4fv/1-4iv), uniformMatrix2fv/3fv/4fv
-- **Texture operations** (9 methods): createTexture, deleteTexture, bindTexture, activeTexture, texImage2D, texSubImage2D, texParameteri/f, generateMipmap
-- **Framebuffer operations** (4 methods): createFramebuffer, deleteFramebuffer, bindFramebuffer, framebufferTexture2D, checkFramebufferStatus
-- **Renderbuffer operations** (5 methods): createRenderbuffer, deleteRenderbuffer, bindRenderbuffer, renderbufferStorage, framebufferRenderbuffer
-- **VAO operations** (7 methods): createVertexArray, deleteVertexArray, bindVertexArray, enableVertexAttribArray, disableVertexAttribArray, vertexAttribPointer, vertexAttribDivisor
-- **Drawing operations** (4 methods): drawArrays, drawElements, drawArraysInstanced, drawElementsInstanced
-- **State operations** (9 methods): clear, clearColor, clearDepth, clearStencil, viewport, scissor, enable, disable, isEnabled
-- **Depth/Stencil operations** (6 methods): depthFunc, depthMask, depthRange, stencilFunc, stencilOp, stencilMask
-- **Blending operations** (5 methods): blendColor, blendEquation, blendEquationSeparate, blendFunc, blendFuncSeparate
-- **Face/Polygon operations** (4 methods): cullFace, frontFace, polygonOffset, lineWidth
-- **Pixel operations** (2 methods): pixelStorei, readPixels
-- **Query operations** (2 methods): getParameter (with ~10 common queries), getError, getExtension, getSupportedExtensions, hint
-- **Command buffer system**: pushCommand(), flush(), finalize()
-- **Object ID tracking**: Maps for buffers, textures, programs, shaders, framebuffers, renderbuffers, VAOs, queries, etc.
-- **State caching**: Tracks boundProgram, boundArrayBuffer, boundElementArrayBuffer, activeTextureUnit
-- `setSize()`: Updates canvas dimensions
-- `encodeBufferData()`: Base64 encodes binary data for bridge transmission
+**gl-proxy (split into 6 files, ~2500 lines total)**
+- `gl-constants.ts` (366 lines) — All ~280 WebGL2 constants as const object + `applyGLConstants()`
+- `gl-proxy-core.ts` (699 lines) — Class definition, constructor, command buffer, buffer/shader/program ops, GLSL parsing, attribute location tracking
+- `gl-proxy-uniforms.ts` (274 lines) — All uniform + UBO methods (38 methods via prototype augmentation)
+- `gl-proxy-textures.ts` (448 lines) — Texture, FBO, RBO methods (35 methods via prototype augmentation)
+- `gl-proxy-state.ts` (694 lines) — VAO, drawing, state, depth/stencil, blending, face/polygon, pixel ops, sync, misc (80+ methods via prototype augmentation)
+- `gl-proxy.ts` (27 lines) — Barrel file re-exporting from above
 
 **index.ts** (~50 lines)
 - `initTsyne()`: Main initialization function
@@ -973,6 +967,14 @@ The implementation now provides:
 **Remaining work:**
 - ~~Scene background color~~: ✅ FIXED — Fyne's `painter.Clear()` was resetting `glClearColor` to theme bg each frame; fix re-applies stored clear color before every `gl.Clear()` in `shader_painter.go`
 - ~~Advanced materials (MeshPhongMaterial with lighting)~~: ✅ FIXED — VAO tracking was the root cause; implemented in Sprint 7
+- ~~Multi-geometry rendering~~: ✅ FIXED — deep-copy AttributeBuffers on draw call
+- ~~Points rendering~~: ✅ FIXED — GL_PROGRAM_POINT_SIZE enable
+- ~~Line rendering (drawElements mode)~~: ✅ FIXED — use params.Mode instead of hardcoded triangles
+- ~~Per-draw GL state~~: ✅ FIXED — enable/disable/cullFace/blendFunc forwarded as render commands
+- ~~FBO / Shadow mapping~~: ✅ FIXED — end-to-end FBO support, SpotLight + shadows working
+- ~~Mouse events / raycasting~~: ✅ FIXED — glMouseEvent forwarding via core bridge
+- ~~Multi-program animation~~: ✅ FIXED — program cache lookup, no needless recompile
+- ~~Interleaved buffers~~: ✅ FIXED — stride/offset support in attrib bindings
 - MeshStandardMaterial (PBR) support
 - Performance profiling and optimization
 
@@ -1009,13 +1011,18 @@ The implementation now provides:
 | globals.ts | 450 | ✅ |
 | bridge.ts | 150 | ✅ |
 | canvas.ts | 210 | ✅ |
-| gl-proxy.ts | 900 | ✅ |
+| gl-constants.ts | 366 | ✅ |
+| gl-proxy-core.ts | 699 | ✅ |
+| gl-proxy-uniforms.ts | 274 | ✅ |
+| gl-proxy-textures.ts | 448 | ✅ |
+| gl-proxy-state.ts | 694 | ✅ |
+| gl-proxy.ts (barrel) | 27 | ✅ |
 | index.ts | 50 | ✅ |
 | shader-converter.ts | 210 | ✅ |
 | handlers_gl.go | 650 | ✅ |
 | shader_converter.go | 170 | ✅ |
 | test-integration.ts | 320 | ✅ |
-| **TOTAL** | **~3,100** | ✅ |
+| **TOTAL** | **~4,700** | ✅ |
 
 ### Architectural Decisions
 
@@ -1034,26 +1041,27 @@ The implementation now provides:
 - **Drawing**: Can issue draw calls that trigger Fyne rendering
 - **Testing**: Full integration tests validate the pipeline
 
-### What Needs Next (Phase 8+)
+### What Needs Next (Sprint 9+)
 
 1. **Advanced Materials**:
-   - MeshStandardMaterial (PBR)
+   - MeshStandardMaterial (PBR) — ~15 examples
+   - MeshToonMaterial — 3 examples
+   - MeshNormalMaterial — ~8 examples
+   - SpriteMaterial — ~3 examples
+   - MeshPhysicalMaterial — ~2 examples
    - Environment maps, IBL
 
 2. **Optimize**:
    - Profile command batching
-   - Implement better geometry handling
    - Reduce per-frame GL command count
 
-3. **Edge Cases**:
-   - Shadow maps (framebuffer rendering)
+3. ~~**Edge Cases**~~:
+   - ~~Shadow maps (framebuffer rendering)~~: ✅ DONE — full FBO pipeline
    - Advanced texture features (mipmaps, anisotropic filtering)
-   - Performance-critical operations
 
 4. **Polish**:
    - Error recovery
    - Comprehensive error messages
-   - Documentation and examples
 
 ---
 
@@ -1110,33 +1118,24 @@ describe('Three.js on Tsyne', () => {
 
 ## Success Criteria
 
-1. ✅ **Basic rendering works**: Box, sphere, plane geometry renders correctly
-2. ✅ **Materials work**: MeshBasicMaterial, MeshPhongMaterial (MeshStandardMaterial TBD)
+1. ✅ **Basic rendering works**: Box, sphere, plane, and 15+ geometry types render correctly
+2. ✅ **Materials work**: MeshBasicMaterial, MeshLambertMaterial, MeshPhongMaterial, PointsMaterial, LineBasicMaterial, LineDashedMaterial, RawShaderMaterial (MeshStandardMaterial TBD)
 3. ✅ **Textures work**: 2D textures, cubemaps
-4. ✅ **Lighting works**: Ambient, directional, point lights
+4. ✅ **Lighting works**: Ambient, directional, point, spot lights (including shadows via FBO)
 5. **Performance acceptable**: 60fps for moderate scenes (TBD profiling)
-6. ✅ **Examples run**: webgl_basic_test, webgl_geometries, webgl_buffergeometry, webgl_buffergeometry_indexed all render correctly
+6. ✅ **Examples run**: 221 examples with tests, ~181 with verified screenshots
+7. ✅ **Interactive**: Mouse events / raycasting working (webgl_interactive_cubes)
 
 ---
 
 ## Open Questions
 
-1. **Synchronous vs Async GL calls**: This is the biggest architectural challenge.
-   - Browser WebGL: all calls are synchronous (blocking)
-   - Tsyne bridge: all calls are asynchronous (non-blocking)
-
-   **Potential solutions:**
-   - **Batch and flush**: Queue all GL commands, send batch on `render()` or `flush()`
-   - **Synchronous bridge calls**: Add sync message type for critical calls (slow but correct)
-   - **Optimistic local state**: Track state locally, only sync when needed
-   - **Command buffer**: Build a command buffer in TS, send whole buffer to Go to execute
-
-   The command buffer approach is probably best for performance - three.js does many GL calls per frame, and round-tripping each one would be too slow.
+1. ~~**Synchronous vs Async GL calls**~~: ✅ RESOLVED — Command buffer approach implemented. GL commands batched per frame, sent as single `executeBatch` message. Works well for performance.
 
 2. **Extension support**: Which WebGL2 extensions are critical? (e.g., EXT_color_buffer_float, OES_texture_float_linear)
 
 3. **Mobile GLES version**: Android uses GLES 3.0 via gomobile. Need to verify feature parity.
 
-4. **Event handling**: Mouse, touch, keyboard events for OrbitControls etc. Route through Tsyne's event system.
+4. ~~**Event handling**~~: ✅ RESOLVED — Mouse events flow: Fyne HoverableShader → Go sendMouseEvent → Core bridge → TsyneBridge → TsyneCanvas. Raycasting works (webgl_interactive_cubes).
 
 5. **OffscreenCanvas**: Useful for web workers. Not needed for Tsyne but affects API compatibility.

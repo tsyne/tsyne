@@ -104,9 +104,8 @@ export async function buildWebGLLightsPhysical(
   // ─────────────────────────────────────────────────────────────────────────
 
   const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 100);
-  camera.position.x = -4;
-  camera.position.z = 4;
-  camera.position.y = 2;
+  camera.position.set(-4, 2, 4);
+  camera.lookAt(0, 0.5, 0);
 
   const scene = new THREE.Scene();
 

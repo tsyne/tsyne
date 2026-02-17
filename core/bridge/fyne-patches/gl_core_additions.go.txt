@@ -108,3 +108,39 @@ func (c *coreContext) DrawBuffers(bufs []uint32) {
 func (c *coreContext) TexImage2DEmpty(target uint32, level int, internalformat uint32, width, height int, format, typ uint32) {
 	gl.TexImage2D(target, int32(level), int32(internalformat), int32(width), int32(height), 0, format, typ, nil)
 }
+
+func (c *coreContext) BlendFuncSeparate(srcRGB, dstRGB, srcAlpha, dstAlpha uint32) {
+	gl.BlendFuncSeparate(srcRGB, dstRGB, srcAlpha, dstAlpha)
+}
+
+func (c *coreContext) BlendEquation(mode uint32) {
+	gl.BlendEquation(mode)
+}
+
+func (c *coreContext) BlendEquationSeparate(modeRGB, modeAlpha uint32) {
+	gl.BlendEquationSeparate(modeRGB, modeAlpha)
+}
+
+func (c *coreContext) PolygonOffset(factor, units float32) {
+	gl.PolygonOffset(factor, units)
+}
+
+func (c *coreContext) LineWidth(width float32) {
+	gl.LineWidth(width)
+}
+
+func (c *coreContext) VertexAttrib1f(index uint32, x float32) {
+	gl.VertexAttrib1f(index, x)
+}
+
+func (c *coreContext) VertexAttrib2f(index uint32, x, y float32) {
+	gl.VertexAttrib2f(index, x, y)
+}
+
+func (c *coreContext) VertexAttrib3f(index uint32, x, y, z float32) {
+	gl.VertexAttrib3f(index, x, y, z)
+}
+
+func (c *coreContext) VertexAttrib4f(index uint32, x, y, z, w float32) {
+	gl.VertexAttrib4f(index, x, y, z, w)
+}

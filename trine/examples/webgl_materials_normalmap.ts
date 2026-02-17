@@ -143,92 +143,53 @@ export async function buildWebGLMaterialsNormalmap(
 
   const camera = new THREE.PerspectiveCamera(45, width / height, 1, 2000);
   camera.position.z = 500;
+  camera.lookAt(0, 0, 0);
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x111111);
 
-  // Add lighting
-  const light1 = new THREE.PointLight(0xffffff, 2, 1000);
-  light1.position.set(200, 200, 200);
-  scene.add(light1);
+  // Lighting
+  const pointLight = new THREE.PointLight(0xffffff, 50000, 1000);
+  pointLight.position.set(200, 200, 200);
+  scene.add(pointLight);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.3));
 
-  const light2 = new THREE.PointLight(0xff8888, 1, 800);
-  light2.position.set(-200, 100, 200);
-  scene.add(light2);
+  // Light helper sphere
+  const lightHelperGeo = new THREE.SphereGeometry(5, 8, 8);
+  const lightHelperMat = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+  const lightHelper = new THREE.Mesh(lightHelperGeo, lightHelperMat);
+  pointLight.add(lightHelper);
 
-  scene.add(new THREE.AmbientLight(0x333333));
+  // Generate normal maps for each pattern
+  const normalBricks = generateNormalMap('bricks');
+  const normalWaves = generateNormalMap('waves');
+  const normalBumps = generateNormalMap('bumps');
+  const normalTiles = generateNormalMap('tiles');
 
-  // Create normal maps
-  const normalMapBricks = generateNormalMap('bricks');
-  const normalMapWaves = generateNormalMap('waves');
-  const normalMapBumps = generateNormalMap('bumps');
-  const normalMapTiles = generateNormalMap('tiles');
-
-  // Create base color texture (procedural)
-  function generateColorTexture(color: number, size: number = 256): THREE.DataTexture {
-    const data = new Uint8Array(size * size * 4);
-    const r = (color >> 16) & 0xff;
-    const g = (color >> 8) & 0xff;
-    const b = color & 0xff;
-
-    for (let i = 0; i < size * size; i++) {
-      data[i * 4] = r;
-      data[i * 4 + 1] = g;
-      data[i * 4 + 2] = b;
-      data[i * 4 + 3] = 255;
-    }
-
-    const texture = new THREE.DataTexture(data, size, size);
-    texture.needsUpdate = true;
-    return texture;
-  }
-
-  // Create materials with normal maps
-  const sphereGeometry = new THREE.SphereGeometry(70, 64, 32);
-
-  const materials = [
-    new THREE.MeshPhongMaterial({
-      color: 0xcc6633,
-      normalMap: normalMapBricks,
-      normalScale: new THREE.Vector2(1, 1),
-      shininess: 50,
-    }),
-    new THREE.MeshPhongMaterial({
-      color: 0x3366cc,
-      normalMap: normalMapWaves,
-      normalScale: new THREE.Vector2(1, 1),
-      shininess: 100,
-    }),
-    new THREE.MeshPhongMaterial({
-      color: 0x66cc33,
-      normalMap: normalMapBumps,
-      normalScale: new THREE.Vector2(1, 1),
-      shininess: 80,
-    }),
-    new THREE.MeshPhongMaterial({
-      color: 0xcc33cc,
-      normalMap: normalMapTiles,
-      normalScale: new THREE.Vector2(1, 1),
-      shininess: 60,
-    }),
+  // Create 4 spheres with different normal maps
+  const sphereGeometry = new THREE.SphereGeometry(80, 32, 16);
+  const colors = [0xcc4444, 0x44cc44, 0x4444cc, 0xcccc44];
+  const normalMaps = [normalBricks, normalWaves, normalBumps, normalTiles];
+  const positions: [number, number, number][] = [
+    [-120, 80, 0],
+    [120, 80, 0],
+    [-120, -80, 0],
+    [120, -80, 0],
   ];
 
-  // Create spheres in a grid
   const spheres: THREE.Mesh[] = [];
   for (let i = 0; i < 4; i++) {
-    const sphere = new THREE.Mesh(sphereGeometry, materials[i]);
-    sphere.position.x = ((i % 2) - 0.5) * 200;
-    sphere.position.y = (Math.floor(i / 2) - 0.5) * 200;
-    scene.add(sphere);
-    spheres.push(sphere);
+    const mat = new THREE.MeshPhongMaterial({
+      color: colors[i],
+      normalMap: normalMaps[i],
+      normalScale: new THREE.Vector2(1, 1),
+      shininess: 50,
+    });
+    const mesh = new THREE.Mesh(sphereGeometry, mat);
+    mesh.position.set(...positions[i]);
+    scene.add(mesh);
+    spheres.push(mesh);
   }
-
-  // Add a light helper
-  const lightHelper = new THREE.Mesh(
-    new THREE.SphereGeometry(10, 16, 8),
-    new THREE.MeshBasicMaterial({ color: 0xffffff })
-  );
-  scene.add(lightHelper);
 
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(1);
@@ -253,10 +214,10 @@ export async function buildWebGLMaterialsNormalmap(
       const time = (Date.now() - startTime) * 0.001;
       currentTime = Date.now() - startTime;
 
-      // Animate light position
-      light1.position.x = Math.sin(time) * 300;
-      light1.position.z = Math.cos(time) * 300;
-      lightHelper.position.copy(light1.position);
+      // Orbit the point light
+      pointLight.position.x = Math.cos(time * 0.5) * 300;
+      pointLight.position.z = Math.sin(time * 0.5) * 300;
+      pointLight.position.y = Math.sin(time * 0.3) * 150 + 100;
 
       // Rotate spheres
       spheres.forEach((sphere, i) => {

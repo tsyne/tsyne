@@ -182,7 +182,10 @@ type Shader struct {
 	// FBO support for shadow mapping / offscreen rendering
 	fboCache    map[int]uint32  // JS framebuffer ID → GL framebuffer ID
 	rboCache    map[int]uint32  // JS renderbuffer ID → GL renderbuffer ID
-	gpuTexCache map[int]uint32  // JS texture ID → GL texture ID (for GPU-only textures)
+	gpuTexCache      map[int]uint32       // JS texture ID → GL texture ID (for GPU-only textures)
+	jsTexForSampler  map[string]int       // sampler uniform name → JS texture ID
+	cpuTexImages     map[int]interface{}  // JS texture ID → CPU image (image.Image)
+	gpuTexUploaded   map[int]bool         // JS texture ID → whether GPU texture has real data
 }
 
 // PendingProgram holds shader sources queued for compilation by the painter
@@ -229,6 +232,9 @@ func NewShader(width, height float32, fragmentSrc string) *Shader {
 		fboCache:           make(map[int]uint32),
 		rboCache:           make(map[int]uint32),
 		gpuTexCache:        make(map[int]uint32),
+		jsTexForSampler:    make(map[string]int),
+		cpuTexImages:       make(map[int]interface{}),
+		gpuTexUploaded:     make(map[int]bool),
 	}
 	s.size = fyne.NewSize(width, height)
 	return s

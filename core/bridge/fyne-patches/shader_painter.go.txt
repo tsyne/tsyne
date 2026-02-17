@@ -98,6 +98,13 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 	if prog == 0 {
 		return
 	}
+	if shaderDebug {
+		log.Printf("[drawShader] Using program %d (vertexSrc=%d bytes, fragSrc=%d bytes)", prog, len(vertexSrc), len(shader.FragmentSource))
+		if len(shader.FragmentSource) > 10000 {
+			os.WriteFile("/tmp/tsyne_frag.glsl", []byte(shader.FragmentSource), 0644)
+			os.WriteFile("/tmp/tsyne_vert.glsl", []byte(vertexSrc), 0644)
+		}
+	}
 
 	// Save current program
 	p.ctx.UseProgram(prog)
@@ -272,6 +279,14 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 		if samplerLoc >= 0 {
 			p.ctx.Uniform1i(samplerLoc, int32(textureUnit))
 		}
+
+		// If this sampler has a JS texture ID mapping, populate gpuTexCache
+		// so that bindTexture render commands can find this uploaded texture
+		// (overwriting the empty GPU texture created by texImage2D_gpu/texStorage2D)
+		if jsTexId := shader.GetJSTexForSampler(texName); jsTexId != 0 {
+			shader.SetGPUTexCache(jsTexId, texID)
+		}
+
 		textureUnit++
 	}
 
@@ -575,8 +590,24 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 		p.ctx.FrontFace(ccw)
 		p.ctx.Enable(programPointSize)
 
+		if shaderDebug {
+			drawCount := 0
+			useProgramCount := 0
+			for _, cmd := range renderCommands {
+				if cmd.Type == "drawElements" || cmd.Type == "drawArrays" {
+					drawCount++
+				}
+				if cmd.Type == "useProgram" {
+					useProgramCount++
+				}
+			}
+			log.Printf("[drawShader] Frame: %d commands, %d draws, %d usePrograms", len(renderCommands), drawCount, useProgramCount)
+		}
+
 		// Execute commands in order (three.js immediate-mode style)
-		for _, cmd := range renderCommands {
+		for cmdIdx := 0; cmdIdx < len(renderCommands); cmdIdx++ {
+			cmd := renderCommands[cmdIdx]
+			_ = cmdIdx
 			switch cmd.Type {
 			case "uniform":
 				setUniform(cmd.Name, cmd.Value)
@@ -824,9 +855,13 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 				}
 
 			case "texImage2D_gpu":
-				// GPU-only texture allocation (e.g., shadow maps with null pixels)
+				// GPU-only texture allocation (e.g., shadow maps with null pixels, DataTexture storage)
+				// IMPORTANT: Use scratch texture unit 15 to avoid corrupting sampler bindings
+				// set up in Phase 2.1. Without this, BindTexture here overwrites whatever
+				// texture unit is active, making Phase 2.1 textures invisible.
 				jsTexId, _ := strconv.Atoi(cmd.Name)
 				if params, ok := cmd.Value.(canvas.TexImage2DGPUParams); ok {
+					p.ctx.ActiveTexture(texture0 + 15) // scratch unit
 					tex := p.ctx.CreateTexture()
 					p.ctx.BindTexture(params.Target, tex)
 					// Set appropriate filtering and wrapping
@@ -836,6 +871,8 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 					p.ctx.TexParameteri(params.Target, textureWrapT, clampToEdge)
 					// Allocate texture storage without data
 					p.ctx.TexImage2DEmpty(params.Target, params.Level, params.Internalformat, params.Width, params.Height, params.Format, params.Type)
+					p.ctx.BindTexture(params.Target, Texture(0)) // unbind from scratch unit
+					p.ctx.ActiveTexture(texture0) // restore to unit 0
 					shader.SetGPUTexCache(jsTexId, uint32(tex))
 					if shaderDebug {
 						log.Printf("[drawShader] texImage2D_gpu: js=%d -> gl=%d (%dx%d, fmt=0x%x)", jsTexId, tex, params.Width, params.Height, params.Format)
@@ -862,6 +899,27 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 					// Check GPU texture cache first (shadow maps etc.)
 					if glId := shader.GetGPUTexCache(jsTexId); glId != 0 {
 						p.ctx.BindTexture(target, Texture(glId))
+						// On-demand upload: if GPU texture was allocated empty (texStorage2D)
+						// and we have CPU image data, upload it now
+						if !shader.IsGPUTexUploaded(jsTexId) {
+							cpuImg := shader.GetCPUTexImage(jsTexId)
+							if cpuImg != nil {
+								rgba := p.textureToRGBA(cpuImg)
+								if rgba != nil && len(rgba.Pix) > 0 {
+									p.ctx.TexParameteri(target, textureMinFilter, linear)
+									p.ctx.TexParameteri(target, textureMagFilter, linear)
+									p.ctx.TexImage2D(
+										target, 0,
+										rgba.Rect.Size().X, rgba.Rect.Size().Y,
+										colorFormatRGBA, unsignedByte, rgba.Pix,
+									)
+									shader.SetGPUTexUploaded(jsTexId)
+									if shaderDebug {
+										log.Printf("[drawShader] bindTexture: ON-DEMAND uploaded %dx%d to js=%d gl=%d", rgba.Rect.Dx(), rgba.Rect.Dy(), jsTexId, glId)
+									}
+								}
+							}
+						}
 					} else if glId := shader.GetTextureCache()[fmt.Sprintf("tex_%d", jsTexId)]; glId != 0 {
 						// Fall back to regular texture cache
 						p.ctx.BindTexture(target, Texture(glId))
@@ -881,6 +939,52 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 			case "frontFace":
 				if mode, ok := cmd.Value.(uint32); ok {
 					p.ctx.FrontFace(mode)
+				}
+
+			case "blendFuncSeparate":
+				if factors, ok := cmd.Value.([4]uint32); ok {
+					p.ctx.BlendFuncSeparate(factors[0], factors[1], factors[2], factors[3])
+				}
+			case "blendEquation":
+				if mode, ok := cmd.Value.(uint32); ok {
+					p.ctx.BlendEquation(mode)
+				}
+			case "blendEquationSeparate":
+				if modes, ok := cmd.Value.([2]uint32); ok {
+					p.ctx.BlendEquationSeparate(modes[0], modes[1])
+				}
+			case "blendColor":
+				if c, ok := cmd.Value.([4]float32); ok {
+					p.ctx.BlendColor(c[0], c[1], c[2], c[3])
+				}
+			case "polygonOffset":
+				if params, ok := cmd.Value.([2]float32); ok {
+					p.ctx.PolygonOffset(params[0], params[1])
+				}
+			case "lineWidth":
+				if w, ok := cmd.Value.(float32); ok {
+					p.ctx.LineWidth(w)
+				}
+			case "scissor":
+				if rect, ok := cmd.Value.([4]int32); ok {
+					p.ctx.Scissor(rect[0], rect[1], rect[2], rect[3])
+				}
+
+			case "vertexAttrib1f", "vertexAttrib1fv":
+				if packed, ok := cmd.Value.([]float32); ok && len(packed) >= 2 {
+					p.ctx.VertexAttrib1f(uint32(packed[0]), packed[1])
+				}
+			case "vertexAttrib2f", "vertexAttrib2fv":
+				if packed, ok := cmd.Value.([]float32); ok && len(packed) >= 3 {
+					p.ctx.VertexAttrib2f(uint32(packed[0]), packed[1], packed[2])
+				}
+			case "vertexAttrib3f", "vertexAttrib3fv":
+				if packed, ok := cmd.Value.([]float32); ok && len(packed) >= 4 {
+					p.ctx.VertexAttrib3f(uint32(packed[0]), packed[1], packed[2], packed[3])
+				}
+			case "vertexAttrib4f", "vertexAttrib4fv":
+				if packed, ok := cmd.Value.([]float32); ok && len(packed) >= 5 {
+					p.ctx.VertexAttrib4f(uint32(packed[0]), packed[1], packed[2], packed[3], packed[4])
 				}
 			}
 		}

@@ -106,3 +106,39 @@ func (c *mobileContext) DrawBuffers(bufs []uint32) {
 func (c *mobileContext) TexImage2DEmpty(target uint32, level int, internalformat uint32, width, height int, format, typ uint32) {
 	c.glContext.TexImage2D(gl.Enum(target), level, int(internalformat), width, height, gl.Enum(format), gl.Enum(typ), nil)
 }
+
+func (c *mobileContext) BlendFuncSeparate(srcRGB, dstRGB, srcAlpha, dstAlpha uint32) {
+	c.glContext.BlendFuncSeparate(gl.Enum(srcRGB), gl.Enum(dstRGB), gl.Enum(srcAlpha), gl.Enum(dstAlpha))
+}
+
+func (c *mobileContext) BlendEquation(mode uint32) {
+	c.glContext.BlendEquation(gl.Enum(mode))
+}
+
+func (c *mobileContext) BlendEquationSeparate(modeRGB, modeAlpha uint32) {
+	c.glContext.BlendEquationSeparate(gl.Enum(modeRGB), gl.Enum(modeAlpha))
+}
+
+func (c *mobileContext) PolygonOffset(factor, units float32) {
+	c.glContext.PolygonOffset(factor, units)
+}
+
+func (c *mobileContext) LineWidth(width float32) {
+	c.glContext.LineWidth(width)
+}
+
+func (c *mobileContext) VertexAttrib1f(index uint32, x float32) {
+	c.glContext.VertexAttrib1f(gl.Attrib(index), x)
+}
+
+func (c *mobileContext) VertexAttrib2f(index uint32, x, y float32) {
+	c.glContext.VertexAttrib2f(gl.Attrib(index), x, y)
+}
+
+func (c *mobileContext) VertexAttrib3f(index uint32, x, y, z float32) {
+	c.glContext.VertexAttrib3f(gl.Attrib(index), x, y, z)
+}
+
+func (c *mobileContext) VertexAttrib4f(index uint32, x, y, z, w float32) {
+	c.glContext.VertexAttrib4f(gl.Attrib(index), x, y, z, w)
+}
