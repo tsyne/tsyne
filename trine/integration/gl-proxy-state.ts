@@ -54,6 +54,9 @@ proto.vertexAttribPointer = function (
   stride: GLsizei,
   offset: GLintptr
 ): void {
+  // Track this location as used (prevents getAttribLocation from reusing it,
+  // important for mat4 attributes that occupy 4 consecutive locations)
+  this.usedAttribLocations.add(index);
   this.pushCommand('vertexAttribPointer', {
     location: index,  // Go expects 'location', not 'index'
     size,

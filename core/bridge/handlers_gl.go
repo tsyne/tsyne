@@ -762,7 +762,9 @@ func (b *Bridge) executeGLCommand(canvas *GLCanvas, cmd string, args map[string]
 	// Misc operations
 	case "scissor":
 		return b.glScissor(canvas, args)
-	case "generateMipmap", "readPixels":
+	case "generateMipmap":
+		return b.glGenerateMipmap(canvas, args)
+	case "readPixels":
 		return nil // Misc - handled by painter
 
 	default:
@@ -2123,6 +2125,15 @@ func (b *Bridge) glLineWidth(canvas *GLCanvas, args map[string]interface{}) erro
 	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
 		Type:  "lineWidth",
 		Value: width,
+	})
+	return nil
+}
+
+func (b *Bridge) glGenerateMipmap(canvas *GLCanvas, args map[string]interface{}) error {
+	target := uint32(toFloat64(args["target"]))
+	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+		Type:  "generateMipmap",
+		Value: target,
 	})
 	return nil
 }

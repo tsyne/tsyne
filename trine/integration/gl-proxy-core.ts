@@ -599,6 +599,8 @@ export class TsyneGLProxy implements WebGL2RenderingContext {
   // Track attribute locations per program
   private attribLocationMap = new Map<number, Map<string, number>>();
   private nextAttribLocation = 0;
+  // Track locations used by vertexAttribPointer (prevents mat4 column collisions)
+  private usedAttribLocations = new Set<number>();
 
   bindAttribLocation(program: WebGLProgram, index: GLuint, name: string): void {
     const programId = (program as any).__tsyneId;
@@ -649,9 +651,24 @@ export class TsyneGLProxy implements WebGL2RenderingContext {
         default:
           // Use incrementing locations for unknown attributes
           location = this.nextAttribLocation++;
-          // Skip common slots if not used
-          while (location <= 3) {
+          // Skip common slots and locations already used (e.g. mat4 sub-columns)
+          while (location <= 3 || this.usedAttribLocations.has(location)) {
             location = this.nextAttribLocation++;
+          }
+          // For mat4 attributes, reserve 4 consecutive locations
+          const vertSrc = this.programVertexShaders.get(programId) || '';
+          const attrTypeMatch = vertSrc.match(new RegExp(`(?:attribute|in)\\s+(mat4|mat3|mat2)\\s+${name}\\s*;`));
+          if (attrTypeMatch) {
+            const cols = attrTypeMatch[1] === 'mat4' ? 4 : attrTypeMatch[1] === 'mat3' ? 3 : 2;
+            for (let c = 0; c < cols; c++) {
+              this.usedAttribLocations.add(location + c);
+            }
+            // Advance nextAttribLocation past the reserved range
+            if (this.nextAttribLocation <= location + cols) {
+              this.nextAttribLocation = location + cols;
+            }
+          } else {
+            this.usedAttribLocations.add(location);
           }
       }
       programAttribs.set(name, location);

@@ -117,7 +117,8 @@ sed -i '/Viewport(x, y, width, height int)/a\
 \	GenVertexArray() uint32\
 \	BindVertexArray(vao uint32)\
 \	DeleteVertexArray(vao uint32)\
-\	GetVertexAttribi(index uint32, pname uint32) int32' "$FORK_DIR/internal/painter/gl/context.go"
+\	GetVertexAttribi(index uint32, pname uint32) int32\
+\	GenerateMipmap(target uint32)' "$FORK_DIR/internal/painter/gl/context.go"
 
 # 6b. Add Framebuffer and Renderbuffer types to gl_core.go and gl_es.go
 echo "[setup-fyne-fork] Adding FBO types..."

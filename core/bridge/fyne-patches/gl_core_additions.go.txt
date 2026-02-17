@@ -204,3 +204,7 @@ func (c *coreContext) GetVertexAttribi(index uint32, pname uint32) int32 {
 	gl.GetVertexAttribiv(index, pname, &value)
 	return value
 }
+
+func (c *coreContext) GenerateMipmap(target uint32) {
+	gl.GenerateMipmap(target)
+}

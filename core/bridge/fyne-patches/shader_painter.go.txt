@@ -1065,6 +1065,11 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 					}
 				}
 
+			case "generateMipmap":
+				if target, ok := cmd.Value.(uint32); ok {
+					p.ctx.GenerateMipmap(target)
+				}
+
 			case "depthFunc":
 				if fn, ok := cmd.Value.(uint32); ok {
 					p.ctx.DepthFunc(fn)
