@@ -1,0 +1,85 @@
+diff --git a/app/app_embedded.go b/app/app_embedded.go
+index ddcb7fba55..8c1e2973e3 100644
+--- a/app/app_embedded.go
++++ b/app/app_embedded.go
+@@ -9,6 +9,37 @@ import (
+ 	"fyne.io/fyne/v2/theme"
+ )
+ 
++// embeddedClipboard is a simple in-memory clipboard for embedded mode
++type embeddedClipboard struct {
++	content string
++}
++
++func (c *embeddedClipboard) Content() string {
++	return c.content
++}
++
++func (c *embeddedClipboard) SetContent(content string) {
++	c.content = content
++}
++
++// NewEmbedded creates a new Fyne application using the embedded driver.
++// This is useful for environments like Android where the standard driver
++// initialization may not work from background threads.
++//
++// The embedded.Driver interface must provide:
++//   - Render(image.Image) - called when a frame is ready to display
++//   - Run(func()) - called to start the main loop
++//   - ScreenSize() fyne.Size - returns the current screen dimensions
++//   - Queue() chan Event - channel for receiving input events
++//
++// Since: 2.7
++func NewEmbedded(d embedded.Driver) fyne.App {
++	driver := intNoos.NewNoOSDriver(d.Render, d.Run, d.Queue(), d.ScreenSize)
++	a := newAppWithDriver(driver, &embeddedClipboard{}, "")
++	a.(*fyneApp).Settings().SetTheme(theme.DefaultTheme())
++	return a
++}
++
+ // SetEmbeddedDriver configures an app to use the embedded driver for rendering.
+ // This allows Fyne to render to images which can be displayed by an external system,
+ // such as an Android SurfaceView or custom display hardware.
+diff --git a/internal/driver/embedded/driver.go b/internal/driver/embedded/driver.go
+index 5056a08300..4afbdffac8 100755
+--- a/internal/driver/embedded/driver.go
++++ b/internal/driver/embedded/driver.go
+@@ -2,6 +2,7 @@ package embedded
+ 
+ import (
+ 	"image"
++	"log"
+ 	"math"
+ 	"time"
+ 
+@@ -69,6 +70,7 @@ func (n *noosDriver) Run() {
+ }
+ 
+ func (n *noosDriver) doRun() {
++	async.SetMainGoroutine()
+ 	for _, w := range n.wins {
+ 		n.renderWindow(w)
+ 	}
+@@ -156,7 +158,9 @@ func (n *noosDriver) handleTouchMove(ev *embedded.TouchMoveEvent, w *noosWindow)
+ }
+ 
+ func (n *noosDriver) handleTouchUp(ev *embedded.TouchUpEvent, w *noosWindow) {
++	log.Printf("handleTouchUp: pos=(%f,%f) id=%d", ev.Position.X, ev.Position.Y, ev.ID)
+ 	w.c.tapUp(ev.Position, ev.ID, func(wid fyne.Tappable, ev *fyne.PointEvent) {
++		log.Printf("Tapped callback invoked for widget: %T", wid)
+ 		wid.Tapped(ev)
+ 	}, func(wid fyne.SecondaryTappable, ev *fyne.PointEvent) {
+ 		wid.TappedSecondary(ev)
+diff --git a/internal/driver/embedded/touchscreen.go b/internal/driver/embedded/touchscreen.go
+index 08ff3fd1a9..0c7b3dbc4b 100644
+--- a/internal/driver/embedded/touchscreen.go
++++ b/internal/driver/embedded/touchscreen.go
+@@ -17,7 +17,7 @@ const (
+ 	tapMoveDecay        = 0.92                   // how much should the scroll continue decay on each frame?
+ 	tapMoveEndThreshold = 2.0                    // at what offset will we stop decaying?
+ 	tapMoveThreshold    = 4.0                    // how far can we move before it is a drag
+-	tapSecondaryDelay   = 300 * time.Millisecond // how long before secondary tap
++	tapSecondaryDelay   = 2000 * time.Millisecond // how long before secondary tap (increased for slower touchscreens)
+ 	tapDoubleDelay      = 500 * time.Millisecond // max duration between taps for a DoubleTap event
+ )
+ 

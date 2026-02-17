@@ -405,7 +405,26 @@ func (c *Clip) MinSize() fyne.Size {\
 }' "$CLIP_FILE"
 fi
 
-# 16. Final tidy
+# 16. Embedded driver compatibility (Android, PostmarketOS, future iOS)
+# See fyne-patches/embedded-driver-compat.diff for original diff reference.
+# - app_embedded.go: NewEmbedded() constructor + embeddedClipboard (new file)
+# - driver.go: SetMainGoroutine() so Fyne's goroutine checker accepts the embedded run loop
+# - touchscreen.go: Increase tapSecondaryDelay for slower touchscreens
+echo "[setup-fyne-fork] Adding embedded driver compatibility..."
+cp "$PATCHES_DIR/app_embedded.go.txt" "$FORK_DIR/app/app_embedded.go"
+
+EMBEDDED_DRIVER="$FORK_DIR/internal/driver/embedded/driver.go"
+if [ -f "$EMBEDDED_DRIVER" ]; then
+    sed -i '/^func (n \*noosDriver) doRun() {/a\
+\tasync.SetMainGoroutine()' "$EMBEDDED_DRIVER"
+fi
+
+TOUCHSCREEN="$FORK_DIR/internal/driver/embedded/touchscreen.go"
+if [ -f "$TOUCHSCREEN" ]; then
+    sed -i 's/tapSecondaryDelay   = 300 \* time\.Millisecond/tapSecondaryDelay   = 2000 * time.Millisecond/' "$TOUCHSCREEN"
+fi
+
+# 17. Final tidy
 echo "[setup-fyne-fork] Final tidying..."
 cd "$FORK_DIR"
 go mod tidy
