@@ -189,15 +189,29 @@ func (s *Shader) SetAttributeBuffer(name string, data []float32, size int, strid
 	}
 	// Preserve existing VBO if we're just updating data
 	var vbo uint32
+	var gen uint64
 	if existing, ok := s.AttributeBuffers[name]; ok {
 		vbo = existing.VBO
+		gen = existing.Generation
+		// Only increment generation if the data actually changed.
+		// pushAttribBuffersToShader calls this repeatedly with the same buffer.data
+		// for shared geometry (e.g., 100 cubes using one BoxGeometry).
+		// Comparing backing-array pointers detects whether glBufferData allocated new data.
+		sameData := len(existing.Data) == len(data) && len(data) > 0 &&
+			&existing.Data[0] == &data[0]
+		if !sameData {
+			gen++
+		}
+	} else {
+		gen = 1 // First buffer for this attribute
 	}
 	s.AttributeBuffers[name] = &AttributeBuffer{
-		Data:   data,
-		Size:   size,
-		VBO:    vbo,
-		Stride: stride,
-		Offset: offset,
+		Data:       data,
+		Size:       size,
+		VBO:        vbo,
+		Stride:     stride,
+		Offset:     offset,
+		Generation: gen,
 	}
 	// Update vertex count based on the number of vertices in this buffer
 	if size > 0 {
@@ -413,11 +427,12 @@ func (s *Shader) QueueDrawArraysInstanced(mode uint32, first int, count int, ins
 			dataCopy := make([]float32, len(buf.Data))
 			copy(dataCopy, buf.Data)
 			attrSnapshot[name] = &AttributeBuffer{
-				Data:   dataCopy,
-				Size:   buf.Size,
-				VBO:    buf.VBO,
-				Stride: buf.Stride,
-				Offset: buf.Offset,
+				Data:       dataCopy,
+				Size:       buf.Size,
+				VBO:        buf.VBO,
+				Stride:     buf.Stride,
+				Offset:     buf.Offset,
+				Generation: buf.Generation,
 			}
 		}
 	}
@@ -444,11 +459,12 @@ func (s *Shader) QueueDrawElementsInstanced(mode uint32, count int, offset int, 
 			dataCopy := make([]float32, len(buf.Data))
 			copy(dataCopy, buf.Data)
 			attrSnapshot[name] = &AttributeBuffer{
-				Data:   dataCopy,
-				Size:   buf.Size,
-				VBO:    buf.VBO,
-				Stride: buf.Stride,
-				Offset: buf.Offset,
+				Data:       dataCopy,
+				Size:       buf.Size,
+				VBO:        buf.VBO,
+				Stride:     buf.Stride,
+				Offset:     buf.Offset,
+				Generation: buf.Generation,
 			}
 		}
 	}

@@ -1114,10 +1114,12 @@ The implementation now provides:
 
 ### What Remains (Future)
 
-1. **Performance tuning** (data-driven):
-   - Run `TSYNE_GL_PROFILE=1` on real scenes to measure actual bottlenecks
-   - Geometry buffer caching (skip re-upload if data unchanged) — estimated 40-50% reduction
-   - Uniform batching per draw command — estimated 15-30% reduction
+1. **Performance tuning** (data-driven): ✅ COMPLETE
+   - [x] Run `TSYNE_SHADER_PROFILE=1` on real scenes to measure actual bottlenecks
+   - [x] VBO Generation-based caching in Phase 1 + command loop — **1.8-8.7x speedup** across scenes
+   - [x] parseVertexAttributes caching (regex + result) — eliminates per-frame string parsing
+   - [x] Uniform batching — SKIPPED (profiling showed ≤0.2ms, not a bottleneck)
+   - Screenshot capture fix: Refresh + sleep before ReadPixels to handle undefined back buffer after SwapBuffers
 2. **Mobile testing on real device**:
    - Android APK deployment and testing via Tauri
    - Touch event mapping for Three.js controls

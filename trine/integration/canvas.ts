@@ -177,10 +177,8 @@ export class TsyneCanvas {
    */
   async getBridgeCanvasId(): Promise<string> {
     if (!this.bridgeCanvasId) {
-      console.log(`[TsyneCanvas] Creating GL canvas ${this.width}x${this.height} in window: ${this.windowId}${this.interactive ? ' (interactive)' : ''}`);
       try {
         this.bridgeCanvasId = await this.bridge.createGLCanvas(this.width, this.height, this.windowId, this.interactive);
-        console.log(`[TsyneCanvas] GL canvas created successfully: ${this.bridgeCanvasId}`);
 
         // Set up mouse event handlers if interactive
         if (this.interactive) {

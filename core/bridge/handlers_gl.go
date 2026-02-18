@@ -206,35 +206,32 @@ void main() {
 
 	var shaderObject *canvasPkg.Shader
 	var hoverableObject *canvasPkg.HoverableShader
-	var shaderContainer fyne.CanvasObject
-
-	if interactive {
-		// Create a hoverable shader for mouse events
-		hoverableObject = canvasPkg.NewHoverableShader(width, height, minimalShader)
-		shaderObject = hoverableObject.Shader
-		shaderContainer = hoverableObject
-		// log.Printf("[GL] Creating interactive GL canvas with mouse events")
-	} else {
-		// Create a regular shader (no mouse events)
-		shaderObject = canvasPkg.NewShader(width, height, minimalShader)
-		shaderContainer = shaderObject
-	}
+	var glContainer *fyne.Container
 
 	// Check if we should skip automatic window attachment
 	asWidget, _ := payload["asWidget"].(bool)
 
-	// Wrap the shader in a container so it can be added to Fyne widget hierarchies.
-	// For widget mode, use container.NewStack which passes through child MinSize
-	// so that grid/vbox layouts allocate the correct space.
-	// For full-window mode, use centerNoMinLayout so the window can shrink freely.
-	var glContainer *fyne.Container
-	if asWidget {
-		glContainer = container.NewStack(shaderContainer)
-	} else {
-		glContainer = container.New(&centerNoMinLayout{}, shaderContainer)
-	}
-	// Resize must happen on main thread
+	// All Fyne object creation must happen on the main thread
 	fyne.DoAndWait(func() {
+		var shaderContainer fyne.CanvasObject
+		if interactive {
+			hoverableObject = canvasPkg.NewHoverableShader(width, height, minimalShader)
+			shaderObject = hoverableObject.Shader
+			shaderContainer = hoverableObject
+		} else {
+			shaderObject = canvasPkg.NewShader(width, height, minimalShader)
+			shaderContainer = shaderObject
+		}
+
+		// Wrap the shader in a container so it can be added to Fyne widget hierarchies.
+		// For widget mode, use container.NewStack which passes through child MinSize
+		// so that grid/vbox layouts allocate the correct space.
+		// For full-window mode, use centerNoMinLayout so the window can shrink freely.
+		if asWidget {
+			glContainer = container.NewStack(shaderContainer)
+		} else {
+			glContainer = container.New(&centerNoMinLayout{}, shaderContainer)
+		}
 		glContainer.Resize(fyne.NewSize(width, height))
 	})
 
@@ -503,9 +500,9 @@ func (b *Bridge) handleExecuteBatch(msg Message) Response {
 	//	}
 	// }
 
-	// Push index data if available
+	// Push index data if available (no Refresh here — it happens on main thread below)
 	if canvas.indexDirty && len(canvas.indexData) > 0 {
-		canvas.ShaderObject.SetIndices(canvas.indexData)
+		canvas.ShaderObject.SetIndicesNoRefresh(canvas.indexData)
 		canvas.indexDirty = false
 	}
 
@@ -1847,7 +1844,30 @@ func (b *Bridge) glTexImage2D(canvas *GLCanvas, args map[string]interface{}) err
 
 	// Store the image in the texture
 	texture.image = img
-	// log.Printf("[GL] texImage2D: stored %dx%d texture in id=%d (unit=%d)", w, h, textureId, canvas.activeTextureUnit)
+
+	// Store CPU image for on-demand GPU upload via bindTexture render command.
+	// This is critical for multi-material rendering (e.g., skybox with 6 DataTextures)
+	// where each material has a different texture on the same sampler name.
+	// Phase 2.1 only uploads one texture per sampler name, but the render command
+	// loop's bindTexture can find and upload each texture by JS ID.
+	canvas.ShaderObject.SetCPUTexImage(int(textureId), img)
+
+	// Queue a GPU-only texture allocation so the painter creates a GL texture ID
+	// that bindTexture render commands can find in gpuTexCache.
+	typeVal := uint32(toFloat32(args["type"]))
+	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+		Type: "texImage2D_gpu",
+		Name: fmt.Sprintf("%d", textureId),
+		Value: canvasPkg.TexImage2DGPUParams{
+			Target:         uint32(toFloat32(args["target"])),
+			Level:          0,
+			Internalformat: uint32(internalformat),
+			Width:          w,
+			Height:         h,
+			Format:         uint32(format),
+			Type:           typeVal,
+		},
+	})
 
 	// Link sampler uniforms to this texture
 	// This handles the case where uniform1i is called before the texture is uploaded
@@ -1855,8 +1875,7 @@ func (b *Bridge) glTexImage2D(canvas *GLCanvas, args map[string]interface{}) err
 		if canvas.boundTextures[unit] == textureId {
 			// This sampler uses the texture we just uploaded
 			canvas.ShaderObject.SetTextureUniform(samplerName, img)
-			log.Printf("[GL] texImage2D: linked sampler %s to texture %d (%dx%d)",
-				samplerName, textureId, w, h)
+			canvas.ShaderObject.SetJSTexForSampler(samplerName, int(textureId))
 		}
 	}
 

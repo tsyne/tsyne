@@ -6,15 +6,24 @@ import (
 	"strings"
 )
 
+// attrRegex is compiled once at package level for parseVertexAttributes
+var attrRegex = regexp.MustCompile(`(?m)^\s*(?:attribute|in)\s+(vec2|vec3|vec4|float|mat2|mat3|mat4)\s+(\w+)\s*;`)
+
+// parsedAttrsCache caches parsed vertex attributes keyed by vertex source
+var parsedAttrsCache = make(map[string][]shaderAttribute)
+
 // parseVertexAttributes extracts attribute declarations from a GLSL vertex shader
-// Returns a list of attributes with their names and sizes
+// Returns a list of attributes with their names and sizes.
+// Results are cached by vertex source string.
 func parseVertexAttributes(vertexSrc string) []shaderAttribute {
+	if cached, ok := parsedAttrsCache[vertexSrc]; ok {
+		return cached
+	}
+
 	var attrs []shaderAttribute
 
 	// Match: attribute <type> <name>;
 	// Handles: attribute vec2 vert; attribute vec3 position; etc.
-	attrRegex := regexp.MustCompile(`(?m)^\s*(?:attribute|in)\s+(vec2|vec3|vec4|float|mat2|mat3|mat4)\s+(\w+)\s*;`)
-
 	matches := attrRegex.FindAllStringSubmatch(vertexSrc, -1)
 	for _, match := range matches {
 		if len(match) >= 3 {
@@ -29,6 +38,7 @@ func parseVertexAttributes(vertexSrc string) []shaderAttribute {
 		}
 	}
 
+	parsedAttrsCache[vertexSrc] = attrs
 	return attrs
 }
 

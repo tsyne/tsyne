@@ -3,12 +3,15 @@ package main
 import (
 	"fmt"
 	"image"
+	"image/color"
 	"image/png"
 	"log"
 	"os"
 	"strings"
+	"time"
 
 	"fyne.io/fyne/v2"
+	canvasPkg "fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/driver/desktop"
 )
 
@@ -322,6 +325,29 @@ func (b *Bridge) handleSetWindowFullScreen(msg Message) Response {
 	}
 }
 
+// shaderCaptureImage wraps pixel data captured during a paint cycle.
+type shaderCaptureImage struct {
+	pix           []uint8
+	width, height int
+}
+
+func (c *shaderCaptureImage) ColorModel() color.Model {
+	return color.RGBAModel
+}
+
+func (c *shaderCaptureImage) Bounds() image.Rectangle {
+	return image.Rect(0, 0, c.width, c.height)
+}
+
+func (c *shaderCaptureImage) At(x, y int) color.Color {
+	// OpenGL pixel data is bottom-up; flip Y
+	start := ((c.height - y - 1)*c.width + x) * 4
+	if start < 0 || start+3 >= len(c.pix) {
+		return color.RGBA{}
+	}
+	return color.RGBA{R: c.pix[start], G: c.pix[start+1], B: c.pix[start+2], A: 255}
+}
+
 func (b *Bridge) handleCaptureWindow(msg Message) Response {
 	windowID := msg.Payload["windowId"].(string)
 	filePath := msg.Payload["filePath"].(string)
@@ -340,10 +366,50 @@ func (b *Bridge) handleCaptureWindow(msg Message) Response {
 
 	var img image.Image
 
-	// Canvas capture must happen on main thread
-	fyne.DoAndWait(func() {
-		img = win.Canvas().Capture()
-	})
+	// Check if there's a GL canvas with a shader — use capture-on-next-paint
+	// to read pixels atomically (after drawShader renders, before SwapBuffers).
+	var shader *canvasPkg.Shader
+	for _, glCanv := range glCanvases {
+		if glCanv.ShaderObject != nil {
+			shader = glCanv.ShaderObject
+			break
+		}
+	}
+
+	if shader != nil {
+		// Request capture from the shader's paint cycle
+		capChan := shader.RequestCapture()
+
+		// Trigger a repaint so the shader runs drawShader (which will do ReadPixels)
+		fyne.DoAndWait(func() {
+			win.Canvas().Content().Refresh()
+		})
+
+		// Wait for the capture to complete (with timeout)
+		select {
+		case result := <-capChan:
+			img = &shaderCaptureImage{
+				pix:    result.Pixels,
+				width:  result.Width,
+				height: result.Height,
+			}
+		case <-time.After(500 * time.Millisecond):
+			// Fallback to Fyne's Capture if shader capture times out
+			log.Printf("[captureWindow] Shader capture timed out, falling back to Fyne Capture")
+			fyne.DoAndWait(func() {
+				img = win.Canvas().Capture()
+			})
+		}
+	} else {
+		// No GL shader — use standard Fyne capture with repaint
+		fyne.DoAndWait(func() {
+			win.Canvas().Content().Refresh()
+		})
+		time.Sleep(32 * time.Millisecond)
+		fyne.DoAndWait(func() {
+			img = win.Canvas().Capture()
+		})
+	}
 
 	// Create file
 	f, err := os.Create(filePath)

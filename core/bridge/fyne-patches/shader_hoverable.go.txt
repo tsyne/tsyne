@@ -34,11 +34,12 @@ func (s *Shader) QueueDrawElements(mode uint32, count int, offset int) {
 			dataCopy := make([]float32, len(buf.Data))
 			copy(dataCopy, buf.Data)
 			attrSnapshot[name] = &AttributeBuffer{
-				Data:   dataCopy,
-				Size:   buf.Size,
-				VBO:    buf.VBO,
-				Stride: buf.Stride,
-				Offset: buf.Offset,
+				Data:       dataCopy,
+				Size:       buf.Size,
+				VBO:        buf.VBO,
+				Stride:     buf.Stride,
+				Offset:     buf.Offset,
+				Generation: buf.Generation,
 			}
 		}
 	}
@@ -74,11 +75,12 @@ func (s *Shader) QueueDrawArrays(mode uint32, first int, count int) {
 			dataCopy := make([]float32, len(buf.Data))
 			copy(dataCopy, buf.Data)
 			attrSnapshot[name] = &AttributeBuffer{
-				Data:   dataCopy,
-				Size:   buf.Size,
-				VBO:    buf.VBO,
-				Stride: buf.Stride,
-				Offset: buf.Offset,
+				Data:       dataCopy,
+				Size:       buf.Size,
+				VBO:        buf.VBO,
+				Stride:     buf.Stride,
+				Offset:     buf.Offset,
+				Generation: buf.Generation,
 			}
 		}
 	}
@@ -106,6 +108,7 @@ func (s *Shader) QueueClear() {
 // If new commands have been queued since the last call, they replace the
 // previous frame's commands. Otherwise the previous frame is replayed so
 // that Fyne repaints don't produce a black flash between animation ticks.
+// Sets LastGetWasNew so callers can distinguish new frames from replays.
 func (s *Shader) GetRenderCommands() []RenderCommand {
 	s.renderMu.Lock()
 	defer s.renderMu.Unlock()
@@ -113,9 +116,11 @@ func (s *Shader) GetRenderCommands() []RenderCommand {
 		// New frame — swap into lastRenderCommands for future replays
 		s.lastRenderCommands = s.renderCommands
 		s.renderCommands = nil
+		s.LastGetWasNew = true
 		return s.lastRenderCommands
 	}
 	// No new commands — replay the previous frame
+	s.LastGetWasNew = false
 	return s.lastRenderCommands
 }
 
@@ -124,6 +129,15 @@ func (s *Shader) HasRenderCommands() bool {
 	s.renderMu.Lock()
 	defer s.renderMu.Unlock()
 	return len(s.renderCommands) > 0
+}
+
+// HasRenderHistory returns true if there are render commands (new or replayed).
+// Used to determine whether the render command loop handles texture/uniform setup,
+// so Phase 2.1/2.2 (legacy texture setup) can be skipped.
+func (s *Shader) HasRenderHistory() bool {
+	s.renderMu.Lock()
+	defer s.renderMu.Unlock()
+	return len(s.renderCommands) > 0 || len(s.lastRenderCommands) > 0
 }
 
 // BeginPaint prepares for a paint cycle - must call WaitForPaint after Refresh.
@@ -163,6 +177,26 @@ func (s *Shader) WaitForPaint() {
 	case <-time.After(16 * time.Millisecond):
 		// Timeout - roughly one frame at 60fps
 	}
+}
+
+// RequestCapture sets up a capture-on-next-paint request.
+// Returns a channel that will receive the captured pixel data.
+// The painter calls ReadPixels at the end of drawShader, before SwapBuffers.
+func (s *Shader) RequestCapture() <-chan CaptureResult {
+	s.captureMu.Lock()
+	defer s.captureMu.Unlock()
+	ch := make(chan CaptureResult, 1)
+	s.captureChan = ch
+	return ch
+}
+
+// GetCaptureChan returns and clears the pending capture channel (called by painter).
+func (s *Shader) GetCaptureChan() chan CaptureResult {
+	s.captureMu.Lock()
+	defer s.captureMu.Unlock()
+	ch := s.captureChan
+	s.captureChan = nil
+	return ch
 }
 
 // SetClearColor sets the clear color for glClear operations.

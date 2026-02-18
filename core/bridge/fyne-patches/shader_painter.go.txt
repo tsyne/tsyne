@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -12,6 +13,10 @@ import (
 
 // shaderDebug controls verbose shader logging (set TSYNE_SHADER_DEBUG=1 to enable)
 var shaderDebug = os.Getenv("TSYNE_SHADER_DEBUG") == "1"
+
+// shaderProfile controls paint-cycle profiling (set TSYNE_SHADER_PROFILE=1 to enable)
+var shaderProfile = os.Getenv("TSYNE_SHADER_PROFILE") == "1"
+
 
 // shaderAttribute represents a parsed vertex attribute declaration
 type shaderAttribute struct {
@@ -45,10 +50,30 @@ varying vec2 v_texCoord;
 var shaderVBO Buffer
 var shaderVBOInit bool
 
+// profileAccum tracks cumulative timing across multiple drawShader calls
+var profileAccum struct {
+	count       int
+	compileNs   int64
+	attribNs    int64
+	textureNs   int64
+	cmdLoopNs   int64
+	uniformNs   int64 // time in uniform commands specifically
+	uniformCount int
+	drawCount   int
+	cleanupNs   int64
+	totalNs     int64
+}
+
 // drawShader renders a Shader canvas object
 func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyne.Size) {
 	if shader.FragmentSource == "" {
 		return
+	}
+
+	var profileStart, phaseStart time.Time
+	if shaderProfile {
+		profileStart = time.Now()
+		phaseStart = profileStart
 	}
 
 	// If shader has a custom vertex source (3D/geometry mode), wait for attribute data
@@ -244,10 +269,25 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 		}
 	}
 
+	if shaderProfile {
+		now := time.Now()
+		profileAccum.compileNs += now.Sub(phaseStart).Nanoseconds()
+		phaseStart = now
+	}
+
+	// Skip Phase 2.1/2.2 (legacy texture setup) when render commands handle
+	// texture binding.  Three.js scenes use activeTexture/bindTexture render
+	// commands to bind different textures per draw call.  Phase 2.1 can
+	// interfere: it creates duplicate GL textures, overwrites gpuTexCache
+	// entries, and races with the JS thread writing to shader.Textures.
+	skipLegacyTextures := shader.HasRenderHistory()
+
 	// Set texture uniforms (Phase 2.1)
 	// Upload texture data and bind to sampler uniforms
 	textureUnit := 0
-	for texName, texData := range shader.GetTextures() {
+	if !skipLegacyTextures {
+	textures := shader.GetTextures()
+	for texName, texData := range textures {
 		if textureUnit >= 16 {
 			break
 		}
@@ -383,6 +423,13 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 		}
 		textureUnit++
 	}
+	} // end if !skipLegacyTextures
+
+	if shaderProfile {
+		now := time.Now()
+		profileAccum.textureNs += now.Sub(phaseStart).Nanoseconds()
+		phaseStart = now
+	}
 
 	// Parse vertex shader to find attributes dynamically
 	// (vertexSrc was already computed above for the compilation check)
@@ -513,7 +560,14 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 
 			// Bind and upload data for this attribute
 			p.ctx.BindBuffer(arrayBuffer, Buffer(buf.VBO))
-			p.ctx.BufferData(arrayBuffer, buf.Data, dynamicDraw)
+			// Generation-based cache: skip BufferData if this VBO already has this generation
+			if shader.VBOUploadedGen == nil {
+				shader.VBOUploadedGen = make(map[uint32]uint64)
+			}
+			if shader.VBOUploadedGen[buf.VBO] != buf.Generation {
+				p.ctx.BufferData(arrayBuffer, buf.Data, dynamicDraw)
+				shader.VBOUploadedGen[buf.VBO] = buf.Generation
+			}
 
 			// Handle mat4 attributes: 4 consecutive vec4 columns sharing one VBO
 			if attr.glslType == "mat4" {
@@ -655,6 +709,12 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 
 	p.logError()
 
+	if shaderProfile {
+		now := time.Now()
+		profileAccum.attribNs += now.Sub(phaseStart).Nanoseconds()
+		phaseStart = now
+	}
+
 	if len(enabledAttribs) == 0 && shaderDebug {
 		log.Printf("[drawShader] WARNING: No vertex attributes bound!")
 	}
@@ -662,6 +722,16 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 	// Process render command queue (immediate-mode: set uniform → draw → set uniform → draw)
 	renderCommands := shader.GetRenderCommands()
 	if len(renderCommands) > 0 {
+		// Invalidate VBO upload cache: Phase 1 (above) may have uploaded different data
+		// to shared VBOs without updating VBOUploadedGen. Clearing forces the first draw
+		// for each VBO to re-upload, while subsequent draws sharing the same VBO+generation
+		// still benefit from the cache within this render pass.
+		if shader.VBOUploadedGen != nil {
+			for k := range shader.VBOUploadedGen {
+				delete(shader.VBOUploadedGen, k)
+			}
+		}
+
 		// Set up GL state for 3D rendering (three.js style)
 		p.ctx.Enable(depthTest)
 		p.ctx.DepthFunc(lequal)
@@ -672,17 +742,15 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 		p.ctx.Enable(programPointSize)
 
 		if shaderDebug {
-			drawCount := 0
-			useProgramCount := 0
+			typeCounts := make(map[string]int)
 			for _, cmd := range renderCommands {
-				if cmd.Type == "drawElements" || cmd.Type == "drawArrays" {
-					drawCount++
-				}
-				if cmd.Type == "useProgram" {
-					useProgramCount++
-				}
+				typeCounts[cmd.Type]++
 			}
-			log.Printf("[drawShader] Frame: %d commands, %d draws, %d usePrograms", len(renderCommands), drawCount, useProgramCount)
+			isNew := "REPLAY"
+			if shader.LastGetWasNew {
+				isNew = "NEW"
+			}
+			log.Printf("[drawShader] %s frame: %d commands %v", isNew, len(renderCommands), typeCounts)
 		}
 
 		// Execute commands in order (three.js immediate-mode style)
@@ -691,8 +759,19 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 			_ = cmdIdx
 			switch cmd.Type {
 			case "uniform":
+				var uniformStart time.Time
+				if shaderProfile {
+					uniformStart = time.Now()
+				}
 				setUniform(cmd.Name, cmd.Value)
+				if shaderProfile {
+					profileAccum.uniformNs += time.Since(uniformStart).Nanoseconds()
+					profileAccum.uniformCount++
+				}
 			case "drawElements":
+				if shaderProfile {
+					profileAccum.drawCount++
+				}
 				if params, ok := cmd.Value.(canvas.DrawElementsParams); ok {
 					if params.Count > 0 {
 						if shaderDebug {
@@ -730,7 +809,14 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 									buf.VBO = uint32(p.ctx.CreateBuffer())
 								}
 								p.ctx.BindBuffer(arrayBuffer, Buffer(buf.VBO))
-								p.ctx.BufferData(arrayBuffer, buf.Data, dynamicDraw)
+								// Generation-based cache: skip BufferData if this VBO already has this generation
+								if shader.VBOUploadedGen == nil {
+									shader.VBOUploadedGen = make(map[uint32]uint64)
+								}
+								if shader.VBOUploadedGen[buf.VBO] != buf.Generation {
+									p.ctx.BufferData(arrayBuffer, buf.Data, dynamicDraw)
+									shader.VBOUploadedGen[buf.VBO] = buf.Generation
+									}
 								// Handle mat4: 4 consecutive vec4 columns sharing one VBO
 								if attr.glslType == "mat4" {
 									div := attribDivisors[attr.name]
@@ -777,6 +863,9 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 					}
 				}
 			case "drawArrays":
+				if shaderProfile {
+					profileAccum.drawCount++
+				}
 				if params, ok := cmd.Value.(canvas.DrawArraysParams); ok {
 					if params.Count > 0 {
 						// Use captured geometry from the draw command if available
@@ -803,7 +892,14 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 									buf.VBO = uint32(p.ctx.CreateBuffer())
 								}
 								p.ctx.BindBuffer(arrayBuffer, Buffer(buf.VBO))
-								p.ctx.BufferData(arrayBuffer, buf.Data, dynamicDraw)
+								// Generation-based cache: skip BufferData if this VBO already has this generation
+								if shader.VBOUploadedGen == nil {
+									shader.VBOUploadedGen = make(map[uint32]uint64)
+								}
+								if shader.VBOUploadedGen[buf.VBO] != buf.Generation {
+									p.ctx.BufferData(arrayBuffer, buf.Data, dynamicDraw)
+									shader.VBOUploadedGen[buf.VBO] = buf.Generation
+									}
 								// Handle mat4: 4 consecutive vec4 columns sharing one VBO
 								if attr.glslType == "mat4" {
 									div := attribDivisors[attr.name]
@@ -1189,6 +1285,12 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 			}
 		}
 
+		if shaderProfile {
+			now := time.Now()
+			profileAccum.cmdLoopNs += now.Sub(phaseStart).Nanoseconds()
+			phaseStart = now
+		}
+
 		// Restore GL state
 		p.ctx.BindFramebuffer(framebuffer, Framebuffer(0)) // Unbind any FBO
 		p.ctx.ColorMask(true, true, true, true) // Restore color mask
@@ -1212,6 +1314,18 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 	}
 	p.logError()
 
+	// Capture-on-next-paint: if a capture was requested, read pixels now
+	// (while the back buffer still has our rendered content, before SwapBuffers)
+	if capChan := shader.GetCaptureChan(); capChan != nil {
+		// Restore full viewport for capture (we want the full window)
+		capFrameW := int(p.pixScale * frame.Width)
+		capFrameH := int(p.pixScale * frame.Height)
+		p.ctx.Viewport(0, 0, capFrameW, capFrameH)
+		pixels := make([]uint8, capFrameW*capFrameH*4)
+		p.ctx.ReadPixels(0, 0, capFrameW, capFrameH, colorFormatRGBA, unsignedByte, pixels)
+		capChan <- canvas.CaptureResult{Pixels: pixels, Width: capFrameW, Height: capFrameH}
+	}
+
 	// Disable enabled vertex attributes
 	for _, attrib := range enabledAttribs {
 		p.ctx.DisableVertexAttribArray(attrib)
@@ -1234,6 +1348,29 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 	p.ctx.EnableVertexAttribArray(p.program.attributes["vert"])
 	p.ctx.EnableVertexAttribArray(p.program.attributes["vertTexCoord"])
 
+	if shaderProfile {
+		now := time.Now()
+		profileAccum.cleanupNs += now.Sub(phaseStart).Nanoseconds()
+		profileAccum.totalNs += now.Sub(profileStart).Nanoseconds()
+		profileAccum.count++
+		if profileAccum.count % 60 == 0 {
+			n := int64(profileAccum.count)
+			log.Printf("[PROFILE] %d frames: total=%.1fms compile=%.1fms tex=%.1fms attr=%.1fms cmdLoop=%.1fms cleanup=%.1fms | uniforms: %d calls %.1fms | draws: %d",
+				profileAccum.count,
+				float64(profileAccum.totalNs)/float64(n)/1e6,
+				float64(profileAccum.compileNs)/float64(n)/1e6,
+				float64(profileAccum.textureNs)/float64(n)/1e6,
+				float64(profileAccum.attribNs)/float64(n)/1e6,
+				float64(profileAccum.cmdLoopNs)/float64(n)/1e6,
+				float64(profileAccum.cleanupNs)/float64(n)/1e6,
+				profileAccum.uniformCount/int(n),
+				float64(profileAccum.uniformNs)/float64(n)/1e6,
+				profileAccum.drawCount/int(n),
+			)
+		}
+	}
+
 	// Signal that paint is complete (for sync with JS frame loop)
 	shader.SignalPaintDone()
+
 }
