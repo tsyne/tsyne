@@ -419,15 +419,15 @@ func (s *Shader) GetAttribDivisors() map[string]uint32 {
 }
 
 // QueueDrawArraysInstanced queues an instanced drawArrays call with a snapshot of current geometry.
+// Safe to share slice references: glBufferData always allocates new slices,
+// and glBufferSubData uses copy-on-write.
 func (s *Shader) QueueDrawArraysInstanced(mode uint32, first int, count int, instanceCount int) {
 	s.attrBuffersMu.RLock()
 	attrSnapshot := make(map[string]*AttributeBuffer)
 	for name, buf := range s.AttributeBuffers {
 		if buf != nil && len(buf.Data) > 0 {
-			dataCopy := make([]float32, len(buf.Data))
-			copy(dataCopy, buf.Data)
 			attrSnapshot[name] = &AttributeBuffer{
-				Data:       dataCopy,
+				Data:       buf.Data,
 				Size:       buf.Size,
 				VBO:        buf.VBO,
 				Stride:     buf.Stride,
@@ -451,15 +451,15 @@ func (s *Shader) QueueDrawArraysInstanced(mode uint32, first int, count int, ins
 }
 
 // QueueDrawElementsInstanced queues an instanced drawElements call with a snapshot of current geometry.
+// Safe to share slice references: glBufferData always allocates new slices,
+// and glBufferSubData uses copy-on-write.
 func (s *Shader) QueueDrawElementsInstanced(mode uint32, count int, offset int, instanceCount int) {
 	s.attrBuffersMu.RLock()
 	attrSnapshot := make(map[string]*AttributeBuffer)
 	for name, buf := range s.AttributeBuffers {
 		if buf != nil && len(buf.Data) > 0 {
-			dataCopy := make([]float32, len(buf.Data))
-			copy(dataCopy, buf.Data)
 			attrSnapshot[name] = &AttributeBuffer{
-				Data:       dataCopy,
+				Data:       buf.Data,
 				Size:       buf.Size,
 				VBO:        buf.VBO,
 				Stride:     buf.Stride,
@@ -470,12 +470,6 @@ func (s *Shader) QueueDrawElementsInstanced(mode uint32, count int, offset int, 
 	}
 	s.attrBuffersMu.RUnlock()
 
-	var indicesCopy []uint16
-	if len(s.Indices) > 0 {
-		indicesCopy = make([]uint16, len(s.Indices))
-		copy(indicesCopy, s.Indices)
-	}
-
 	s.QueueRenderCommand(RenderCommand{
 		Type: "drawElements",
 		Value: DrawElementsParams{
@@ -484,7 +478,7 @@ func (s *Shader) QueueDrawElementsInstanced(mode uint32, count int, offset int, 
 			Offset:           offset,
 			InstanceCount:    instanceCount,
 			AttributeBuffers: attrSnapshot,
-			Indices:          indicesCopy,
+			Indices:          s.Indices,
 		},
 	})
 }

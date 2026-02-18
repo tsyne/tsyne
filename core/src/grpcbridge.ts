@@ -1001,9 +1001,9 @@ export class GrpcBridgeConnection implements BridgeInterface {
             widgetId: payload.widgetId || payload.id,
             width: payload.width || 0,
             height: payload.height || 0,
-            pixels: payload.pixels ? Buffer.from(String(payload.pixels), 'base64') : Buffer.alloc(0),
+            pixels: payload.pixels instanceof Uint8Array ? Buffer.from(payload.pixels) : Buffer.alloc(0),
             blendMode: 0,
-            rawPixels: payload.rawPixels ? Buffer.from(String(payload.rawPixels), 'base64') : Buffer.alloc(0)
+            rawPixels: payload.rawPixels instanceof Uint8Array ? Buffer.from(payload.rawPixels) : Buffer.alloc(0)
           }
         };
       case 'createCanvasLinearGradient':
@@ -1065,7 +1065,7 @@ export class GrpcBridgeConnection implements BridgeInterface {
             widgetId: payload.widgetId || payload.id,
             width: payload.width || 0,
             height: payload.height || 0,
-            pixels: payload.pixels ? Buffer.from(String(payload.pixels), 'base64') : Buffer.alloc(0),
+            pixels: payload.pixels instanceof Uint8Array ? Buffer.from(payload.pixels) : Buffer.alloc(0),
             onKeyDownCallbackId: payload.onKeyDownCallbackId || '',
             onKeyUpCallbackId: payload.onKeyUpCallbackId || '',
             onScrollCallbackId: payload.onScrollCallbackId || '',

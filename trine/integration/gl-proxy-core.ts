@@ -752,29 +752,20 @@ export class TsyneGLProxy implements WebGL2RenderingContext {
 applyGLConstants(TsyneGLProxy.prototype);
 
 /**
- * Encode buffer data for transmission
+ * Encode buffer data for transmission.
+ * Returns a Uint8Array which msgpack natively encodes as binary (bin type).
  */
-export function encodeBufferData(data: ArrayBufferView | ArrayBuffer | number[]): string {
-  let buffer: ArrayBuffer;
-
+export function encodeBufferData(data: ArrayBufferView | ArrayBuffer | number[]): Uint8Array {
   if (data instanceof ArrayBuffer) {
-    buffer = data;
+    return new Uint8Array(data);
   } else if (ArrayBuffer.isView(data)) {
-    buffer = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
+    return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
   } else if (Array.isArray(data)) {
     // Handle plain number arrays (common from three.js)
     const float32 = new Float32Array(data);
-    buffer = float32.buffer;
+    return new Uint8Array(float32.buffer);
   } else {
     console.warn('[encodeBufferData] Unhandled data type:', typeof data);
-    return '';
+    return new Uint8Array(0);
   }
-
-  // Convert to base64 for bridge transmission
-  const view = new Uint8Array(buffer);
-  let binary = '';
-  for (let i = 0; i < view.length; i++) {
-    binary += String.fromCharCode(view[i]);
-  }
-  return btoa(binary);
 }

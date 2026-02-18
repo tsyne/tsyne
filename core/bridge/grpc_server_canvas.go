@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/base64"
 
 	pb "github.com/paul-hammant/tsyne/bridge/proto"
 )
@@ -162,17 +161,14 @@ func (s *grpcBridgeService) CreateCanvasText(ctx context.Context, req *pb.Create
 
 // CreateCanvasRaster creates a canvas raster
 func (s *grpcBridgeService) CreateCanvasRaster(ctx context.Context, req *pb.CreateCanvasRasterRequest) (*pb.Response, error) {
-	// Convert pixels to base64
-	pixelData := base64.StdEncoding.EncodeToString(req.Pixels)
-
 	payload := map[string]interface{}{
 		"id":     req.WidgetId,
 		"width":  float64(req.Width),
 		"height": float64(req.Height),
-		"pixels": pixelData,
+		"pixels": req.Pixels,
 	}
 	if len(req.RawPixels) > 0 {
-		payload["rawPixels"] = base64.StdEncoding.EncodeToString(req.RawPixels)
+		payload["rawPixels"] = req.RawPixels
 	}
 	if blendMode := convertBlendMode(req.BlendMode); blendMode != "" {
 		payload["blendMode"] = blendMode
@@ -375,13 +371,11 @@ func (s *grpcBridgeService) CreateCanvasPolygon(ctx context.Context, req *pb.Cre
 
 // CreateTappableCanvasRaster creates a tappable canvas raster
 func (s *grpcBridgeService) CreateTappableCanvasRaster(ctx context.Context, req *pb.CreateTappableCanvasRasterRequest) (*pb.Response, error) {
-	pixelData := base64.StdEncoding.EncodeToString(req.Pixels)
-
 	payload := map[string]interface{}{
 		"id":                    req.WidgetId,
 		"width":                 float64(req.Width),
 		"height":                float64(req.Height),
-		"pixels":                pixelData,
+		"pixels":                req.Pixels,
 		"onKeyDownCallbackId":   req.OnKeyDownCallbackId,
 		"onKeyUpCallbackId":     req.OnKeyUpCallbackId,
 		"onScrollCallbackId":    req.OnScrollCallbackId,
@@ -723,15 +717,12 @@ func (s *grpcBridgeService) UpdateTappableCanvasRaster(ctx context.Context, req 
 
 // SetTappableCanvasImage sets canvas from PNG image bytes
 func (s *grpcBridgeService) SetTappableCanvasImage(ctx context.Context, req *pb.SetTappableCanvasImageRequest) (*pb.Response, error) {
-	// Encode raw image bytes to base64 for message handler
-	imageB64 := base64.StdEncoding.EncodeToString(req.Image)
-
 	msg := Message{
 		ID:   req.WidgetId,
 		Type: "setTappableCanvasImage",
 		Payload: map[string]interface{}{
 			"widgetId": req.WidgetId,
-			"image":    imageB64,
+			"image":    req.Image,
 		},
 	}
 
@@ -745,9 +736,6 @@ func (s *grpcBridgeService) SetTappableCanvasImage(ctx context.Context, req *pb.
 
 // SetTappableCanvasRect sets a rectangular region of pixels
 func (s *grpcBridgeService) SetTappableCanvasRect(ctx context.Context, req *pb.SetTappableCanvasRectRequest) (*pb.Response, error) {
-	// Encode raw pixel bytes to base64 for message handler
-	bufferB64 := base64.StdEncoding.EncodeToString(req.Buffer)
-
 	msg := Message{
 		ID:   req.WidgetId,
 		Type: "setTappableCanvasRect",
@@ -757,7 +745,7 @@ func (s *grpcBridgeService) SetTappableCanvasRect(ctx context.Context, req *pb.S
 			"y":        int(req.Y),
 			"width":    int(req.Width),
 			"height":   int(req.Height),
-			"buffer":   bufferB64,
+			"buffer":   req.Buffer,
 		},
 	}
 

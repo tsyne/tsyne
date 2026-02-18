@@ -1,8 +1,6 @@
 package main
 
 import (
-	"encoding/base64"
-	"encoding/binary"
 	"fmt"
 	"image"
 	"log"
@@ -10,6 +8,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"unsafe"
 
 	"fyne.io/fyne/v2"
 	canvasPkg "fyne.io/fyne/v2/canvas"
@@ -167,6 +166,71 @@ type GLCommandBatch struct {
 type GLCommand struct {
 	Cmd  string                 `mapstructure:"cmd"`
 	Args map[string]interface{} `mapstructure:"args"`
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Zero-copy byte slice reinterpretation helpers
+// ═══════════════════════════════════════════════════════════════
+
+// bytesToFloat32 reinterprets a []byte as []float32 without copying.
+// Falls back to manual conversion if the data is not properly aligned.
+func bytesToFloat32(data []byte) []float32 {
+	n := len(data) / 4
+	if n == 0 {
+		return nil
+	}
+	ptr := unsafe.Pointer(&data[0])
+	if uintptr(ptr)%4 == 0 {
+		return unsafe.Slice((*float32)(ptr), n)
+	}
+	// Unaligned fallback
+	result := make([]float32, n)
+	for i := 0; i < n; i++ {
+		off := i * 4
+		bits := uint32(data[off]) | uint32(data[off+1])<<8 | uint32(data[off+2])<<16 | uint32(data[off+3])<<24
+		result[i] = math.Float32frombits(bits)
+	}
+	return result
+}
+
+// bytesToUint16 reinterprets a []byte as []uint16 without copying.
+// Falls back to manual conversion if the data is not properly aligned.
+func bytesToUint16(data []byte) []uint16 {
+	n := len(data) / 2
+	if n == 0 {
+		return nil
+	}
+	ptr := unsafe.Pointer(&data[0])
+	if uintptr(ptr)%2 == 0 {
+		return unsafe.Slice((*uint16)(ptr), n)
+	}
+	// Unaligned fallback
+	result := make([]uint16, n)
+	for i := 0; i < n; i++ {
+		off := i * 2
+		result[i] = uint16(data[off]) | uint16(data[off+1])<<8
+	}
+	return result
+}
+
+// bytesToInt32 reinterprets a []byte as []int32 without copying.
+// Falls back to manual conversion if the data is not properly aligned.
+func bytesToInt32(data []byte) []int32 {
+	n := len(data) / 4
+	if n == 0 {
+		return nil
+	}
+	ptr := unsafe.Pointer(&data[0])
+	if uintptr(ptr)%4 == 0 {
+		return unsafe.Slice((*int32)(ptr), n)
+	}
+	// Unaligned fallback
+	result := make([]int32, n)
+	for i := 0; i < n; i++ {
+		off := i * 4
+		result[i] = int32(uint32(data[off]) | uint32(data[off+1])<<8 | uint32(data[off+2])<<16 | uint32(data[off+3])<<24)
+	}
+	return result
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1279,43 +1343,25 @@ func (b *Bridge) glBindBuffer(canvas *GLCanvas, args map[string]interface{}) err
 }
 
 func (b *Bridge) glBufferData(canvas *GLCanvas, args map[string]interface{}) error {
-	dataStr, ok := args["data"].(string)
+	data, ok := args["data"].([]byte)
 	if !ok {
 		return nil // No data provided
-	}
-
-	// Decode base64 data
-	data, err := base64.StdEncoding.DecodeString(dataStr)
-	if err != nil {
-		return fmt.Errorf("failed to decode buffer data: %v", err)
 	}
 
 	target := uint32(toFloat64(args["target"]))
 
 	if target == 0x8893 { // ELEMENT_ARRAY_BUFFER
-		// Index buffer - convert bytes to uint16
+		// Index buffer - reinterpret bytes as uint16
 		if buffer, exists := canvas.buffers[canvas.elementBuffer]; exists {
-			indexData := make([]uint16, len(data)/2)
-			for i := 0; i < len(indexData); i++ {
-				offset := i * 2
-				indexData[i] = uint16(data[offset]) | (uint16(data[offset+1]) << 8)
-			}
+			indexData := bytesToUint16(data)
 			buffer.indexData = indexData
 			canvas.indexData = indexData
 			canvas.indexDirty = true
 		}
 	} else if canvas.currentBuffer > 0 {
-		// Vertex buffer - convert bytes to float32 (little-endian IEEE 754)
+		// Vertex buffer - reinterpret bytes as float32
 		if buffer, exists := canvas.buffers[canvas.currentBuffer]; exists {
-			floatData := make([]float32, len(data)/4)
-			for i := 0; i < len(floatData); i++ {
-				offset := i * 4
-				bits := uint32(data[offset]) |
-					(uint32(data[offset+1]) << 8) |
-					(uint32(data[offset+2]) << 16) |
-					(uint32(data[offset+3]) << 24)
-				floatData[i] = math.Float32frombits(bits)
-			}
+			floatData := bytesToFloat32(data)
 			buffer.data = floatData
 			canvas.vertexData = append(canvas.vertexData, floatData...)
 			canvas.vertexDirty = true
@@ -1326,15 +1372,9 @@ func (b *Bridge) glBufferData(canvas *GLCanvas, args map[string]interface{}) err
 }
 
 func (b *Bridge) glBufferSubData(canvas *GLCanvas, args map[string]interface{}) error {
-	dataStr, ok := args["data"].(string)
+	data, ok := args["data"].([]byte)
 	if !ok {
 		return nil // No data provided
-	}
-
-	// Decode base64 data
-	data, err := base64.StdEncoding.DecodeString(dataStr)
-	if err != nil {
-		return fmt.Errorf("failed to decode bufferSubData: %v", err)
 	}
 
 	dstByteOffset := int(toFloat64(args["dstByteOffset"]))
@@ -1342,33 +1382,36 @@ func (b *Bridge) glBufferSubData(canvas *GLCanvas, args map[string]interface{}) 
 
 	if target == 0x8893 { // ELEMENT_ARRAY_BUFFER
 		if buffer, exists := canvas.buffers[canvas.elementBuffer]; exists {
-			dstIdx := dstByteOffset / 2 // byte offset to uint16 index
-			for i := 0; i < len(data)/2; i++ {
-				off := i * 2
-				val := uint16(data[off]) | (uint16(data[off+1]) << 8)
+			// Copy-on-write: allocate new slice before modifying so snapshots stay valid
+			newIdx := make([]uint16, len(buffer.indexData))
+			copy(newIdx, buffer.indexData)
+			srcData := bytesToUint16(data)
+			dstIdx := dstByteOffset / 2
+			for i, val := range srcData {
 				idx := dstIdx + i
-				if idx < len(buffer.indexData) {
-					buffer.indexData[idx] = val
+				if idx < len(newIdx) {
+					newIdx[idx] = val
 				}
 			}
-			canvas.indexData = buffer.indexData
+			buffer.indexData = newIdx
+			canvas.indexData = newIdx
 			canvas.indexDirty = true
 		}
 	} else if canvas.currentBuffer > 0 {
 		// ARRAY_BUFFER - partial update of vertex data
 		if buffer, exists := canvas.buffers[canvas.currentBuffer]; exists {
-			dstIdx := dstByteOffset / 4 // byte offset to float32 index
-			for i := 0; i < len(data)/4; i++ {
-				off := i * 4
-				bits := uint32(data[off]) |
-					(uint32(data[off+1]) << 8) |
-					(uint32(data[off+2]) << 16) |
-					(uint32(data[off+3]) << 24)
+			// Copy-on-write: allocate new slice before modifying so snapshots stay valid
+			newData := make([]float32, len(buffer.data))
+			copy(newData, buffer.data)
+			srcData := bytesToFloat32(data)
+			dstIdx := dstByteOffset / 4
+			for i, val := range srcData {
 				idx := dstIdx + i
-				if idx < len(buffer.data) {
-					buffer.data[idx] = math.Float32frombits(bits)
+				if idx < len(newData) {
+					newData[idx] = val
 				}
 			}
+			buffer.data = newData
 			canvas.vertexDirty = true
 		}
 	}
@@ -1464,21 +1507,13 @@ func (b *Bridge) glUniformIntv(canvas *GLCanvas, cmd string, args map[string]int
 		name = fmt.Sprintf("u_uniform_%v", args["locationId"])
 	}
 
-	dataStr, ok := args["data"].(string)
+	decoded, ok := args["data"].([]byte)
 	if !ok {
 		return nil
 	}
-	decoded, err := base64.StdEncoding.DecodeString(dataStr)
-	if err != nil {
-		return err
-	}
 
 	// Convert bytes to int32 slice
-	intCount := len(decoded) / 4
-	ints := make([]int32, intCount)
-	for i := 0; i < intCount; i++ {
-		ints[i] = int32(binary.LittleEndian.Uint32(decoded[i*4 : (i+1)*4]))
-	}
+	ints := bytesToInt32(decoded)
 
 	// For uniform1iv, each element is a separate sampler/int value
 	// Three.js uses this for shadow map sampler arrays like spotShadowMap[0..N]
@@ -1517,23 +1552,13 @@ func (b *Bridge) glUniformFloatv(canvas *GLCanvas, cmd string, args map[string]i
 	}
 	// log.Printf("[GL] %s: name=%s", cmd, name)
 
-	// Decode base64 data
-	dataStr, ok := args["data"].(string)
+	decoded, ok := args["data"].([]byte)
 	if !ok {
 		return nil
 	}
-	decoded, err := base64.StdEncoding.DecodeString(dataStr)
-	if err != nil {
-		return err
-	}
 
 	// Convert bytes to float32 slice
-	floatCount := len(decoded) / 4
-	floats := make([]float32, floatCount)
-	for i := 0; i < floatCount; i++ {
-		bits := binary.LittleEndian.Uint32(decoded[i*4 : (i+1)*4])
-		floats[i] = math.Float32frombits(bits)
-	}
+	floats := bytesToFloat32(decoded)
 
 	// Queue uniform (don't use SetUniform — it calls Refresh() which needs the main thread)
 	switch cmd {
@@ -1565,23 +1590,13 @@ func (b *Bridge) glUniformMatrix(canvas *GLCanvas, cmd string, args map[string]i
 	}
 	// log.Printf("[GL] %s: name=%s", cmd, name)
 
-	// Decode base64 data
-	dataStr, ok := args["data"].(string)
+	decoded, ok := args["data"].([]byte)
 	if !ok {
 		return nil
 	}
-	decoded, err := base64.StdEncoding.DecodeString(dataStr)
-	if err != nil {
-		return err
-	}
 
 	// Convert bytes to float32 slice
-	floatCount := len(decoded) / 4
-	floats := make([]float32, floatCount)
-	for i := 0; i < floatCount; i++ {
-		bits := binary.LittleEndian.Uint32(decoded[i*4 : (i+1)*4])
-		floats[i] = math.Float32frombits(bits)
-	}
+	floats := bytesToFloat32(decoded)
 
 	// Queue matrix uniform
 	switch cmd {
@@ -1728,15 +1743,9 @@ func (b *Bridge) glTexImage2D(canvas *GLCanvas, args map[string]interface{}) err
 
 	var pixelData []byte
 
-	// Handle both base64 string and direct array input
-	if pixelsStr, ok := pixelsArg.(string); ok && pixelsStr != "" {
-		// Decode base64 pixel data
-		var err error
-		pixelData, err = base64.StdEncoding.DecodeString(pixelsStr)
-		if err != nil {
-			log.Printf("[GL] texImage2D: failed to decode base64 pixel data: %v", err)
-			return nil
-		}
+	// Handle both binary []byte and direct array input
+	if pixelsBytes, ok := pixelsArg.([]byte); ok && len(pixelsBytes) > 0 {
+		pixelData = pixelsBytes
 	} else if pixelsArr, ok := pixelsArg.([]interface{}); ok {
 		// Convert array of float64 (from JSON) to bytes
 		pixelData = make([]byte, len(pixelsArr))
@@ -1888,7 +1897,7 @@ func (b *Bridge) glTexSubImage2D(canvas *GLCanvas, args map[string]interface{}) 
 	w := int(toFloat32(args["width"]))
 	h := int(toFloat32(args["height"]))
 	format := toFloat32(args["format"])
-	pixelsStr, hasPixels := args["pixels"].(string)
+	pixelData, hasPixels := args["pixels"].([]byte)
 
 	// Get the currently bound texture
 	if canvas.boundTextures == nil {
@@ -1910,14 +1919,7 @@ func (b *Bridge) glTexSubImage2D(canvas *GLCanvas, args map[string]interface{}) 
 		return nil
 	}
 
-	if !hasPixels || pixelsStr == "" {
-		return nil
-	}
-
-	// Decode base64 pixel data
-	pixelData, err := base64.StdEncoding.DecodeString(pixelsStr)
-	if err != nil {
-		log.Printf("[GL] texSubImage2D: failed to decode pixel data: %v", err)
+	if !hasPixels || len(pixelData) == 0 {
 		return nil
 	}
 

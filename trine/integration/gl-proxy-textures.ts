@@ -49,7 +49,7 @@ proto.texImage2D = function (
   type: GLenum,
   pixels?: ArrayBufferView | null
 ): void {
-  let pixelData: string | null = null;
+  let pixelData: Uint8Array | null = null;
   if (pixels) {
     pixelData = encodeBufferData(pixels);
   }
@@ -77,7 +77,7 @@ proto.texSubImage2D = function (
   type: GLenum,
   pixels?: ArrayBufferView | null
 ): void {
-  let pixelData: string | null = null;
+  let pixelData: Uint8Array | null = null;
   if (pixels) {
     pixelData = encodeBufferData(pixels);
   }
@@ -136,7 +136,7 @@ proto.texImage3D = function (
   type: GLenum,
   pixels?: ArrayBufferView | null
 ): void {
-  let pixelData: string | null = null;
+  let pixelData: Uint8Array | null = null;
   if (pixels) {
     pixelData = encodeBufferData(pixels);
   }
@@ -167,7 +167,7 @@ proto.texSubImage3D = function (
   type: GLenum,
   pixels?: ArrayBufferView | null
 ): void {
-  let pixelData: string | null = null;
+  let pixelData: Uint8Array | null = null;
   if (pixels) {
     pixelData = encodeBufferData(pixels);
   }

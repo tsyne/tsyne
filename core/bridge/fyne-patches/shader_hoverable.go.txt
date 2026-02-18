@@ -24,17 +24,15 @@ func (s *Shader) QueueUniform(name string, value interface{}) {
 }
 
 // QueueDrawElements queues a drawElements call with a snapshot of current geometry.
+// Safe to share slice references: glBufferData always allocates new slices,
+// and glBufferSubData uses copy-on-write.
 func (s *Shader) QueueDrawElements(mode uint32, count int, offset int) {
-	// Capture snapshot of attribute buffers at draw time (under read lock)
 	s.attrBuffersMu.RLock()
 	attrSnapshot := make(map[string]*AttributeBuffer)
 	for name, buf := range s.AttributeBuffers {
 		if buf != nil && len(buf.Data) > 0 {
-			// Deep copy the data
-			dataCopy := make([]float32, len(buf.Data))
-			copy(dataCopy, buf.Data)
 			attrSnapshot[name] = &AttributeBuffer{
-				Data:       dataCopy,
+				Data:       buf.Data,
 				Size:       buf.Size,
 				VBO:        buf.VBO,
 				Stride:     buf.Stride,
@@ -45,13 +43,6 @@ func (s *Shader) QueueDrawElements(mode uint32, count int, offset int) {
 	}
 	s.attrBuffersMu.RUnlock()
 
-	// Deep copy indices
-	var indicesCopy []uint16
-	if len(s.Indices) > 0 {
-		indicesCopy = make([]uint16, len(s.Indices))
-		copy(indicesCopy, s.Indices)
-	}
-
 	s.QueueRenderCommand(RenderCommand{
 		Type: "drawElements",
 		Value: DrawElementsParams{
@@ -59,23 +50,21 @@ func (s *Shader) QueueDrawElements(mode uint32, count int, offset int) {
 			Count:            count,
 			Offset:           offset,
 			AttributeBuffers: attrSnapshot,
-			Indices:          indicesCopy,
+			Indices:          s.Indices,
 		},
 	})
 }
 
 // QueueDrawArrays queues a drawArrays call with a snapshot of current geometry.
+// Safe to share slice references: glBufferData always allocates new slices,
+// and glBufferSubData uses copy-on-write.
 func (s *Shader) QueueDrawArrays(mode uint32, first int, count int) {
-	// Capture snapshot of attribute buffers at draw time (under read lock)
 	s.attrBuffersMu.RLock()
 	attrSnapshot := make(map[string]*AttributeBuffer)
 	for name, buf := range s.AttributeBuffers {
 		if buf != nil && len(buf.Data) > 0 {
-			// Deep copy the data
-			dataCopy := make([]float32, len(buf.Data))
-			copy(dataCopy, buf.Data)
 			attrSnapshot[name] = &AttributeBuffer{
-				Data:       dataCopy,
+				Data:       buf.Data,
 				Size:       buf.Size,
 				VBO:        buf.VBO,
 				Stride:     buf.Stride,

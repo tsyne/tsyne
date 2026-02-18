@@ -201,6 +201,9 @@ type Shader struct {
 	// The painter checks this before re-uploading: if generation matches, skip BufferData.
 	VBOUploadedGen   map[uint32]uint64
 
+	// Mat4Locs tracks GL locations reserved by mat4 attributes (reused across frames).
+	Mat4Locs         map[int]bool
+
 	// Capture-on-next-paint: when set, the painter reads pixels at the end of drawShader
 	// (before SwapBuffers) and sends the result through the channel.
 	captureChan      chan CaptureResult

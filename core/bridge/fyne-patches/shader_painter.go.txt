@@ -2,6 +2,7 @@ package gl
 
 import (
 	"fmt"
+	"hash/fnv"
 	"log"
 	"os"
 	"strconv"
@@ -10,6 +11,16 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 )
+
+// shaderCacheKey computes a hash-based cache key for shader sources,
+// avoiding the allocation of concatenating full source strings each frame.
+func shaderCacheKey(vertexSrc, fragSrc string) string {
+	h := fnv.New64a()
+	h.Write([]byte(vertexSrc))
+	h.Write([]byte{0}) // separator
+	h.Write([]byte(fragSrc))
+	return strconv.FormatUint(h.Sum64(), 36)
+}
 
 // shaderDebug controls verbose shader logging (set TSYNE_SHADER_DEBUG=1 to enable)
 var shaderDebug = os.Getenv("TSYNE_SHADER_DEBUG") == "1"
@@ -92,7 +103,7 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 	if vertexSrc == "" {
 		vertexSrc = defaultShaderVertexSrc
 	}
-	cacheKey := vertexSrc + "|||" + shader.FragmentSource
+	cacheKey := shaderCacheKey(vertexSrc, shader.FragmentSource)
 	cachedProg, hasCachedProg := shader.GetProgramCache()[cacheKey]
 	needsCompile := shader.NeedsCompile()
 
@@ -445,7 +456,16 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 	// mat4 attributes occupy 4 consecutive locations (one per column).
 	// We must prevent the stored-location fallback from binding other
 	// attributes to locations that overlap with mat4 columns.
-	mat4Locs := make(map[int]bool)
+	// Reuse shader.Mat4Locs to avoid per-frame map allocation.
+	mat4Locs := shader.Mat4Locs
+	if mat4Locs == nil {
+		mat4Locs = make(map[int]bool)
+		shader.Mat4Locs = mat4Locs
+	} else {
+		for k := range mat4Locs {
+			delete(mat4Locs, k)
+		}
+	}
 	for _, a := range attrs {
 		if a.glslType == "mat4" {
 			glLoc := p.ctx.GetAttribLocation(prog, a.name)
@@ -457,8 +477,8 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 		}
 	}
 
-	// Track enabled attributes for cleanup
-	var enabledAttribs []Attribute
+	// Track enabled attributes for cleanup (pre-allocate to reduce GC pressure)
+	enabledAttribs := make([]Attribute, 0, 16)
 
 	// Create a VAO for this shader draw.
 	// On modern GL contexts (3.0+), vertex attribute state (including divisors)
@@ -722,15 +742,10 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 	// Process render command queue (immediate-mode: set uniform → draw → set uniform → draw)
 	renderCommands := shader.GetRenderCommands()
 	if len(renderCommands) > 0 {
-		// Invalidate VBO upload cache: Phase 1 (above) may have uploaded different data
-		// to shared VBOs without updating VBOUploadedGen. Clearing forces the first draw
-		// for each VBO to re-upload, while subsequent draws sharing the same VBO+generation
-		// still benefit from the cache within this render pass.
-		if shader.VBOUploadedGen != nil {
-			for k := range shader.VBOUploadedGen {
-				delete(shader.VBOUploadedGen, k)
-			}
-		}
+		// VBO upload cache is persistent across frames: the generation-based check
+		// at each upload site handles staleness correctly. If Phase 1 uploaded data
+		// with generation X for a VBO, command snapshots with the same generation
+		// can safely skip re-upload since the data is identical on the GPU.
 
 		// Set up GL state for 3D rendering (three.js style)
 		p.ctx.Enable(depthTest)
@@ -973,7 +988,7 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 				}
 			case "useProgram":
 				if params, ok := cmd.Value.(canvas.UseProgramParams); ok {
-					cacheKey := params.VertexSource + "|||" + params.FragmentSource
+					cacheKey := shaderCacheKey(params.VertexSource, params.FragmentSource)
 					cachedProg, found := shader.GetProgramCache()[cacheKey]
 					if found && cachedProg != 0 {
 						prog = Program(cachedProg)
