@@ -43,6 +43,33 @@ export class TsyneGLProxy implements WebGL2RenderingContext {
   private boundElementArrayBuffer: number | null = null;
   private activeTextureUnit = 0;
 
+  // GL state deduplication — track current state to skip redundant commands
+  private enabledCaps = new Set<number>();
+  private currentDepthFunc: number = 0x0201; // LESS
+  private currentDepthMask: boolean = true;
+  private currentCullFace: number = 0x0405; // BACK
+  private currentFrontFace: number = 0x0901; // CCW
+  private currentBlendSrc: number = 0x0001; // ONE
+  private currentBlendDst: number = 0x0000; // ZERO
+  private currentBlendSrcAlpha: number = 0x0001;
+  private currentBlendDstAlpha: number = 0x0000;
+  private currentBlendEqRGB: number = 0x8006; // FUNC_ADD
+  private currentBlendEqAlpha: number = 0x8006;
+  private currentColorMask: [boolean, boolean, boolean, boolean] = [true, true, true, true];
+  private currentStencilFunc: number = 0x0207; // ALWAYS
+  private currentStencilRef: number = 0;
+  private currentStencilMask: number = 0xFFFFFFFF;
+  private currentLineWidth: number = 1;
+
+  // Per-frame profiling (enabled via TSYNE_GL_PROFILE=1 env var)
+  private _frameCount = 0;
+  private _commandsThisFrame = 0;
+  private _commandsSkipped = 0;
+  private _profilingEnabled = typeof process !== 'undefined' && process.env?.TSYNE_GL_PROFILE === '1';
+  private _profilingInterval = 60; // Log every N frames
+  private _frameStartTime = 0;
+  private _totalFlushTime = 0;
+
   /**
    * Map of object IDs to actual GL objects (on the bridge)
    * We maintain these IDs to track which objects we've created
@@ -89,6 +116,8 @@ export class TsyneGLProxy implements WebGL2RenderingContext {
       return;
     }
 
+    const flushStart = this._profilingEnabled ? performance.now() : 0;
+
     try {
       const canvasId = await (this.canvas as any).getBridgeCanvasId();
       const response = await this.bridge.executeBatch(canvasId, this.commandBuffer);
@@ -106,7 +135,24 @@ export class TsyneGLProxy implements WebGL2RenderingContext {
         }
       }
     } catch (error) {
-      console.error('Error flushing GL commands:', error);
+      console.error('[TsyneGL] Flush failed:', error);
+    }
+
+    // Per-frame profiling
+    if (this._profilingEnabled) {
+      const flushTime = performance.now() - flushStart;
+      this._totalFlushTime += flushTime;
+      this._commandsThisFrame = this.commandBuffer.length;
+      this._frameCount++;
+      if (this._frameCount % this._profilingInterval === 0) {
+        const avgFlush = this._totalFlushTime / this._profilingInterval;
+        console.log(
+          `[TsyneGL Profile] frame=${this._frameCount} cmds=${this._commandsThisFrame} ` +
+          `skipped=${this._commandsSkipped} avgFlush=${avgFlush.toFixed(1)}ms`
+        );
+        this._totalFlushTime = 0;
+        this._commandsSkipped = 0;
+      }
     }
 
     this.commandBuffer = [];
@@ -191,8 +237,9 @@ export class TsyneGLProxy implements WebGL2RenderingContext {
   }
 
   getBufferSubData(target: GLenum, srcByteOffset: GLintptr, dstBuffer: ArrayBufferView, dstOffset?: GLuint, length?: GLuint): void {
-    // This is a readback operation - for now, no-op since we can't synchronously return data
-    // The Go bridge would need to fill dstBuffer, which requires async support
+    // Readback operations require sync bridge round-trip which isn't supported.
+    // Three.js doesn't use this in normal rendering paths — it's for GPU→CPU readback.
+    // If called, dstBuffer is left unchanged (zeroed).
   }
 
   bufferData(
@@ -265,17 +312,27 @@ export class TsyneGLProxy implements WebGL2RenderingContext {
     this.pushCommand('compileShader', { shaderId });
   }
 
+  // Track shader compile errors locally (filled by bridge response if available)
+  private shaderCompileErrors = new Map<number, string>();
+
   getShaderParameter(shader: WebGLShader, pname: GLenum): any {
-    // Would need sync call to bridge - for now return stub
+    const shaderId = (shader as any).__tsyneId;
     if (pname === 0x8b81) { // COMPILE_STATUS
-      return true;
+      // Return true unless we have a known error for this shader
+      return !this.shaderCompileErrors.has(shaderId);
+    }
+    if (pname === 0x8b4f) { // SHADER_TYPE
+      return this.shaderTypes.get(shaderId) || null;
+    }
+    if (pname === 0x8b80) { // DELETE_STATUS
+      return !this.shaders.has(shaderId);
     }
     return null;
   }
 
   getShaderInfoLog(shader: WebGLShader): string {
-    // Would need sync call - for now return empty
-    return '';
+    const shaderId = (shader as any).__tsyneId;
+    return this.shaderCompileErrors.get(shaderId) || '';
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -337,7 +394,10 @@ export class TsyneGLProxy implements WebGL2RenderingContext {
   getProgramParameter(program: WebGLProgram, pname: GLenum): any {
     const programId = (program as any).__tsyneId;
 
-    if (pname === this.LINK_STATUS || pname === this.VALIDATE_STATUS) {
+    if (pname === this.LINK_STATUS) {
+      return !this.programLinkErrors.has(programId);
+    }
+    if (pname === this.VALIDATE_STATUS) {
       return true;
     }
 
@@ -375,8 +435,12 @@ export class TsyneGLProxy implements WebGL2RenderingContext {
     return null;
   }
 
+  // Track program link errors
+  private programLinkErrors = new Map<number, string>();
+
   getProgramInfoLog(program: WebGLProgram): string {
-    return '';
+    const programId = (program as any).__tsyneId;
+    return this.programLinkErrors.get(programId) || '';
   }
 
   /**

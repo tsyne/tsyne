@@ -1539,6 +1539,7 @@ class PhoneTop {
   switchToApp(appId: string | null) {
     if (!this.win) return;
 
+    console.log(`[phonetop] switchToApp: ${appId}`);
     this.frontAppId = appId;
 
     if (appId === null) {
@@ -1549,6 +1550,7 @@ class PhoneTop {
     } else {
       const runningApp = this.runningApps.get(appId);
       if (runningApp) {
+        console.log(`[phonetop] showing app: ${runningApp.metadata.name}, hasContentBuilder: ${!!runningApp.adapter.contentBuilder}`);
         // Show app - hide home and folder containers
         this.homeMaxContainer?.hide();
         this.folderMaxContainer?.hide();
@@ -1557,6 +1559,8 @@ class PhoneTop {
         this.showAppContent(runningApp).catch(err => {
           console.error('[phonetop] showAppContent failed:', err);
         });
+      } else {
+        console.error(`[phonetop] switchToApp: app ${appId} not found in runningApps`);
       }
     }
   }
@@ -1572,12 +1576,15 @@ class PhoneTop {
    * This caused stack overflow crashes when clicking dialer buttons.
    */
   private async showAppContent(runningApp: RunningApp) {
+    console.log(`[phonetop] showAppContent: ${runningApp.metadata.name}, win=${!!this.win}, appContainer=${!!this.appContainer}`);
     if (!this.win || !this.appContainer) {
+      console.error(`[phonetop] showAppContent: early return - win=${!!this.win}, appContainer=${!!this.appContainer}`);
       return;
     }
 
     const contentBuilder = runningApp.adapter.contentBuilder;
     if (!contentBuilder) {
+      console.error(`[phonetop] showAppContent: no contentBuilder for ${runningApp.metadata.name}`);
       return;
     }
 
@@ -1667,9 +1674,11 @@ class PhoneTop {
     // Build app content OUTSIDE of add() - this allows async operations
     // The contentBuilder may be async, so we await it here
     try {
+      console.log(`[phonetop] building content for ${runningApp.metadata.name}...`);
       this.a.getContext().pushContainer();
       await contentBuilder();
       const appWidgetIds = this.a.getContext().popContainer();
+      console.log(`[phonetop] content built: ${appWidgetIds.length} widgets`);
 
       // Add app widgets to the app vbox
       for (const childId of appWidgetIds) {
@@ -1702,6 +1711,7 @@ class PhoneTop {
     this.a.getContext().setLayoutScale(1.0);
 
     // Show app container (via max wrapper)
+    console.log(`[phonetop] showing appMaxContainer for ${runningApp.metadata.name}`);
     this.appMaxContainer?.show();
   }
 

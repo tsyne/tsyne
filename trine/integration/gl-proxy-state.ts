@@ -218,16 +218,25 @@ proto.scissor = function (x: GLint, y: GLint, width: GLsizei, height: GLsizei): 
 };
 
 proto.enable = function (cap: GLenum): void {
+  if (this.enabledCaps.has(cap)) {
+    this._commandsSkipped++;
+    return; // Already enabled — skip
+  }
+  this.enabledCaps.add(cap);
   this.pushCommand('enable', { cap });
 };
 
 proto.disable = function (cap: GLenum): void {
+  if (!this.enabledCaps.has(cap)) {
+    this._commandsSkipped++;
+    return; // Already disabled — skip
+  }
+  this.enabledCaps.delete(cap);
   this.pushCommand('disable', { cap });
 };
 
 proto.isEnabled = function (cap: GLenum): GLboolean {
-  // Return a reasonable default - true implementation would query the bridge
-  return true;
+  return this.enabledCaps.has(cap);
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -235,14 +244,23 @@ proto.isEnabled = function (cap: GLenum): GLboolean {
 // ═══════════════════════════════════════════════════════════════
 
 proto.depthFunc = function (func: GLenum): void {
+  if (this.currentDepthFunc === func) { this._commandsSkipped++; return; }
+  this.currentDepthFunc = func;
   this.pushCommand('depthFunc', { func });
 };
 
 proto.depthMask = function (flag: GLboolean): void {
+  if (this.currentDepthMask === flag) { this._commandsSkipped++; return; }
+  this.currentDepthMask = flag;
   this.pushCommand('depthMask', { flag });
 };
 
 proto.colorMask = function (red: GLboolean, green: GLboolean, blue: GLboolean, alpha: GLboolean): void {
+  const cm = this.currentColorMask;
+  if (cm[0] === red && cm[1] === green && cm[2] === blue && cm[3] === alpha) {
+    this._commandsSkipped++; return;
+  }
+  cm[0] = red; cm[1] = green; cm[2] = blue; cm[3] = alpha;
   this.pushCommand('colorMask', { red, green, blue, alpha });
 };
 
@@ -251,6 +269,12 @@ proto.depthRange = function (zNear: GLclampf, zFar: GLclampf): void {
 };
 
 proto.stencilFunc = function (func: GLenum, ref: GLint, mask: GLuint): void {
+  if (this.currentStencilFunc === func && this.currentStencilRef === ref && this.currentStencilMask === mask) {
+    this._commandsSkipped++; return;
+  }
+  this.currentStencilFunc = func;
+  this.currentStencilRef = ref;
+  this.currentStencilMask = mask;
   this.pushCommand('stencilFunc', { func, ref, mask });
 };
 
@@ -271,18 +295,44 @@ proto.blendColor = function (red: GLclampf, green: GLclampf, blue: GLclampf, alp
 };
 
 proto.blendEquation = function (mode: GLenum): void {
+  if (this.currentBlendEqRGB === mode && this.currentBlendEqAlpha === mode) {
+    this._commandsSkipped++; return;
+  }
+  this.currentBlendEqRGB = mode;
+  this.currentBlendEqAlpha = mode;
   this.pushCommand('blendEquation', { mode });
 };
 
 proto.blendEquationSeparate = function (modeRGB: GLenum, modeAlpha: GLenum): void {
+  if (this.currentBlendEqRGB === modeRGB && this.currentBlendEqAlpha === modeAlpha) {
+    this._commandsSkipped++; return;
+  }
+  this.currentBlendEqRGB = modeRGB;
+  this.currentBlendEqAlpha = modeAlpha;
   this.pushCommand('blendEquationSeparate', { modeRGB, modeAlpha });
 };
 
 proto.blendFunc = function (sfactor: GLenum, dfactor: GLenum): void {
+  if (this.currentBlendSrc === sfactor && this.currentBlendDst === dfactor &&
+      this.currentBlendSrcAlpha === sfactor && this.currentBlendDstAlpha === dfactor) {
+    this._commandsSkipped++; return;
+  }
+  this.currentBlendSrc = sfactor;
+  this.currentBlendDst = dfactor;
+  this.currentBlendSrcAlpha = sfactor;
+  this.currentBlendDstAlpha = dfactor;
   this.pushCommand('blendFunc', { sfactor, dfactor });
 };
 
 proto.blendFuncSeparate = function (srcRGB: GLenum, dstRGB: GLenum, srcAlpha: GLenum, dstAlpha: GLenum): void {
+  if (this.currentBlendSrc === srcRGB && this.currentBlendDst === dstRGB &&
+      this.currentBlendSrcAlpha === srcAlpha && this.currentBlendDstAlpha === dstAlpha) {
+    this._commandsSkipped++; return;
+  }
+  this.currentBlendSrc = srcRGB;
+  this.currentBlendDst = dstRGB;
+  this.currentBlendSrcAlpha = srcAlpha;
+  this.currentBlendDstAlpha = dstAlpha;
   this.pushCommand('blendFuncSeparate', { srcRGB, dstRGB, srcAlpha, dstAlpha });
 };
 
@@ -291,10 +341,14 @@ proto.blendFuncSeparate = function (srcRGB: GLenum, dstRGB: GLenum, srcAlpha: GL
 // ═══════════════════════════════════════════════════════════════
 
 proto.cullFace = function (mode: GLenum): void {
+  if (this.currentCullFace === mode) { this._commandsSkipped++; return; }
+  this.currentCullFace = mode;
   this.pushCommand('cullFace', { mode });
 };
 
 proto.frontFace = function (mode: GLenum): void {
+  if (this.currentFrontFace === mode) { this._commandsSkipped++; return; }
+  this.currentFrontFace = mode;
   this.pushCommand('frontFace', { mode });
 };
 
@@ -303,6 +357,8 @@ proto.polygonOffset = function (factor: GLfloat, units: GLfloat): void {
 };
 
 proto.lineWidth = function (width: GLfloat): void {
+  if (this.currentLineWidth === width) { this._commandsSkipped++; return; }
+  this.currentLineWidth = width;
   this.pushCommand('lineWidth', { width });
 };
 
@@ -381,6 +437,32 @@ proto.getParameter = function (pname: GLenum): any {
       return 16;
     case this.COMPRESSED_TEXTURE_FORMATS:
       return new Uint32Array([]);
+    case 0x84FF: // MAX_TEXTURE_MAX_ANISOTROPY_EXT
+      return 16;
+    case 0x8073: // MAX_3D_TEXTURE_SIZE
+      return 256;
+    case 0x88FF: // MAX_ELEMENT_INDEX
+      return 0xFFFFFFFF;
+    case 0x8D6B: // MAX_ELEMENTS_VERTICES
+      return 65536;
+    case 0x80E9: // MAX_ELEMENTS_INDICES
+      return 65536;
+    case 0x8824: // MAX_DRAW_BUFFERS
+      return 8;
+    case 0x8B4C: // MAX_VERTEX_UNIFORM_COMPONENTS
+      return 1024;
+    case 0x8B49: // MAX_FRAGMENT_UNIFORM_COMPONENTS
+      return 1024;
+    case 0x8A2B: // MAX_UNIFORM_BLOCK_SIZE
+      return 16384;
+    case 0x8A2F: // MAX_UNIFORM_BUFFER_BINDINGS
+      return 24;
+    case 0x8C2B: // MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS
+      return 64;
+    case 0x8C8A: // MAX_TRANSFORM_FEEDBACK_SEPARATE_COMPONENTS
+      return 4;
+    case 0x8D57: // MAX_SAMPLES
+      return 4;
     default:
       return null;
   }
@@ -446,6 +528,9 @@ proto.getSupportedExtensions = function (): string[] {
     'EXT_color_buffer_float',
     'OES_texture_float_linear',
     'EXT_texture_filter_anisotropic',
+    'WEBGL_clip_cull_distance',
+    'WEBGL_multisampled_render_to_texture',
+    'WEBGL_render_shared_exponent',
   ];
 };
 

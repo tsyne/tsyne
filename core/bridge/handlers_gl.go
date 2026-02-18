@@ -418,14 +418,17 @@ func (b *Bridge) handleExecuteBatch(msg Message) Response {
 	// log.Printf("[GL] handleExecuteBatch: %d commands for canvas %s", len(commandsRaw), canvasID)
 
 	// Parse and execute each command
-	for _, cmdRaw := range commandsRaw {
+	errCount := 0
+	for i, cmdRaw := range commandsRaw {
 		cmdMap, ok := cmdRaw.(map[string]interface{})
 		if !ok {
+			log.Printf("[GL] WARNING: command %d/%d is not a map (type %T), skipping", i, len(commandsRaw), cmdRaw)
 			continue
 		}
 
 		cmd, ok := cmdMap["cmd"].(string)
 		if !ok {
+			log.Printf("[GL] WARNING: command %d/%d missing 'cmd' field, skipping", i, len(commandsRaw))
 			continue
 		}
 
@@ -436,9 +439,14 @@ func (b *Bridge) handleExecuteBatch(msg Message) Response {
 
 		// Execute the GL command
 		if err := b.executeGLCommand(canvas, cmd, args); err != nil {
-			log.Printf("GL command error: %v", err)
-			// Continue with next command instead of failing the batch
+			errCount++
+			if errCount <= 5 { // Cap error logging to prevent flood
+				log.Printf("[GL] command error (cmd=%s): %v", cmd, err)
+			}
 		}
+	}
+	if errCount > 5 {
+		log.Printf("[GL] ... and %d more command errors in this batch", errCount-5)
 	}
 
 	// Push attribute buffers to the shader using the attribBindings map
@@ -767,17 +775,17 @@ func (b *Bridge) executeGLCommand(canvas *GLCanvas, cmd string, args map[string]
 	case "bindVertexArray":
 		return b.glBindVertexArray(canvas, args)
 
-	// 3D texture operations
+	// 3D texture operations (no Three.js standard materials use 3D textures)
 	case "texImage3D", "texSubImage3D":
-		return nil // 3D textures - handled by painter
+		return nil
 
 	// Draw/read buffer operations
 	case "drawBuffers":
 		return b.glDrawBuffers(canvas, args)
 	case "readBuffer":
-		return nil // Read buffer selection - not yet needed
+		return nil // Read buffer selection — no-op (Fyne manages read buffers)
 	case "blitFramebuffer":
-		return nil // Framebuffer blit - not yet needed
+		return nil // Framebuffer blit — no-op (not needed for current materials)
 
 	// Texture parameter operations
 	case "texParameteri", "texParameterf":
@@ -2680,13 +2688,41 @@ func getGLParameterValue(pname int) interface{} {
 	case 0x8869: // MAX_VERTEX_ATTRIBS
 		return 16
 	case 0x8dfb: // MAX_VERTEX_UNIFORM_VECTORS
-		return 128
+		return 256
 	case 0x8dfd: // MAX_FRAGMENT_UNIFORM_VECTORS
-		return 64
+		return 256
 	case 0x8dfc: // MAX_VARYING_VECTORS
 		return 8
 	case 0x86a3: // COMPRESSED_TEXTURE_FORMATS
 		return []int{}
+	case 0x84FF: // MAX_TEXTURE_MAX_ANISOTROPY_EXT
+		return 16
+	case 0x8073: // MAX_3D_TEXTURE_SIZE
+		return 256
+	case 0x88FF: // MAX_ELEMENT_INDEX
+		return 0xFFFFFFFF
+	case 0x8D6B: // MAX_ELEMENTS_VERTICES
+		return 65536
+	case 0x80E9: // MAX_ELEMENTS_INDICES
+		return 65536
+	case 0x8824: // MAX_DRAW_BUFFERS
+		return 8
+	case 0x8B4C: // MAX_VERTEX_UNIFORM_COMPONENTS
+		return 1024
+	case 0x8B49: // MAX_FRAGMENT_UNIFORM_COMPONENTS
+		return 1024
+	case 0x8A2B: // MAX_UNIFORM_BLOCK_SIZE
+		return 16384
+	case 0x8A2F: // MAX_UNIFORM_BUFFER_BINDINGS
+		return 24
+	case 0x8D57: // MAX_SAMPLES
+		return 4
+	case 0x8B4D: // MAX_COMBINED_TEXTURE_IMAGE_UNITS
+		return 16
+	case 0x8872: // MAX_TEXTURE_IMAGE_UNITS
+		return 16
+	case 0x8B4A: // MAX_VERTEX_TEXTURE_IMAGE_UNITS
+		return 16
 	default:
 		return nil
 	}
