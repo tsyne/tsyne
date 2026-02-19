@@ -797,6 +797,14 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 			log.Printf("[drawShader] %s frame: %d commands %v", isNew, len(renderCommands), typeCounts)
 		}
 
+		// Reset all attribute divisors before entering the command loop.
+		// Phase 1 may have set divisors (e.g. for instanced mesh attributes)
+		// on locations that subsequent non-instanced draws will reuse.
+		// The command loop sets divisors per-draw as needed and resets after instanced draws.
+		for loc := uint32(0); loc < 16; loc++ {
+			p.ctx.VertexAttribDivisor(loc, 0)
+		}
+
 		// Track which FBO is currently bound so we can translate viewport
 		// commands for the default framebuffer (add viewportX/Y offset).
 		currentFBOId := 0
@@ -913,6 +921,10 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 								}
 							if params.InstanceCount > 0 {
 								p.ctx.DrawElementsInstanced(params.Mode, int32(params.Count), unsignedShort, params.Offset, int32(params.InstanceCount))
+								// Reset vertex attribute divisors so subsequent non-instanced draws work
+								for loc := uint32(0); loc < 16; loc++ {
+									p.ctx.VertexAttribDivisor(loc, 0)
+								}
 							} else {
 								p.ctx.DrawElements(params.Mode, int32(params.Count), unsignedShort, params.Offset)
 							}
@@ -920,6 +932,9 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 							// Fall back to pre-uploaded indices
 							if params.InstanceCount > 0 {
 								p.ctx.DrawElementsInstanced(params.Mode, int32(params.Count), unsignedShort, params.Offset, int32(params.InstanceCount))
+								for loc := uint32(0); loc < 16; loc++ {
+									p.ctx.VertexAttribDivisor(loc, 0)
+								}
 							} else {
 								p.ctx.DrawElements(params.Mode, int32(params.Count), unsignedShort, params.Offset)
 							}
@@ -987,6 +1002,10 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 						}
 						if params.InstanceCount > 0 {
 							p.ctx.DrawArraysInstanced(params.Mode, int32(params.First), int32(params.Count), int32(params.InstanceCount))
+							// Reset vertex attribute divisors so subsequent non-instanced draws work
+							for loc := uint32(0); loc < 16; loc++ {
+								p.ctx.VertexAttribDivisor(loc, 0)
+							}
 						} else {
 							p.ctx.DrawArrays(params.Mode, params.First, params.Count)
 						}
