@@ -1220,9 +1220,11 @@ export class TappableCanvasRaster {
    * @param buffer Raw pixel data in RGBA format
    */
   async setPixelBuffer(buffer: Uint8Array, blendMode?: 'normal' | 'additive' | 'multiply' | 'screen'): Promise<void> {
+    // Convert Uint8Array to base64
+    const base64 = Buffer.from(buffer).toString('base64');
     const response = await this.ctx.bridge.send('setTappableCanvasBuffer', {
       widgetId: this.id,
-      buffer: buffer,
+      buffer: base64,
       blendMode
     });
     this.processPiggybackedEvents(response);
@@ -1239,13 +1241,14 @@ export class TappableCanvasRaster {
    * @param buffer Raw pixel data in RGBA format for the rectangle
    */
   async setPixelRect(x: number, y: number, rectWidth: number, rectHeight: number, buffer: Uint8Array): Promise<void> {
+    const base64 = Buffer.from(buffer).toString('base64');
     const response = await this.ctx.bridge.send('setTappableCanvasRect', {
       widgetId: this.id,
       x,
       y,
       width: rectWidth,
       height: rectHeight,
-      buffer: buffer
+      buffer: base64
     });
     this.processPiggybackedEvents(response);
   }
@@ -1293,9 +1296,11 @@ export class TappableCanvasRaster {
   async setImageFromPNG(pngBytes: Uint8Array | ArrayBuffer): Promise<{ width: number; height: number }> {
     // Ensure we have a Uint8Array
     const bytes = pngBytes instanceof ArrayBuffer ? new Uint8Array(pngBytes) : pngBytes;
+    // Convert to base64
+    const base64 = Buffer.from(bytes).toString('base64');
     const response = await this.ctx.bridge.send('setTappableCanvasImage', {
       widgetId: this.id,
-      image: bytes
+      image: base64
     }) as any;
     this.processPiggybackedEvents(response);
     return {
@@ -2298,9 +2303,10 @@ export class CanvasSphere {
     }
 
     // Send buffer to Go bridge
+    const base64 = Buffer.from(buffer).toString('base64');
     await this.ctx.bridge.send('updateCanvasSphereBuffer', {
       widgetId: this.id,
-      buffer: buffer,
+      buffer: base64,
       width,
       height,
     });
@@ -3043,10 +3049,13 @@ export class CanvasShader {
       rgba[i * 4 + 3] = 255;  // A
     }
 
+    // Convert to base64
+    const base64 = Buffer.from(rgba).toString('base64');
+
     await this.ctx.bridge.send('setShaderTextureUniform', {
       widgetId: this.id,
       uniformName: name,
-      imageData: rgba,
+      imageData: base64,
       width,
       height,
     });
@@ -3068,9 +3077,11 @@ export class CanvasShader {
       throw new Error('Cubemap requires exactly 6 faces');
     }
 
-    const facesPayload = faces.map((face) => {
+    // Convert each face to base64
+    const facesPayload = faces.map((face, i) => {
+      const base64 = Buffer.from(face.data).toString('base64');
       return {
-        imageData: new Uint8Array(face.data.buffer, face.data.byteOffset, face.data.byteLength),
+        imageData: base64,
         width: face.width,
         height: face.height,
       };

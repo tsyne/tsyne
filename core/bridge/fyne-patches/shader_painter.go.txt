@@ -37,25 +37,41 @@ type shaderAttribute struct {
 }
 
 
-// Default vertex shader for fullscreen quad
-// Uses 'vert' attribute to match Fyne's existing pattern
-const defaultShaderVertexSrc = `
-#version 110
-attribute vec2 vert;
-
-void main() {
-    gl_Position = vec4(vert, 0.0, 1.0);
-}
+// getDefaultShaderVertexSrc returns the default fullscreen quad vertex shader,
+// using GLES 300 es syntax on ES backends and GLSL 110 on desktop.
+func getDefaultShaderVertexSrc() string {
+	if isGLESBackend {
+		return `#version 300 es
+precision highp float;
+in vec2 vert;
+void main() { gl_Position = vec4(vert, 0.0, 1.0); }
 `
+	}
+	return `#version 110
+attribute vec2 vert;
+void main() { gl_Position = vec4(vert, 0.0, 1.0); }
+`
+}
 
-// Fragment shader wrapper that adds standard uniforms
-// Note: No precision qualifier - that's OpenGL ES syntax, not desktop OpenGL
-const shaderFragmentPrefix = `
-#version 110
+// getShaderFragmentPrefix returns the standard uniform prefix for cosyne-style
+// fragment shaders, using GLES 300 es syntax on ES backends and GLSL 110 on desktop.
+func getShaderFragmentPrefix() string {
+	if isGLESBackend {
+		return `#version 300 es
+precision highp float;
+uniform vec2 u_resolution;
+uniform float u_time;
+in vec2 v_texCoord;
+out vec4 fragColor;
+#define gl_FragColor fragColor
+`
+	}
+	return `#version 110
 uniform vec2 u_resolution;
 uniform float u_time;
 varying vec2 v_texCoord;
 `
+}
 
 // shaderVBO is a dedicated vertex buffer for shader rendering
 var shaderVBO Buffer
@@ -101,7 +117,7 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 	// compile by checking if the current sources have a cached program.
 	vertexSrc := shader.VertexSource
 	if vertexSrc == "" {
-		vertexSrc = defaultShaderVertexSrc
+		vertexSrc = getDefaultShaderVertexSrc()
 	}
 	cacheKey := shaderCacheKey(vertexSrc, shader.FragmentSource)
 	cachedProg, hasCachedProg := shader.GetProgramCache()[cacheKey]
@@ -754,7 +770,9 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 		p.ctx.Enable(cullFace)
 		p.ctx.CullFace(backFace)
 		p.ctx.FrontFace(ccw)
-		p.ctx.Enable(programPointSize)
+		if !isGLESBackend {
+			p.ctx.Enable(programPointSize)
+		}
 
 		if shaderDebug {
 			typeCounts := make(map[string]int)
@@ -767,6 +785,10 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 			}
 			log.Printf("[drawShader] %s frame: %d commands %v", isNew, len(renderCommands), typeCounts)
 		}
+
+		// Track which FBO is currently bound so we can translate viewport
+		// commands for the default framebuffer (add viewportX/Y offset).
+		currentFBOId := 0
 
 		// Execute commands in order (three.js immediate-mode style)
 		for cmdIdx := 0; cmdIdx < len(renderCommands); cmdIdx++ {
@@ -1025,6 +1047,7 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 
 			case "bindFramebuffer":
 				if params, ok := cmd.Value.(canvas.BindFramebufferParams); ok {
+					currentFBOId = params.FramebufferId
 					if params.FramebufferId == 0 {
 						p.ctx.BindFramebuffer(params.Target, Framebuffer(0))
 					} else {
@@ -1093,7 +1116,13 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 
 			case "viewport":
 				if params, ok := cmd.Value.(canvas.ViewportParams); ok {
-					p.ctx.Viewport(params.X, params.Y, params.Width, params.Height)
+					if currentFBOId == 0 {
+						// Default framebuffer: translate to widget position
+						p.ctx.Viewport(params.X+viewportX, params.Y+viewportY, params.Width, params.Height)
+					} else {
+						// FBO rendering: use coordinates as-is
+						p.ctx.Viewport(params.X, params.Y, params.Width, params.Height)
+					}
 				}
 
 			case "colorMask":

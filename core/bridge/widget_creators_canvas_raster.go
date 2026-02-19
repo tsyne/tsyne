@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"image"
 	"image/color"
@@ -19,10 +20,14 @@ func (b *Bridge) handleCreateCanvasRaster(msg Message) Response {
 	width := toInt(msg.Payload["width"])
 	height := toInt(msg.Payload["height"])
 
-	// Check for rawPixels (direct RGBA buffer) — much faster for large buffers
+	// Check for rawPixels (base64-encoded RGBA buffer) — much faster for large buffers
 	var rawBytes []byte
-	if rb, ok := msg.Payload["rawPixels"].([]byte); ok && len(rb) > 0 {
-		rawBytes = rb
+	if rawB64, ok := msg.Payload["rawPixels"].(string); ok && rawB64 != "" {
+		var err error
+		rawBytes, err = base64.StdEncoding.DecodeString(rawB64)
+		if err != nil {
+			rawBytes = nil
+		}
 	}
 
 	// Get the initial pixel data if provided (format: [[r,g,b,a], ...])

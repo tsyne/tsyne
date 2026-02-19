@@ -68,7 +68,7 @@ func getTypeSize(glslType string) int {
 func (p *painter) compileShaderProgram(vertexSrc, fragmentSrc string) Program {
 	// Prepend standard uniforms to fragment shader if it doesn't have a version
 	if !strings.HasPrefix(strings.TrimSpace(fragmentSrc), "#version") {
-		fragmentSrc = shaderFragmentPrefix + fragmentSrc
+		fragmentSrc = getShaderFragmentPrefix() + fragmentSrc
 	}
 
 	// Compile vertex shader

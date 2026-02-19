@@ -6,9 +6,9 @@ import (
 	"log"
 	"math"
 	"os"
+	"runtime"
 	"strings"
 	"sync"
-	"unsafe"
 
 	"fyne.io/fyne/v2"
 	canvasPkg "fyne.io/fyne/v2/canvas"
@@ -172,18 +172,13 @@ type GLCommand struct {
 // Zero-copy byte slice reinterpretation helpers
 // ═══════════════════════════════════════════════════════════════
 
-// bytesToFloat32 reinterprets a []byte as []float32 without copying.
-// Falls back to manual conversion if the data is not properly aligned.
+// bytesToFloat32 converts a []byte to []float32 (little-endian).
+// Always copies — source may reference msgpack decode buffers that get reused.
 func bytesToFloat32(data []byte) []float32 {
 	n := len(data) / 4
 	if n == 0 {
 		return nil
 	}
-	ptr := unsafe.Pointer(&data[0])
-	if uintptr(ptr)%4 == 0 {
-		return unsafe.Slice((*float32)(ptr), n)
-	}
-	// Unaligned fallback
 	result := make([]float32, n)
 	for i := 0; i < n; i++ {
 		off := i * 4
@@ -193,18 +188,12 @@ func bytesToFloat32(data []byte) []float32 {
 	return result
 }
 
-// bytesToUint16 reinterprets a []byte as []uint16 without copying.
-// Falls back to manual conversion if the data is not properly aligned.
+// bytesToUint16 converts a []byte to []uint16 (little-endian).
 func bytesToUint16(data []byte) []uint16 {
 	n := len(data) / 2
 	if n == 0 {
 		return nil
 	}
-	ptr := unsafe.Pointer(&data[0])
-	if uintptr(ptr)%2 == 0 {
-		return unsafe.Slice((*uint16)(ptr), n)
-	}
-	// Unaligned fallback
 	result := make([]uint16, n)
 	for i := 0; i < n; i++ {
 		off := i * 2
@@ -213,18 +202,12 @@ func bytesToUint16(data []byte) []uint16 {
 	return result
 }
 
-// bytesToInt32 reinterprets a []byte as []int32 without copying.
-// Falls back to manual conversion if the data is not properly aligned.
+// bytesToInt32 converts a []byte to []int32 (little-endian).
 func bytesToInt32(data []byte) []int32 {
 	n := len(data) / 4
 	if n == 0 {
 		return nil
 	}
-	ptr := unsafe.Pointer(&data[0])
-	if uintptr(ptr)%4 == 0 {
-		return unsafe.Slice((*int32)(ptr), n)
-	}
-	// Unaligned fallback
 	result := make([]int32, n)
 	for i := 0; i < n; i++ {
 		off := i * 4
@@ -990,6 +973,15 @@ func (b *Bridge) glDetachShader(canvas *GLCanvas, args map[string]interface{}) e
 	return nil
 }
 
+// getShaderTarget returns the shader conversion target based on CPU architecture.
+// ARM devices use OpenGL ES 3.0; desktop (amd64/x86) uses OpenGL with GLSL 110.
+func getShaderTarget() ShaderTarget {
+	if runtime.GOARCH == "arm64" || runtime.GOARCH == "arm" {
+		return ShaderGLSLES
+	}
+	return ShaderGLSL110
+}
+
 func (b *Bridge) glLinkProgram(canvas *GLCanvas, args map[string]interface{}) error {
 	programIdVal, ok := args["programId"]
 	if !ok {
@@ -1004,8 +996,8 @@ func (b *Bridge) glLinkProgram(canvas *GLCanvas, args map[string]interface{}) er
 
 	// Convert and store vertex shader source if available
 	if program.vertexSrc != "" {
-		// Convert GLSL 300 ES to GLSL 110 for desktop OpenGL
-		program.convertedVertexSrc = ConvertVertexShader(program.vertexSrc, ShaderGLSL110)
+		// Convert GLSL 300 ES to target language (GLSL 110 desktop, GLES 300 mobile)
+		program.convertedVertexSrc = ConvertVertexShader(program.vertexSrc, getShaderTarget())
 
 		// Write vertex shader to tmp file for debugging (with program ID for uniqueness)
 		_ = writeShaderDebugFile(fmt.Sprintf("/tmp/vertex_shader_%d.glsl", programId), program.vertexSrc)
@@ -1021,8 +1013,8 @@ func (b *Bridge) glLinkProgram(canvas *GLCanvas, args map[string]interface{}) er
 
 	// Convert and store fragment shader source if available
 	if program.fragSrc != "" {
-		// Convert GLSL 300 ES to target language
-		program.convertedFragSrc = ConvertFragmentShader(program.fragSrc, ShaderGLSL110)
+		// Convert GLSL 300 ES to target language (GLSL 110 desktop, GLES 300 mobile)
+		program.convertedFragSrc = ConvertFragmentShader(program.fragSrc, getShaderTarget())
 
 		// Write shader to tmp file for debugging
 		_ = writeShaderDebugFile(fmt.Sprintf("/tmp/fragment_shader_%d.glsl", programId), program.fragSrc)
@@ -1588,7 +1580,6 @@ func (b *Bridge) glUniformMatrix(canvas *GLCanvas, cmd string, args map[string]i
 	if name == "" {
 		name = fmt.Sprintf("u_uniform_%v", args["locationId"])
 	}
-	// log.Printf("[GL] %s: name=%s", cmd, name)
 
 	decoded, ok := args["data"].([]byte)
 	if !ok {

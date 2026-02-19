@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/base64"
 	"image"
+	"image/color"
 	"log"
 
 	"fyne.io/fyne/v2"
@@ -111,18 +113,11 @@ func (b *Bridge) handleUpdateCanvasShader(msg Message) Response {
 	}
 }
 
-// handleSetShaderTextureUniform sets a texture uniform from RGBA data
+// handleSetShaderTextureUniform sets a texture uniform from base64-encoded RGBA data
 func (b *Bridge) handleSetShaderTextureUniform(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 	uniformName := msg.Payload["uniformName"].(string)
-	imageData, ok := msg.Payload["imageData"].([]byte)
-	if !ok {
-		return Response{
-			ID:      msg.ID,
-			Success: false,
-			Error:   "Missing or invalid imageData",
-		}
-	}
+	imageDataB64 := msg.Payload["imageData"].(string)
 	width := int(toFloat64(msg.Payload["width"]))
 	height := int(toFloat64(msg.Payload["height"]))
 
@@ -147,10 +142,30 @@ func (b *Bridge) handleSetShaderTextureUniform(msg Message) Response {
 		}
 	}
 
+	// Decode base64 image data
+	imageData, err := base64.StdEncoding.DecodeString(imageDataB64)
+	if err != nil {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Failed to decode base64 image data: " + err.Error(),
+		}
+	}
+
 	// Create RGBA image from raw data
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
-	if len(imageData) >= width*height*4 {
-		copy(img.Pix, imageData[:width*height*4])
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+			i := (y*width + x) * 4
+			if i+3 < len(imageData) {
+				img.SetRGBA(x, y, color.RGBA{
+					R: imageData[i],
+					G: imageData[i+1],
+					B: imageData[i+2],
+					A: imageData[i+3],
+				})
+			}
+		}
 	}
 
 	// Set texture uniform
@@ -162,7 +177,7 @@ func (b *Bridge) handleSetShaderTextureUniform(msg Message) Response {
 	}
 }
 
-// handleSetShaderCubemapUniform sets a cubemap uniform from 6 RGBA face buffers
+// handleSetShaderCubemapUniform sets a cubemap uniform from 6 base64-encoded RGBA faces
 // Payload: { widgetId, uniformName, faces: [{ imageData, width, height }, ...] (6 faces) }
 // Face order: +X, -X, +Y, -Y, +Z, -Z
 func (b *Bridge) handleSetShaderCubemapUniform(msg Message) Response {
@@ -210,7 +225,7 @@ func (b *Bridge) handleSetShaderCubemapUniform(msg Message) Response {
 			}
 		}
 
-		imageData, ok := face["imageData"].([]byte)
+		imageDataB64, ok := face["imageData"].(string)
 		if !ok {
 			return Response{
 				ID:      msg.ID,
@@ -221,10 +236,30 @@ func (b *Bridge) handleSetShaderCubemapUniform(msg Message) Response {
 		width := int(toFloat64(face["width"]))
 		height := int(toFloat64(face["height"]))
 
+		// Decode base64 image data
+		imageData, err := base64.StdEncoding.DecodeString(imageDataB64)
+		if err != nil {
+			return Response{
+				ID:      msg.ID,
+				Success: false,
+				Error:   "Failed to decode base64 image data for face " + string(rune('0'+i)) + ": " + err.Error(),
+			}
+		}
+
 		// Create RGBA image from raw data
 		img := image.NewRGBA(image.Rect(0, 0, width, height))
-		if len(imageData) >= width*height*4 {
-			copy(img.Pix, imageData[:width*height*4])
+		for y := 0; y < height; y++ {
+			for x := 0; x < width; x++ {
+				idx := (y*width + x) * 4
+				if idx+3 < len(imageData) {
+					img.SetRGBA(x, y, color.RGBA{
+						R: imageData[idx],
+						G: imageData[idx+1],
+						B: imageData[idx+2],
+						A: imageData[idx+3],
+					})
+				}
+			}
 		}
 
 		faceImages[i] = img

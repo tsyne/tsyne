@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/base64"
 	"image"
 
 	"fyne.io/fyne/v2"
@@ -242,17 +243,11 @@ func (b *Bridge) handleFocusTappableCanvasRaster(msg Message) Response {
 	}
 }
 
-// handleSetTappableCanvasImage sets the canvas from PNG image bytes
+// handleSetTappableCanvasImage sets the canvas from a base64-encoded PNG image
+// This allows sending PNG bytes directly without TS-side decoding
 func (b *Bridge) handleSetTappableCanvasImage(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
-	imageBytes, ok := msg.Payload["image"].([]byte)
-	if !ok {
-		return Response{
-			ID:      msg.ID,
-			Success: false,
-			Error:   "Missing or invalid image data",
-		}
-	}
+	imageB64 := msg.Payload["image"].(string)
 
 	b.mu.RLock()
 	w, exists := b.widgets[widgetID]
@@ -272,6 +267,16 @@ func (b *Bridge) handleSetTappableCanvasImage(msg Message) Response {
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a tappable canvas raster",
+		}
+	}
+
+	// Decode base64 image data
+	imageBytes, err := base64.StdEncoding.DecodeString(imageB64)
+	if err != nil {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Failed to decode image data: " + err.Error(),
 		}
 	}
 
@@ -311,17 +316,10 @@ func (b *Bridge) handleSetTappableCanvasImage(msg Message) Response {
 	})
 }
 
-// handleSetTappableCanvasBuffer sets all pixels at once from an RGBA buffer
+// handleSetTappableCanvasBuffer sets all pixels at once from a base64-encoded RGBA buffer
 func (b *Bridge) handleSetTappableCanvasBuffer(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
-	pixels, ok := msg.Payload["buffer"].([]byte)
-	if !ok {
-		return Response{
-			ID:      msg.ID,
-			Success: false,
-			Error:   "Missing or invalid buffer data",
-		}
-	}
+	bufferB64 := msg.Payload["buffer"].(string)
 
 	b.mu.RLock()
 	w, exists := b.widgets[widgetID]
@@ -341,6 +339,16 @@ func (b *Bridge) handleSetTappableCanvasBuffer(msg Message) Response {
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a tappable canvas raster",
+		}
+	}
+
+	// Decode base64 buffer
+	pixels, err := base64.StdEncoding.DecodeString(bufferB64)
+	if err != nil {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Failed to decode pixel buffer: " + err.Error(),
 		}
 	}
 
@@ -355,21 +363,14 @@ func (b *Bridge) handleSetTappableCanvasBuffer(msg Message) Response {
 	return responseWithDrainedEvents(msg.ID, tappable, nil)
 }
 
-// handleSetTappableCanvasRect sets a rectangular region of pixels from an RGBA buffer
+// handleSetTappableCanvasRect sets a rectangular region of pixels from a base64-encoded RGBA buffer
 func (b *Bridge) handleSetTappableCanvasRect(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 	x := toInt(msg.Payload["x"])
 	y := toInt(msg.Payload["y"])
 	rectWidth := toInt(msg.Payload["width"])
 	rectHeight := toInt(msg.Payload["height"])
-	pixels, ok := msg.Payload["buffer"].([]byte)
-	if !ok {
-		return Response{
-			ID:      msg.ID,
-			Success: false,
-			Error:   "Missing or invalid buffer data",
-		}
-	}
+	bufferB64 := msg.Payload["buffer"].(string)
 
 	b.mu.RLock()
 	w, exists := b.widgets[widgetID]
@@ -389,6 +390,16 @@ func (b *Bridge) handleSetTappableCanvasRect(msg Message) Response {
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a tappable canvas raster",
+		}
+	}
+
+	// Decode base64 buffer
+	pixels, err := base64.StdEncoding.DecodeString(bufferB64)
+	if err != nil {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Failed to decode pixel buffer: " + err.Error(),
 		}
 	}
 
