@@ -379,10 +379,10 @@ proto.readPixels = function (
   type: GLenum,
   pixels: ArrayBufferView | null
 ): void {
-  // Note: This is async in the real implementation
   if (pixels) {
-    const encoded = encodeBufferData(pixels);
-    this.pushCommand('readPixels', { x, y, width, height, format, type, pixels: encoded });
+    // Store reference to the output buffer — flush() will fill it with data from the painter
+    this._pendingReadPixels = pixels;
+    this.pushCommand('readPixels', { x, y, width, height, format, type });
   }
 };
 

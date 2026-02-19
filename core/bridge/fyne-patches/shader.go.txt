@@ -208,6 +208,21 @@ type Shader struct {
 	// (before SwapBuffers) and sends the result through the channel.
 	captureChan      chan CaptureResult
 	captureMu        sync.Mutex
+
+	// readPixels support: JS requests pixel data, painter executes on GL thread
+	readPixelsChan   chan ReadPixelsResult
+	readPixelsReq    *ReadPixelsRequest
+	readPixelsMu     sync.Mutex
+}
+
+// ReadPixelsRequest holds parameters for a pending readPixels call.
+type ReadPixelsRequest struct {
+	X, Y, Width, Height int
+}
+
+// ReadPixelsResult holds pixel data from glReadPixels.
+type ReadPixelsResult struct {
+	Pixels []uint8
 }
 
 // CaptureResult holds pixel data captured during a paint cycle.

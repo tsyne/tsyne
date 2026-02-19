@@ -61,6 +61,9 @@ export class TsyneGLProxy implements WebGL2RenderingContext {
   private currentStencilMask: number = 0xFFFFFFFF;
   private currentLineWidth: number = 1;
 
+  // Pending readPixels buffer — filled by flush() with data from the painter
+  _pendingReadPixels: ArrayBufferView | null = null;
+
   // Per-frame profiling (enabled via TSYNE_GL_PROFILE=1 env var)
   private _frameCount = 0;
   private _commandsThisFrame = 0;
@@ -133,6 +136,23 @@ export class TsyneGLProxy implements WebGL2RenderingContext {
           const button = evt.Button ?? evt.button ?? 0;
           this.canvas.dispatchMouseEvent(eventType, x, y, button);
         }
+      }
+
+      // Process readPixels result if pending
+      const pixelData = response?.pixelData || response?.Result?.pixelData;
+      if (pixelData && this._pendingReadPixels) {
+        const target = this._pendingReadPixels as Uint8Array;
+        if (Array.isArray(pixelData)) {
+          // Go JSON encodes []uint8 as number array
+          for (let i = 0; i < Math.min(pixelData.length, target.length); i++) {
+            target[i] = pixelData[i];
+          }
+        } else if (typeof pixelData === 'string') {
+          // Base64 encoded
+          const decoded = Buffer.from(pixelData, 'base64');
+          target.set(decoded.subarray(0, target.length));
+        }
+        this._pendingReadPixels = null;
       }
     } catch (error) {
       console.error('[TsyneGL] Flush failed:', error);
@@ -757,9 +777,14 @@ applyGLConstants(TsyneGLProxy.prototype);
  */
 export function encodeBufferData(data: ArrayBufferView | ArrayBuffer | number[]): Uint8Array {
   if (data instanceof ArrayBuffer) {
-    return new Uint8Array(data);
+    // Copy — source may be mutated before msgpack serializes the batch
+    return new Uint8Array(data.slice(0));
   } else if (ArrayBuffer.isView(data)) {
-    return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+    // Must copy — Three.js reuses typed arrays (e.g. matrix.elements) across
+    // objects. A view would see the LAST object's values at serialize time.
+    const copy = new Uint8Array(data.byteLength);
+    copy.set(new Uint8Array(data.buffer, data.byteOffset, data.byteLength));
+    return copy;
   } else if (Array.isArray(data)) {
     // Handle plain number arrays (common from three.js)
     const float32 = new Float32Array(data);

@@ -2,6 +2,7 @@ package gl
 
 import (
 	"log"
+	"os"
 	"regexp"
 	"strings"
 )
@@ -69,6 +70,16 @@ func (p *painter) compileShaderProgram(vertexSrc, fragmentSrc string) Program {
 	// Prepend standard uniforms to fragment shader if it doesn't have a version
 	if !strings.HasPrefix(strings.TrimSpace(fragmentSrc), "#version") {
 		fragmentSrc = getShaderFragmentPrefix() + fragmentSrc
+	}
+
+	// Write shaders to disk for debugging on GLES
+	if shaderDebug && len(vertexSrc) > 500 {
+		os.WriteFile("/tmp/tsyne_compile_vert.glsl", []byte(vertexSrc), 0644)
+		os.WriteFile("/tmp/tsyne_compile_frag.glsl", []byte(fragmentSrc), 0644)
+		v := vertexSrc; if len(v) > 200 { v = v[:200] }
+		f := fragmentSrc; if len(f) > 200 { f = f[:200] }
+		log.Printf("[shader] compiling vert(%d bytes): %s...", len(vertexSrc), strings.ReplaceAll(v, "\n", "\\n"))
+		log.Printf("[shader] compiling frag(%d bytes): %s...", len(fragmentSrc), strings.ReplaceAll(f, "\n", "\\n"))
 	}
 
 	// Compile vertex shader

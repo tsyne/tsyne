@@ -193,6 +193,11 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 	viewportY := int(pixelY)
 	viewportW := int(pixelWidth)
 	viewportH := int(pixelHeight)
+	if shaderDebug {
+		log.Printf("[drawShader] viewport: x=%d y=%d w=%d h=%d (pixScale=%.2f, shaderSize=%.0fx%.0f, frameSize=%.0fx%.0f, pos=%.0f,%.0f)",
+			viewportX, viewportY, viewportW, viewportH, p.pixScale,
+			shader.Size().Width, shader.Size().Height, frame.Width, frame.Height, pos.X, pos.Y)
+	}
 	p.ctx.Viewport(viewportX, viewportY, viewportW, viewportH)
 
 	// For 3D shaders: pre-clear the COLOR buffer only with the stored
@@ -263,12 +268,19 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 			case 2:
 				p.ctx.Uniform2f(loc, v[0], v[1])
 			case 3:
+				if shaderDebug {
+					log.Printf("[drawShader] uniform vec3 %s = (%.4f, %.4f, %.4f) loc=%d", name, v[0], v[1], v[2], loc)
+				}
 				p.ctx.Uniform3f(loc, v[0], v[1], v[2])
 			case 4:
 				p.ctx.Uniform4f(loc, v[0], v[1], v[2], v[3])
 			case 9:
 				p.ctx.UniformMatrix3fv(loc, false, v)
 			case 16:
+				if shaderDebug {
+					log.Printf("[drawShader] uniform mat4 %s = [%.4f %.4f %.4f %.4f / %.4f %.4f %.4f %.4f / %.4f %.4f %.4f %.4f / %.4f %.4f %.4f %.4f] loc=%d",
+						name, v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8], v[9], v[10], v[11], v[12], v[13], v[14], v[15], loc)
+				}
 				p.ctx.UniformMatrix4fv(loc, false, v)
 			}
 		case []interface{}:
@@ -773,7 +785,6 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 		if !isGLESBackend {
 			p.ctx.Enable(programPointSize)
 		}
-
 		if shaderDebug {
 			typeCounts := make(map[string]int)
 			for _, cmd := range renderCommands {
@@ -812,8 +823,9 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 				if params, ok := cmd.Value.(canvas.DrawElementsParams); ok {
 					if params.Count > 0 {
 						if shaderDebug {
-							log.Printf("[drawShader] drawElements: count=%d mode=%d inst=%d attrs=%d indices=%d",
-								params.Count, params.Mode, params.InstanceCount, len(params.AttributeBuffers), len(params.Indices))
+							// Log active program
+							log.Printf("[drawShader] drawElements: count=%d mode=%d inst=%d attrs=%d indices=%d activeProg=%d",
+								params.Count, params.Mode, params.InstanceCount, len(params.AttributeBuffers), len(params.Indices), prog)
 							for name, buf := range params.AttributeBuffers {
 								if buf != nil {
 									log.Printf("[drawShader]   cmdAttr %s: %d floats, size=%d stride=%d offset=%d",
@@ -884,6 +896,21 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 							}
 							p.ctx.BindBuffer(elementArrayBuffer, Buffer(ibo))
 							p.ctx.BufferDataUint16(elementArrayBuffer, cmdIndices, dynamicDraw)
+							// Clear any stale GL errors before draw
+							if shaderDebug {
+								for p.ctx.GetError() != 0 {}
+								// Log vertex data and indices
+								if posBuf := cmdAttrBuffers["position"]; posBuf != nil && len(posBuf.Data) >= 9 {
+									log.Printf("[drawShader] pos[0:9]: %.3f %.3f %.3f | %.3f %.3f %.3f | %.3f %.3f %.3f VBO=%d IBO=%d",
+										posBuf.Data[0], posBuf.Data[1], posBuf.Data[2],
+										posBuf.Data[3], posBuf.Data[4], posBuf.Data[5],
+										posBuf.Data[6], posBuf.Data[7], posBuf.Data[8],
+										posBuf.VBO, ibo)
+								}
+								if len(cmdIndices) >= 6 {
+									log.Printf("[drawShader] idx[0:6]: %d %d %d %d %d %d", cmdIndices[0], cmdIndices[1], cmdIndices[2], cmdIndices[3], cmdIndices[4], cmdIndices[5])
+								}
+								}
 							if params.InstanceCount > 0 {
 								p.ctx.DrawElementsInstanced(params.Mode, int32(params.Count), unsignedShort, params.Offset, int32(params.InstanceCount))
 							} else {
@@ -971,6 +998,10 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 				}
 			case "clear":
 				if mask, ok := cmd.Value.(uint32); ok {
+					if shaderDebug {
+						log.Printf("[drawShader] clear: mask=0x%x (color=%v depth=%v stencil=%v)",
+							mask, mask&0x4000 != 0, mask&0x100 != 0, mask&0x400 != 0)
+					}
 					// Re-apply stored clear color before clearing
 					// Fyne's painter.Clear() resets glClearColor to the theme bg each frame,
 					// but Three.js only sends clearColor when the value changes (WebGLState caching)
@@ -994,10 +1025,16 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 				}
 			case "enable":
 				if cap, ok := cmd.Value.(uint32); ok {
+					if shaderDebug {
+						log.Printf("[drawShader] enable: cap=0x%x", cap)
+					}
 					p.ctx.Enable(cap)
 				}
 			case "disable":
 				if cap, ok := cmd.Value.(uint32); ok {
+					if shaderDebug {
+						log.Printf("[drawShader] disable: cap=0x%x", cap)
+					}
 					p.ctx.Disable(cap)
 				}
 			case "cullFace":
@@ -1012,6 +1049,10 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 				if params, ok := cmd.Value.(canvas.UseProgramParams); ok {
 					cacheKey := shaderCacheKey(params.VertexSource, params.FragmentSource)
 					cachedProg, found := shader.GetProgramCache()[cacheKey]
+					if shaderDebug {
+						log.Printf("[drawShader] useProgram: cached=%v prog=%d vertLen=%d fragLen=%d",
+							found, cachedProg, len(params.VertexSource), len(params.FragmentSource))
+					}
 					if found && cachedProg != 0 {
 						prog = Program(cachedProg)
 					} else {
@@ -1118,6 +1159,13 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 				if params, ok := cmd.Value.(canvas.ViewportParams); ok {
 					if currentFBOId == 0 {
 						// Default framebuffer: translate to widget position
+						if shaderDebug {
+							log.Printf("[drawShader] viewport cmd: (%d,%d,%d,%d) + offset(%d,%d) => (%d,%d,%d,%d) fbo=%d",
+								params.X, params.Y, params.Width, params.Height,
+								viewportX, viewportY,
+								params.X+viewportX, params.Y+viewportY, params.Width, params.Height,
+								currentFBOId)
+						}
 						p.ctx.Viewport(params.X+viewportX, params.Y+viewportY, params.Width, params.Height)
 					} else {
 						// FBO rendering: use coordinates as-is
@@ -1132,6 +1180,9 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 
 			case "clearDepth":
 				if params, ok := cmd.Value.(canvas.ClearDepthParams); ok {
+					if shaderDebug {
+						log.Printf("[drawShader] clearDepth: %.4f", params.Depth)
+					}
 					p.ctx.ClearDepthf(params.Depth)
 				}
 
@@ -1236,6 +1287,9 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 
 			case "depthFunc":
 				if fn, ok := cmd.Value.(uint32); ok {
+					if shaderDebug {
+						log.Printf("[drawShader] depthFunc: 0x%x (LEQUAL=0x%x LESS=0x201 NEVER=0x200)", fn, lequal)
+					}
 					p.ctx.DepthFunc(fn)
 				}
 
@@ -1340,7 +1394,9 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 		p.ctx.ColorMask(true, true, true, true) // Restore color mask
 		p.ctx.Disable(depthTest)
 		p.ctx.Disable(cullFace)
-		p.ctx.Disable(programPointSize)
+		if !isGLESBackend {
+			p.ctx.Disable(programPointSize)
+		}
 	} else if shader.VertexSource == "" {
 		// Fallback: single draw (for simple shaders without command queue).
 		// Only for built-in vertex shader (2D effects). 3D shaders with custom
@@ -1368,6 +1424,13 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 		pixels := make([]uint8, capFrameW*capFrameH*4)
 		p.ctx.ReadPixels(0, 0, capFrameW, capFrameH, colorFormatRGBA, unsignedByte, pixels)
 		capChan <- canvas.CaptureResult{Pixels: pixels, Width: capFrameW, Height: capFrameH}
+	}
+
+	// ReadPixels-on-next-paint: if a readPixels was requested, execute it now
+	if req, ch := shader.GetReadPixelsReq(); req != nil && ch != nil {
+		pixels := make([]uint8, req.Width*req.Height*4)
+		p.ctx.ReadPixels(req.X+viewportX, req.Y+viewportY, req.Width, req.Height, colorFormatRGBA, unsignedByte, pixels)
+		ch <- canvas.ReadPixelsResult{Pixels: pixels}
 	}
 
 	// Disable enabled vertex attributes

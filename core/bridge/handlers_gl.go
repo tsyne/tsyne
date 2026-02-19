@@ -553,6 +553,22 @@ func (b *Bridge) handleExecuteBatch(msg Message) Response {
 		canvas.indexDirty = false
 	}
 
+	// Check if any command was readPixels — if so, set up the request before paint
+	var readPixelsChan <-chan canvasPkg.ReadPixelsResult
+	for _, cmdRaw := range commandsRaw {
+		if cmdMap, ok := cmdRaw.(map[string]interface{}); ok {
+			if cmd, ok := cmdMap["cmd"].(string); ok && cmd == "readPixels" {
+				args, _ := cmdMap["args"].(map[string]interface{})
+				x := int(toFloat32(args["x"]))
+				y := int(toFloat32(args["y"]))
+				w := int(toFloat32(args["width"]))
+				h := int(toFloat32(args["height"]))
+				readPixelsChan = canvas.ShaderObject.RequestReadPixels(x, y, w, h)
+				break // Only one readPixels per batch
+			}
+		}
+	}
+
 	// Signal that we're about to paint and want to wait for completion
 	canvas.ShaderObject.BeginPaint()
 
@@ -570,10 +586,28 @@ func (b *Bridge) handleExecuteBatch(msg Message) Response {
 	// This prevents the next frame from overwriting render commands before they're painted
 	canvas.ShaderObject.WaitForPaint()
 
-	// Include coalesced mouse events in response (no separate fetch needed)
+	// Build response with optional data
+	result := make(map[string]interface{})
+
+	// Include coalesced mouse events in response
 	events := drainMouseEvents(canvasID)
 	if len(events) > 0 {
-		return Response{Success: true, Result: map[string]interface{}{"mouseEvents": events}}
+		result["mouseEvents"] = events
+	}
+
+	// Include readPixels data if requested
+	if readPixelsChan != nil {
+		select {
+		case rpResult := <-readPixelsChan:
+			// Encode as base64 for JSON transport
+			result["pixelData"] = rpResult.Pixels
+		default:
+			// Paint didn't execute readPixels (shader might not have rendered)
+		}
+	}
+
+	if len(result) > 0 {
+		return Response{Success: true, Result: result}
 	}
 	return Response{Success: true}
 }
@@ -841,7 +875,9 @@ func (b *Bridge) executeGLCommand(canvas *GLCanvas, cmd string, args map[string]
 	case "generateMipmap":
 		return b.glGenerateMipmap(canvas, args)
 	case "readPixels":
-		return nil // Misc - handled by painter
+		// Actual read is deferred to the painter on the GL thread.
+		// RequestReadPixels stores params; handleExecuteBatch waits for result.
+		return nil
 
 	default:
 		return fmt.Errorf("unknown GL command: %s", cmd)
@@ -1852,9 +1888,16 @@ func (b *Bridge) glTexImage2D(canvas *GLCanvas, args map[string]interface{}) err
 	// loop's bindTexture can find and upload each texture by JS ID.
 	canvas.ShaderObject.SetCPUTexImage(int(textureId), img)
 
+	// Store format info for on-demand upload in the painter (same as GPU-only path)
+	typeVal := uint32(toFloat32(args["type"]))
+	canvas.ShaderObject.SetGPUTexFormat(int(textureId), canvasPkg.GPUTextureFormat{
+		Internalformat: uint32(internalformat),
+		Format:         uint32(format),
+		Type:           typeVal,
+	})
+
 	// Queue a GPU-only texture allocation so the painter creates a GL texture ID
 	// that bindTexture render commands can find in gpuTexCache.
-	typeVal := uint32(toFloat32(args["type"]))
 	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
 		Type: "texImage2D_gpu",
 		Name: fmt.Sprintf("%d", textureId),

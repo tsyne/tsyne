@@ -188,6 +188,28 @@ func (s *Shader) GetCaptureChan() chan CaptureResult {
 	return ch
 }
 
+// RequestReadPixels stores a readPixels request and returns a channel for the result.
+// The painter will execute glReadPixels on the GL thread and send the result.
+func (s *Shader) RequestReadPixels(x, y, w, h int) <-chan ReadPixelsResult {
+	s.readPixelsMu.Lock()
+	defer s.readPixelsMu.Unlock()
+	ch := make(chan ReadPixelsResult, 1)
+	s.readPixelsChan = ch
+	s.readPixelsReq = &ReadPixelsRequest{X: x, Y: y, Width: w, Height: h}
+	return ch
+}
+
+// GetReadPixelsReq returns and clears the pending readPixels request (called by painter).
+func (s *Shader) GetReadPixelsReq() (*ReadPixelsRequest, chan ReadPixelsResult) {
+	s.readPixelsMu.Lock()
+	defer s.readPixelsMu.Unlock()
+	req := s.readPixelsReq
+	ch := s.readPixelsChan
+	s.readPixelsReq = nil
+	s.readPixelsChan = nil
+	return req, ch
+}
+
 // SetClearColor sets the clear color for glClear operations.
 func (s *Shader) SetClearColor(r, g, b, a float32) {
 	s.clearColor = [4]float32{r, g, b, a}
