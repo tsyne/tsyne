@@ -35,9 +35,10 @@ check:
 		echo "⚠ WARNING: Stale 'bridge' binary in current dir - run 'make clean'"; \
 	fi
 
-# Regenerate protobuf code
+# Regenerate protobuf code (requires protoc-gen-go and protoc-gen-go-grpc in GOPATH/bin)
 proto:
-	protoc --go_out=. --go_opt=paths=source_relative \
+	PATH="$(PATH):$(shell go env GOPATH)/bin" protoc \
+	       --go_out=. --go_opt=paths=source_relative \
 	       --go-grpc_out=. --go-grpc_opt=paths=source_relative \
 	       proto/bridge.proto
 

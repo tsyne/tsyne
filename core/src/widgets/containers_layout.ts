@@ -10,14 +10,22 @@ function _onMouseIn<T extends HasCtxAndId>(self: T, callback: (event: { position
   self.ctx.bridge.registerEventHandler(callbackId, (data: unknown) => {
     callback(data as { position: { x: number, y: number } });
   });
-  self.ctx.bridge.send('setWidgetHoverable', { widgetId: self.id, onMouseInCallbackId: callbackId, enabled: true });
+  self.ctx.bridge.send('setWidgetEvents', {
+    widgetId: self.id,
+    events: 1 << 3, // evBitHover
+    cbs: { mouseIn: callbackId },
+  });
   return self;
 }
 
 function _onMouseOut<T extends HasCtxAndId>(self: T, callback: () => void): T {
   const callbackId = self.ctx.generateId('callback');
   self.ctx.bridge.registerEventHandler(callbackId, callback);
-  self.ctx.bridge.send('setWidgetHoverable', { widgetId: self.id, onMouseOutCallbackId: callbackId, enabled: true });
+  self.ctx.bridge.send('setWidgetEvents', {
+    widgetId: self.id,
+    events: 1 << 3, // evBitHover
+    cbs: { mouseOut: callbackId },
+  });
   return self;
 }
 

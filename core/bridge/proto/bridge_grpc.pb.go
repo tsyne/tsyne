@@ -257,7 +257,7 @@ const (
 	BridgeService_DisableAccessibility_FullMethodName        = "/bridge.BridgeService/DisableAccessibility"
 	BridgeService_Announce_FullMethodName                    = "/bridge.BridgeService/Announce"
 	BridgeService_StopSpeech_FullMethodName                  = "/bridge.BridgeService/StopSpeech"
-	BridgeService_SetWidgetHoverable_FullMethodName          = "/bridge.BridgeService/SetWidgetHoverable"
+	BridgeService_SetWidgetEvents_FullMethodName             = "/bridge.BridgeService/SetWidgetEvents"
 	BridgeService_SubscribeEvents_FullMethodName             = "/bridge.BridgeService/SubscribeEvents"
 	BridgeService_Quit_FullMethodName                        = "/bridge.BridgeService/Quit"
 )
@@ -568,7 +568,7 @@ type BridgeServiceClient interface {
 	DisableAccessibility(ctx context.Context, in *DisableAccessibilityRequest, opts ...grpc.CallOption) (*Response, error)
 	Announce(ctx context.Context, in *AnnounceRequest, opts ...grpc.CallOption) (*Response, error)
 	StopSpeech(ctx context.Context, in *StopSpeechRequest, opts ...grpc.CallOption) (*Response, error)
-	SetWidgetHoverable(ctx context.Context, in *SetWidgetHoverableRequest, opts ...grpc.CallOption) (*Response, error)
+	SetWidgetEvents(ctx context.Context, in *SetWidgetEventsRequest, opts ...grpc.CallOption) (*Response, error)
 	// ============================================================================
 	// Events (streaming)
 	// ============================================================================
@@ -2967,10 +2967,10 @@ func (c *bridgeServiceClient) StopSpeech(ctx context.Context, in *StopSpeechRequ
 	return out, nil
 }
 
-func (c *bridgeServiceClient) SetWidgetHoverable(ctx context.Context, in *SetWidgetHoverableRequest, opts ...grpc.CallOption) (*Response, error) {
+func (c *bridgeServiceClient) SetWidgetEvents(ctx context.Context, in *SetWidgetEventsRequest, opts ...grpc.CallOption) (*Response, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Response)
-	err := c.cc.Invoke(ctx, BridgeService_SetWidgetHoverable_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, BridgeService_SetWidgetEvents_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -3312,7 +3312,7 @@ type BridgeServiceServer interface {
 	DisableAccessibility(context.Context, *DisableAccessibilityRequest) (*Response, error)
 	Announce(context.Context, *AnnounceRequest) (*Response, error)
 	StopSpeech(context.Context, *StopSpeechRequest) (*Response, error)
-	SetWidgetHoverable(context.Context, *SetWidgetHoverableRequest) (*Response, error)
+	SetWidgetEvents(context.Context, *SetWidgetEventsRequest) (*Response, error)
 	// ============================================================================
 	// Events (streaming)
 	// ============================================================================
@@ -4045,8 +4045,8 @@ func (UnimplementedBridgeServiceServer) Announce(context.Context, *AnnounceReque
 func (UnimplementedBridgeServiceServer) StopSpeech(context.Context, *StopSpeechRequest) (*Response, error) {
 	return nil, status.Error(codes.Unimplemented, "method StopSpeech not implemented")
 }
-func (UnimplementedBridgeServiceServer) SetWidgetHoverable(context.Context, *SetWidgetHoverableRequest) (*Response, error) {
-	return nil, status.Error(codes.Unimplemented, "method SetWidgetHoverable not implemented")
+func (UnimplementedBridgeServiceServer) SetWidgetEvents(context.Context, *SetWidgetEventsRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetWidgetEvents not implemented")
 }
 func (UnimplementedBridgeServiceServer) SubscribeEvents(*EventSubscription, grpc.ServerStreamingServer[Event]) error {
 	return status.Error(codes.Unimplemented, "method SubscribeEvents not implemented")
@@ -8359,20 +8359,20 @@ func _BridgeService_StopSpeech_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
-func _BridgeService_SetWidgetHoverable_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SetWidgetHoverableRequest)
+func _BridgeService_SetWidgetEvents_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetWidgetEventsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(BridgeServiceServer).SetWidgetHoverable(ctx, in)
+		return srv.(BridgeServiceServer).SetWidgetEvents(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: BridgeService_SetWidgetHoverable_FullMethodName,
+		FullMethod: BridgeService_SetWidgetEvents_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BridgeServiceServer).SetWidgetHoverable(ctx, req.(*SetWidgetHoverableRequest))
+		return srv.(BridgeServiceServer).SetWidgetEvents(ctx, req.(*SetWidgetEventsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -9366,8 +9366,8 @@ var BridgeService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _BridgeService_StopSpeech_Handler,
 		},
 		{
-			MethodName: "SetWidgetHoverable",
-			Handler:    _BridgeService_SetWidgetHoverable_Handler,
+			MethodName: "SetWidgetEvents",
+			Handler:    _BridgeService_SetWidgetEvents_Handler,
 		},
 		{
 			MethodName: "Quit",

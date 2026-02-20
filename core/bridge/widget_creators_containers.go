@@ -40,7 +40,8 @@ func (b *Bridge) handleCreateVBox(msg Message) Response {
 	}
 
 	b.mu.Lock()
-	b.widgets[widgetID] = vbox
+	vboxResult := b.maybeWrapWithEvents(msg, widgetID, vbox)
+	b.widgets[widgetID] = vboxResult
 	for _, childID := range childIDs {
 		b.childToParent[childID.(string)] = widgetID
 	}
@@ -76,7 +77,8 @@ func (b *Bridge) handleCreateHBox(msg Message) Response {
 	}
 
 	b.mu.Lock()
-	b.widgets[widgetID] = hbox
+	hboxResult := b.maybeWrapWithEvents(msg, widgetID, hbox)
+	b.widgets[widgetID] = hboxResult
 	for _, childID := range childIDs {
 		b.childToParent[childID.(string)] = widgetID
 	}
@@ -537,7 +539,8 @@ func (b *Bridge) handleCreateStack(msg Message) Response {
 	stackContainer := container.NewStack(children...)
 
 	b.mu.Lock()
-	b.widgets[widgetID] = stackContainer
+	stackResult := b.maybeWrapWithEvents(msg, widgetID, stackContainer)
+	b.widgets[widgetID] = stackResult
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "stack", Text: ""}
 	for _, childIDInterface := range childIDs {
 		if childID, ok := childIDInterface.(string); ok {

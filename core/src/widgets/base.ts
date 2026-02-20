@@ -65,6 +65,50 @@ export function clearAllBindings(ctx?: Context): void {
   }
 }
 
+/**
+ * Event options for widget constructors — declare events at creation time
+ * to avoid follow-up messages. Extends any widget-specific options interface.
+ */
+export interface WidgetEventOptions {
+  onMouseIn?: (e: { position: { x: number, y: number } }) => void;
+  onMouseOut?: () => void;
+  onMouseMoved?: (e: { position: { x: number, y: number } }) => void;
+  onMouseDown?: (e: { button: number, position: { x: number, y: number } }) => void;
+  onMouseUp?: (e: { button: number, position: { x: number, y: number } }) => void;
+  onKeyDown?: (e: { key: string }) => void;
+  onKeyUp?: (e: { key: string }) => void;
+  onFocusChange?: (e: { focused: boolean }) => void;
+  cursor?: 'default' | 'text' | 'crosshair' | 'pointer' | 'hResize' | 'vResize';
+}
+
+// Bitmask constants matching Go evBit* constants
+const evBitTap       = 1 << 0;
+const evBitDoubleTap = 1 << 1;
+// const evBitSecTap    = 1 << 2;
+const evBitHover     = 1 << 3;
+const evBitMouse     = 1 << 4;
+const evBitFocus     = 1 << 5;
+const evBitKey       = 1 << 6;
+// const evBitDrag      = 1 << 7;
+// const evBitScroll    = 1 << 8;
+const evBitCursor    = 1 << 9;
+
+// Maps event key names to the bitmask bit they enable
+const eventKeyToBit: Record<string, number> = {
+  tap: evBitTap,
+  doubleTap: evBitDoubleTap,
+  mouseIn: evBitHover,
+  mouseOut: evBitHover,
+  mouseMoved: evBitHover,
+  mouseDown: evBitMouse,
+  mouseUp: evBitMouse,
+  focusGained: evBitFocus,
+  focusLost: evBitFocus,
+  keyDown: evBitKey,
+  keyUp: evBitKey,
+  cursor: evBitCursor,
+};
+
 export abstract class Widget {
   protected ctx: Context;
   public id: string;
@@ -74,9 +118,143 @@ export abstract class Widget {
   private styleClass?: WidgetSelector;
   private bindings: ReactiveBinding[] = [];
 
+  // Microtask batching for event registration
+  private pendingEvents?: Map<string, string>;
+  private flushScheduled = false;
+
   constructor(ctx: Context, id: string) {
     this.ctx = ctx;
     this.id = id;
+  }
+
+  /**
+   * Register an event for batched sending. All registerEvent() calls within
+   * one synchronous execution context are collapsed into a single setWidgetEvents
+   * message via queueMicrotask.
+   */
+  protected registerEvent(eventKey: string, callbackId: string): void {
+    if (!this.pendingEvents) this.pendingEvents = new Map();
+    this.pendingEvents.set(eventKey, callbackId);
+    if (!this.flushScheduled) {
+      this.flushScheduled = true;
+      queueMicrotask(() => this.flushEvents());
+    }
+  }
+
+  private flushEvents(): void {
+    if (!this.pendingEvents || this.pendingEvents.size === 0) {
+      this.flushScheduled = false;
+      return;
+    }
+    // Compute bitmask from registered event keys
+    let events = 0;
+    const cbs: Record<string, string> = {};
+    for (const [key, id] of this.pendingEvents) {
+      cbs[key] = id;
+      const bit = eventKeyToBit[key];
+      if (bit) events |= bit;
+    }
+    this.ctx.bridge.send('setWidgetEvents', {
+      widgetId: this.id,
+      events,
+      cbs,
+    });
+    this.pendingEvents = undefined;
+    this.flushScheduled = false;
+  }
+
+  /**
+   * Apply event options from a constructor options object. Returns an object
+   * with `events` bitmask and `cbs` map suitable for including in a create* payload.
+   * Returns undefined if no event options are present.
+   */
+  protected applyEventOptions(options: WidgetEventOptions): { events: number, cbs: Record<string, string> } | undefined {
+    let events = 0;
+    const cbs: Record<string, string> = {};
+    let hasAny = false;
+
+    if (options.onMouseIn) {
+      const cbId = this.ctx.generateId('callback');
+      this.ctx.bridge.registerEventHandler(cbId, (data: unknown) => {
+        options.onMouseIn!(data as { position: { x: number, y: number } });
+      });
+      cbs.mouseIn = cbId;
+      events |= evBitHover;
+      hasAny = true;
+    }
+    if (options.onMouseOut) {
+      const cbId = this.ctx.generateId('callback');
+      this.ctx.bridge.registerEventHandler(cbId, options.onMouseOut);
+      cbs.mouseOut = cbId;
+      events |= evBitHover;
+      hasAny = true;
+    }
+    if (options.onMouseMoved) {
+      const cbId = this.ctx.generateId('callback');
+      this.ctx.bridge.registerEventHandler(cbId, (data: unknown) => {
+        options.onMouseMoved!(data as { position: { x: number, y: number } });
+      });
+      cbs.mouseMoved = cbId;
+      events |= evBitHover;
+      hasAny = true;
+    }
+    if (options.onMouseDown) {
+      const cbId = this.ctx.generateId('callback');
+      this.ctx.bridge.registerEventHandler(cbId, (data: unknown) => {
+        options.onMouseDown!(data as { button: number, position: { x: number, y: number } });
+      });
+      cbs.mouseDown = cbId;
+      events |= evBitMouse;
+      hasAny = true;
+    }
+    if (options.onMouseUp) {
+      const cbId = this.ctx.generateId('callback');
+      this.ctx.bridge.registerEventHandler(cbId, (data: unknown) => {
+        options.onMouseUp!(data as { button: number, position: { x: number, y: number } });
+      });
+      cbs.mouseUp = cbId;
+      events |= evBitMouse;
+      hasAny = true;
+    }
+    if (options.onKeyDown) {
+      const cbId = this.ctx.generateId('callback');
+      this.ctx.bridge.registerEventHandler(cbId, (data: unknown) => {
+        options.onKeyDown!(data as { key: string });
+      });
+      cbs.keyDown = cbId;
+      events |= evBitKey;
+      hasAny = true;
+    }
+    if (options.onKeyUp) {
+      const cbId = this.ctx.generateId('callback');
+      this.ctx.bridge.registerEventHandler(cbId, (data: unknown) => {
+        options.onKeyUp!(data as { key: string });
+      });
+      cbs.keyUp = cbId;
+      events |= evBitKey;
+      hasAny = true;
+    }
+    if (options.onFocusChange) {
+      const cbIdGained = this.ctx.generateId('callback');
+      const cbIdLost = this.ctx.generateId('callback');
+      this.ctx.bridge.registerEventHandler(cbIdGained, (data: unknown) => {
+        options.onFocusChange!(data as { focused: boolean });
+      });
+      this.ctx.bridge.registerEventHandler(cbIdLost, (data: unknown) => {
+        options.onFocusChange!(data as { focused: boolean });
+      });
+      cbs.focusGained = cbIdGained;
+      cbs.focusLost = cbIdLost;
+      events |= evBitFocus;
+      hasAny = true;
+    }
+    if (options.cursor) {
+      cbs.cursor = options.cursor;
+      events |= evBitCursor;
+      hasAny = true;
+    }
+
+    return hasAny ? { events, cbs } : undefined;
   }
 
   /**
@@ -312,18 +490,6 @@ export abstract class Widget {
   }
 
   /**
-   * Enable hover announcements for this widget
-   * When enabled, hovering over the widget will announce its accessibility info
-   * @param enabled Whether to enable hover announcements (default: true)
-   * @returns this for method chaining
-   * @example
-   * const cell = a.button('X', onClick)
-   *   .accessibility({ label: 'Top left cell' })
-   *   .announceOnHover();
-   */
-
-
-  /**
    * Register a callback for when the mouse enters the widget
    * @param callback Function called when mouse enters, receives mouse event with position
    * @returns this for method chaining
@@ -338,12 +504,8 @@ export abstract class Widget {
     const callbackId = this.ctx.generateId('callback');
     this.ctx.bridge.registerEventHandler(callbackId, (data: unknown) => {
       callback(data as { position: { x: number, y: number } });
-    }); // Register the callback
-    this.ctx.bridge.send('setWidgetHoverable', { // Send message to bridge
-      widgetId: this.id,
-      onMouseInCallbackId: callbackId,
-      enabled: true // Enable hoverable capability
     });
+    this.registerEvent('mouseIn', callbackId);
     return this;
   }
 
@@ -361,12 +523,8 @@ export abstract class Widget {
     const callbackId = this.ctx.generateId('callback');
     this.ctx.bridge.registerEventHandler(callbackId, (data: unknown) => {
       callback(data as { position: { x: number, y: number } });
-    }); // Register the callback
-    this.ctx.bridge.send('setWidgetHoverable', { // Send message to bridge
-      widgetId: this.id,
-      onMouseMoveCallbackId: callbackId,
-      enabled: true // Enable hoverable capability
     });
+    this.registerEvent('mouseMoved', callbackId);
     return this;
   }
 
@@ -382,12 +540,8 @@ export abstract class Widget {
    */
   onMouseOut(callback: () => void): this {
     const callbackId = this.ctx.generateId('callback');
-    this.ctx.bridge.registerEventHandler(callbackId, callback); // Register the callback
-    this.ctx.bridge.send('setWidgetHoverable', { // Send message to bridge
-      widgetId: this.id,
-      onMouseOutCallbackId: callbackId,
-      enabled: true // Enable hoverable capability
-    });
+    this.ctx.bridge.registerEventHandler(callbackId, callback);
+    this.registerEvent('mouseOut', callbackId);
     return this;
   }
 
@@ -408,37 +562,9 @@ export abstract class Widget {
     moved?: (event: { position: { x: number, y: number } }) => void,
     out?: () => void
   }): this {
-    if (callbacks.in) {
-      const callbackId = this.ctx.generateId('callback');
-      this.ctx.bridge.registerEventHandler(callbackId, (data: unknown) => {
-        callbacks.in!(data as { position: { x: number, y: number } });
-      });
-      this.ctx.bridge.send('setWidgetHoverable', {
-        widgetId: this.id,
-        onMouseInCallbackId: callbackId,
-        enabled: true
-      });
-    }
-    if (callbacks.moved) {
-      const callbackId = this.ctx.generateId('callback');
-      this.ctx.bridge.registerEventHandler(callbackId, (data: unknown) => {
-        callbacks.moved!(data as { position: { x: number, y: number } });
-      });
-      this.ctx.bridge.send('setWidgetHoverable', {
-        widgetId: this.id,
-        onMouseMoveCallbackId: callbackId,
-        enabled: true
-      });
-    }
-    if (callbacks.out) {
-      const callbackId = this.ctx.generateId('callback');
-      this.ctx.bridge.registerEventHandler(callbackId, callbacks.out);
-      this.ctx.bridge.send('setWidgetHoverable', {
-        widgetId: this.id,
-        onMouseOutCallbackId: callbackId,
-        enabled: true
-      });
-    }
+    if (callbacks.in) this.onMouseIn(callbacks.in);
+    if (callbacks.moved) this.onMouseMoved(callbacks.moved);
+    if (callbacks.out) this.onMouseOut(callbacks.out);
     return this;
   }
 
@@ -457,11 +583,7 @@ export abstract class Widget {
     this.ctx.bridge.registerEventHandler(callbackId, (data: unknown) => {
       callback(data as { button: number, position: { x: number, y: number } });
     });
-    this.ctx.bridge.send('setWidgetHoverable', {
-      widgetId: this.id,
-      onMouseDownCallbackId: callbackId,
-      enabled: true
-    });
+    this.registerEvent('mouseDown', callbackId);
     return this;
   }
 
@@ -480,11 +602,7 @@ export abstract class Widget {
     this.ctx.bridge.registerEventHandler(callbackId, (data: unknown) => {
       callback(data as { button: number, position: { x: number, y: number } });
     });
-    this.ctx.bridge.send('setWidgetHoverable', {
-      widgetId: this.id,
-      onMouseUpCallbackId: callbackId,
-      enabled: true
-    });
+    this.registerEvent('mouseUp', callbackId);
     return this;
   }
 
@@ -503,11 +621,7 @@ export abstract class Widget {
     this.ctx.bridge.registerEventHandler(callbackId, (data: unknown) => {
       callback(data as { key: string });
     });
-    this.ctx.bridge.send('setWidgetHoverable', {
-      widgetId: this.id,
-      onKeyDownCallbackId: callbackId,
-      enabled: true
-    });
+    this.registerEvent('keyDown', callbackId);
     return this;
   }
 
@@ -526,11 +640,7 @@ export abstract class Widget {
     this.ctx.bridge.registerEventHandler(callbackId, (data: unknown) => {
       callback(data as { key: string });
     });
-    this.ctx.bridge.send('setWidgetHoverable', {
-      widgetId: this.id,
-      onKeyUpCallbackId: callbackId,
-      enabled: true
-    });
+    this.registerEvent('keyUp', callbackId);
     return this;
   }
 
@@ -545,15 +655,16 @@ export abstract class Widget {
    *   });
    */
   onFocusChange(callback: (event: { focused: boolean }) => void): this {
-    const callbackId = this.ctx.generateId('callback');
-    this.ctx.bridge.registerEventHandler(callbackId, (data: unknown) => {
+    const cbIdGained = this.ctx.generateId('callback');
+    const cbIdLost = this.ctx.generateId('callback');
+    this.ctx.bridge.registerEventHandler(cbIdGained, (data: unknown) => {
       callback(data as { focused: boolean });
     });
-    this.ctx.bridge.send('setWidgetHoverable', {
-      widgetId: this.id,
-      onFocusCallbackId: callbackId,
-      enabled: true
+    this.ctx.bridge.registerEventHandler(cbIdLost, (data: unknown) => {
+      callback(data as { focused: boolean });
     });
+    this.registerEvent('focusGained', cbIdGained);
+    this.registerEvent('focusLost', cbIdLost);
     return this;
   }
 
@@ -566,11 +677,7 @@ export abstract class Widget {
    * a.button('Text Input', onClick).setCursor('text');
    */
   setCursor(cursor: 'default' | 'text' | 'crosshair' | 'pointer' | 'hResize' | 'vResize'): this {
-    this.ctx.bridge.send('setWidgetHoverable', {
-      widgetId: this.id,
-      cursorType: cursor,
-      enabled: true
-    });
+    this.registerEvent('cursor', cursor);
     return this;
   }
 

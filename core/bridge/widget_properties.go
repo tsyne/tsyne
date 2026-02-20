@@ -13,6 +13,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
 	xWidget "fyne.io/x/fyne/widget"
 )
@@ -44,6 +45,8 @@ func (b *Bridge) handleGetText(msg Message) Response {
 	switch w := actualWidget.(type) {
 	case *widget.Label:
 		text = w.Text
+	case *LabelWithHover:
+		text = w.Text
 	case *widget.Entry:
 		text = w.Text
 	case *TsyneEntry:
@@ -54,16 +57,12 @@ func (b *Bridge) handleGetText(msg Message) Response {
 		text = w.Text
 	case *widget.Button:
 		text = w.Text
-	case *HoverableButton: // Handle HoverableButton
+	case *ButtonWithHover:
 		text = w.Text
-	case *HoverableWrapper: // Handle HoverableWrapper
-		if label, ok := w.content.(*widget.Label); ok {
-			text = label.Text
-		} else if btn, ok := w.content.(*widget.Button); ok {
-			text = btn.Text
-		} else if hoverBtn, ok := w.content.(*HoverableButton); ok {
-			text = hoverBtn.Text
-		}
+	case *ButtonWithHoverMouse:
+		text = w.Text
+	case *ButtonWithHoverFocusKey:
+		text = w.Text
 	case *widget.Check:
 		text = w.Text
 	default:
@@ -78,6 +77,52 @@ func (b *Bridge) handleGetText(msg Message) Response {
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"text": text},
+	}
+}
+
+// getTextFromObject extracts text from a fyne.CanvasObject.
+func (b *Bridge) getTextFromObject(msg Message, obj fyne.CanvasObject) Response {
+	switch w := obj.(type) {
+	case *widget.Label:
+		return Response{ID: msg.ID, Success: true, Result: map[string]interface{}{"text": w.Text}}
+	case *LabelWithHover:
+		return Response{ID: msg.ID, Success: true, Result: map[string]interface{}{"text": w.Text}}
+	case *widget.Entry:
+		return Response{ID: msg.ID, Success: true, Result: map[string]interface{}{"text": w.Text}}
+	case *TsyneEntry:
+		return Response{ID: msg.ID, Success: true, Result: map[string]interface{}{"text": w.Text}}
+	case *widget.Button:
+		return Response{ID: msg.ID, Success: true, Result: map[string]interface{}{"text": w.Text}}
+	case *ButtonWithHover:
+		return Response{ID: msg.ID, Success: true, Result: map[string]interface{}{"text": w.Text}}
+	case *ButtonWithHoverMouse:
+		return Response{ID: msg.ID, Success: true, Result: map[string]interface{}{"text": w.Text}}
+	case *ButtonWithHoverFocusKey:
+		return Response{ID: msg.ID, Success: true, Result: map[string]interface{}{"text": w.Text}}
+	case *widget.Check:
+		return Response{ID: msg.ID, Success: true, Result: map[string]interface{}{"text": w.Text}}
+	default:
+		return Response{ID: msg.ID, Success: false, Error: "Widget does not support getText"}
+	}
+}
+
+// setTextOnObject sets text on a fyne.CanvasObject.
+func setTextOnObject(obj fyne.CanvasObject, text string) {
+	switch w := obj.(type) {
+	case *widget.Label:
+		w.SetText(text)
+	case *LabelWithHover:
+		w.SetText(text)
+	case *widget.Button:
+		w.SetText(text)
+	case *ButtonWithHover:
+		w.SetText(text)
+	case *ButtonWithHoverMouse:
+		w.SetText(text)
+	case *ButtonWithHoverFocusKey:
+		w.SetText(text)
+	case *widget.Entry:
+		w.SetText(text)
 	}
 }
 
@@ -110,6 +155,8 @@ func (b *Bridge) handleSetText(msg Message) Response {
 		switch w := actualWidget.(type) {
 		case *widget.Label:
 			w.SetText(text)
+		case *LabelWithHover:
+			w.SetText(text)
 		case *widget.Entry:
 			w.SetText(text)
 		case *TsyneEntry:
@@ -120,27 +167,14 @@ func (b *Bridge) handleSetText(msg Message) Response {
 			w.SetText(text)
 		case *widget.Button:
 			w.SetText(text)
-		case *HoverableButton:
+		case *ButtonWithHover:
 			w.SetText(text)
-			w.Refresh() // Added Refresh for HoverableButton
-		case *HoverableWrapper: // Handle HoverableWrapper
-			if label, ok := w.content.(*widget.Label); ok {
-				label.SetText(text)
-			} else if btn, ok := w.content.(*widget.Button); ok {
-				btn.SetText(text)
-			} else if hoverBtn, ok := w.content.(*HoverableButton); ok {
-				hoverBtn.SetText(text)
-				hoverBtn.Refresh() // Added Refresh for HoverableButton inside wrapper
-			}
-		case *TappableWrapper: // Handle TappableWrapper (context menu wrapper)
-			if label, ok := w.content.(*widget.Label); ok {
-				label.SetText(text)
-			} else if btn, ok := w.content.(*widget.Button); ok {
-				btn.SetText(text)
-			} else if hoverBtn, ok := w.content.(*HoverableButton); ok {
-				hoverBtn.SetText(text)
-				hoverBtn.Refresh()
-			}
+		case *ButtonWithHoverMouse:
+			w.SetText(text)
+		case *ButtonWithHoverFocusKey:
+			w.SetText(text)
+		case *TappableWrapper:
+			setTextOnObject(w.content, text)
 		case *widget.Check:
 			w.SetText(text)
 		}
@@ -157,7 +191,7 @@ func (b *Bridge) handleSetText(msg Message) Response {
 	// Check if widget type is supported
 	supported := false
 	switch actualWidget.(type) {
-	case *widget.Label, *widget.Entry, *TsyneEntry, *widget.SelectEntry, *xWidget.CompletionEntry, *widget.Button, *HoverableButton, *HoverableWrapper, *TappableWrapper, *widget.Check:
+	case *widget.Label, *LabelWithHover, *widget.Entry, *TsyneEntry, *widget.SelectEntry, *xWidget.CompletionEntry, *widget.Button, *ButtonWithHover, *ButtonWithHoverMouse, *ButtonWithHoverFocusKey, *TappableWrapper, *widget.Check:
 		supported = true
 	}
 
@@ -1309,7 +1343,6 @@ func (b *Bridge) handleStopSpeech(msg Message) Response {
 }
 
 // handleSetPointerEnter handles pointer enter event registration
-// This only stores metadata - actual wrapping happens later in processHoverWrappers
 func (b *Bridge) handleSetPointerEnter(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
@@ -1327,7 +1360,6 @@ func (b *Bridge) handleSetPointerEnter(msg Message) Response {
 	}
 
 	// Update metadata to indicate hover is enabled
-	// The actual wrapping will happen later in processHoverWrappers
 	widgetMeta, exists := b.widgetMeta[widgetID]
 	if !exists {
 		widgetMeta = WidgetMetadata{}
@@ -1348,120 +1380,31 @@ func (b *Bridge) handleSetPointerEnter(msg Message) Response {
 	}
 }
 
-// handleProcessHoverWrappers wraps all widgets that have announceOnHover metadata
-// This should be called after the widget tree is complete
-func (b *Bridge) handleProcessHoverWrappers(msg Message) Response {
-	b.mu.Lock()
-	// Note: Don't use defer unlock here - we unlock manually before sendResponse to avoid deadlock
+// ============================================================================
+// handleSetWidgetEvents — new bitmask-based event system
+// ============================================================================
 
-	// In test mode, don't wrap widgets to avoid threading issues
-	if b.testMode {
-		b.mu.Unlock()
-		return Response{
-			ID:      msg.ID,
-			Success: true,
-		}
+// getOrCreateDispatcher returns the dispatcher for a widget, creating one if needed.
+// Caller must hold b.mu lock.
+func (b *Bridge) getOrCreateDispatcher(widgetID string) *EventDispatcher {
+	if d, ok := b.dispatchers[widgetID]; ok {
+		return d
 	}
-
-	wrappedCount := 0
-
-	// Iterate through all widgets looking for announceOnHover metadata
-	for widgetID, widgetMeta := range b.widgetMeta {
-		if widgetMeta.CustomData != nil && widgetMeta.CustomData["announceOnHover"] == true {
-			obj, exists := b.widgets[widgetID]
-			if !exists {
-				continue
-			}
-
-			// Check if already a TsyneButton or wrapped
-			if _, alreadyTsyne := obj.(*TsyneButton); alreadyTsyne {
-				continue
-			}
-			if _, alreadyWrapped := obj.(*HoverableWrapper); alreadyWrapped {
-				continue
-			}
-
-			var replacement fyne.CanvasObject
-
-			// For buttons, create a TsyneButton
-			if btn, isButton := obj.(*widget.Button); isButton {
-				tsyneBtn := NewTsyneButton(btn.Text, btn.OnTapped, b, widgetID)
-				tsyneBtn.Importance = btn.Importance
-				tsyneBtn.Icon = btn.Icon
-				tsyneBtn.IconPlacement = btn.IconPlacement
-				tsyneBtn.Alignment = btn.Alignment
-				// Note: No callback IDs set here - processHoverWrappers is for accessibility
-				// The pointerEnter event is always sent regardless of callback IDs
-				if btn.Disabled() {
-					tsyneBtn.Disable()
-				}
-				replacement = tsyneBtn
-			} else {
-				// For other widgets, use the wrapper approach
-				replacement = NewHoverableWrapper(obj, b, widgetID)
-			}
-
-			// Replace in widgets map
-			b.widgets[widgetID] = replacement
-
-			// Replace in parent container
-			parentID, hasParent := b.childToParent[widgetID]
-			if hasParent {
-				parentObj, exists := b.widgets[parentID]
-				if exists {
-					if container, ok := parentObj.(interface{ Objects() []fyne.CanvasObject }); ok {
-						objects := container.Objects()
-						for i, child := range objects {
-							if child == obj {
-								objects[i] = replacement
-								// Note: Don't refresh here - windows haven't been shown yet
-								// The refresh will happen naturally when the window is shown
-								wrappedCount++
-								break
-							}
-						}
-					}
-				}
-			}
-		}
+	d := &EventDispatcher{
+		bridge:   b,
+		widgetID: widgetID,
 	}
-
-
-	// Unlock before sending response to avoid deadlock (sendResponse also acquires the lock)
-	b.mu.Unlock()
-
-	return Response{
-		ID:      msg.ID,
-		Success: true,
-		Result: map[string]interface{}{
-			"wrappedCount": wrappedCount,
-		},
-	}
+	b.dispatchers[widgetID] = d
+	return d
 }
 
-// handleSetWidgetHoverable handles enabling hover events on a widget
-// This wraps the widget to support mouse in/out/move events
-func (b *Bridge) handleSetWidgetHoverable(msg Message) Response {
+// handleSetWidgetEvents handles the batched event registration message.
+// Creates/updates EventDispatcher with callback IDs from the cbs map.
+// If the widget hasn't been upgraded to a concrete event variant yet, does so now.
+func (b *Bridge) handleSetWidgetEvents(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
-
-	// Extract optional callback IDs for Hoverable interface
-	onMouseInCallbackId, _ := msg.Payload["onMouseInCallbackId"].(string)
-	onMouseMoveCallbackId, _ := msg.Payload["onMouseMoveCallbackId"].(string)
-	onMouseOutCallbackId, _ := msg.Payload["onMouseOutCallbackId"].(string)
-
-	// Extract optional callback IDs for Mouseable interface
-	onMouseDownCallbackId, _ := msg.Payload["onMouseDownCallbackId"].(string)
-	onMouseUpCallbackId, _ := msg.Payload["onMouseUpCallbackId"].(string)
-
-	// Extract optional callback IDs for Keyable interface
-	onKeyDownCallbackId, _ := msg.Payload["onKeyDownCallbackId"].(string)
-	onKeyUpCallbackId, _ := msg.Payload["onKeyUpCallbackId"].(string)
-
-	// Extract optional callback ID for Focus events
-	onFocusCallbackId, _ := msg.Payload["onFocusCallbackId"].(string)
-
-	// Extract optional cursor type for Cursorable interface
-	cursorType, _ := msg.Payload["cursorType"].(string)
+	events := uint16(toInt(msg.Payload["events"]))
+	cbs, _ := msg.Payload["cbs"].(map[string]interface{})
 
 	b.mu.Lock()
 
@@ -1475,199 +1418,34 @@ func (b *Bridge) handleSetWidgetHoverable(msg Message) Response {
 		}
 	}
 
-	// Store callback IDs in widget metadata
-	widgetMeta, metaExists := b.widgetMeta[widgetID]
-	if !metaExists {
-		widgetMeta = WidgetMetadata{}
-	}
-	if widgetMeta.CustomData == nil {
-		widgetMeta.CustomData = make(map[string]interface{})
-	}
-
-	// Store callback IDs for event dispatching
-	if onMouseInCallbackId != "" {
-		widgetMeta.CustomData["onMouseInCallbackId"] = onMouseInCallbackId
-	}
-	if onMouseMoveCallbackId != "" {
-		widgetMeta.CustomData["onMouseMoveCallbackId"] = onMouseMoveCallbackId
-	}
-	if onMouseOutCallbackId != "" {
-		widgetMeta.CustomData["onMouseOutCallbackId"] = onMouseOutCallbackId
-	}
-	if onMouseDownCallbackId != "" {
-		widgetMeta.CustomData["onMouseDownCallbackId"] = onMouseDownCallbackId
-	}
-	if onMouseUpCallbackId != "" {
-		widgetMeta.CustomData["onMouseUpCallbackId"] = onMouseUpCallbackId
-	}
-	if onKeyDownCallbackId != "" {
-		widgetMeta.CustomData["onKeyDownCallbackId"] = onKeyDownCallbackId
-	}
-	if onKeyUpCallbackId != "" {
-		widgetMeta.CustomData["onKeyUpCallbackId"] = onKeyUpCallbackId
-	}
-	if onFocusCallbackId != "" {
-		widgetMeta.CustomData["onFocusCallbackId"] = onFocusCallbackId
-	}
-	if cursorType != "" {
-		widgetMeta.CustomData["cursorType"] = cursorType
-	}
-	widgetMeta.CustomData["hoverable"] = true
-	b.widgetMeta[widgetID] = widgetMeta
-
-	// Check if already a TsyneButton - if so, update its callback IDs
-	if tsyneBtn, alreadyTsyne := obj.(*TsyneButton); alreadyTsyne {
-		// Update Hoverable callback IDs
-		if onMouseInCallbackId != "" {
-			tsyneBtn.onMouseInCallbackId = onMouseInCallbackId
-		}
-		if onMouseOutCallbackId != "" {
-			tsyneBtn.onMouseOutCallbackId = onMouseOutCallbackId
-		}
-		if onMouseMoveCallbackId != "" {
-			tsyneBtn.onMouseMovedCallbackId = onMouseMoveCallbackId
-		}
-		// Update Mouseable callback IDs
-		if onMouseDownCallbackId != "" {
-			tsyneBtn.onMouseDownCallbackId = onMouseDownCallbackId
-		}
-		if onMouseUpCallbackId != "" {
-			tsyneBtn.onMouseUpCallbackId = onMouseUpCallbackId
-		}
-		// Update Keyable callback IDs
-		if onKeyDownCallbackId != "" {
-			tsyneBtn.onKeyDownCallbackId = onKeyDownCallbackId
-		}
-		if onKeyUpCallbackId != "" {
-			tsyneBtn.onKeyUpCallbackId = onKeyUpCallbackId
-		}
-		// Update Focus callback ID
-		if onFocusCallbackId != "" {
-			tsyneBtn.onFocusCallbackId = onFocusCallbackId
-		}
-		// Update cursor type
-		if cursorType != "" {
-			tsyneBtn.SetCursor(stringToCursor(cursorType))
-		}
-		b.mu.Unlock()
-		return Response{
-			ID:      msg.ID,
-			Success: true,
+	// Build or update EventDispatcher
+	disp := b.getOrCreateDispatcher(widgetID)
+	for key, val := range cbs {
+		if id, ok := val.(string); ok {
+			disp.setCallback(cbKeyToEventKind(key), id)
 		}
 	}
 
-	// Check if already a TsyneSlider - if so, update its callback IDs
-	if tsyneSlider, alreadyTsyne := obj.(*TsyneSlider); alreadyTsyne {
-		// Update Hoverable callback IDs
-		if onMouseInCallbackId != "" {
-			tsyneSlider.onMouseInCallbackId = onMouseInCallbackId
-		}
-		if onMouseOutCallbackId != "" {
-			tsyneSlider.onMouseOutCallbackId = onMouseOutCallbackId
-		}
-		if onMouseMoveCallbackId != "" {
-			tsyneSlider.onMouseMovedCallbackId = onMouseMoveCallbackId
-		}
-		b.mu.Unlock()
-		return Response{
-			ID:      msg.ID,
-			Success: true,
-		}
-	}
-	if _, alreadyWrapped := obj.(*HoverableWrapper); alreadyWrapped {
-		b.mu.Unlock()
-		return Response{
-			ID:      msg.ID,
-			Success: true,
-		}
-	}
-
-	// In test mode, skip the actual wrapping but return success
-	// Events will be handled differently in test mode
-	if b.testMode {
-		b.mu.Unlock()
-		return Response{
-			ID:      msg.ID,
-			Success: true,
-		}
-	}
-
-	// Wrap the widget to make it interactive
+	// Check if widget needs upgrading to a concrete event variant
 	var replacement fyne.CanvasObject
-
-	// For buttons, create a TsyneButton with appropriate callback IDs
-	if btn, isButton := obj.(*widget.Button); isButton {
-		tsyneBtn := NewTsyneButton(btn.Text, btn.OnTapped, b, widgetID)
-		tsyneBtn.Importance = btn.Importance
-		tsyneBtn.Icon = btn.Icon
-		tsyneBtn.IconPlacement = btn.IconPlacement
-		tsyneBtn.Alignment = btn.Alignment
-		if btn.Disabled() {
-			tsyneBtn.Disable()
-		}
-
-		// Set Hoverable callback IDs
-		tsyneBtn.onMouseInCallbackId = onMouseInCallbackId
-		tsyneBtn.onMouseOutCallbackId = onMouseOutCallbackId
-		tsyneBtn.onMouseMovedCallbackId = onMouseMoveCallbackId
-
-		// Set Mouseable callback IDs
-		tsyneBtn.onMouseDownCallbackId = onMouseDownCallbackId
-		tsyneBtn.onMouseUpCallbackId = onMouseUpCallbackId
-
-		// Set Keyable callback IDs
-		tsyneBtn.onKeyDownCallbackId = onKeyDownCallbackId
-		tsyneBtn.onKeyUpCallbackId = onKeyUpCallbackId
-
-		// Set Focus callback ID
-		tsyneBtn.onFocusCallbackId = onFocusCallbackId
-
-		// Set cursor type
-		if cursorType != "" {
-			tsyneBtn.SetCursor(stringToCursor(cursorType))
-		}
-
-		replacement = tsyneBtn
-	} else if slider, isSlider := obj.(*widget.Slider); isSlider {
-		// For sliders, create a TsyneSlider with appropriate callback IDs
-		tsyneSlider := NewTsyneSlider(slider.Min, slider.Max, b, widgetID)
-		tsyneSlider.Value = slider.Value
-		tsyneSlider.Step = slider.Step
-		tsyneSlider.Orientation = slider.Orientation
-		tsyneSlider.OnChanged = slider.OnChanged
-		tsyneSlider.OnChangeEnded = slider.OnChangeEnded
-
-		// Set Hoverable callback IDs
-		tsyneSlider.onMouseInCallbackId = onMouseInCallbackId
-		tsyneSlider.onMouseOutCallbackId = onMouseOutCallbackId
-		tsyneSlider.onMouseMovedCallbackId = onMouseMoveCallbackId
-
-		replacement = tsyneSlider
-	} else {
-		// For other widgets, use the wrapper approach
-		wrapper := NewHoverableWrapper(obj, b, widgetID)
-
-		// Set callback IDs on the wrapper
-		wrapper.onMouseInCallbackId = onMouseInCallbackId
-		wrapper.onMouseOutCallbackId = onMouseOutCallbackId
-		wrapper.onMouseMovedCallbackId = onMouseMoveCallbackId
-
-		replacement = wrapper
+	switch w := obj.(type) {
+	case *widget.Button:
+		replacement = b.buttonVariant(w, events, disp)
+	case *widget.Label:
+		replacement = b.labelVariant(w, events, disp)
 	}
 
-	// Replace in widgets map
-	b.widgets[widgetID] = replacement
-
-	// Replace in parent container if it exists
-	parentID, hasParent := b.childToParent[widgetID]
-	if hasParent {
-		parentObj, parentExists := b.widgets[parentID]
-		if parentExists {
-			if container, ok := parentObj.(*fyne.Container); ok {
-				for i, child := range container.Objects {
-					if child == obj {
-						container.Objects[i] = replacement
-						break
+	if replacement != nil && replacement != obj {
+		b.widgets[widgetID] = replacement
+		// Replace in parent container
+		if parentID, ok := b.childToParent[widgetID]; ok {
+			if parentObj, ok := b.widgets[parentID]; ok {
+				if cont, ok := parentObj.(*fyne.Container); ok {
+					for i, child := range cont.Objects {
+						if child == obj {
+							cont.Objects[i] = replacement
+							break
+						}
 					}
 				}
 			}
@@ -1678,6 +1456,339 @@ func (b *Bridge) handleSetWidgetHoverable(msg Message) Response {
 	return Response{
 		ID:      msg.ID,
 		Success: true,
+	}
+}
+
+// handleStimulateEvent fires an event on a widget by calling its real Fyne
+// interface methods (MouseIn, FocusGained, KeyDown, etc.), exercising the same
+// code path as headed mode. Falls back to direct dispatcher fire for widgets
+// without concrete variants.
+// Test-mode only — in headed mode, real input events drive callbacks.
+func (b *Bridge) handleStimulateEvent(msg Message) Response {
+	if !b.testMode {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "stimulateEvent is only available in test mode",
+		}
+	}
+
+	widgetID := msg.Payload["widgetId"].(string)
+	eventStr := msg.Payload["event"].(string)
+	kind := cbKeyToEventKind(eventStr)
+
+	b.mu.RLock()
+	obj, exists := b.widgets[widgetID]
+	disp, hasDisp := b.dispatchers[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found: " + widgetID,
+		}
+	}
+
+	// Try to call the real widget interface method first — but only on our
+	// concrete event variants (ButtonWithHover*, LabelWithHover). Base Fyne
+	// widgets like widget.Button implement some interfaces (e.g. Focusable,
+	// Hoverable) natively but their methods don't fire our EventDispatcher,
+	// so we must skip them and fall through to the dispatcher.
+	isVariant := isEventVariant(obj)
+	ok := false
+	if isVariant {
+		switch eventStr {
+		case "mouseIn":
+			if h, is := obj.(desktop.Hoverable); is {
+				h.MouseIn(buildMouseEvent(msg))
+				ok = true
+			}
+		case "mouseOut":
+			if h, is := obj.(desktop.Hoverable); is {
+				h.MouseOut()
+				ok = true
+			}
+		case "mouseMoved":
+			if h, is := obj.(desktop.Hoverable); is {
+				h.MouseMoved(buildMouseEvent(msg))
+				ok = true
+			}
+		case "mouseDown":
+			if m, is := obj.(desktop.Mouseable); is {
+				m.MouseDown(buildMouseEvent(msg))
+				ok = true
+			}
+		case "mouseUp":
+			if m, is := obj.(desktop.Mouseable); is {
+				m.MouseUp(buildMouseEvent(msg))
+				ok = true
+			}
+		case "focusGained":
+			if f, is := obj.(fyne.Focusable); is {
+				f.FocusGained()
+				ok = true
+			}
+		case "focusLost":
+			if f, is := obj.(fyne.Focusable); is {
+				f.FocusLost()
+				ok = true
+			}
+		case "keyDown":
+			if k, is := obj.(desktop.Keyable); is {
+				k.KeyDown(buildKeyEvent(msg))
+				ok = true
+			}
+		case "keyUp":
+			if k, is := obj.(desktop.Keyable); is {
+				k.KeyUp(buildKeyEvent(msg))
+				ok = true
+			}
+		case "tap":
+			if t, is := obj.(fyne.Tappable); is {
+				t.Tapped(buildPointEvent(msg))
+				ok = true
+			}
+		case "doubleTap":
+			if dt, is := obj.(fyne.DoubleTappable); is {
+				dt.DoubleTapped(buildPointEvent(msg))
+				ok = true
+			}
+		case "secondaryTap":
+			if st, is := obj.(fyne.SecondaryTappable); is {
+				st.TappedSecondary(buildPointEvent(msg))
+				ok = true
+			}
+		case "dragged":
+			if d, is := obj.(fyne.Draggable); is {
+				d.Dragged(buildDragEvent(msg))
+				ok = true
+			}
+		case "dragEnd":
+			if d, is := obj.(fyne.Draggable); is {
+				d.DragEnd()
+				ok = true
+			}
+		case "scrolled":
+			if s, is := obj.(fyne.Scrollable); is {
+				s.Scrolled(buildScrollEvent(msg))
+				ok = true
+			}
+		}
+	}
+
+	if ok {
+		return Response{ID: msg.ID, Success: true}
+	}
+
+	// Fallback: fire on dispatcher directly (widgets without concrete variants)
+	if hasDisp {
+		var data map[string]interface{}
+		switch kind {
+		case EvMouseIn, EvMouseOut, EvMouseMoved:
+			data = map[string]interface{}{
+				"position": map[string]interface{}{
+					"x": toFloat64(msg.Payload["x"]),
+					"y": toFloat64(msg.Payload["y"]),
+				},
+			}
+		case EvMouseDown, EvMouseUp:
+			data = map[string]interface{}{
+				"button": toInt(msg.Payload["button"]),
+				"position": map[string]interface{}{
+					"x": toFloat64(msg.Payload["x"]),
+					"y": toFloat64(msg.Payload["y"]),
+				},
+			}
+		case EvKeyDown, EvKeyUp:
+			keyVal, _ := msg.Payload["key"].(string)
+			data = map[string]interface{}{
+				"key": keyVal,
+			}
+		case EvFocusGained:
+			data = map[string]interface{}{"focused": true}
+		case EvFocusLost:
+			data = map[string]interface{}{"focused": false}
+		case EvDragged:
+			data = map[string]interface{}{
+				"position": map[string]interface{}{
+					"x": toFloat64(msg.Payload["x"]),
+					"y": toFloat64(msg.Payload["y"]),
+				},
+				"dragged": map[string]interface{}{
+					"dx": toFloat64(msg.Payload["dx"]),
+					"dy": toFloat64(msg.Payload["dy"]),
+				},
+			}
+		case EvScrolled:
+			data = map[string]interface{}{
+				"position": map[string]interface{}{
+					"x": toFloat64(msg.Payload["x"]),
+					"y": toFloat64(msg.Payload["y"]),
+				},
+				"scrolled": map[string]interface{}{
+					"dx": toFloat64(msg.Payload["dx"]),
+					"dy": toFloat64(msg.Payload["dy"]),
+				},
+			}
+		default:
+			data = nil
+		}
+
+		disp.fire(kind, data)
+		return Response{ID: msg.ID, Success: true}
+	}
+
+	return Response{
+		ID:      msg.ID,
+		Success: false,
+		Error:   "Widget does not implement the requested event interface and has no dispatcher",
+	}
+}
+
+// Fyne event struct builders for stimulateEvent interface dispatch
+
+func buildMouseEvent(msg Message) *desktop.MouseEvent {
+	return &desktop.MouseEvent{
+		PointEvent: fyne.PointEvent{
+			Position: fyne.NewPos(
+				float32(toFloat64(msg.Payload["x"])),
+				float32(toFloat64(msg.Payload["y"])),
+			),
+		},
+		Button: desktop.MouseButton(toInt(msg.Payload["button"])),
+	}
+}
+
+func buildKeyEvent(msg Message) *fyne.KeyEvent {
+	keyVal, _ := msg.Payload["key"].(string)
+	return &fyne.KeyEvent{Name: fyne.KeyName(keyVal)}
+}
+
+func buildPointEvent(msg Message) *fyne.PointEvent {
+	return &fyne.PointEvent{
+		Position: fyne.NewPos(
+			float32(toFloat64(msg.Payload["x"])),
+			float32(toFloat64(msg.Payload["y"])),
+		),
+	}
+}
+
+func buildDragEvent(msg Message) *fyne.DragEvent {
+	return &fyne.DragEvent{
+		PointEvent: fyne.PointEvent{
+			Position: fyne.NewPos(
+				float32(toFloat64(msg.Payload["x"])),
+				float32(toFloat64(msg.Payload["y"])),
+			),
+		},
+		Dragged: fyne.NewDelta(
+			float32(toFloat64(msg.Payload["dx"])),
+			float32(toFloat64(msg.Payload["dy"])),
+		),
+	}
+}
+
+func buildScrollEvent(msg Message) *fyne.ScrollEvent {
+	return &fyne.ScrollEvent{
+		PointEvent: fyne.PointEvent{
+			Position: fyne.NewPos(
+				float32(toFloat64(msg.Payload["x"])),
+				float32(toFloat64(msg.Payload["y"])),
+			),
+		},
+		Scrolled: fyne.NewDelta(
+			float32(toFloat64(msg.Payload["dx"])),
+			float32(toFloat64(msg.Payload["dy"])),
+		),
+	}
+}
+
+// isEventVariant returns true if obj is one of our concrete event widget types
+// (ButtonWithHover*, LabelWithHover) whose interface methods fire through the
+// EventDispatcher. Base Fyne widgets (widget.Button, widget.Label) may implement
+// the same interfaces natively, but their methods don't fire our dispatcher.
+func isEventVariant(obj fyne.CanvasObject) bool {
+	switch obj.(type) {
+	case *ButtonWithHover, *ButtonWithHoverMouse, *ButtonWithHoverFocusKey, *LabelWithHover:
+		return true
+	}
+	return false
+}
+
+// maybeWrapWithEvents is called by handleCreate* functions after creating
+// the base Fyne widget. If events+cbs fields are present in the payload,
+// it creates an EventDispatcher and returns a concrete widget variant that
+// implements the requested event interfaces natively (no wrapper pattern).
+// Caller must hold b.mu lock.
+func (b *Bridge) maybeWrapWithEvents(msg Message, widgetID string, obj fyne.CanvasObject) fyne.CanvasObject {
+	eventsRaw, ok := msg.Payload["events"]
+	if !ok {
+		return obj // no events requested
+	}
+	events := uint16(toInt(eventsRaw))
+	cbs, _ := msg.Payload["cbs"].(map[string]interface{})
+
+	disp := b.getOrCreateDispatcher(widgetID)
+	for key, val := range cbs {
+		if id, ok := val.(string); ok {
+			disp.setCallback(cbKeyToEventKind(key), id)
+		}
+	}
+
+	// Select the right concrete type based on base widget type + requested events
+	switch w := obj.(type) {
+	case *widget.Button:
+		return b.buttonVariant(w, events, disp)
+	case *widget.Label:
+		return b.labelVariant(w, events, disp)
+	}
+
+	// No concrete variant available — return plain widget with dispatcher registered
+	return obj
+}
+
+// buttonVariant selects the right ButtonWith* type based on events bitmask.
+func (b *Bridge) buttonVariant(btn *widget.Button, events uint16, d *EventDispatcher) fyne.CanvasObject {
+	hasHover := events&evBitHover != 0
+	hasMouse := events&evBitMouse != 0
+	hasFocus := events&evBitFocus != 0
+	hasKey := events&evBitKey != 0
+
+	switch {
+	case hasHover && hasFocus && hasKey:
+		v := NewButtonWithHoverFocusKey(btn.Text, btn.OnTapped, d)
+		v.Importance = btn.Importance
+		v.Icon = btn.Icon
+		return v
+	case hasHover && hasMouse:
+		v := NewButtonWithHoverMouse(btn.Text, btn.OnTapped, d)
+		v.Importance = btn.Importance
+		v.Icon = btn.Icon
+		return v
+	case hasHover:
+		v := NewButtonWithHover(btn.Text, btn.OnTapped, d)
+		v.Importance = btn.Importance
+		v.Icon = btn.Icon
+		return v
+	default:
+		return btn
+	}
+}
+
+// labelVariant selects the right LabelWith* type based on events bitmask.
+func (b *Bridge) labelVariant(lbl *widget.Label, events uint16, d *EventDispatcher) fyne.CanvasObject {
+	hasHover := events&evBitHover != 0
+
+	switch {
+	case hasHover:
+		v := NewLabelWithHover(lbl.Text, d)
+		v.Alignment = lbl.Alignment
+		v.Wrapping = lbl.Wrapping
+		v.TextStyle = lbl.TextStyle
+		return v
+	default:
+		return lbl
 	}
 }
 

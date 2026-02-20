@@ -440,10 +440,10 @@ func (b *Bridge) handleMessage(msg Message) Response {
 		return b.handleStopSpeech(msg)
 	case "setPointerEnter":
 		return b.handleSetPointerEnter(msg)
-	case "processHoverWrappers":
-		return b.handleProcessHoverWrappers(msg)
-	case "setWidgetHoverable":
-		return b.handleSetWidgetHoverable(msg)
+	case "setWidgetEvents":
+		return b.handleSetWidgetEvents(msg)
+	case "stimulateEvent":
+		return b.handleStimulateEvent(msg)
 	case "createMenu":
 		return b.handleCreateMenu(msg)
 	case "setScrollMinHeight":

@@ -89,7 +89,7 @@ export class Button extends Widget {
     ctx.bridge.send('createButton', payload);
     ctx.addToCurrentContainer(id, this);
 
-    // Set up long-press via mouseDown/mouseUp (requires setWidgetHoverable)
+    // Set up long-press via mouseDown/mouseUp (batched via registerEvent)
     if (options.onLongPress) {
       const mouseDownId = ctx.generateId('callback');
       const mouseUpId = ctx.generateId('callback');
@@ -110,12 +110,8 @@ export class Button extends Widget {
         }
       });
 
-      ctx.bridge.send('setWidgetHoverable', {
-        widgetId: id,
-        onMouseDownCallbackId: mouseDownId,
-        onMouseUpCallbackId: mouseUpId,
-        enabled: true,
-      });
+      this.registerEvent('mouseDown', mouseDownId);
+      this.registerEvent('mouseUp', mouseUpId);
     }
 
     if (options.className) {

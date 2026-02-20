@@ -548,21 +548,28 @@ func (s *grpcBridgeService) StopSpeech(ctx context.Context, req *pb.StopSpeechRe
 	}, nil
 }
 
-// SetWidgetHoverable sets widget hoverable
-func (s *grpcBridgeService) SetWidgetHoverable(ctx context.Context, req *pb.SetWidgetHoverableRequest) (*pb.Response, error) {
+// SetWidgetEvents sets widget event capabilities (bitmask-based batched events)
+func (s *grpcBridgeService) SetWidgetEvents(ctx context.Context, req *pb.SetWidgetEventsRequest) (*pb.Response, error) {
+	cbs := map[string]interface{}{}
+	for k, v := range req.Cbs {
+		cbs[k] = v
+	}
+
 	msg := Message{
 		ID:   req.WidgetId,
-		Type: "setWidgetHoverable",
+		Type: "setWidgetEvents",
 		Payload: map[string]interface{}{
-			"widgetId":   req.WidgetId,
-			"callbackId": req.CallbackId,
+			"widgetId": req.WidgetId,
+			"events":   req.Events,
+			"cbs":      cbs,
 		},
 	}
 
-	resp := s.bridge.handleSetWidgetHoverable(msg)
+	resp := s.bridge.handleSetWidgetEvents(msg)
 
 	return &pb.Response{
 		Success: resp.Success,
 		Error:   resp.Error,
 	}, nil
 }
+

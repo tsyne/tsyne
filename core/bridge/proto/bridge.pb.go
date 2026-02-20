@@ -17229,28 +17229,29 @@ func (*StopSpeechRequest) Descriptor() ([]byte, []int) {
 	return file_proto_bridge_proto_rawDescGZIP(), []int{278}
 }
 
-type SetWidgetHoverableRequest struct {
+type SetWidgetEventsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	WidgetId      string                 `protobuf:"bytes,1,opt,name=widget_id,json=widgetId,proto3" json:"widget_id,omitempty"`
-	CallbackId    string                 `protobuf:"bytes,2,opt,name=callback_id,json=callbackId,proto3" json:"callback_id,omitempty"`
+	Events        uint32                 `protobuf:"varint,2,opt,name=events,proto3" json:"events,omitempty"`                                                                    // bitmask of event capabilities
+	Cbs           map[string]string      `protobuf:"bytes,3,rep,name=cbs,proto3" json:"cbs,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // event key -> callback ID
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *SetWidgetHoverableRequest) Reset() {
-	*x = SetWidgetHoverableRequest{}
+func (x *SetWidgetEventsRequest) Reset() {
+	*x = SetWidgetEventsRequest{}
 	mi := &file_proto_bridge_proto_msgTypes[279]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *SetWidgetHoverableRequest) String() string {
+func (x *SetWidgetEventsRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SetWidgetHoverableRequest) ProtoMessage() {}
+func (*SetWidgetEventsRequest) ProtoMessage() {}
 
-func (x *SetWidgetHoverableRequest) ProtoReflect() protoreflect.Message {
+func (x *SetWidgetEventsRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_proto_bridge_proto_msgTypes[279]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -17262,23 +17263,30 @@ func (x *SetWidgetHoverableRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SetWidgetHoverableRequest.ProtoReflect.Descriptor instead.
-func (*SetWidgetHoverableRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use SetWidgetEventsRequest.ProtoReflect.Descriptor instead.
+func (*SetWidgetEventsRequest) Descriptor() ([]byte, []int) {
 	return file_proto_bridge_proto_rawDescGZIP(), []int{279}
 }
 
-func (x *SetWidgetHoverableRequest) GetWidgetId() string {
+func (x *SetWidgetEventsRequest) GetWidgetId() string {
 	if x != nil {
 		return x.WidgetId
 	}
 	return ""
 }
 
-func (x *SetWidgetHoverableRequest) GetCallbackId() string {
+func (x *SetWidgetEventsRequest) GetEvents() uint32 {
 	if x != nil {
-		return x.CallbackId
+		return x.Events
 	}
-	return ""
+	return 0
+}
+
+func (x *SetWidgetEventsRequest) GetCbs() map[string]string {
+	if x != nil {
+		return x.Cbs
+	}
+	return nil
 }
 
 var File_proto_bridge_proto protoreflect.FileDescriptor
@@ -18518,11 +18526,14 @@ const file_proto_bridge_proto_rawDesc = "" +
 	"\x1bDisableAccessibilityRequest\"+\n" +
 	"\x0fAnnounceRequest\x12\x18\n" +
 	"\amessage\x18\x01 \x01(\tR\amessage\"\x13\n" +
-	"\x11StopSpeechRequest\"Y\n" +
-	"\x19SetWidgetHoverableRequest\x12\x1b\n" +
-	"\twidget_id\x18\x01 \x01(\tR\bwidgetId\x12\x1f\n" +
-	"\vcallback_id\x18\x02 \x01(\tR\n" +
-	"callbackId*X\n" +
+	"\x11StopSpeechRequest\"\xc0\x01\n" +
+	"\x16SetWidgetEventsRequest\x12\x1b\n" +
+	"\twidget_id\x18\x01 \x01(\tR\bwidgetId\x12\x16\n" +
+	"\x06events\x18\x02 \x01(\rR\x06events\x129\n" +
+	"\x03cbs\x18\x03 \x03(\v2'.bridge.SetWidgetEventsRequest.CbsEntryR\x03cbs\x1a6\n" +
+	"\bCbsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*X\n" +
 	"\rImageFillMode\x12\x17\n" +
 	"\x13IMAGE_FILL_ORIGINAL\x10\x00\x12\x16\n" +
 	"\x12IMAGE_FILL_CONTAIN\x10\x01\x12\x16\n" +
@@ -18557,7 +18568,7 @@ const file_proto_bridge_proto_rawDesc = "" +
 	"\fThemeVariant\x12\x0f\n" +
 	"\vTHEME_LIGHT\x10\x00\x12\x0e\n" +
 	"\n" +
-	"THEME_DARK\x10\x012\xaa\x83\x01\n" +
+	"THEME_DARK\x10\x012\xa4\x83\x01\n" +
 	"\rBridgeService\x12=\n" +
 	"\fCreateWindow\x12\x1b.bridge.CreateWindowRequest\x1a\x10.bridge.Response\x129\n" +
 	"\n" +
@@ -18818,8 +18829,8 @@ const file_proto_bridge_proto_rawDesc = "" +
 	"\x14DisableAccessibility\x12#.bridge.DisableAccessibilityRequest\x1a\x10.bridge.Response\x125\n" +
 	"\bAnnounce\x12\x17.bridge.AnnounceRequest\x1a\x10.bridge.Response\x129\n" +
 	"\n" +
-	"StopSpeech\x12\x19.bridge.StopSpeechRequest\x1a\x10.bridge.Response\x12I\n" +
-	"\x12SetWidgetHoverable\x12!.bridge.SetWidgetHoverableRequest\x1a\x10.bridge.Response\x12=\n" +
+	"StopSpeech\x12\x19.bridge.StopSpeechRequest\x1a\x10.bridge.Response\x12C\n" +
+	"\x0fSetWidgetEvents\x12\x1e.bridge.SetWidgetEventsRequest\x1a\x10.bridge.Response\x12=\n" +
 	"\x0fSubscribeEvents\x12\x19.bridge.EventSubscription\x1a\r.bridge.Event0\x01\x12-\n" +
 	"\x04Quit\x12\x13.bridge.QuitRequest\x1a\x10.bridge.ResponseB,Z*github.com/paul-hammant/tsyne/bridge/protob\x06proto3"
 
@@ -18836,7 +18847,7 @@ func file_proto_bridge_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_bridge_proto_enumTypes = make([]protoimpl.EnumInfo, 8)
-var file_proto_bridge_proto_msgTypes = make([]protoimpl.MessageInfo, 284)
+var file_proto_bridge_proto_msgTypes = make([]protoimpl.MessageInfo, 285)
 var file_proto_bridge_proto_goTypes = []any{
 	(ImageFillMode)(0),                         // 0: bridge.ImageFillMode
 	(TextAlignment)(0),                         // 1: bridge.TextAlignment
@@ -19125,11 +19136,12 @@ var file_proto_bridge_proto_goTypes = []any{
 	(*DisableAccessibilityRequest)(nil),        // 284: bridge.DisableAccessibilityRequest
 	(*AnnounceRequest)(nil),                    // 285: bridge.AnnounceRequest
 	(*StopSpeechRequest)(nil),                  // 286: bridge.StopSpeechRequest
-	(*SetWidgetHoverableRequest)(nil),          // 287: bridge.SetWidgetHoverableRequest
+	(*SetWidgetEventsRequest)(nil),             // 287: bridge.SetWidgetEventsRequest
 	nil,                                        // 288: bridge.Response.ResultEntry
 	nil,                                        // 289: bridge.CreateThemeOverrideRequest.ColorsEntry
 	nil,                                        // 290: bridge.Event.DataEntry
 	nil,                                        // 291: bridge.SetCustomThemeRequest.ColorsEntry
+	nil,                                        // 292: bridge.SetWidgetEventsRequest.CbsEntry
 }
 var file_proto_bridge_proto_depIdxs = []int32{
 	288, // 0: bridge.Response.result:type_name -> bridge.Response.ResultEntry
@@ -19176,493 +19188,494 @@ var file_proto_bridge_proto_depIdxs = []int32{
 	110, // 41: bridge.MainMenuItem.items:type_name -> bridge.MenuItem
 	110, // 42: bridge.SetWidgetContextMenuRequest.items:type_name -> bridge.MenuItem
 	110, // 43: bridge.SetSystemTrayRequest.menu_items:type_name -> bridge.MenuItem
-	9,   // 44: bridge.BridgeService.CreateWindow:input_type -> bridge.CreateWindowRequest
-	10,  // 45: bridge.BridgeService.ShowWindow:input_type -> bridge.ShowWindowRequest
-	11,  // 46: bridge.BridgeService.SetContent:input_type -> bridge.SetContentRequest
-	12,  // 47: bridge.BridgeService.ResizeWindow:input_type -> bridge.ResizeWindowRequest
-	13,  // 48: bridge.BridgeService.SetWindowTitle:input_type -> bridge.SetWindowTitleRequest
-	14,  // 49: bridge.BridgeService.CenterWindow:input_type -> bridge.CenterWindowRequest
-	15,  // 50: bridge.BridgeService.SetWindowFullScreen:input_type -> bridge.SetWindowFullScreenRequest
-	80,  // 51: bridge.BridgeService.CloseWindow:input_type -> bridge.CloseWindowRequest
-	81,  // 52: bridge.BridgeService.SetWindowIcon:input_type -> bridge.SetWindowIconRequest
-	82,  // 53: bridge.BridgeService.SetWindowCloseIntercept:input_type -> bridge.SetWindowCloseInterceptRequest
-	83,  // 54: bridge.BridgeService.CloseInterceptResponse:input_type -> bridge.CloseInterceptResponseRequest
-	84,  // 55: bridge.BridgeService.CaptureWindow:input_type -> bridge.CaptureWindowRequest
-	16,  // 56: bridge.BridgeService.CreateImage:input_type -> bridge.CreateImageRequest
-	17,  // 57: bridge.BridgeService.CreateLabel:input_type -> bridge.CreateLabelRequest
-	85,  // 58: bridge.BridgeService.CreateSeparator:input_type -> bridge.CreateSeparatorRequest
-	86,  // 59: bridge.BridgeService.CreateSpacer:input_type -> bridge.CreateSpacerRequest
-	87,  // 60: bridge.BridgeService.CreateHyperlink:input_type -> bridge.CreateHyperlinkRequest
-	88,  // 61: bridge.BridgeService.CreateProgressBar:input_type -> bridge.CreateProgressBarRequest
-	89,  // 62: bridge.BridgeService.CreateActivity:input_type -> bridge.CreateActivityRequest
-	90,  // 63: bridge.BridgeService.CreateRichText:input_type -> bridge.CreateRichTextRequest
-	92,  // 64: bridge.BridgeService.CreateIcon:input_type -> bridge.CreateIconRequest
-	93,  // 65: bridge.BridgeService.CreateFileIcon:input_type -> bridge.CreateFileIconRequest
-	94,  // 66: bridge.BridgeService.CreateCalendar:input_type -> bridge.CreateCalendarRequest
-	95,  // 67: bridge.BridgeService.CreateColorCell:input_type -> bridge.CreateColorCellRequest
-	96,  // 68: bridge.BridgeService.UpdateColorCell:input_type -> bridge.UpdateColorCellRequest
-	18,  // 69: bridge.BridgeService.CreateButton:input_type -> bridge.CreateButtonRequest
-	19,  // 70: bridge.BridgeService.CreateEntry:input_type -> bridge.CreateEntryRequest
-	22,  // 71: bridge.BridgeService.CreateCheckbox:input_type -> bridge.CreateCheckboxRequest
-	23,  // 72: bridge.BridgeService.CreateSelect:input_type -> bridge.CreateSelectRequest
-	97,  // 73: bridge.BridgeService.CreateSlider:input_type -> bridge.CreateSliderRequest
-	98,  // 74: bridge.BridgeService.CreateRadioGroup:input_type -> bridge.CreateRadioGroupRequest
-	99,  // 75: bridge.BridgeService.CreateCheckGroup:input_type -> bridge.CreateCheckGroupRequest
-	100, // 76: bridge.BridgeService.CreateSelectEntry:input_type -> bridge.CreateSelectEntryRequest
-	101, // 77: bridge.BridgeService.CreateCompletionEntry:input_type -> bridge.CreateCompletionEntryRequest
-	102, // 78: bridge.BridgeService.SetCompletionEntryOptions:input_type -> bridge.SetCompletionEntryOptionsRequest
-	103, // 79: bridge.BridgeService.ShowCompletion:input_type -> bridge.ShowCompletionRequest
-	104, // 80: bridge.BridgeService.HideCompletion:input_type -> bridge.HideCompletionRequest
-	105, // 81: bridge.BridgeService.CreateDateEntry:input_type -> bridge.CreateDateEntryRequest
-	20,  // 82: bridge.BridgeService.CreateVBox:input_type -> bridge.CreateVBoxRequest
-	21,  // 83: bridge.BridgeService.CreateHBox:input_type -> bridge.CreateHBoxRequest
-	24,  // 84: bridge.BridgeService.CreateScroll:input_type -> bridge.CreateScrollRequest
-	25,  // 85: bridge.BridgeService.SetScrollMinHeight:input_type -> bridge.SetScrollMinHeightRequest
-	26,  // 86: bridge.BridgeService.SetScrollMinSize:input_type -> bridge.SetScrollMinSizeRequest
-	27,  // 87: bridge.BridgeService.CreateGrid:input_type -> bridge.CreateGridRequest
-	28,  // 88: bridge.BridgeService.CreateCenter:input_type -> bridge.CreateCenterRequest
-	29,  // 89: bridge.BridgeService.CreateAspectRatio:input_type -> bridge.CreateAspectRatioRequest
-	30,  // 90: bridge.BridgeService.CreateClip:input_type -> bridge.CreateClipRequest
-	31,  // 91: bridge.BridgeService.CreateMax:input_type -> bridge.CreateMaxRequest
-	32,  // 92: bridge.BridgeService.CreateStack:input_type -> bridge.CreateStackRequest
-	33,  // 93: bridge.BridgeService.CreateCard:input_type -> bridge.CreateCardRequest
-	35,  // 94: bridge.BridgeService.CreateAccordion:input_type -> bridge.CreateAccordionRequest
-	37,  // 95: bridge.BridgeService.CreateForm:input_type -> bridge.CreateFormRequest
-	38,  // 96: bridge.BridgeService.CreateBorder:input_type -> bridge.CreateBorderRequest
-	39,  // 97: bridge.BridgeService.CreateGridWrap:input_type -> bridge.CreateGridWrapRequest
-	40,  // 98: bridge.BridgeService.CreateAdaptiveGrid:input_type -> bridge.CreateAdaptiveGridRequest
-	41,  // 99: bridge.BridgeService.CreatePadded:input_type -> bridge.CreatePaddedRequest
-	42,  // 100: bridge.BridgeService.CreateSplit:input_type -> bridge.CreateSplitRequest
-	44,  // 101: bridge.BridgeService.CreateTabs:input_type -> bridge.CreateTabsRequest
-	45,  // 102: bridge.BridgeService.CreateDocTabs:input_type -> bridge.CreateDocTabsRequest
-	46,  // 103: bridge.BridgeService.CreateThemeOverride:input_type -> bridge.CreateThemeOverrideRequest
-	47,  // 104: bridge.BridgeService.CreateInnerWindow:input_type -> bridge.CreateInnerWindowRequest
-	48,  // 105: bridge.BridgeService.CreateNavigation:input_type -> bridge.CreateNavigationRequest
-	49,  // 106: bridge.BridgeService.CreatePopup:input_type -> bridge.CreatePopupRequest
-	50,  // 107: bridge.BridgeService.CreateMultipleWindows:input_type -> bridge.CreateMultipleWindowsRequest
-	107, // 108: bridge.BridgeService.CreateTable:input_type -> bridge.CreateTableRequest
-	108, // 109: bridge.BridgeService.CreateTree:input_type -> bridge.CreateTreeRequest
-	109, // 110: bridge.BridgeService.CreateList:input_type -> bridge.CreateListRequest
-	111, // 111: bridge.BridgeService.CreateMenu:input_type -> bridge.CreateMenuRequest
-	113, // 112: bridge.BridgeService.CreateToolbar:input_type -> bridge.CreateToolbarRequest
-	114, // 113: bridge.BridgeService.CreateTextGrid:input_type -> bridge.CreateTextGridRequest
-	115, // 114: bridge.BridgeService.CreateDesktopCanvas:input_type -> bridge.CreateDesktopCanvasRequest
-	116, // 115: bridge.BridgeService.CreateDesktopIcon:input_type -> bridge.CreateDesktopIconRequest
-	117, // 116: bridge.BridgeService.MoveDesktopIcon:input_type -> bridge.MoveDesktopIconRequest
-	118, // 117: bridge.BridgeService.UpdateDesktopIconLabel:input_type -> bridge.UpdateDesktopIconLabelRequest
-	119, // 118: bridge.BridgeService.UpdateDesktopIconColor:input_type -> bridge.UpdateDesktopIconColorRequest
-	120, // 119: bridge.BridgeService.CreateCanvasLine:input_type -> bridge.CreateCanvasLineRequest
-	121, // 120: bridge.BridgeService.CreateCanvasCircle:input_type -> bridge.CreateCanvasCircleRequest
-	122, // 121: bridge.BridgeService.CreateCanvasRectangle:input_type -> bridge.CreateCanvasRectangleRequest
-	123, // 122: bridge.BridgeService.CreateCanvasText:input_type -> bridge.CreateCanvasTextRequest
-	125, // 123: bridge.BridgeService.CreateCanvasRaster:input_type -> bridge.CreateCanvasRasterRequest
-	126, // 124: bridge.BridgeService.CreateCanvasLinearGradient:input_type -> bridge.CreateCanvasLinearGradientRequest
-	127, // 125: bridge.BridgeService.CreateCanvasRadialGradient:input_type -> bridge.CreateCanvasRadialGradientRequest
-	128, // 126: bridge.BridgeService.CreateCanvasArc:input_type -> bridge.CreateCanvasArcRequest
-	130, // 127: bridge.BridgeService.CreateCanvasPolygon:input_type -> bridge.CreateCanvasPolygonRequest
-	131, // 128: bridge.BridgeService.CreateTappableCanvasRaster:input_type -> bridge.CreateTappableCanvasRasterRequest
-	133, // 129: bridge.BridgeService.CreateCanvasShader:input_type -> bridge.CreateCanvasShaderRequest
-	135, // 130: bridge.BridgeService.UpdateCanvasLine:input_type -> bridge.UpdateCanvasLineRequest
-	136, // 131: bridge.BridgeService.UpdateCanvasCircle:input_type -> bridge.UpdateCanvasCircleRequest
-	137, // 132: bridge.BridgeService.UpdateCanvasRectangle:input_type -> bridge.UpdateCanvasRectangleRequest
-	138, // 133: bridge.BridgeService.UpdateCanvasText:input_type -> bridge.UpdateCanvasTextRequest
-	139, // 134: bridge.BridgeService.UpdateCanvasRaster:input_type -> bridge.UpdateCanvasRasterRequest
-	140, // 135: bridge.BridgeService.FillCanvasRasterRect:input_type -> bridge.FillCanvasRasterRectRequest
-	141, // 136: bridge.BridgeService.BlitToCanvasRaster:input_type -> bridge.BlitToCanvasRasterRequest
-	142, // 137: bridge.BridgeService.UpdateCanvasLinearGradient:input_type -> bridge.UpdateCanvasLinearGradientRequest
-	143, // 138: bridge.BridgeService.UpdateCanvasRadialGradient:input_type -> bridge.UpdateCanvasRadialGradientRequest
-	144, // 139: bridge.BridgeService.UpdateCanvasArc:input_type -> bridge.UpdateCanvasArcRequest
-	145, // 140: bridge.BridgeService.UpdateCanvasPolygon:input_type -> bridge.UpdateCanvasPolygonRequest
-	146, // 141: bridge.BridgeService.UpdateTappableCanvasRaster:input_type -> bridge.UpdateTappableCanvasRasterRequest
-	147, // 142: bridge.BridgeService.SetTappableCanvasImage:input_type -> bridge.SetTappableCanvasImageRequest
-	148, // 143: bridge.BridgeService.SetTappableCanvasRect:input_type -> bridge.SetTappableCanvasRectRequest
-	134, // 144: bridge.BridgeService.UpdateCanvasShader:input_type -> bridge.UpdateCanvasShaderRequest
-	149, // 145: bridge.BridgeService.SaveRasterBackground:input_type -> bridge.SaveRasterBackgroundRequest
-	150, // 146: bridge.BridgeService.CreateRasterSprite:input_type -> bridge.CreateRasterSpriteRequest
-	151, // 147: bridge.BridgeService.MoveRasterSprite:input_type -> bridge.MoveRasterSpriteRequest
-	152, // 148: bridge.BridgeService.SetRasterSpriteResource:input_type -> bridge.SetRasterSpriteResourceRequest
-	153, // 149: bridge.BridgeService.SetRasterSpriteVisible:input_type -> bridge.SetRasterSpriteVisibleRequest
-	154, // 150: bridge.BridgeService.SetRasterSpriteZIndex:input_type -> bridge.SetRasterSpriteZIndexRequest
-	155, // 151: bridge.BridgeService.RemoveRasterSprite:input_type -> bridge.RemoveRasterSpriteRequest
-	156, // 152: bridge.BridgeService.FlushRasterSprites:input_type -> bridge.FlushRasterSpritesRequest
-	51,  // 153: bridge.BridgeService.RegisterResource:input_type -> bridge.RegisterResourceRequest
-	52,  // 154: bridge.BridgeService.UnregisterResource:input_type -> bridge.UnregisterResourceRequest
-	53,  // 155: bridge.BridgeService.UpdateImage:input_type -> bridge.UpdateImageRequest
-	54,  // 156: bridge.BridgeService.SetText:input_type -> bridge.SetTextRequest
-	55,  // 157: bridge.BridgeService.GetText:input_type -> bridge.GetTextRequest
-	57,  // 158: bridge.BridgeService.SetWidgetCallback:input_type -> bridge.SetWidgetCallbackRequest
-	58,  // 159: bridge.BridgeService.SetProgress:input_type -> bridge.SetProgressRequest
-	59,  // 160: bridge.BridgeService.GetProgress:input_type -> bridge.GetProgressRequest
-	61,  // 161: bridge.BridgeService.SetChecked:input_type -> bridge.SetCheckedRequest
-	62,  // 162: bridge.BridgeService.GetChecked:input_type -> bridge.GetCheckedRequest
-	157, // 163: bridge.BridgeService.SetValue:input_type -> bridge.SetValueRequest
-	158, // 164: bridge.BridgeService.GetValue:input_type -> bridge.GetValueRequest
-	160, // 165: bridge.BridgeService.SetSelected:input_type -> bridge.SetSelectedRequest
-	161, // 166: bridge.BridgeService.GetSelected:input_type -> bridge.GetSelectedRequest
-	163, // 167: bridge.BridgeService.SetSelectOptions:input_type -> bridge.SetSelectOptionsRequest
-	164, // 168: bridge.BridgeService.SetSelectEntryOptions:input_type -> bridge.SetSelectEntryOptionsRequest
-	165, // 169: bridge.BridgeService.SetDate:input_type -> bridge.SetDateRequest
-	166, // 170: bridge.BridgeService.GetDate:input_type -> bridge.GetDateRequest
-	168, // 171: bridge.BridgeService.SetIconResource:input_type -> bridge.SetIconResourceRequest
-	169, // 172: bridge.BridgeService.SetFileIconURI:input_type -> bridge.SetFileIconURIRequest
-	170, // 173: bridge.BridgeService.SetFileIconSelected:input_type -> bridge.SetFileIconSelectedRequest
-	171, // 174: bridge.BridgeService.SetRadioSelected:input_type -> bridge.SetRadioSelectedRequest
-	172, // 175: bridge.BridgeService.GetRadioSelected:input_type -> bridge.GetRadioSelectedRequest
-	174, // 176: bridge.BridgeService.SetRadioOptions:input_type -> bridge.SetRadioOptionsRequest
-	175, // 177: bridge.BridgeService.GetCheckGroupSelected:input_type -> bridge.GetCheckGroupSelectedRequest
-	177, // 178: bridge.BridgeService.SetCheckGroupSelected:input_type -> bridge.SetCheckGroupSelectedRequest
-	178, // 179: bridge.BridgeService.ShowWidget:input_type -> bridge.ShowWidgetRequest
-	179, // 180: bridge.BridgeService.HideWidget:input_type -> bridge.HideWidgetRequest
-	180, // 181: bridge.BridgeService.EnableWidget:input_type -> bridge.EnableWidgetRequest
-	181, // 182: bridge.BridgeService.DisableWidget:input_type -> bridge.DisableWidgetRequest
-	182, // 183: bridge.BridgeService.IsEnabled:input_type -> bridge.IsEnabledRequest
-	184, // 184: bridge.BridgeService.ClearWidgets:input_type -> bridge.ClearWidgetsRequest
-	185, // 185: bridge.BridgeService.StartActivity:input_type -> bridge.StartActivityRequest
-	186, // 186: bridge.BridgeService.StopActivity:input_type -> bridge.StopActivityRequest
-	187, // 187: bridge.BridgeService.StartProgressInfinite:input_type -> bridge.StartProgressInfiniteRequest
-	188, // 188: bridge.BridgeService.StopProgressInfinite:input_type -> bridge.StopProgressInfiniteRequest
-	189, // 189: bridge.BridgeService.IsProgressRunning:input_type -> bridge.IsProgressRunningRequest
-	191, // 190: bridge.BridgeService.ContainerAdd:input_type -> bridge.ContainerAddRequest
-	192, // 191: bridge.BridgeService.ContainerRemoveAll:input_type -> bridge.ContainerRemoveAllRequest
-	193, // 192: bridge.BridgeService.ContainerRefresh:input_type -> bridge.ContainerRefreshRequest
-	194, // 193: bridge.BridgeService.GetContainerObjects:input_type -> bridge.GetContainerObjectsRequest
-	196, // 194: bridge.BridgeService.DocTabsAppend:input_type -> bridge.DocTabsAppendRequest
-	197, // 195: bridge.BridgeService.DocTabsRemove:input_type -> bridge.DocTabsRemoveRequest
-	198, // 196: bridge.BridgeService.DocTabsSelect:input_type -> bridge.DocTabsSelectRequest
-	199, // 197: bridge.BridgeService.MultipleWindowsAddWindow:input_type -> bridge.MultipleWindowsAddWindowRequest
-	200, // 198: bridge.BridgeService.MultipleWindowsRemoveWindow:input_type -> bridge.MultipleWindowsRemoveWindowRequest
-	201, // 199: bridge.BridgeService.ShowPopup:input_type -> bridge.ShowPopupRequest
-	202, // 200: bridge.BridgeService.HidePopup:input_type -> bridge.HidePopupRequest
-	203, // 201: bridge.BridgeService.MovePopup:input_type -> bridge.MovePopupRequest
-	204, // 202: bridge.BridgeService.NavigationPush:input_type -> bridge.NavigationPushRequest
-	205, // 203: bridge.BridgeService.NavigationBack:input_type -> bridge.NavigationBackRequest
-	206, // 204: bridge.BridgeService.NavigationForward:input_type -> bridge.NavigationForwardRequest
-	207, // 205: bridge.BridgeService.NavigationSetTitle:input_type -> bridge.NavigationSetTitleRequest
-	208, // 206: bridge.BridgeService.InnerWindowClose:input_type -> bridge.InnerWindowCloseRequest
-	209, // 207: bridge.BridgeService.SetInnerWindowTitle:input_type -> bridge.SetInnerWindowTitleRequest
-	210, // 208: bridge.BridgeService.ShowInfo:input_type -> bridge.ShowInfoRequest
-	211, // 209: bridge.BridgeService.ShowError:input_type -> bridge.ShowErrorRequest
-	212, // 210: bridge.BridgeService.ShowConfirm:input_type -> bridge.ShowConfirmRequest
-	213, // 211: bridge.BridgeService.ShowFileOpen:input_type -> bridge.ShowFileOpenRequest
-	214, // 212: bridge.BridgeService.ShowFileSave:input_type -> bridge.ShowFileSaveRequest
-	215, // 213: bridge.BridgeService.ShowFolderOpen:input_type -> bridge.ShowFolderOpenRequest
-	216, // 214: bridge.BridgeService.ShowForm:input_type -> bridge.ShowFormRequest
-	217, // 215: bridge.BridgeService.ShowCustom:input_type -> bridge.ShowCustomRequest
-	218, // 216: bridge.BridgeService.ShowCustomConfirm:input_type -> bridge.ShowCustomConfirmRequest
-	219, // 217: bridge.BridgeService.ShowCustomWithoutButtons:input_type -> bridge.ShowCustomWithoutButtonsRequest
-	220, // 218: bridge.BridgeService.HideCustomDialog:input_type -> bridge.HideCustomDialogRequest
-	221, // 219: bridge.BridgeService.GetActiveDialogs:input_type -> bridge.GetActiveDialogsRequest
-	223, // 220: bridge.BridgeService.DismissActiveDialog:input_type -> bridge.DismissActiveDialogRequest
-	224, // 221: bridge.BridgeService.ShowProgressDialog:input_type -> bridge.ShowProgressDialogRequest
-	225, // 222: bridge.BridgeService.UpdateProgressDialog:input_type -> bridge.UpdateProgressDialogRequest
-	226, // 223: bridge.BridgeService.HideProgressDialog:input_type -> bridge.HideProgressDialogRequest
-	227, // 224: bridge.BridgeService.ShowColorPicker:input_type -> bridge.ShowColorPickerRequest
-	228, // 225: bridge.BridgeService.ShowEntryDialog:input_type -> bridge.ShowEntryDialogRequest
-	229, // 226: bridge.BridgeService.GetTableData:input_type -> bridge.GetTableDataRequest
-	231, // 227: bridge.BridgeService.UpdateTableData:input_type -> bridge.UpdateTableDataRequest
-	232, // 228: bridge.BridgeService.GetListData:input_type -> bridge.GetListDataRequest
-	234, // 229: bridge.BridgeService.UpdateListData:input_type -> bridge.UpdateListDataRequest
-	235, // 230: bridge.BridgeService.UnselectAllList:input_type -> bridge.UnselectAllListRequest
-	236, // 231: bridge.BridgeService.GetTextGridText:input_type -> bridge.GetTextGridTextRequest
-	238, // 232: bridge.BridgeService.SetTextGridText:input_type -> bridge.SetTextGridTextRequest
-	239, // 233: bridge.BridgeService.SetTextGridCell:input_type -> bridge.SetTextGridCellRequest
-	240, // 234: bridge.BridgeService.SetTextGridRow:input_type -> bridge.SetTextGridRowRequest
-	242, // 235: bridge.BridgeService.SetTextGridStyle:input_type -> bridge.SetTextGridStyleRequest
-	243, // 236: bridge.BridgeService.SetTextGridStyleRange:input_type -> bridge.SetTextGridStyleRangeRequest
-	244, // 237: bridge.BridgeService.GetToolbarItems:input_type -> bridge.GetToolbarItemsRequest
-	246, // 238: bridge.BridgeService.ClickToolbarAction:input_type -> bridge.ClickToolbarActionRequest
-	247, // 239: bridge.BridgeService.SetTheme:input_type -> bridge.SetThemeRequest
-	248, // 240: bridge.BridgeService.GetTheme:input_type -> bridge.GetThemeRequest
-	250, // 241: bridge.BridgeService.SetFontScale:input_type -> bridge.SetFontScaleRequest
-	251, // 242: bridge.BridgeService.SetCustomTheme:input_type -> bridge.SetCustomThemeRequest
-	252, // 243: bridge.BridgeService.ClearCustomTheme:input_type -> bridge.ClearCustomThemeRequest
-	253, // 244: bridge.BridgeService.SetCustomFont:input_type -> bridge.SetCustomFontRequest
-	254, // 245: bridge.BridgeService.ClearCustomFont:input_type -> bridge.ClearCustomFontRequest
-	255, // 246: bridge.BridgeService.GetAvailableFonts:input_type -> bridge.GetAvailableFontsRequest
-	257, // 247: bridge.BridgeService.SetWidgetStyle:input_type -> bridge.SetWidgetStyleRequest
-	258, // 248: bridge.BridgeService.SetMainMenu:input_type -> bridge.SetMainMenuRequest
-	260, // 249: bridge.BridgeService.SetWidgetContextMenu:input_type -> bridge.SetWidgetContextMenuRequest
-	261, // 250: bridge.BridgeService.SetSystemTray:input_type -> bridge.SetSystemTrayRequest
-	262, // 251: bridge.BridgeService.SendNotification:input_type -> bridge.SendNotificationRequest
-	263, // 252: bridge.BridgeService.ClipboardGet:input_type -> bridge.ClipboardGetRequest
-	265, // 253: bridge.BridgeService.ClipboardSet:input_type -> bridge.ClipboardSetRequest
-	266, // 254: bridge.BridgeService.PreferencesGet:input_type -> bridge.PreferencesGetRequest
-	268, // 255: bridge.BridgeService.PreferencesSet:input_type -> bridge.PreferencesSetRequest
-	269, // 256: bridge.BridgeService.PreferencesRemove:input_type -> bridge.PreferencesRemoveRequest
-	270, // 257: bridge.BridgeService.SetDraggable:input_type -> bridge.SetDraggableRequest
-	271, // 258: bridge.BridgeService.SetDroppable:input_type -> bridge.SetDroppableRequest
-	64,  // 259: bridge.BridgeService.ClickWidget:input_type -> bridge.ClickWidgetRequest
-	65,  // 260: bridge.BridgeService.TypeText:input_type -> bridge.TypeTextRequest
-	66,  // 261: bridge.BridgeService.DoubleTapWidget:input_type -> bridge.DoubleTapWidgetRequest
-	67,  // 262: bridge.BridgeService.RightClickWidget:input_type -> bridge.RightClickWidgetRequest
-	68,  // 263: bridge.BridgeService.DragWidget:input_type -> bridge.DragWidgetRequest
-	272, // 264: bridge.BridgeService.HoverWidget:input_type -> bridge.HoverWidgetRequest
-	273, // 265: bridge.BridgeService.FocusWidget:input_type -> bridge.FocusWidgetRequest
-	274, // 266: bridge.BridgeService.FocusNext:input_type -> bridge.FocusNextRequest
-	275, // 267: bridge.BridgeService.FocusPrevious:input_type -> bridge.FocusPreviousRequest
-	276, // 268: bridge.BridgeService.SubmitEntry:input_type -> bridge.SubmitEntryRequest
-	277, // 269: bridge.BridgeService.DragCanvas:input_type -> bridge.DragCanvasRequest
-	278, // 270: bridge.BridgeService.ScrollCanvas:input_type -> bridge.ScrollCanvasRequest
-	69,  // 271: bridge.BridgeService.RegisterCustomId:input_type -> bridge.RegisterCustomIdRequest
-	279, // 272: bridge.BridgeService.RegisterTestId:input_type -> bridge.RegisterTestIdRequest
-	280, // 273: bridge.BridgeService.GetParent:input_type -> bridge.GetParentRequest
-	70,  // 274: bridge.BridgeService.FindWidget:input_type -> bridge.FindWidgetRequest
-	72,  // 275: bridge.BridgeService.GetWidgetInfo:input_type -> bridge.GetWidgetInfoRequest
-	74,  // 276: bridge.BridgeService.GetAllWidgets:input_type -> bridge.GetAllWidgetsRequest
-	282, // 277: bridge.BridgeService.SetAccessibility:input_type -> bridge.SetAccessibilityRequest
-	283, // 278: bridge.BridgeService.EnableAccessibility:input_type -> bridge.EnableAccessibilityRequest
-	284, // 279: bridge.BridgeService.DisableAccessibility:input_type -> bridge.DisableAccessibilityRequest
-	285, // 280: bridge.BridgeService.Announce:input_type -> bridge.AnnounceRequest
-	286, // 281: bridge.BridgeService.StopSpeech:input_type -> bridge.StopSpeechRequest
-	287, // 282: bridge.BridgeService.SetWidgetHoverable:input_type -> bridge.SetWidgetHoverableRequest
-	78,  // 283: bridge.BridgeService.SubscribeEvents:input_type -> bridge.EventSubscription
-	79,  // 284: bridge.BridgeService.Quit:input_type -> bridge.QuitRequest
-	8,   // 285: bridge.BridgeService.CreateWindow:output_type -> bridge.Response
-	8,   // 286: bridge.BridgeService.ShowWindow:output_type -> bridge.Response
-	8,   // 287: bridge.BridgeService.SetContent:output_type -> bridge.Response
-	8,   // 288: bridge.BridgeService.ResizeWindow:output_type -> bridge.Response
-	8,   // 289: bridge.BridgeService.SetWindowTitle:output_type -> bridge.Response
-	8,   // 290: bridge.BridgeService.CenterWindow:output_type -> bridge.Response
-	8,   // 291: bridge.BridgeService.SetWindowFullScreen:output_type -> bridge.Response
-	8,   // 292: bridge.BridgeService.CloseWindow:output_type -> bridge.Response
-	8,   // 293: bridge.BridgeService.SetWindowIcon:output_type -> bridge.Response
-	8,   // 294: bridge.BridgeService.SetWindowCloseIntercept:output_type -> bridge.Response
-	8,   // 295: bridge.BridgeService.CloseInterceptResponse:output_type -> bridge.Response
-	8,   // 296: bridge.BridgeService.CaptureWindow:output_type -> bridge.Response
-	8,   // 297: bridge.BridgeService.CreateImage:output_type -> bridge.Response
-	8,   // 298: bridge.BridgeService.CreateLabel:output_type -> bridge.Response
-	8,   // 299: bridge.BridgeService.CreateSeparator:output_type -> bridge.Response
-	8,   // 300: bridge.BridgeService.CreateSpacer:output_type -> bridge.Response
-	8,   // 301: bridge.BridgeService.CreateHyperlink:output_type -> bridge.Response
-	8,   // 302: bridge.BridgeService.CreateProgressBar:output_type -> bridge.Response
-	8,   // 303: bridge.BridgeService.CreateActivity:output_type -> bridge.Response
-	8,   // 304: bridge.BridgeService.CreateRichText:output_type -> bridge.Response
-	8,   // 305: bridge.BridgeService.CreateIcon:output_type -> bridge.Response
-	8,   // 306: bridge.BridgeService.CreateFileIcon:output_type -> bridge.Response
-	8,   // 307: bridge.BridgeService.CreateCalendar:output_type -> bridge.Response
-	8,   // 308: bridge.BridgeService.CreateColorCell:output_type -> bridge.Response
-	8,   // 309: bridge.BridgeService.UpdateColorCell:output_type -> bridge.Response
-	8,   // 310: bridge.BridgeService.CreateButton:output_type -> bridge.Response
-	8,   // 311: bridge.BridgeService.CreateEntry:output_type -> bridge.Response
-	8,   // 312: bridge.BridgeService.CreateCheckbox:output_type -> bridge.Response
-	8,   // 313: bridge.BridgeService.CreateSelect:output_type -> bridge.Response
-	8,   // 314: bridge.BridgeService.CreateSlider:output_type -> bridge.Response
-	8,   // 315: bridge.BridgeService.CreateRadioGroup:output_type -> bridge.Response
-	8,   // 316: bridge.BridgeService.CreateCheckGroup:output_type -> bridge.Response
-	8,   // 317: bridge.BridgeService.CreateSelectEntry:output_type -> bridge.Response
-	8,   // 318: bridge.BridgeService.CreateCompletionEntry:output_type -> bridge.Response
-	8,   // 319: bridge.BridgeService.SetCompletionEntryOptions:output_type -> bridge.Response
-	8,   // 320: bridge.BridgeService.ShowCompletion:output_type -> bridge.Response
-	8,   // 321: bridge.BridgeService.HideCompletion:output_type -> bridge.Response
-	8,   // 322: bridge.BridgeService.CreateDateEntry:output_type -> bridge.Response
-	8,   // 323: bridge.BridgeService.CreateVBox:output_type -> bridge.Response
-	8,   // 324: bridge.BridgeService.CreateHBox:output_type -> bridge.Response
-	8,   // 325: bridge.BridgeService.CreateScroll:output_type -> bridge.Response
-	8,   // 326: bridge.BridgeService.SetScrollMinHeight:output_type -> bridge.Response
-	8,   // 327: bridge.BridgeService.SetScrollMinSize:output_type -> bridge.Response
-	8,   // 328: bridge.BridgeService.CreateGrid:output_type -> bridge.Response
-	8,   // 329: bridge.BridgeService.CreateCenter:output_type -> bridge.Response
-	8,   // 330: bridge.BridgeService.CreateAspectRatio:output_type -> bridge.Response
-	8,   // 331: bridge.BridgeService.CreateClip:output_type -> bridge.Response
-	8,   // 332: bridge.BridgeService.CreateMax:output_type -> bridge.Response
-	8,   // 333: bridge.BridgeService.CreateStack:output_type -> bridge.Response
-	8,   // 334: bridge.BridgeService.CreateCard:output_type -> bridge.Response
-	8,   // 335: bridge.BridgeService.CreateAccordion:output_type -> bridge.Response
-	8,   // 336: bridge.BridgeService.CreateForm:output_type -> bridge.Response
-	8,   // 337: bridge.BridgeService.CreateBorder:output_type -> bridge.Response
-	8,   // 338: bridge.BridgeService.CreateGridWrap:output_type -> bridge.Response
-	8,   // 339: bridge.BridgeService.CreateAdaptiveGrid:output_type -> bridge.Response
-	8,   // 340: bridge.BridgeService.CreatePadded:output_type -> bridge.Response
-	8,   // 341: bridge.BridgeService.CreateSplit:output_type -> bridge.Response
-	8,   // 342: bridge.BridgeService.CreateTabs:output_type -> bridge.Response
-	8,   // 343: bridge.BridgeService.CreateDocTabs:output_type -> bridge.Response
-	8,   // 344: bridge.BridgeService.CreateThemeOverride:output_type -> bridge.Response
-	8,   // 345: bridge.BridgeService.CreateInnerWindow:output_type -> bridge.Response
-	8,   // 346: bridge.BridgeService.CreateNavigation:output_type -> bridge.Response
-	8,   // 347: bridge.BridgeService.CreatePopup:output_type -> bridge.Response
-	8,   // 348: bridge.BridgeService.CreateMultipleWindows:output_type -> bridge.Response
-	8,   // 349: bridge.BridgeService.CreateTable:output_type -> bridge.Response
-	8,   // 350: bridge.BridgeService.CreateTree:output_type -> bridge.Response
-	8,   // 351: bridge.BridgeService.CreateList:output_type -> bridge.Response
-	8,   // 352: bridge.BridgeService.CreateMenu:output_type -> bridge.Response
-	8,   // 353: bridge.BridgeService.CreateToolbar:output_type -> bridge.Response
-	8,   // 354: bridge.BridgeService.CreateTextGrid:output_type -> bridge.Response
-	8,   // 355: bridge.BridgeService.CreateDesktopCanvas:output_type -> bridge.Response
-	8,   // 356: bridge.BridgeService.CreateDesktopIcon:output_type -> bridge.Response
-	8,   // 357: bridge.BridgeService.MoveDesktopIcon:output_type -> bridge.Response
-	8,   // 358: bridge.BridgeService.UpdateDesktopIconLabel:output_type -> bridge.Response
-	8,   // 359: bridge.BridgeService.UpdateDesktopIconColor:output_type -> bridge.Response
-	8,   // 360: bridge.BridgeService.CreateCanvasLine:output_type -> bridge.Response
-	8,   // 361: bridge.BridgeService.CreateCanvasCircle:output_type -> bridge.Response
-	8,   // 362: bridge.BridgeService.CreateCanvasRectangle:output_type -> bridge.Response
-	8,   // 363: bridge.BridgeService.CreateCanvasText:output_type -> bridge.Response
-	8,   // 364: bridge.BridgeService.CreateCanvasRaster:output_type -> bridge.Response
-	8,   // 365: bridge.BridgeService.CreateCanvasLinearGradient:output_type -> bridge.Response
-	8,   // 366: bridge.BridgeService.CreateCanvasRadialGradient:output_type -> bridge.Response
-	8,   // 367: bridge.BridgeService.CreateCanvasArc:output_type -> bridge.Response
-	8,   // 368: bridge.BridgeService.CreateCanvasPolygon:output_type -> bridge.Response
-	8,   // 369: bridge.BridgeService.CreateTappableCanvasRaster:output_type -> bridge.Response
-	8,   // 370: bridge.BridgeService.CreateCanvasShader:output_type -> bridge.Response
-	8,   // 371: bridge.BridgeService.UpdateCanvasLine:output_type -> bridge.Response
-	8,   // 372: bridge.BridgeService.UpdateCanvasCircle:output_type -> bridge.Response
-	8,   // 373: bridge.BridgeService.UpdateCanvasRectangle:output_type -> bridge.Response
-	8,   // 374: bridge.BridgeService.UpdateCanvasText:output_type -> bridge.Response
-	8,   // 375: bridge.BridgeService.UpdateCanvasRaster:output_type -> bridge.Response
-	8,   // 376: bridge.BridgeService.FillCanvasRasterRect:output_type -> bridge.Response
-	8,   // 377: bridge.BridgeService.BlitToCanvasRaster:output_type -> bridge.Response
-	8,   // 378: bridge.BridgeService.UpdateCanvasLinearGradient:output_type -> bridge.Response
-	8,   // 379: bridge.BridgeService.UpdateCanvasRadialGradient:output_type -> bridge.Response
-	8,   // 380: bridge.BridgeService.UpdateCanvasArc:output_type -> bridge.Response
-	8,   // 381: bridge.BridgeService.UpdateCanvasPolygon:output_type -> bridge.Response
-	8,   // 382: bridge.BridgeService.UpdateTappableCanvasRaster:output_type -> bridge.Response
-	8,   // 383: bridge.BridgeService.SetTappableCanvasImage:output_type -> bridge.Response
-	8,   // 384: bridge.BridgeService.SetTappableCanvasRect:output_type -> bridge.Response
-	8,   // 385: bridge.BridgeService.UpdateCanvasShader:output_type -> bridge.Response
-	8,   // 386: bridge.BridgeService.SaveRasterBackground:output_type -> bridge.Response
-	8,   // 387: bridge.BridgeService.CreateRasterSprite:output_type -> bridge.Response
-	8,   // 388: bridge.BridgeService.MoveRasterSprite:output_type -> bridge.Response
-	8,   // 389: bridge.BridgeService.SetRasterSpriteResource:output_type -> bridge.Response
-	8,   // 390: bridge.BridgeService.SetRasterSpriteVisible:output_type -> bridge.Response
-	8,   // 391: bridge.BridgeService.SetRasterSpriteZIndex:output_type -> bridge.Response
-	8,   // 392: bridge.BridgeService.RemoveRasterSprite:output_type -> bridge.Response
-	8,   // 393: bridge.BridgeService.FlushRasterSprites:output_type -> bridge.Response
-	8,   // 394: bridge.BridgeService.RegisterResource:output_type -> bridge.Response
-	8,   // 395: bridge.BridgeService.UnregisterResource:output_type -> bridge.Response
-	8,   // 396: bridge.BridgeService.UpdateImage:output_type -> bridge.Response
-	8,   // 397: bridge.BridgeService.SetText:output_type -> bridge.Response
-	56,  // 398: bridge.BridgeService.GetText:output_type -> bridge.GetTextResponse
-	8,   // 399: bridge.BridgeService.SetWidgetCallback:output_type -> bridge.Response
-	8,   // 400: bridge.BridgeService.SetProgress:output_type -> bridge.Response
-	60,  // 401: bridge.BridgeService.GetProgress:output_type -> bridge.GetProgressResponse
-	8,   // 402: bridge.BridgeService.SetChecked:output_type -> bridge.Response
-	63,  // 403: bridge.BridgeService.GetChecked:output_type -> bridge.GetCheckedResponse
-	8,   // 404: bridge.BridgeService.SetValue:output_type -> bridge.Response
-	159, // 405: bridge.BridgeService.GetValue:output_type -> bridge.GetValueResponse
-	8,   // 406: bridge.BridgeService.SetSelected:output_type -> bridge.Response
-	162, // 407: bridge.BridgeService.GetSelected:output_type -> bridge.GetSelectedResponse
-	8,   // 408: bridge.BridgeService.SetSelectOptions:output_type -> bridge.Response
-	8,   // 409: bridge.BridgeService.SetSelectEntryOptions:output_type -> bridge.Response
-	8,   // 410: bridge.BridgeService.SetDate:output_type -> bridge.Response
-	167, // 411: bridge.BridgeService.GetDate:output_type -> bridge.GetDateResponse
-	8,   // 412: bridge.BridgeService.SetIconResource:output_type -> bridge.Response
-	8,   // 413: bridge.BridgeService.SetFileIconURI:output_type -> bridge.Response
-	8,   // 414: bridge.BridgeService.SetFileIconSelected:output_type -> bridge.Response
-	8,   // 415: bridge.BridgeService.SetRadioSelected:output_type -> bridge.Response
-	173, // 416: bridge.BridgeService.GetRadioSelected:output_type -> bridge.GetRadioSelectedResponse
-	8,   // 417: bridge.BridgeService.SetRadioOptions:output_type -> bridge.Response
-	176, // 418: bridge.BridgeService.GetCheckGroupSelected:output_type -> bridge.GetCheckGroupSelectedResponse
-	8,   // 419: bridge.BridgeService.SetCheckGroupSelected:output_type -> bridge.Response
-	8,   // 420: bridge.BridgeService.ShowWidget:output_type -> bridge.Response
-	8,   // 421: bridge.BridgeService.HideWidget:output_type -> bridge.Response
-	8,   // 422: bridge.BridgeService.EnableWidget:output_type -> bridge.Response
-	8,   // 423: bridge.BridgeService.DisableWidget:output_type -> bridge.Response
-	183, // 424: bridge.BridgeService.IsEnabled:output_type -> bridge.IsEnabledResponse
-	8,   // 425: bridge.BridgeService.ClearWidgets:output_type -> bridge.Response
-	8,   // 426: bridge.BridgeService.StartActivity:output_type -> bridge.Response
-	8,   // 427: bridge.BridgeService.StopActivity:output_type -> bridge.Response
-	8,   // 428: bridge.BridgeService.StartProgressInfinite:output_type -> bridge.Response
-	8,   // 429: bridge.BridgeService.StopProgressInfinite:output_type -> bridge.Response
-	190, // 430: bridge.BridgeService.IsProgressRunning:output_type -> bridge.IsProgressRunningResponse
-	8,   // 431: bridge.BridgeService.ContainerAdd:output_type -> bridge.Response
-	8,   // 432: bridge.BridgeService.ContainerRemoveAll:output_type -> bridge.Response
-	8,   // 433: bridge.BridgeService.ContainerRefresh:output_type -> bridge.Response
-	195, // 434: bridge.BridgeService.GetContainerObjects:output_type -> bridge.GetContainerObjectsResponse
-	8,   // 435: bridge.BridgeService.DocTabsAppend:output_type -> bridge.Response
-	8,   // 436: bridge.BridgeService.DocTabsRemove:output_type -> bridge.Response
-	8,   // 437: bridge.BridgeService.DocTabsSelect:output_type -> bridge.Response
-	8,   // 438: bridge.BridgeService.MultipleWindowsAddWindow:output_type -> bridge.Response
-	8,   // 439: bridge.BridgeService.MultipleWindowsRemoveWindow:output_type -> bridge.Response
-	8,   // 440: bridge.BridgeService.ShowPopup:output_type -> bridge.Response
-	8,   // 441: bridge.BridgeService.HidePopup:output_type -> bridge.Response
-	8,   // 442: bridge.BridgeService.MovePopup:output_type -> bridge.Response
-	8,   // 443: bridge.BridgeService.NavigationPush:output_type -> bridge.Response
-	8,   // 444: bridge.BridgeService.NavigationBack:output_type -> bridge.Response
-	8,   // 445: bridge.BridgeService.NavigationForward:output_type -> bridge.Response
-	8,   // 446: bridge.BridgeService.NavigationSetTitle:output_type -> bridge.Response
-	8,   // 447: bridge.BridgeService.InnerWindowClose:output_type -> bridge.Response
-	8,   // 448: bridge.BridgeService.SetInnerWindowTitle:output_type -> bridge.Response
-	8,   // 449: bridge.BridgeService.ShowInfo:output_type -> bridge.Response
-	8,   // 450: bridge.BridgeService.ShowError:output_type -> bridge.Response
-	8,   // 451: bridge.BridgeService.ShowConfirm:output_type -> bridge.Response
-	8,   // 452: bridge.BridgeService.ShowFileOpen:output_type -> bridge.Response
-	8,   // 453: bridge.BridgeService.ShowFileSave:output_type -> bridge.Response
-	8,   // 454: bridge.BridgeService.ShowFolderOpen:output_type -> bridge.Response
-	8,   // 455: bridge.BridgeService.ShowForm:output_type -> bridge.Response
-	8,   // 456: bridge.BridgeService.ShowCustom:output_type -> bridge.Response
-	8,   // 457: bridge.BridgeService.ShowCustomConfirm:output_type -> bridge.Response
-	8,   // 458: bridge.BridgeService.ShowCustomWithoutButtons:output_type -> bridge.Response
-	8,   // 459: bridge.BridgeService.HideCustomDialog:output_type -> bridge.Response
-	222, // 460: bridge.BridgeService.GetActiveDialogs:output_type -> bridge.GetActiveDialogsResponse
-	8,   // 461: bridge.BridgeService.DismissActiveDialog:output_type -> bridge.Response
-	8,   // 462: bridge.BridgeService.ShowProgressDialog:output_type -> bridge.Response
-	8,   // 463: bridge.BridgeService.UpdateProgressDialog:output_type -> bridge.Response
-	8,   // 464: bridge.BridgeService.HideProgressDialog:output_type -> bridge.Response
-	8,   // 465: bridge.BridgeService.ShowColorPicker:output_type -> bridge.Response
-	8,   // 466: bridge.BridgeService.ShowEntryDialog:output_type -> bridge.Response
-	230, // 467: bridge.BridgeService.GetTableData:output_type -> bridge.GetTableDataResponse
-	8,   // 468: bridge.BridgeService.UpdateTableData:output_type -> bridge.Response
-	233, // 469: bridge.BridgeService.GetListData:output_type -> bridge.GetListDataResponse
-	8,   // 470: bridge.BridgeService.UpdateListData:output_type -> bridge.Response
-	8,   // 471: bridge.BridgeService.UnselectAllList:output_type -> bridge.Response
-	237, // 472: bridge.BridgeService.GetTextGridText:output_type -> bridge.GetTextGridTextResponse
-	8,   // 473: bridge.BridgeService.SetTextGridText:output_type -> bridge.Response
-	8,   // 474: bridge.BridgeService.SetTextGridCell:output_type -> bridge.Response
-	8,   // 475: bridge.BridgeService.SetTextGridRow:output_type -> bridge.Response
-	8,   // 476: bridge.BridgeService.SetTextGridStyle:output_type -> bridge.Response
-	8,   // 477: bridge.BridgeService.SetTextGridStyleRange:output_type -> bridge.Response
-	245, // 478: bridge.BridgeService.GetToolbarItems:output_type -> bridge.GetToolbarItemsResponse
-	8,   // 479: bridge.BridgeService.ClickToolbarAction:output_type -> bridge.Response
-	8,   // 480: bridge.BridgeService.SetTheme:output_type -> bridge.Response
-	249, // 481: bridge.BridgeService.GetTheme:output_type -> bridge.GetThemeResponse
-	8,   // 482: bridge.BridgeService.SetFontScale:output_type -> bridge.Response
-	8,   // 483: bridge.BridgeService.SetCustomTheme:output_type -> bridge.Response
-	8,   // 484: bridge.BridgeService.ClearCustomTheme:output_type -> bridge.Response
-	8,   // 485: bridge.BridgeService.SetCustomFont:output_type -> bridge.Response
-	8,   // 486: bridge.BridgeService.ClearCustomFont:output_type -> bridge.Response
-	256, // 487: bridge.BridgeService.GetAvailableFonts:output_type -> bridge.GetAvailableFontsResponse
-	8,   // 488: bridge.BridgeService.SetWidgetStyle:output_type -> bridge.Response
-	8,   // 489: bridge.BridgeService.SetMainMenu:output_type -> bridge.Response
-	8,   // 490: bridge.BridgeService.SetWidgetContextMenu:output_type -> bridge.Response
-	8,   // 491: bridge.BridgeService.SetSystemTray:output_type -> bridge.Response
-	8,   // 492: bridge.BridgeService.SendNotification:output_type -> bridge.Response
-	264, // 493: bridge.BridgeService.ClipboardGet:output_type -> bridge.ClipboardGetResponse
-	8,   // 494: bridge.BridgeService.ClipboardSet:output_type -> bridge.Response
-	267, // 495: bridge.BridgeService.PreferencesGet:output_type -> bridge.PreferencesGetResponse
-	8,   // 496: bridge.BridgeService.PreferencesSet:output_type -> bridge.Response
-	8,   // 497: bridge.BridgeService.PreferencesRemove:output_type -> bridge.Response
-	8,   // 498: bridge.BridgeService.SetDraggable:output_type -> bridge.Response
-	8,   // 499: bridge.BridgeService.SetDroppable:output_type -> bridge.Response
-	8,   // 500: bridge.BridgeService.ClickWidget:output_type -> bridge.Response
-	8,   // 501: bridge.BridgeService.TypeText:output_type -> bridge.Response
-	8,   // 502: bridge.BridgeService.DoubleTapWidget:output_type -> bridge.Response
-	8,   // 503: bridge.BridgeService.RightClickWidget:output_type -> bridge.Response
-	8,   // 504: bridge.BridgeService.DragWidget:output_type -> bridge.Response
-	8,   // 505: bridge.BridgeService.HoverWidget:output_type -> bridge.Response
-	8,   // 506: bridge.BridgeService.FocusWidget:output_type -> bridge.Response
-	8,   // 507: bridge.BridgeService.FocusNext:output_type -> bridge.Response
-	8,   // 508: bridge.BridgeService.FocusPrevious:output_type -> bridge.Response
-	8,   // 509: bridge.BridgeService.SubmitEntry:output_type -> bridge.Response
-	8,   // 510: bridge.BridgeService.DragCanvas:output_type -> bridge.Response
-	8,   // 511: bridge.BridgeService.ScrollCanvas:output_type -> bridge.Response
-	8,   // 512: bridge.BridgeService.RegisterCustomId:output_type -> bridge.Response
-	8,   // 513: bridge.BridgeService.RegisterTestId:output_type -> bridge.Response
-	281, // 514: bridge.BridgeService.GetParent:output_type -> bridge.GetParentResponse
-	71,  // 515: bridge.BridgeService.FindWidget:output_type -> bridge.FindWidgetResponse
-	73,  // 516: bridge.BridgeService.GetWidgetInfo:output_type -> bridge.WidgetInfoResponse
-	75,  // 517: bridge.BridgeService.GetAllWidgets:output_type -> bridge.GetAllWidgetsResponse
-	8,   // 518: bridge.BridgeService.SetAccessibility:output_type -> bridge.Response
-	8,   // 519: bridge.BridgeService.EnableAccessibility:output_type -> bridge.Response
-	8,   // 520: bridge.BridgeService.DisableAccessibility:output_type -> bridge.Response
-	8,   // 521: bridge.BridgeService.Announce:output_type -> bridge.Response
-	8,   // 522: bridge.BridgeService.StopSpeech:output_type -> bridge.Response
-	8,   // 523: bridge.BridgeService.SetWidgetHoverable:output_type -> bridge.Response
-	77,  // 524: bridge.BridgeService.SubscribeEvents:output_type -> bridge.Event
-	8,   // 525: bridge.BridgeService.Quit:output_type -> bridge.Response
-	285, // [285:526] is the sub-list for method output_type
-	44,  // [44:285] is the sub-list for method input_type
-	44,  // [44:44] is the sub-list for extension type_name
-	44,  // [44:44] is the sub-list for extension extendee
-	0,   // [0:44] is the sub-list for field type_name
+	292, // 44: bridge.SetWidgetEventsRequest.cbs:type_name -> bridge.SetWidgetEventsRequest.CbsEntry
+	9,   // 45: bridge.BridgeService.CreateWindow:input_type -> bridge.CreateWindowRequest
+	10,  // 46: bridge.BridgeService.ShowWindow:input_type -> bridge.ShowWindowRequest
+	11,  // 47: bridge.BridgeService.SetContent:input_type -> bridge.SetContentRequest
+	12,  // 48: bridge.BridgeService.ResizeWindow:input_type -> bridge.ResizeWindowRequest
+	13,  // 49: bridge.BridgeService.SetWindowTitle:input_type -> bridge.SetWindowTitleRequest
+	14,  // 50: bridge.BridgeService.CenterWindow:input_type -> bridge.CenterWindowRequest
+	15,  // 51: bridge.BridgeService.SetWindowFullScreen:input_type -> bridge.SetWindowFullScreenRequest
+	80,  // 52: bridge.BridgeService.CloseWindow:input_type -> bridge.CloseWindowRequest
+	81,  // 53: bridge.BridgeService.SetWindowIcon:input_type -> bridge.SetWindowIconRequest
+	82,  // 54: bridge.BridgeService.SetWindowCloseIntercept:input_type -> bridge.SetWindowCloseInterceptRequest
+	83,  // 55: bridge.BridgeService.CloseInterceptResponse:input_type -> bridge.CloseInterceptResponseRequest
+	84,  // 56: bridge.BridgeService.CaptureWindow:input_type -> bridge.CaptureWindowRequest
+	16,  // 57: bridge.BridgeService.CreateImage:input_type -> bridge.CreateImageRequest
+	17,  // 58: bridge.BridgeService.CreateLabel:input_type -> bridge.CreateLabelRequest
+	85,  // 59: bridge.BridgeService.CreateSeparator:input_type -> bridge.CreateSeparatorRequest
+	86,  // 60: bridge.BridgeService.CreateSpacer:input_type -> bridge.CreateSpacerRequest
+	87,  // 61: bridge.BridgeService.CreateHyperlink:input_type -> bridge.CreateHyperlinkRequest
+	88,  // 62: bridge.BridgeService.CreateProgressBar:input_type -> bridge.CreateProgressBarRequest
+	89,  // 63: bridge.BridgeService.CreateActivity:input_type -> bridge.CreateActivityRequest
+	90,  // 64: bridge.BridgeService.CreateRichText:input_type -> bridge.CreateRichTextRequest
+	92,  // 65: bridge.BridgeService.CreateIcon:input_type -> bridge.CreateIconRequest
+	93,  // 66: bridge.BridgeService.CreateFileIcon:input_type -> bridge.CreateFileIconRequest
+	94,  // 67: bridge.BridgeService.CreateCalendar:input_type -> bridge.CreateCalendarRequest
+	95,  // 68: bridge.BridgeService.CreateColorCell:input_type -> bridge.CreateColorCellRequest
+	96,  // 69: bridge.BridgeService.UpdateColorCell:input_type -> bridge.UpdateColorCellRequest
+	18,  // 70: bridge.BridgeService.CreateButton:input_type -> bridge.CreateButtonRequest
+	19,  // 71: bridge.BridgeService.CreateEntry:input_type -> bridge.CreateEntryRequest
+	22,  // 72: bridge.BridgeService.CreateCheckbox:input_type -> bridge.CreateCheckboxRequest
+	23,  // 73: bridge.BridgeService.CreateSelect:input_type -> bridge.CreateSelectRequest
+	97,  // 74: bridge.BridgeService.CreateSlider:input_type -> bridge.CreateSliderRequest
+	98,  // 75: bridge.BridgeService.CreateRadioGroup:input_type -> bridge.CreateRadioGroupRequest
+	99,  // 76: bridge.BridgeService.CreateCheckGroup:input_type -> bridge.CreateCheckGroupRequest
+	100, // 77: bridge.BridgeService.CreateSelectEntry:input_type -> bridge.CreateSelectEntryRequest
+	101, // 78: bridge.BridgeService.CreateCompletionEntry:input_type -> bridge.CreateCompletionEntryRequest
+	102, // 79: bridge.BridgeService.SetCompletionEntryOptions:input_type -> bridge.SetCompletionEntryOptionsRequest
+	103, // 80: bridge.BridgeService.ShowCompletion:input_type -> bridge.ShowCompletionRequest
+	104, // 81: bridge.BridgeService.HideCompletion:input_type -> bridge.HideCompletionRequest
+	105, // 82: bridge.BridgeService.CreateDateEntry:input_type -> bridge.CreateDateEntryRequest
+	20,  // 83: bridge.BridgeService.CreateVBox:input_type -> bridge.CreateVBoxRequest
+	21,  // 84: bridge.BridgeService.CreateHBox:input_type -> bridge.CreateHBoxRequest
+	24,  // 85: bridge.BridgeService.CreateScroll:input_type -> bridge.CreateScrollRequest
+	25,  // 86: bridge.BridgeService.SetScrollMinHeight:input_type -> bridge.SetScrollMinHeightRequest
+	26,  // 87: bridge.BridgeService.SetScrollMinSize:input_type -> bridge.SetScrollMinSizeRequest
+	27,  // 88: bridge.BridgeService.CreateGrid:input_type -> bridge.CreateGridRequest
+	28,  // 89: bridge.BridgeService.CreateCenter:input_type -> bridge.CreateCenterRequest
+	29,  // 90: bridge.BridgeService.CreateAspectRatio:input_type -> bridge.CreateAspectRatioRequest
+	30,  // 91: bridge.BridgeService.CreateClip:input_type -> bridge.CreateClipRequest
+	31,  // 92: bridge.BridgeService.CreateMax:input_type -> bridge.CreateMaxRequest
+	32,  // 93: bridge.BridgeService.CreateStack:input_type -> bridge.CreateStackRequest
+	33,  // 94: bridge.BridgeService.CreateCard:input_type -> bridge.CreateCardRequest
+	35,  // 95: bridge.BridgeService.CreateAccordion:input_type -> bridge.CreateAccordionRequest
+	37,  // 96: bridge.BridgeService.CreateForm:input_type -> bridge.CreateFormRequest
+	38,  // 97: bridge.BridgeService.CreateBorder:input_type -> bridge.CreateBorderRequest
+	39,  // 98: bridge.BridgeService.CreateGridWrap:input_type -> bridge.CreateGridWrapRequest
+	40,  // 99: bridge.BridgeService.CreateAdaptiveGrid:input_type -> bridge.CreateAdaptiveGridRequest
+	41,  // 100: bridge.BridgeService.CreatePadded:input_type -> bridge.CreatePaddedRequest
+	42,  // 101: bridge.BridgeService.CreateSplit:input_type -> bridge.CreateSplitRequest
+	44,  // 102: bridge.BridgeService.CreateTabs:input_type -> bridge.CreateTabsRequest
+	45,  // 103: bridge.BridgeService.CreateDocTabs:input_type -> bridge.CreateDocTabsRequest
+	46,  // 104: bridge.BridgeService.CreateThemeOverride:input_type -> bridge.CreateThemeOverrideRequest
+	47,  // 105: bridge.BridgeService.CreateInnerWindow:input_type -> bridge.CreateInnerWindowRequest
+	48,  // 106: bridge.BridgeService.CreateNavigation:input_type -> bridge.CreateNavigationRequest
+	49,  // 107: bridge.BridgeService.CreatePopup:input_type -> bridge.CreatePopupRequest
+	50,  // 108: bridge.BridgeService.CreateMultipleWindows:input_type -> bridge.CreateMultipleWindowsRequest
+	107, // 109: bridge.BridgeService.CreateTable:input_type -> bridge.CreateTableRequest
+	108, // 110: bridge.BridgeService.CreateTree:input_type -> bridge.CreateTreeRequest
+	109, // 111: bridge.BridgeService.CreateList:input_type -> bridge.CreateListRequest
+	111, // 112: bridge.BridgeService.CreateMenu:input_type -> bridge.CreateMenuRequest
+	113, // 113: bridge.BridgeService.CreateToolbar:input_type -> bridge.CreateToolbarRequest
+	114, // 114: bridge.BridgeService.CreateTextGrid:input_type -> bridge.CreateTextGridRequest
+	115, // 115: bridge.BridgeService.CreateDesktopCanvas:input_type -> bridge.CreateDesktopCanvasRequest
+	116, // 116: bridge.BridgeService.CreateDesktopIcon:input_type -> bridge.CreateDesktopIconRequest
+	117, // 117: bridge.BridgeService.MoveDesktopIcon:input_type -> bridge.MoveDesktopIconRequest
+	118, // 118: bridge.BridgeService.UpdateDesktopIconLabel:input_type -> bridge.UpdateDesktopIconLabelRequest
+	119, // 119: bridge.BridgeService.UpdateDesktopIconColor:input_type -> bridge.UpdateDesktopIconColorRequest
+	120, // 120: bridge.BridgeService.CreateCanvasLine:input_type -> bridge.CreateCanvasLineRequest
+	121, // 121: bridge.BridgeService.CreateCanvasCircle:input_type -> bridge.CreateCanvasCircleRequest
+	122, // 122: bridge.BridgeService.CreateCanvasRectangle:input_type -> bridge.CreateCanvasRectangleRequest
+	123, // 123: bridge.BridgeService.CreateCanvasText:input_type -> bridge.CreateCanvasTextRequest
+	125, // 124: bridge.BridgeService.CreateCanvasRaster:input_type -> bridge.CreateCanvasRasterRequest
+	126, // 125: bridge.BridgeService.CreateCanvasLinearGradient:input_type -> bridge.CreateCanvasLinearGradientRequest
+	127, // 126: bridge.BridgeService.CreateCanvasRadialGradient:input_type -> bridge.CreateCanvasRadialGradientRequest
+	128, // 127: bridge.BridgeService.CreateCanvasArc:input_type -> bridge.CreateCanvasArcRequest
+	130, // 128: bridge.BridgeService.CreateCanvasPolygon:input_type -> bridge.CreateCanvasPolygonRequest
+	131, // 129: bridge.BridgeService.CreateTappableCanvasRaster:input_type -> bridge.CreateTappableCanvasRasterRequest
+	133, // 130: bridge.BridgeService.CreateCanvasShader:input_type -> bridge.CreateCanvasShaderRequest
+	135, // 131: bridge.BridgeService.UpdateCanvasLine:input_type -> bridge.UpdateCanvasLineRequest
+	136, // 132: bridge.BridgeService.UpdateCanvasCircle:input_type -> bridge.UpdateCanvasCircleRequest
+	137, // 133: bridge.BridgeService.UpdateCanvasRectangle:input_type -> bridge.UpdateCanvasRectangleRequest
+	138, // 134: bridge.BridgeService.UpdateCanvasText:input_type -> bridge.UpdateCanvasTextRequest
+	139, // 135: bridge.BridgeService.UpdateCanvasRaster:input_type -> bridge.UpdateCanvasRasterRequest
+	140, // 136: bridge.BridgeService.FillCanvasRasterRect:input_type -> bridge.FillCanvasRasterRectRequest
+	141, // 137: bridge.BridgeService.BlitToCanvasRaster:input_type -> bridge.BlitToCanvasRasterRequest
+	142, // 138: bridge.BridgeService.UpdateCanvasLinearGradient:input_type -> bridge.UpdateCanvasLinearGradientRequest
+	143, // 139: bridge.BridgeService.UpdateCanvasRadialGradient:input_type -> bridge.UpdateCanvasRadialGradientRequest
+	144, // 140: bridge.BridgeService.UpdateCanvasArc:input_type -> bridge.UpdateCanvasArcRequest
+	145, // 141: bridge.BridgeService.UpdateCanvasPolygon:input_type -> bridge.UpdateCanvasPolygonRequest
+	146, // 142: bridge.BridgeService.UpdateTappableCanvasRaster:input_type -> bridge.UpdateTappableCanvasRasterRequest
+	147, // 143: bridge.BridgeService.SetTappableCanvasImage:input_type -> bridge.SetTappableCanvasImageRequest
+	148, // 144: bridge.BridgeService.SetTappableCanvasRect:input_type -> bridge.SetTappableCanvasRectRequest
+	134, // 145: bridge.BridgeService.UpdateCanvasShader:input_type -> bridge.UpdateCanvasShaderRequest
+	149, // 146: bridge.BridgeService.SaveRasterBackground:input_type -> bridge.SaveRasterBackgroundRequest
+	150, // 147: bridge.BridgeService.CreateRasterSprite:input_type -> bridge.CreateRasterSpriteRequest
+	151, // 148: bridge.BridgeService.MoveRasterSprite:input_type -> bridge.MoveRasterSpriteRequest
+	152, // 149: bridge.BridgeService.SetRasterSpriteResource:input_type -> bridge.SetRasterSpriteResourceRequest
+	153, // 150: bridge.BridgeService.SetRasterSpriteVisible:input_type -> bridge.SetRasterSpriteVisibleRequest
+	154, // 151: bridge.BridgeService.SetRasterSpriteZIndex:input_type -> bridge.SetRasterSpriteZIndexRequest
+	155, // 152: bridge.BridgeService.RemoveRasterSprite:input_type -> bridge.RemoveRasterSpriteRequest
+	156, // 153: bridge.BridgeService.FlushRasterSprites:input_type -> bridge.FlushRasterSpritesRequest
+	51,  // 154: bridge.BridgeService.RegisterResource:input_type -> bridge.RegisterResourceRequest
+	52,  // 155: bridge.BridgeService.UnregisterResource:input_type -> bridge.UnregisterResourceRequest
+	53,  // 156: bridge.BridgeService.UpdateImage:input_type -> bridge.UpdateImageRequest
+	54,  // 157: bridge.BridgeService.SetText:input_type -> bridge.SetTextRequest
+	55,  // 158: bridge.BridgeService.GetText:input_type -> bridge.GetTextRequest
+	57,  // 159: bridge.BridgeService.SetWidgetCallback:input_type -> bridge.SetWidgetCallbackRequest
+	58,  // 160: bridge.BridgeService.SetProgress:input_type -> bridge.SetProgressRequest
+	59,  // 161: bridge.BridgeService.GetProgress:input_type -> bridge.GetProgressRequest
+	61,  // 162: bridge.BridgeService.SetChecked:input_type -> bridge.SetCheckedRequest
+	62,  // 163: bridge.BridgeService.GetChecked:input_type -> bridge.GetCheckedRequest
+	157, // 164: bridge.BridgeService.SetValue:input_type -> bridge.SetValueRequest
+	158, // 165: bridge.BridgeService.GetValue:input_type -> bridge.GetValueRequest
+	160, // 166: bridge.BridgeService.SetSelected:input_type -> bridge.SetSelectedRequest
+	161, // 167: bridge.BridgeService.GetSelected:input_type -> bridge.GetSelectedRequest
+	163, // 168: bridge.BridgeService.SetSelectOptions:input_type -> bridge.SetSelectOptionsRequest
+	164, // 169: bridge.BridgeService.SetSelectEntryOptions:input_type -> bridge.SetSelectEntryOptionsRequest
+	165, // 170: bridge.BridgeService.SetDate:input_type -> bridge.SetDateRequest
+	166, // 171: bridge.BridgeService.GetDate:input_type -> bridge.GetDateRequest
+	168, // 172: bridge.BridgeService.SetIconResource:input_type -> bridge.SetIconResourceRequest
+	169, // 173: bridge.BridgeService.SetFileIconURI:input_type -> bridge.SetFileIconURIRequest
+	170, // 174: bridge.BridgeService.SetFileIconSelected:input_type -> bridge.SetFileIconSelectedRequest
+	171, // 175: bridge.BridgeService.SetRadioSelected:input_type -> bridge.SetRadioSelectedRequest
+	172, // 176: bridge.BridgeService.GetRadioSelected:input_type -> bridge.GetRadioSelectedRequest
+	174, // 177: bridge.BridgeService.SetRadioOptions:input_type -> bridge.SetRadioOptionsRequest
+	175, // 178: bridge.BridgeService.GetCheckGroupSelected:input_type -> bridge.GetCheckGroupSelectedRequest
+	177, // 179: bridge.BridgeService.SetCheckGroupSelected:input_type -> bridge.SetCheckGroupSelectedRequest
+	178, // 180: bridge.BridgeService.ShowWidget:input_type -> bridge.ShowWidgetRequest
+	179, // 181: bridge.BridgeService.HideWidget:input_type -> bridge.HideWidgetRequest
+	180, // 182: bridge.BridgeService.EnableWidget:input_type -> bridge.EnableWidgetRequest
+	181, // 183: bridge.BridgeService.DisableWidget:input_type -> bridge.DisableWidgetRequest
+	182, // 184: bridge.BridgeService.IsEnabled:input_type -> bridge.IsEnabledRequest
+	184, // 185: bridge.BridgeService.ClearWidgets:input_type -> bridge.ClearWidgetsRequest
+	185, // 186: bridge.BridgeService.StartActivity:input_type -> bridge.StartActivityRequest
+	186, // 187: bridge.BridgeService.StopActivity:input_type -> bridge.StopActivityRequest
+	187, // 188: bridge.BridgeService.StartProgressInfinite:input_type -> bridge.StartProgressInfiniteRequest
+	188, // 189: bridge.BridgeService.StopProgressInfinite:input_type -> bridge.StopProgressInfiniteRequest
+	189, // 190: bridge.BridgeService.IsProgressRunning:input_type -> bridge.IsProgressRunningRequest
+	191, // 191: bridge.BridgeService.ContainerAdd:input_type -> bridge.ContainerAddRequest
+	192, // 192: bridge.BridgeService.ContainerRemoveAll:input_type -> bridge.ContainerRemoveAllRequest
+	193, // 193: bridge.BridgeService.ContainerRefresh:input_type -> bridge.ContainerRefreshRequest
+	194, // 194: bridge.BridgeService.GetContainerObjects:input_type -> bridge.GetContainerObjectsRequest
+	196, // 195: bridge.BridgeService.DocTabsAppend:input_type -> bridge.DocTabsAppendRequest
+	197, // 196: bridge.BridgeService.DocTabsRemove:input_type -> bridge.DocTabsRemoveRequest
+	198, // 197: bridge.BridgeService.DocTabsSelect:input_type -> bridge.DocTabsSelectRequest
+	199, // 198: bridge.BridgeService.MultipleWindowsAddWindow:input_type -> bridge.MultipleWindowsAddWindowRequest
+	200, // 199: bridge.BridgeService.MultipleWindowsRemoveWindow:input_type -> bridge.MultipleWindowsRemoveWindowRequest
+	201, // 200: bridge.BridgeService.ShowPopup:input_type -> bridge.ShowPopupRequest
+	202, // 201: bridge.BridgeService.HidePopup:input_type -> bridge.HidePopupRequest
+	203, // 202: bridge.BridgeService.MovePopup:input_type -> bridge.MovePopupRequest
+	204, // 203: bridge.BridgeService.NavigationPush:input_type -> bridge.NavigationPushRequest
+	205, // 204: bridge.BridgeService.NavigationBack:input_type -> bridge.NavigationBackRequest
+	206, // 205: bridge.BridgeService.NavigationForward:input_type -> bridge.NavigationForwardRequest
+	207, // 206: bridge.BridgeService.NavigationSetTitle:input_type -> bridge.NavigationSetTitleRequest
+	208, // 207: bridge.BridgeService.InnerWindowClose:input_type -> bridge.InnerWindowCloseRequest
+	209, // 208: bridge.BridgeService.SetInnerWindowTitle:input_type -> bridge.SetInnerWindowTitleRequest
+	210, // 209: bridge.BridgeService.ShowInfo:input_type -> bridge.ShowInfoRequest
+	211, // 210: bridge.BridgeService.ShowError:input_type -> bridge.ShowErrorRequest
+	212, // 211: bridge.BridgeService.ShowConfirm:input_type -> bridge.ShowConfirmRequest
+	213, // 212: bridge.BridgeService.ShowFileOpen:input_type -> bridge.ShowFileOpenRequest
+	214, // 213: bridge.BridgeService.ShowFileSave:input_type -> bridge.ShowFileSaveRequest
+	215, // 214: bridge.BridgeService.ShowFolderOpen:input_type -> bridge.ShowFolderOpenRequest
+	216, // 215: bridge.BridgeService.ShowForm:input_type -> bridge.ShowFormRequest
+	217, // 216: bridge.BridgeService.ShowCustom:input_type -> bridge.ShowCustomRequest
+	218, // 217: bridge.BridgeService.ShowCustomConfirm:input_type -> bridge.ShowCustomConfirmRequest
+	219, // 218: bridge.BridgeService.ShowCustomWithoutButtons:input_type -> bridge.ShowCustomWithoutButtonsRequest
+	220, // 219: bridge.BridgeService.HideCustomDialog:input_type -> bridge.HideCustomDialogRequest
+	221, // 220: bridge.BridgeService.GetActiveDialogs:input_type -> bridge.GetActiveDialogsRequest
+	223, // 221: bridge.BridgeService.DismissActiveDialog:input_type -> bridge.DismissActiveDialogRequest
+	224, // 222: bridge.BridgeService.ShowProgressDialog:input_type -> bridge.ShowProgressDialogRequest
+	225, // 223: bridge.BridgeService.UpdateProgressDialog:input_type -> bridge.UpdateProgressDialogRequest
+	226, // 224: bridge.BridgeService.HideProgressDialog:input_type -> bridge.HideProgressDialogRequest
+	227, // 225: bridge.BridgeService.ShowColorPicker:input_type -> bridge.ShowColorPickerRequest
+	228, // 226: bridge.BridgeService.ShowEntryDialog:input_type -> bridge.ShowEntryDialogRequest
+	229, // 227: bridge.BridgeService.GetTableData:input_type -> bridge.GetTableDataRequest
+	231, // 228: bridge.BridgeService.UpdateTableData:input_type -> bridge.UpdateTableDataRequest
+	232, // 229: bridge.BridgeService.GetListData:input_type -> bridge.GetListDataRequest
+	234, // 230: bridge.BridgeService.UpdateListData:input_type -> bridge.UpdateListDataRequest
+	235, // 231: bridge.BridgeService.UnselectAllList:input_type -> bridge.UnselectAllListRequest
+	236, // 232: bridge.BridgeService.GetTextGridText:input_type -> bridge.GetTextGridTextRequest
+	238, // 233: bridge.BridgeService.SetTextGridText:input_type -> bridge.SetTextGridTextRequest
+	239, // 234: bridge.BridgeService.SetTextGridCell:input_type -> bridge.SetTextGridCellRequest
+	240, // 235: bridge.BridgeService.SetTextGridRow:input_type -> bridge.SetTextGridRowRequest
+	242, // 236: bridge.BridgeService.SetTextGridStyle:input_type -> bridge.SetTextGridStyleRequest
+	243, // 237: bridge.BridgeService.SetTextGridStyleRange:input_type -> bridge.SetTextGridStyleRangeRequest
+	244, // 238: bridge.BridgeService.GetToolbarItems:input_type -> bridge.GetToolbarItemsRequest
+	246, // 239: bridge.BridgeService.ClickToolbarAction:input_type -> bridge.ClickToolbarActionRequest
+	247, // 240: bridge.BridgeService.SetTheme:input_type -> bridge.SetThemeRequest
+	248, // 241: bridge.BridgeService.GetTheme:input_type -> bridge.GetThemeRequest
+	250, // 242: bridge.BridgeService.SetFontScale:input_type -> bridge.SetFontScaleRequest
+	251, // 243: bridge.BridgeService.SetCustomTheme:input_type -> bridge.SetCustomThemeRequest
+	252, // 244: bridge.BridgeService.ClearCustomTheme:input_type -> bridge.ClearCustomThemeRequest
+	253, // 245: bridge.BridgeService.SetCustomFont:input_type -> bridge.SetCustomFontRequest
+	254, // 246: bridge.BridgeService.ClearCustomFont:input_type -> bridge.ClearCustomFontRequest
+	255, // 247: bridge.BridgeService.GetAvailableFonts:input_type -> bridge.GetAvailableFontsRequest
+	257, // 248: bridge.BridgeService.SetWidgetStyle:input_type -> bridge.SetWidgetStyleRequest
+	258, // 249: bridge.BridgeService.SetMainMenu:input_type -> bridge.SetMainMenuRequest
+	260, // 250: bridge.BridgeService.SetWidgetContextMenu:input_type -> bridge.SetWidgetContextMenuRequest
+	261, // 251: bridge.BridgeService.SetSystemTray:input_type -> bridge.SetSystemTrayRequest
+	262, // 252: bridge.BridgeService.SendNotification:input_type -> bridge.SendNotificationRequest
+	263, // 253: bridge.BridgeService.ClipboardGet:input_type -> bridge.ClipboardGetRequest
+	265, // 254: bridge.BridgeService.ClipboardSet:input_type -> bridge.ClipboardSetRequest
+	266, // 255: bridge.BridgeService.PreferencesGet:input_type -> bridge.PreferencesGetRequest
+	268, // 256: bridge.BridgeService.PreferencesSet:input_type -> bridge.PreferencesSetRequest
+	269, // 257: bridge.BridgeService.PreferencesRemove:input_type -> bridge.PreferencesRemoveRequest
+	270, // 258: bridge.BridgeService.SetDraggable:input_type -> bridge.SetDraggableRequest
+	271, // 259: bridge.BridgeService.SetDroppable:input_type -> bridge.SetDroppableRequest
+	64,  // 260: bridge.BridgeService.ClickWidget:input_type -> bridge.ClickWidgetRequest
+	65,  // 261: bridge.BridgeService.TypeText:input_type -> bridge.TypeTextRequest
+	66,  // 262: bridge.BridgeService.DoubleTapWidget:input_type -> bridge.DoubleTapWidgetRequest
+	67,  // 263: bridge.BridgeService.RightClickWidget:input_type -> bridge.RightClickWidgetRequest
+	68,  // 264: bridge.BridgeService.DragWidget:input_type -> bridge.DragWidgetRequest
+	272, // 265: bridge.BridgeService.HoverWidget:input_type -> bridge.HoverWidgetRequest
+	273, // 266: bridge.BridgeService.FocusWidget:input_type -> bridge.FocusWidgetRequest
+	274, // 267: bridge.BridgeService.FocusNext:input_type -> bridge.FocusNextRequest
+	275, // 268: bridge.BridgeService.FocusPrevious:input_type -> bridge.FocusPreviousRequest
+	276, // 269: bridge.BridgeService.SubmitEntry:input_type -> bridge.SubmitEntryRequest
+	277, // 270: bridge.BridgeService.DragCanvas:input_type -> bridge.DragCanvasRequest
+	278, // 271: bridge.BridgeService.ScrollCanvas:input_type -> bridge.ScrollCanvasRequest
+	69,  // 272: bridge.BridgeService.RegisterCustomId:input_type -> bridge.RegisterCustomIdRequest
+	279, // 273: bridge.BridgeService.RegisterTestId:input_type -> bridge.RegisterTestIdRequest
+	280, // 274: bridge.BridgeService.GetParent:input_type -> bridge.GetParentRequest
+	70,  // 275: bridge.BridgeService.FindWidget:input_type -> bridge.FindWidgetRequest
+	72,  // 276: bridge.BridgeService.GetWidgetInfo:input_type -> bridge.GetWidgetInfoRequest
+	74,  // 277: bridge.BridgeService.GetAllWidgets:input_type -> bridge.GetAllWidgetsRequest
+	282, // 278: bridge.BridgeService.SetAccessibility:input_type -> bridge.SetAccessibilityRequest
+	283, // 279: bridge.BridgeService.EnableAccessibility:input_type -> bridge.EnableAccessibilityRequest
+	284, // 280: bridge.BridgeService.DisableAccessibility:input_type -> bridge.DisableAccessibilityRequest
+	285, // 281: bridge.BridgeService.Announce:input_type -> bridge.AnnounceRequest
+	286, // 282: bridge.BridgeService.StopSpeech:input_type -> bridge.StopSpeechRequest
+	287, // 283: bridge.BridgeService.SetWidgetEvents:input_type -> bridge.SetWidgetEventsRequest
+	78,  // 284: bridge.BridgeService.SubscribeEvents:input_type -> bridge.EventSubscription
+	79,  // 285: bridge.BridgeService.Quit:input_type -> bridge.QuitRequest
+	8,   // 286: bridge.BridgeService.CreateWindow:output_type -> bridge.Response
+	8,   // 287: bridge.BridgeService.ShowWindow:output_type -> bridge.Response
+	8,   // 288: bridge.BridgeService.SetContent:output_type -> bridge.Response
+	8,   // 289: bridge.BridgeService.ResizeWindow:output_type -> bridge.Response
+	8,   // 290: bridge.BridgeService.SetWindowTitle:output_type -> bridge.Response
+	8,   // 291: bridge.BridgeService.CenterWindow:output_type -> bridge.Response
+	8,   // 292: bridge.BridgeService.SetWindowFullScreen:output_type -> bridge.Response
+	8,   // 293: bridge.BridgeService.CloseWindow:output_type -> bridge.Response
+	8,   // 294: bridge.BridgeService.SetWindowIcon:output_type -> bridge.Response
+	8,   // 295: bridge.BridgeService.SetWindowCloseIntercept:output_type -> bridge.Response
+	8,   // 296: bridge.BridgeService.CloseInterceptResponse:output_type -> bridge.Response
+	8,   // 297: bridge.BridgeService.CaptureWindow:output_type -> bridge.Response
+	8,   // 298: bridge.BridgeService.CreateImage:output_type -> bridge.Response
+	8,   // 299: bridge.BridgeService.CreateLabel:output_type -> bridge.Response
+	8,   // 300: bridge.BridgeService.CreateSeparator:output_type -> bridge.Response
+	8,   // 301: bridge.BridgeService.CreateSpacer:output_type -> bridge.Response
+	8,   // 302: bridge.BridgeService.CreateHyperlink:output_type -> bridge.Response
+	8,   // 303: bridge.BridgeService.CreateProgressBar:output_type -> bridge.Response
+	8,   // 304: bridge.BridgeService.CreateActivity:output_type -> bridge.Response
+	8,   // 305: bridge.BridgeService.CreateRichText:output_type -> bridge.Response
+	8,   // 306: bridge.BridgeService.CreateIcon:output_type -> bridge.Response
+	8,   // 307: bridge.BridgeService.CreateFileIcon:output_type -> bridge.Response
+	8,   // 308: bridge.BridgeService.CreateCalendar:output_type -> bridge.Response
+	8,   // 309: bridge.BridgeService.CreateColorCell:output_type -> bridge.Response
+	8,   // 310: bridge.BridgeService.UpdateColorCell:output_type -> bridge.Response
+	8,   // 311: bridge.BridgeService.CreateButton:output_type -> bridge.Response
+	8,   // 312: bridge.BridgeService.CreateEntry:output_type -> bridge.Response
+	8,   // 313: bridge.BridgeService.CreateCheckbox:output_type -> bridge.Response
+	8,   // 314: bridge.BridgeService.CreateSelect:output_type -> bridge.Response
+	8,   // 315: bridge.BridgeService.CreateSlider:output_type -> bridge.Response
+	8,   // 316: bridge.BridgeService.CreateRadioGroup:output_type -> bridge.Response
+	8,   // 317: bridge.BridgeService.CreateCheckGroup:output_type -> bridge.Response
+	8,   // 318: bridge.BridgeService.CreateSelectEntry:output_type -> bridge.Response
+	8,   // 319: bridge.BridgeService.CreateCompletionEntry:output_type -> bridge.Response
+	8,   // 320: bridge.BridgeService.SetCompletionEntryOptions:output_type -> bridge.Response
+	8,   // 321: bridge.BridgeService.ShowCompletion:output_type -> bridge.Response
+	8,   // 322: bridge.BridgeService.HideCompletion:output_type -> bridge.Response
+	8,   // 323: bridge.BridgeService.CreateDateEntry:output_type -> bridge.Response
+	8,   // 324: bridge.BridgeService.CreateVBox:output_type -> bridge.Response
+	8,   // 325: bridge.BridgeService.CreateHBox:output_type -> bridge.Response
+	8,   // 326: bridge.BridgeService.CreateScroll:output_type -> bridge.Response
+	8,   // 327: bridge.BridgeService.SetScrollMinHeight:output_type -> bridge.Response
+	8,   // 328: bridge.BridgeService.SetScrollMinSize:output_type -> bridge.Response
+	8,   // 329: bridge.BridgeService.CreateGrid:output_type -> bridge.Response
+	8,   // 330: bridge.BridgeService.CreateCenter:output_type -> bridge.Response
+	8,   // 331: bridge.BridgeService.CreateAspectRatio:output_type -> bridge.Response
+	8,   // 332: bridge.BridgeService.CreateClip:output_type -> bridge.Response
+	8,   // 333: bridge.BridgeService.CreateMax:output_type -> bridge.Response
+	8,   // 334: bridge.BridgeService.CreateStack:output_type -> bridge.Response
+	8,   // 335: bridge.BridgeService.CreateCard:output_type -> bridge.Response
+	8,   // 336: bridge.BridgeService.CreateAccordion:output_type -> bridge.Response
+	8,   // 337: bridge.BridgeService.CreateForm:output_type -> bridge.Response
+	8,   // 338: bridge.BridgeService.CreateBorder:output_type -> bridge.Response
+	8,   // 339: bridge.BridgeService.CreateGridWrap:output_type -> bridge.Response
+	8,   // 340: bridge.BridgeService.CreateAdaptiveGrid:output_type -> bridge.Response
+	8,   // 341: bridge.BridgeService.CreatePadded:output_type -> bridge.Response
+	8,   // 342: bridge.BridgeService.CreateSplit:output_type -> bridge.Response
+	8,   // 343: bridge.BridgeService.CreateTabs:output_type -> bridge.Response
+	8,   // 344: bridge.BridgeService.CreateDocTabs:output_type -> bridge.Response
+	8,   // 345: bridge.BridgeService.CreateThemeOverride:output_type -> bridge.Response
+	8,   // 346: bridge.BridgeService.CreateInnerWindow:output_type -> bridge.Response
+	8,   // 347: bridge.BridgeService.CreateNavigation:output_type -> bridge.Response
+	8,   // 348: bridge.BridgeService.CreatePopup:output_type -> bridge.Response
+	8,   // 349: bridge.BridgeService.CreateMultipleWindows:output_type -> bridge.Response
+	8,   // 350: bridge.BridgeService.CreateTable:output_type -> bridge.Response
+	8,   // 351: bridge.BridgeService.CreateTree:output_type -> bridge.Response
+	8,   // 352: bridge.BridgeService.CreateList:output_type -> bridge.Response
+	8,   // 353: bridge.BridgeService.CreateMenu:output_type -> bridge.Response
+	8,   // 354: bridge.BridgeService.CreateToolbar:output_type -> bridge.Response
+	8,   // 355: bridge.BridgeService.CreateTextGrid:output_type -> bridge.Response
+	8,   // 356: bridge.BridgeService.CreateDesktopCanvas:output_type -> bridge.Response
+	8,   // 357: bridge.BridgeService.CreateDesktopIcon:output_type -> bridge.Response
+	8,   // 358: bridge.BridgeService.MoveDesktopIcon:output_type -> bridge.Response
+	8,   // 359: bridge.BridgeService.UpdateDesktopIconLabel:output_type -> bridge.Response
+	8,   // 360: bridge.BridgeService.UpdateDesktopIconColor:output_type -> bridge.Response
+	8,   // 361: bridge.BridgeService.CreateCanvasLine:output_type -> bridge.Response
+	8,   // 362: bridge.BridgeService.CreateCanvasCircle:output_type -> bridge.Response
+	8,   // 363: bridge.BridgeService.CreateCanvasRectangle:output_type -> bridge.Response
+	8,   // 364: bridge.BridgeService.CreateCanvasText:output_type -> bridge.Response
+	8,   // 365: bridge.BridgeService.CreateCanvasRaster:output_type -> bridge.Response
+	8,   // 366: bridge.BridgeService.CreateCanvasLinearGradient:output_type -> bridge.Response
+	8,   // 367: bridge.BridgeService.CreateCanvasRadialGradient:output_type -> bridge.Response
+	8,   // 368: bridge.BridgeService.CreateCanvasArc:output_type -> bridge.Response
+	8,   // 369: bridge.BridgeService.CreateCanvasPolygon:output_type -> bridge.Response
+	8,   // 370: bridge.BridgeService.CreateTappableCanvasRaster:output_type -> bridge.Response
+	8,   // 371: bridge.BridgeService.CreateCanvasShader:output_type -> bridge.Response
+	8,   // 372: bridge.BridgeService.UpdateCanvasLine:output_type -> bridge.Response
+	8,   // 373: bridge.BridgeService.UpdateCanvasCircle:output_type -> bridge.Response
+	8,   // 374: bridge.BridgeService.UpdateCanvasRectangle:output_type -> bridge.Response
+	8,   // 375: bridge.BridgeService.UpdateCanvasText:output_type -> bridge.Response
+	8,   // 376: bridge.BridgeService.UpdateCanvasRaster:output_type -> bridge.Response
+	8,   // 377: bridge.BridgeService.FillCanvasRasterRect:output_type -> bridge.Response
+	8,   // 378: bridge.BridgeService.BlitToCanvasRaster:output_type -> bridge.Response
+	8,   // 379: bridge.BridgeService.UpdateCanvasLinearGradient:output_type -> bridge.Response
+	8,   // 380: bridge.BridgeService.UpdateCanvasRadialGradient:output_type -> bridge.Response
+	8,   // 381: bridge.BridgeService.UpdateCanvasArc:output_type -> bridge.Response
+	8,   // 382: bridge.BridgeService.UpdateCanvasPolygon:output_type -> bridge.Response
+	8,   // 383: bridge.BridgeService.UpdateTappableCanvasRaster:output_type -> bridge.Response
+	8,   // 384: bridge.BridgeService.SetTappableCanvasImage:output_type -> bridge.Response
+	8,   // 385: bridge.BridgeService.SetTappableCanvasRect:output_type -> bridge.Response
+	8,   // 386: bridge.BridgeService.UpdateCanvasShader:output_type -> bridge.Response
+	8,   // 387: bridge.BridgeService.SaveRasterBackground:output_type -> bridge.Response
+	8,   // 388: bridge.BridgeService.CreateRasterSprite:output_type -> bridge.Response
+	8,   // 389: bridge.BridgeService.MoveRasterSprite:output_type -> bridge.Response
+	8,   // 390: bridge.BridgeService.SetRasterSpriteResource:output_type -> bridge.Response
+	8,   // 391: bridge.BridgeService.SetRasterSpriteVisible:output_type -> bridge.Response
+	8,   // 392: bridge.BridgeService.SetRasterSpriteZIndex:output_type -> bridge.Response
+	8,   // 393: bridge.BridgeService.RemoveRasterSprite:output_type -> bridge.Response
+	8,   // 394: bridge.BridgeService.FlushRasterSprites:output_type -> bridge.Response
+	8,   // 395: bridge.BridgeService.RegisterResource:output_type -> bridge.Response
+	8,   // 396: bridge.BridgeService.UnregisterResource:output_type -> bridge.Response
+	8,   // 397: bridge.BridgeService.UpdateImage:output_type -> bridge.Response
+	8,   // 398: bridge.BridgeService.SetText:output_type -> bridge.Response
+	56,  // 399: bridge.BridgeService.GetText:output_type -> bridge.GetTextResponse
+	8,   // 400: bridge.BridgeService.SetWidgetCallback:output_type -> bridge.Response
+	8,   // 401: bridge.BridgeService.SetProgress:output_type -> bridge.Response
+	60,  // 402: bridge.BridgeService.GetProgress:output_type -> bridge.GetProgressResponse
+	8,   // 403: bridge.BridgeService.SetChecked:output_type -> bridge.Response
+	63,  // 404: bridge.BridgeService.GetChecked:output_type -> bridge.GetCheckedResponse
+	8,   // 405: bridge.BridgeService.SetValue:output_type -> bridge.Response
+	159, // 406: bridge.BridgeService.GetValue:output_type -> bridge.GetValueResponse
+	8,   // 407: bridge.BridgeService.SetSelected:output_type -> bridge.Response
+	162, // 408: bridge.BridgeService.GetSelected:output_type -> bridge.GetSelectedResponse
+	8,   // 409: bridge.BridgeService.SetSelectOptions:output_type -> bridge.Response
+	8,   // 410: bridge.BridgeService.SetSelectEntryOptions:output_type -> bridge.Response
+	8,   // 411: bridge.BridgeService.SetDate:output_type -> bridge.Response
+	167, // 412: bridge.BridgeService.GetDate:output_type -> bridge.GetDateResponse
+	8,   // 413: bridge.BridgeService.SetIconResource:output_type -> bridge.Response
+	8,   // 414: bridge.BridgeService.SetFileIconURI:output_type -> bridge.Response
+	8,   // 415: bridge.BridgeService.SetFileIconSelected:output_type -> bridge.Response
+	8,   // 416: bridge.BridgeService.SetRadioSelected:output_type -> bridge.Response
+	173, // 417: bridge.BridgeService.GetRadioSelected:output_type -> bridge.GetRadioSelectedResponse
+	8,   // 418: bridge.BridgeService.SetRadioOptions:output_type -> bridge.Response
+	176, // 419: bridge.BridgeService.GetCheckGroupSelected:output_type -> bridge.GetCheckGroupSelectedResponse
+	8,   // 420: bridge.BridgeService.SetCheckGroupSelected:output_type -> bridge.Response
+	8,   // 421: bridge.BridgeService.ShowWidget:output_type -> bridge.Response
+	8,   // 422: bridge.BridgeService.HideWidget:output_type -> bridge.Response
+	8,   // 423: bridge.BridgeService.EnableWidget:output_type -> bridge.Response
+	8,   // 424: bridge.BridgeService.DisableWidget:output_type -> bridge.Response
+	183, // 425: bridge.BridgeService.IsEnabled:output_type -> bridge.IsEnabledResponse
+	8,   // 426: bridge.BridgeService.ClearWidgets:output_type -> bridge.Response
+	8,   // 427: bridge.BridgeService.StartActivity:output_type -> bridge.Response
+	8,   // 428: bridge.BridgeService.StopActivity:output_type -> bridge.Response
+	8,   // 429: bridge.BridgeService.StartProgressInfinite:output_type -> bridge.Response
+	8,   // 430: bridge.BridgeService.StopProgressInfinite:output_type -> bridge.Response
+	190, // 431: bridge.BridgeService.IsProgressRunning:output_type -> bridge.IsProgressRunningResponse
+	8,   // 432: bridge.BridgeService.ContainerAdd:output_type -> bridge.Response
+	8,   // 433: bridge.BridgeService.ContainerRemoveAll:output_type -> bridge.Response
+	8,   // 434: bridge.BridgeService.ContainerRefresh:output_type -> bridge.Response
+	195, // 435: bridge.BridgeService.GetContainerObjects:output_type -> bridge.GetContainerObjectsResponse
+	8,   // 436: bridge.BridgeService.DocTabsAppend:output_type -> bridge.Response
+	8,   // 437: bridge.BridgeService.DocTabsRemove:output_type -> bridge.Response
+	8,   // 438: bridge.BridgeService.DocTabsSelect:output_type -> bridge.Response
+	8,   // 439: bridge.BridgeService.MultipleWindowsAddWindow:output_type -> bridge.Response
+	8,   // 440: bridge.BridgeService.MultipleWindowsRemoveWindow:output_type -> bridge.Response
+	8,   // 441: bridge.BridgeService.ShowPopup:output_type -> bridge.Response
+	8,   // 442: bridge.BridgeService.HidePopup:output_type -> bridge.Response
+	8,   // 443: bridge.BridgeService.MovePopup:output_type -> bridge.Response
+	8,   // 444: bridge.BridgeService.NavigationPush:output_type -> bridge.Response
+	8,   // 445: bridge.BridgeService.NavigationBack:output_type -> bridge.Response
+	8,   // 446: bridge.BridgeService.NavigationForward:output_type -> bridge.Response
+	8,   // 447: bridge.BridgeService.NavigationSetTitle:output_type -> bridge.Response
+	8,   // 448: bridge.BridgeService.InnerWindowClose:output_type -> bridge.Response
+	8,   // 449: bridge.BridgeService.SetInnerWindowTitle:output_type -> bridge.Response
+	8,   // 450: bridge.BridgeService.ShowInfo:output_type -> bridge.Response
+	8,   // 451: bridge.BridgeService.ShowError:output_type -> bridge.Response
+	8,   // 452: bridge.BridgeService.ShowConfirm:output_type -> bridge.Response
+	8,   // 453: bridge.BridgeService.ShowFileOpen:output_type -> bridge.Response
+	8,   // 454: bridge.BridgeService.ShowFileSave:output_type -> bridge.Response
+	8,   // 455: bridge.BridgeService.ShowFolderOpen:output_type -> bridge.Response
+	8,   // 456: bridge.BridgeService.ShowForm:output_type -> bridge.Response
+	8,   // 457: bridge.BridgeService.ShowCustom:output_type -> bridge.Response
+	8,   // 458: bridge.BridgeService.ShowCustomConfirm:output_type -> bridge.Response
+	8,   // 459: bridge.BridgeService.ShowCustomWithoutButtons:output_type -> bridge.Response
+	8,   // 460: bridge.BridgeService.HideCustomDialog:output_type -> bridge.Response
+	222, // 461: bridge.BridgeService.GetActiveDialogs:output_type -> bridge.GetActiveDialogsResponse
+	8,   // 462: bridge.BridgeService.DismissActiveDialog:output_type -> bridge.Response
+	8,   // 463: bridge.BridgeService.ShowProgressDialog:output_type -> bridge.Response
+	8,   // 464: bridge.BridgeService.UpdateProgressDialog:output_type -> bridge.Response
+	8,   // 465: bridge.BridgeService.HideProgressDialog:output_type -> bridge.Response
+	8,   // 466: bridge.BridgeService.ShowColorPicker:output_type -> bridge.Response
+	8,   // 467: bridge.BridgeService.ShowEntryDialog:output_type -> bridge.Response
+	230, // 468: bridge.BridgeService.GetTableData:output_type -> bridge.GetTableDataResponse
+	8,   // 469: bridge.BridgeService.UpdateTableData:output_type -> bridge.Response
+	233, // 470: bridge.BridgeService.GetListData:output_type -> bridge.GetListDataResponse
+	8,   // 471: bridge.BridgeService.UpdateListData:output_type -> bridge.Response
+	8,   // 472: bridge.BridgeService.UnselectAllList:output_type -> bridge.Response
+	237, // 473: bridge.BridgeService.GetTextGridText:output_type -> bridge.GetTextGridTextResponse
+	8,   // 474: bridge.BridgeService.SetTextGridText:output_type -> bridge.Response
+	8,   // 475: bridge.BridgeService.SetTextGridCell:output_type -> bridge.Response
+	8,   // 476: bridge.BridgeService.SetTextGridRow:output_type -> bridge.Response
+	8,   // 477: bridge.BridgeService.SetTextGridStyle:output_type -> bridge.Response
+	8,   // 478: bridge.BridgeService.SetTextGridStyleRange:output_type -> bridge.Response
+	245, // 479: bridge.BridgeService.GetToolbarItems:output_type -> bridge.GetToolbarItemsResponse
+	8,   // 480: bridge.BridgeService.ClickToolbarAction:output_type -> bridge.Response
+	8,   // 481: bridge.BridgeService.SetTheme:output_type -> bridge.Response
+	249, // 482: bridge.BridgeService.GetTheme:output_type -> bridge.GetThemeResponse
+	8,   // 483: bridge.BridgeService.SetFontScale:output_type -> bridge.Response
+	8,   // 484: bridge.BridgeService.SetCustomTheme:output_type -> bridge.Response
+	8,   // 485: bridge.BridgeService.ClearCustomTheme:output_type -> bridge.Response
+	8,   // 486: bridge.BridgeService.SetCustomFont:output_type -> bridge.Response
+	8,   // 487: bridge.BridgeService.ClearCustomFont:output_type -> bridge.Response
+	256, // 488: bridge.BridgeService.GetAvailableFonts:output_type -> bridge.GetAvailableFontsResponse
+	8,   // 489: bridge.BridgeService.SetWidgetStyle:output_type -> bridge.Response
+	8,   // 490: bridge.BridgeService.SetMainMenu:output_type -> bridge.Response
+	8,   // 491: bridge.BridgeService.SetWidgetContextMenu:output_type -> bridge.Response
+	8,   // 492: bridge.BridgeService.SetSystemTray:output_type -> bridge.Response
+	8,   // 493: bridge.BridgeService.SendNotification:output_type -> bridge.Response
+	264, // 494: bridge.BridgeService.ClipboardGet:output_type -> bridge.ClipboardGetResponse
+	8,   // 495: bridge.BridgeService.ClipboardSet:output_type -> bridge.Response
+	267, // 496: bridge.BridgeService.PreferencesGet:output_type -> bridge.PreferencesGetResponse
+	8,   // 497: bridge.BridgeService.PreferencesSet:output_type -> bridge.Response
+	8,   // 498: bridge.BridgeService.PreferencesRemove:output_type -> bridge.Response
+	8,   // 499: bridge.BridgeService.SetDraggable:output_type -> bridge.Response
+	8,   // 500: bridge.BridgeService.SetDroppable:output_type -> bridge.Response
+	8,   // 501: bridge.BridgeService.ClickWidget:output_type -> bridge.Response
+	8,   // 502: bridge.BridgeService.TypeText:output_type -> bridge.Response
+	8,   // 503: bridge.BridgeService.DoubleTapWidget:output_type -> bridge.Response
+	8,   // 504: bridge.BridgeService.RightClickWidget:output_type -> bridge.Response
+	8,   // 505: bridge.BridgeService.DragWidget:output_type -> bridge.Response
+	8,   // 506: bridge.BridgeService.HoverWidget:output_type -> bridge.Response
+	8,   // 507: bridge.BridgeService.FocusWidget:output_type -> bridge.Response
+	8,   // 508: bridge.BridgeService.FocusNext:output_type -> bridge.Response
+	8,   // 509: bridge.BridgeService.FocusPrevious:output_type -> bridge.Response
+	8,   // 510: bridge.BridgeService.SubmitEntry:output_type -> bridge.Response
+	8,   // 511: bridge.BridgeService.DragCanvas:output_type -> bridge.Response
+	8,   // 512: bridge.BridgeService.ScrollCanvas:output_type -> bridge.Response
+	8,   // 513: bridge.BridgeService.RegisterCustomId:output_type -> bridge.Response
+	8,   // 514: bridge.BridgeService.RegisterTestId:output_type -> bridge.Response
+	281, // 515: bridge.BridgeService.GetParent:output_type -> bridge.GetParentResponse
+	71,  // 516: bridge.BridgeService.FindWidget:output_type -> bridge.FindWidgetResponse
+	73,  // 517: bridge.BridgeService.GetWidgetInfo:output_type -> bridge.WidgetInfoResponse
+	75,  // 518: bridge.BridgeService.GetAllWidgets:output_type -> bridge.GetAllWidgetsResponse
+	8,   // 519: bridge.BridgeService.SetAccessibility:output_type -> bridge.Response
+	8,   // 520: bridge.BridgeService.EnableAccessibility:output_type -> bridge.Response
+	8,   // 521: bridge.BridgeService.DisableAccessibility:output_type -> bridge.Response
+	8,   // 522: bridge.BridgeService.Announce:output_type -> bridge.Response
+	8,   // 523: bridge.BridgeService.StopSpeech:output_type -> bridge.Response
+	8,   // 524: bridge.BridgeService.SetWidgetEvents:output_type -> bridge.Response
+	77,  // 525: bridge.BridgeService.SubscribeEvents:output_type -> bridge.Event
+	8,   // 526: bridge.BridgeService.Quit:output_type -> bridge.Response
+	286, // [286:527] is the sub-list for method output_type
+	45,  // [45:286] is the sub-list for method input_type
+	45,  // [45:45] is the sub-list for extension type_name
+	45,  // [45:45] is the sub-list for extension extendee
+	0,   // [0:45] is the sub-list for field type_name
 }
 
 func init() { file_proto_bridge_proto_init() }
@@ -19686,7 +19699,7 @@ func file_proto_bridge_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_bridge_proto_rawDesc), len(file_proto_bridge_proto_rawDesc)),
 			NumEnums:      8,
-			NumMessages:   284,
+			NumMessages:   285,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

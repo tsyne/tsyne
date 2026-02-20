@@ -79,7 +79,8 @@ func (b *Bridge) handleCreateLabel(msg Message) Response {
 		}
 
 		b.mu.Lock()
-		b.widgets[widgetID] = widgetToStore
+		lblResult1 := b.maybeWrapWithEvents(msg, widgetID, widgetToStore)
+		b.widgets[widgetID] = lblResult1
 		b.widgetMeta[widgetID] = WidgetMetadata{Type: "label", Text: text}
 		b.mu.Unlock()
 
@@ -128,7 +129,8 @@ func (b *Bridge) handleCreateLabel(msg Message) Response {
 		}
 
 		b.mu.Lock()
-		b.widgets[widgetID] = widgetToStore
+		lblResult2 := b.maybeWrapWithEvents(msg, widgetID, widgetToStore)
+		b.widgets[widgetID] = lblResult2
 		b.widgetMeta[widgetID] = WidgetMetadata{Type: "label", Text: text}
 		b.mu.Unlock()
 
@@ -193,7 +195,8 @@ func (b *Bridge) handleCreateLabel(msg Message) Response {
 	}
 
 	b.mu.Lock()
-	b.widgets[widgetID] = widgetToStore
+	lblResult3 := b.maybeWrapWithEvents(msg, widgetID, widgetToStore)
+	b.widgets[widgetID] = lblResult3
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "label", Text: text}
 	b.mu.Unlock()
 
@@ -256,7 +259,8 @@ func (b *Bridge) handleCreateHyperlink(msg Message) Response {
 	hyperlink := widget.NewHyperlink(text, parsedURL)
 
 	b.mu.Lock()
-	b.widgets[widgetID] = hyperlink
+	hlResult := b.maybeWrapWithEvents(msg, widgetID, hyperlink)
+	b.widgets[widgetID] = hlResult
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "hyperlink", Text: text, URL: urlStr}
 	b.mu.Unlock()
 
@@ -285,7 +289,8 @@ func (b *Bridge) handleCreateProgressBar(msg Message) Response {
 	}
 
 	b.mu.Lock()
-	b.widgets[widgetID] = progressBar
+	pbResult := b.maybeWrapWithEvents(msg, widgetID, progressBar)
+	b.widgets[widgetID] = pbResult
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "progressbar", Text: ""}
 	b.mu.Unlock()
 
@@ -671,7 +676,8 @@ func (b *Bridge) handleCreateImage(msg Message) Response {
 	}
 
 	b.mu.Lock()
-	b.widgets[widgetID] = widgetToStore
+	imgResult := b.maybeWrapWithEvents(msg, widgetID, widgetToStore)
+	b.widgets[widgetID] = imgResult
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "image", Text: path}
 	b.mu.Unlock()
 

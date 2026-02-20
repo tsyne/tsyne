@@ -327,7 +327,7 @@ service BridgeService {
   rpc DisableAccessibility(DisableAccessibilityRequest) returns (Response);
   rpc Announce(AnnounceRequest) returns (Response);
   rpc StopSpeech(StopSpeechRequest) returns (Response);
-  rpc SetWidgetHoverable(SetWidgetHoverableRequest) returns (Response);
+  rpc SetWidgetEvents(SetWidgetEventsRequest) returns (Response);
 
   // ============================================================================
   // Events (streaming)
@@ -2162,7 +2162,8 @@ message AnnounceRequest {
 message StopSpeechRequest {
 }
 
-message SetWidgetHoverableRequest {
+message SetWidgetEventsRequest {
   string widget_id = 1;
-  string callback_id = 2;
+  uint32 events = 2;  // bitmask of event capabilities
+  map<string, string> cbs = 3;  // event key -> callback ID
 }

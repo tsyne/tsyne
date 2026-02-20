@@ -625,6 +625,37 @@ export class Locator {
   }
 
   /**
+   * Focus this widget via Fyne's canvas.Focus() path.
+   * Exercises the full Fyne focus management: canvas.Focus(widget) → FocusGained().
+   * @example
+   * await ctx.getById('focusBtn').focus();
+   */
+  async focus(): Promise<void> {
+    const widgetId = await this.find();
+    if (!widgetId) {
+      throwCallerError(`No widget found with ${this.selectorType}: ${this.selector}`, this.focus);
+    }
+    await this.bridge.send('focusWidget', { widgetId }, this.focus);
+  }
+
+  /**
+   * Fire an event directly on the widget's EventDispatcher (test mode only).
+   * Exercises the real Go→TS callback path without needing Fyne input events.
+   * @param event Event kind key matching cbKeyToEventKind: "mouseIn", "mouseOut", "keyDown", etc.
+   * @param data Optional event data (x, y, button, key, dx, dy)
+   * @example
+   * await ctx.getById('cell').stimulate('mouseIn', { x: 10, y: 20 });
+   * await ctx.getById('input').stimulate('keyDown', { key: 'A' });
+   */
+  async stimulate(event: string, data?: Record<string, number | string>): Promise<void> {
+    const widgetId = await this.find();
+    if (!widgetId) {
+      throwCallerError(`No widget found with ${this.selectorType}: ${this.selector}`, this.stimulate);
+    }
+    await this.bridge.send('stimulateEvent', { widgetId, event, ...data }, this.stimulate);
+  }
+
+  /**
    * Get the text of the first widget matching this locator
    * Returns a TextValue that can be:
    * - Awaited directly: const text = await locator.getText();

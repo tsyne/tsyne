@@ -1303,6 +1303,17 @@ export class GrpcBridgeConnection implements BridgeInterface {
         }
         return { method: 'updateImage', request: updateRequest };
 
+      // Widget events (batched bitmask-based)
+      case 'setWidgetEvents':
+        return {
+          method: 'setWidgetEvents',
+          request: {
+            widgetId: payload.widgetId,
+            events: payload.events || 0,
+            cbs: payload.cbs || {}
+          }
+        };
+
       default:
         // Not implemented in gRPC
         return { method: null, request: null };

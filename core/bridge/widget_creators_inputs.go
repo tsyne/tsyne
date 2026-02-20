@@ -58,11 +58,12 @@ func (b *Bridge) handleCreateButton(msg Message) Response {
 	}
 
 	b.mu.Lock()
-	b.widgets[widgetID] = btn
-	b.widgetMeta[widgetID] = WidgetMetadata{Type: "button", Text: text}
 	if hasCallback {
 		b.callbacks[widgetID] = callbackID
 	}
+	result := b.maybeWrapWithEvents(msg, widgetID, btn)
+	b.widgets[widgetID] = result
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "button", Text: text}
 	b.mu.Unlock()
 
 	return Response{
@@ -299,7 +300,8 @@ func (b *Bridge) handleCreateEntry(msg Message) Response {
 	}
 
 	b.mu.Lock()
-	b.widgets[widgetID] = widgetToStore
+	result := b.maybeWrapWithEvents(msg, widgetID, widgetToStore)
+	b.widgets[widgetID] = result
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "entry", Text: "", Placeholder: placeholder}
 	b.mu.Unlock()
 
@@ -330,7 +332,8 @@ func (b *Bridge) handleCreateMultiLineEntry(msg Message) Response {
 	}
 
 	b.mu.Lock()
-	b.widgets[widgetID] = entry
+	resultObj := b.maybeWrapWithEvents(msg, widgetID, entry)
+	b.widgets[widgetID] = resultObj
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "multilineentry", Text: ""}
 	b.mu.Unlock()
 
@@ -362,7 +365,8 @@ func (b *Bridge) handleCreatePasswordEntry(msg Message) Response {
 	}
 
 	b.mu.Lock()
-	b.widgets[widgetID] = entry
+	pwResult := b.maybeWrapWithEvents(msg, widgetID, entry)
+	b.widgets[widgetID] = pwResult
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "passwordentry", Text: ""}
 	b.mu.Unlock()
 
@@ -392,11 +396,12 @@ func (b *Bridge) handleCreateCheckbox(msg Message) Response {
 	// Focus callbacks are not available for checkbox widgets
 
 	b.mu.Lock()
-	b.widgets[widgetID] = check
-	b.widgetMeta[widgetID] = WidgetMetadata{Type: "checkbox", Text: text}
 	if hasCallback {
 		b.callbacks[widgetID] = callbackID
 	}
+	checkResult := b.maybeWrapWithEvents(msg, widgetID, check)
+	b.widgets[widgetID] = checkResult
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "checkbox", Text: text}
 	b.mu.Unlock()
 
 	return Response{
@@ -431,11 +436,12 @@ func (b *Bridge) handleCreateSelect(msg Message) Response {
 	// Focus callbacks are not available for select widgets
 
 	b.mu.Lock()
-	b.widgets[widgetID] = sel
-	b.widgetMeta[widgetID] = WidgetMetadata{Type: "select", Text: ""}
 	if hasCallback {
 		b.callbacks[widgetID] = callbackID
 	}
+	selResult := b.maybeWrapWithEvents(msg, widgetID, sel)
+	b.widgets[widgetID] = selResult
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "select", Text: ""}
 	b.mu.Unlock()
 
 	return Response{
@@ -507,11 +513,12 @@ func (b *Bridge) handleCreateSelectEntry(msg Message) Response {
 	}
 
 	b.mu.Lock()
-	b.widgets[widgetID] = selectEntry
-	b.widgetMeta[widgetID] = WidgetMetadata{Type: "selectentry", Text: "", Placeholder: placeholder}
 	if hasOnChanged {
 		b.callbacks[widgetID] = onChangedCallbackID
 	}
+	seResult := b.maybeWrapWithEvents(msg, widgetID, selectEntry)
+	b.widgets[widgetID] = seResult
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "selectentry", Text: "", Placeholder: placeholder}
 	b.mu.Unlock()
 
 	return Response{
@@ -561,11 +568,12 @@ func (b *Bridge) handleCreateSlider(msg Message) Response {
 	// Focus callbacks are not available for slider widgets
 
 	b.mu.Lock()
-	b.widgets[widgetID] = slider
-	b.widgetMeta[widgetID] = WidgetMetadata{Type: "slider", Text: ""}
 	if hasCallback {
 		b.callbacks[widgetID] = callbackID
 	}
+	sliderResult := b.maybeWrapWithEvents(msg, widgetID, slider)
+	b.widgets[widgetID] = sliderResult
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "slider", Text: ""}
 	b.mu.Unlock()
 
 	return Response{
@@ -616,7 +624,8 @@ func (b *Bridge) handleCreateRadioGroup(msg Message) Response {
 	}
 
 	b.mu.Lock()
-	b.widgets[id] = radio
+	radioResult := b.maybeWrapWithEvents(msg, id, radio)
+	b.widgets[id] = radioResult
 	b.widgetMeta[id] = WidgetMetadata{
 		Type: "radiogroup",
 		Text: "", // Radio groups don't have a single text value
@@ -669,7 +678,8 @@ func (b *Bridge) handleCreateCheckGroup(msg Message) Response {
 	}
 
 	b.mu.Lock()
-	b.widgets[id] = checkGroup
+	checkGroupResult := b.maybeWrapWithEvents(msg, id, checkGroup)
+	b.widgets[id] = checkGroupResult
 	b.widgetMeta[id] = WidgetMetadata{
 		Type: "checkgroup",
 		Text: "", // Check groups don't have a single text value
@@ -714,11 +724,12 @@ func (b *Bridge) handleCreateDateEntry(msg Message) Response {
 	}
 
 	b.mu.Lock()
-	b.widgets[widgetID] = dateEntry
-	b.widgetMeta[widgetID] = WidgetMetadata{Type: "dateentry", Text: ""}
 	if hasCallback {
 		b.callbacks[widgetID] = callbackID
 	}
+	dateResult := b.maybeWrapWithEvents(msg, widgetID, dateEntry)
+	b.widgets[widgetID] = dateResult
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "dateentry", Text: ""}
 	b.mu.Unlock()
 
 	return Response{

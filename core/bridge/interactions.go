@@ -47,14 +47,6 @@ func (b *Bridge) handleClickWidget(msg Message) Response {
 			ID:      msg.ID,
 			Success: true,
 		}
-	} else if tsyneBtn, ok := obj.(*TsyneButton); ok {
-		// Handle TsyneButton (custom button with hover/mouse events)
-		// Invoke button callback directly
-		tsyneBtn.OnTapped()
-		return Response{
-			ID:      msg.ID,
-			Success: true,
-		}
 	} else if check, ok := obj.(*widget.Check); ok {
 		// Handle checkbox clicks
 		check.Checked = !check.Checked
@@ -175,12 +167,6 @@ func (b *Bridge) clickThroughContent(msg Message, content fyne.CanvasObject) Res
 	// Handle Button directly
 	if btn, ok := content.(*widget.Button); ok {
 		btn.OnTapped()
-		return Response{ID: msg.ID, Success: true}
-	}
-
-	// Handle HoverableButton
-	if hoverBtn, ok := content.(*HoverableButton); ok {
-		hoverBtn.OnTapped()
 		return Response{ID: msg.ID, Success: true}
 	}
 
