@@ -446,7 +446,7 @@ export class FallingBlocksUI {
         this.canvas = this.a.tappableCanvasRaster(CANVAS_WIDTH, CANVAS_HEIGHT, {
           onTap: (x) => this.handleTap(x),
           onKeyDown: (key) => this.handleKeyDown(key),
-        });
+        }).withId('gameCanvas');
 
         // Next piece panel
         this.a.vbox(() => {
@@ -721,6 +721,19 @@ export class FallingBlocksUI {
   cleanup(): void {
     if (this.gameLoop) clearInterval(this.gameLoop);
   }
+
+  // ── Test Helpers ──
+
+  getGame(): FallingBlocksGame { return this.game; }
+  /** Stop the game loop (for deterministic test assertions). */
+  testStopLoop(): void {
+    if (this.gameLoop) {
+      clearInterval(this.gameLoop);
+      this.gameLoop = null;
+    }
+  }
+  /** Dispatch a key event through the same handler as TappableCanvasRaster's onKeyDown. */
+  testKeyDown(key: string): void { this.handleKeyDown(key); }
 }
 
 // ============================================================================

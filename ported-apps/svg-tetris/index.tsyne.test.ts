@@ -18,6 +18,7 @@ import { TestContext } from 'tsyne';
 import type { App, Window } from 'tsyne';
 import { CosyneTest, cvg, CvgContext, TestJournal } from 'cosyne';
 import { TetrisEngine, ROWS, COLS } from './tetris-engine';
+import { createSvgTetrisApp, SvgTetrisUI } from './index';
 
 const SCREENSHOT_DIR = path.join(__dirname, 'screenshots');
 
@@ -196,4 +197,199 @@ describe('SVG Tetris — Visual', () => {
     await journal.log('\n── Game test passed ──');
     await ctx.wait(pause);
   }, slow ? 60000 : 30000);
+});
+
+// ─── Keyboard-Driven Integration Tests ───────────────────────
+
+describe('SVG Tetris — Keyboard', () => {
+  let cosyneTest: CosyneTest;
+
+  afterEach(async () => {
+    if (cosyneTest) {
+      await cosyneTest.cleanup();
+    }
+  });
+
+  /** Helper: create the real app and wait for it to be ready. */
+  async function setup(): Promise<{ ui: SvgTetrisUI; ctx: TestContext; cvgCtx: CvgContext; engine: TetrisEngine }> {
+    cosyneTest = new CosyneTest({ headed: true });
+    let ui: SvgTetrisUI = null as any;
+
+    const testApp = await cosyneTest.createApp(async (a: App) => {
+      ui = await createSvgTetrisApp(a);
+    });
+
+    const ctx = cosyneTest.getContext();
+    await testApp.run();
+    await ctx.wait(500);
+
+    const cvgCtx = ui.getCvgContext();
+    const engine = ui.getEngine();
+    return { ui, ctx, cvgCtx, engine };
+  }
+
+  it("'R' starts a game", async () => {
+    const { ui, ctx, cvgCtx, engine } = await setup();
+
+    expect(engine.gameState).toBe('ready');
+
+    cvgCtx.dispatchKeyDown('R');
+    ui.testStopLoop();
+    await ctx.wait(50);
+
+    expect(engine.gameState).toBe('running');
+    expect(engine.score).toBe(0);
+    expect(engine.lines).toBe(0);
+    expect(engine.getCurrentPiece()).not.toBeNull();
+    expect(engine.getNextPiece()).not.toBeNull();
+  }, 15000);
+
+  it("'P' pauses and unpauses", async () => {
+    const { ui, ctx, cvgCtx, engine } = await setup();
+
+    cvgCtx.dispatchKeyDown('R');
+    ui.testStopLoop();
+    await ctx.wait(50);
+    expect(engine.gameState).toBe('running');
+
+    cvgCtx.dispatchKeyDown('P');
+    await ctx.wait(50);
+    expect(engine.gameState).toBe('paused');
+
+    cvgCtx.dispatchKeyDown('P');
+    ui.testStopLoop();
+    await ctx.wait(50);
+    expect(engine.gameState).toBe('running');
+  }, 15000);
+
+  it("'Left'/'Right' move the piece horizontally", async () => {
+    const { ui, ctx, cvgCtx, engine } = await setup();
+
+    cvgCtx.dispatchKeyDown('R');
+    ui.testStopLoop();
+    await ctx.wait(50);
+
+    const startX = engine.getCurrentPiece()!.x;
+
+    cvgCtx.dispatchKeyDown('Left');
+    await ctx.wait(50);
+    expect(engine.getCurrentPiece()!.x).toBe(startX - 1);
+
+    cvgCtx.dispatchKeyDown('Right');
+    await ctx.wait(50);
+    expect(engine.getCurrentPiece()!.x).toBe(startX);
+
+    cvgCtx.dispatchKeyDown('Right');
+    await ctx.wait(50);
+    expect(engine.getCurrentPiece()!.x).toBe(startX + 1);
+  }, 15000);
+
+  it("'Up' rotates the piece", async () => {
+    const { ui, ctx, cvgCtx, engine } = await setup();
+
+    cvgCtx.dispatchKeyDown('R');
+    ui.testStopLoop();
+    await ctx.wait(50);
+
+    const piece = engine.getCurrentPiece()!;
+    const startOrientation = piece.orientation;
+    const numOrientations = require('./tetris-engine').SHAPE_DESCRIPTORS[piece.shapeIndex].orientations.length;
+
+    cvgCtx.dispatchKeyDown('Up');
+    await ctx.wait(50);
+
+    const expectedOrientation = (startOrientation + 1) % numOrientations;
+    expect(engine.getCurrentPiece()!.orientation).toBe(expectedOrientation);
+  }, 15000);
+
+  it("'Down' ticks the piece down one row", async () => {
+    const { ui, ctx, cvgCtx, engine } = await setup();
+
+    cvgCtx.dispatchKeyDown('R');
+    ui.testStopLoop();
+    await ctx.wait(50);
+
+    const startY = engine.getCurrentPiece()!.y;
+
+    cvgCtx.dispatchKeyDown('Down');
+    await ctx.wait(50);
+
+    expect(engine.getCurrentPiece()!.y).toBe(startY + 1);
+  }, 15000);
+
+  it("'Space' hard-drops the piece", async () => {
+    const { ui, ctx, cvgCtx, engine } = await setup();
+
+    cvgCtx.dispatchKeyDown('R');
+    ui.testStopLoop();
+    await ctx.wait(50);
+
+    const scoreBefore = engine.score;
+
+    cvgCtx.dispatchKeyDown('Space');
+    await ctx.wait(50);
+
+    // After drop, score increments (lockPiece adds 1) and a new piece spawns
+    expect(engine.score).toBe(scoreBefore + 1);
+  }, 15000);
+
+  it("'R' restarts after game over", async () => {
+    const { ui, ctx, cvgCtx, engine } = await setup();
+
+    cvgCtx.dispatchKeyDown('R');
+    ui.testStopLoop();
+    await ctx.wait(50);
+
+    // Force game over state
+    engine._setGameState('finished');
+    expect(engine.gameState).toBe('finished');
+
+    // R should restart the game
+    cvgCtx.dispatchKeyDown('R');
+    ui.testStopLoop();
+    await ctx.wait(50);
+
+    expect(engine.gameState).toBe('running');
+    expect(engine.score).toBe(0);
+    expect(engine.lines).toBe(0);
+  }, 15000);
+
+  it("keys are ignored in wrong states", async () => {
+    const { ui, ctx, cvgCtx, engine } = await setup();
+
+    // Before game starts, movement keys should be no-ops
+    cvgCtx.dispatchKeyDown('Left');
+    cvgCtx.dispatchKeyDown('Right');
+    cvgCtx.dispatchKeyDown('Up');
+    cvgCtx.dispatchKeyDown('Down');
+    cvgCtx.dispatchKeyDown('Space');
+    await ctx.wait(50);
+
+    expect(engine.gameState).toBe('ready');
+    expect(engine.getCurrentPiece()).toBeNull();
+
+    // Start and pause — movement should be ignored while paused
+    cvgCtx.dispatchKeyDown('R');
+    ui.testStopLoop();
+    await ctx.wait(50);
+
+    cvgCtx.dispatchKeyDown('P');
+    await ctx.wait(50);
+    expect(engine.gameState).toBe('paused');
+
+    const piece = engine.getCurrentPiece()!;
+    const x = piece.x;
+    const y = piece.y;
+    const orient = piece.orientation;
+
+    cvgCtx.dispatchKeyDown('Left');
+    cvgCtx.dispatchKeyDown('Down');
+    cvgCtx.dispatchKeyDown('Up');
+    cvgCtx.dispatchKeyDown('Space');
+    await ctx.wait(50);
+
+    expect(engine.getCurrentPiece()!.x).toBe(x);
+    expect(engine.getCurrentPiece()!.y).toBe(y);
+    expect(engine.getCurrentPiece()!.orientation).toBe(orient);
+  }, 15000);
 });

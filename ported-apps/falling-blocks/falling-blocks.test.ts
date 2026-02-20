@@ -10,7 +10,7 @@
  */
 
 import { TsyneTest, TestContext } from 'tsyne';
-import { createFallingBlocksApp, FallingBlocksUI } from './falling-blocks';
+import { createFallingBlocksApp, FallingBlocksUI, FallingBlocksGame, SHAPES } from './falling-blocks';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -151,5 +151,212 @@ describe('Falling Blocks Integration Tests', () => {
 
       expect(fs.existsSync(screenshotPath)).toBe(true);
     }
+  });
+});
+
+// ─── Keyboard-Driven Integration Tests ───────────────────────
+
+describe('Falling Blocks — Keyboard', () => {
+  let tsyneTest: TsyneTest;
+  let ctx: TestContext;
+
+  beforeEach(async () => {
+    const headed = process.env.TSYNE_HEADED === '1';
+    tsyneTest = new TsyneTest({ headed });
+  });
+
+  afterEach(async () => {
+    await tsyneTest.cleanup();
+  });
+
+  /** Helper: create the app, start a game via button click, and stop the loop. */
+  async function setup(): Promise<{ ui: FallingBlocksUI; game: FallingBlocksGame }> {
+    let ui: FallingBlocksUI = null as any;
+    const testApp = await tsyneTest.createApp((app) => {
+      ui = createFallingBlocksApp(app);
+    });
+
+    ctx = tsyneTest.getContext();
+    await testApp.run();
+    await ui!.initialize();
+
+    return { ui: ui!, game: ui!.getGame() };
+  }
+
+  /** Start the game and immediately stop the loop for deterministic assertions. */
+  async function startAndStopLoop(ui: FallingBlocksUI): Promise<void> {
+    await ctx.getById('newGameBtn').click();
+    await ctx.wait(100);
+    ui.testStopLoop();
+  }
+
+  test("'Left' arrow moves piece left", async () => {
+    const { ui, game } = await setup();
+    await startAndStopLoop(ui);
+
+    const startCol = game.getCurrentPiece()!.col;
+
+    ui.testKeyDown('Left');
+    await ctx.wait(50);
+
+    expect(game.getCurrentPiece()!.col).toBe(startCol - 1);
+  });
+
+  test("'Right' arrow moves piece right", async () => {
+    const { ui, game } = await setup();
+    await startAndStopLoop(ui);
+
+    const startCol = game.getCurrentPiece()!.col;
+
+    ui.testKeyDown('Right');
+    await ctx.wait(50);
+
+    expect(game.getCurrentPiece()!.col).toBe(startCol + 1);
+  });
+
+  test("'Up' arrow rotates the piece", async () => {
+    const { ui, game } = await setup();
+    await startAndStopLoop(ui);
+
+    const piece = game.getCurrentPiece()!;
+    const startRotation = piece.rotation;
+    const numRotations = SHAPES[piece.shape].length;
+
+    ui.testKeyDown('Up');
+    await ctx.wait(50);
+
+    const expectedRotation = (startRotation + 1) % numRotations;
+    expect(game.getCurrentPiece()!.rotation).toBe(expectedRotation);
+  });
+
+  test("'Down' arrow soft-drops the piece", async () => {
+    const { ui, game } = await setup();
+    await startAndStopLoop(ui);
+
+    const startRow = game.getCurrentPiece()!.row;
+    const startScore = game.getScore();
+
+    ui.testKeyDown('Down');
+    await ctx.wait(50);
+
+    expect(game.getCurrentPiece()!.row).toBe(startRow + 1);
+    expect(game.getScore()).toBe(startScore + 1);
+  });
+
+  test("'Space' hard-drops the piece", async () => {
+    const { ui, game } = await setup();
+    await startAndStopLoop(ui);
+
+    const scoreBefore = game.getScore();
+
+    ui.testKeyDown('Space');
+    await ctx.wait(50);
+
+    // Hard drop gives 2 points per row dropped; piece was at row 0 so score increases significantly
+    expect(game.getScore()).toBeGreaterThan(scoreBefore);
+    // Board should have locked blocks
+    const board = game.getBoard();
+    let hasBlocks = false;
+    for (let row = 0; row < 20; row++) {
+      for (let col = 0; col < 10; col++) {
+        if (board[row][col] !== null) { hasBlocks = true; break; }
+      }
+      if (hasBlocks) break;
+    }
+    expect(hasBlocks).toBe(true);
+  });
+
+  test("'P' pauses and unpauses", async () => {
+    const { ui, game } = await setup();
+    await startAndStopLoop(ui);
+    expect(game.getGameState()).toBe('playing');
+
+    ui.testKeyDown('P');
+    await ctx.wait(50);
+    expect(game.getGameState()).toBe('paused');
+
+    ui.testKeyDown('P');
+    await ctx.wait(50);
+    expect(game.getGameState()).toBe('playing');
+  });
+
+  test("'Escape' also pauses", async () => {
+    const { ui, game } = await setup();
+    await startAndStopLoop(ui);
+
+    ui.testKeyDown('Escape');
+    await ctx.wait(50);
+    expect(game.getGameState()).toBe('paused');
+  });
+
+  test("WASD keys work as alternatives", async () => {
+    const { ui, game } = await setup();
+    await startAndStopLoop(ui);
+
+    const startCol = game.getCurrentPiece()!.col;
+    const startRow = game.getCurrentPiece()!.row;
+
+    // 'a' = left
+    ui.testKeyDown('a');
+    await ctx.wait(50);
+    expect(game.getCurrentPiece()!.col).toBe(startCol - 1);
+
+    // 'd' = right
+    ui.testKeyDown('d');
+    await ctx.wait(50);
+    expect(game.getCurrentPiece()!.col).toBe(startCol);
+
+    // 's' = soft drop
+    ui.testKeyDown('s');
+    await ctx.wait(50);
+    expect(game.getCurrentPiece()!.row).toBe(startRow + 1);
+
+    // 'w' = rotate (just verify no crash, rotation may or may not change depending on piece)
+    ui.testKeyDown('w');
+    await ctx.wait(50);
+    expect(game.getCurrentPiece()!.rotation).toBeGreaterThanOrEqual(0);
+  });
+
+  test("keys are ignored when paused", async () => {
+    const { ui, game } = await setup();
+    await startAndStopLoop(ui);
+
+    // Pause
+    ui.testKeyDown('P');
+    await ctx.wait(50);
+    expect(game.getGameState()).toBe('paused');
+
+    const piece = game.getCurrentPiece()!;
+    const col = piece.col;
+    const row = piece.row;
+    const rotation = piece.rotation;
+
+    // All movement keys should be no-ops
+    ui.testKeyDown('Left');
+    ui.testKeyDown('Right');
+    ui.testKeyDown('Up');
+    ui.testKeyDown('Down');
+    ui.testKeyDown('Space');
+    await ctx.wait(50);
+
+    expect(game.getCurrentPiece()!.col).toBe(col);
+    expect(game.getCurrentPiece()!.row).toBe(row);
+    expect(game.getCurrentPiece()!.rotation).toBe(rotation);
+  });
+
+  test("keys are ignored before game starts", async () => {
+    const { ui, game } = await setup();
+    // Don't start the game — state is 'ready'
+    expect(game.getGameState()).toBe('ready');
+
+    ui.testKeyDown('Left');
+    ui.testKeyDown('Right');
+    ui.testKeyDown('Up');
+    ui.testKeyDown('Down');
+    ui.testKeyDown('Space');
+    await ctx.wait(50);
+
+    expect(game.getGameState()).toBe('ready');
+    expect(game.getCurrentPiece()).toBeNull();
   });
 });

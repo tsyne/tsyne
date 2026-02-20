@@ -40,7 +40,7 @@ const GHOST_ALPHA = 0.3;
 
 // ─── UI Controller ───────────────────────────────────────────
 
-class SvgTetrisUI {
+export class SvgTetrisUI {
   private a: App;
   private engine: TetrisEngine;
   private cvgCtx: CvgContext = null as any;
@@ -59,7 +59,7 @@ class SvgTetrisUI {
 
   buildUI(win: Window): void {
     this.a.vbox(() => {
-      this.statusLabel = this.a.label('Press R to start, arrows to move, space to drop');
+      this.statusLabel = this.a.label('Press R to start, arrows to move, space to drop').withId('status');
 
       this.cvgCtx = cvg(this.a, {
         viewBox: `0 0 ${VIEW_W} ${VIEW_H}`,
@@ -235,6 +235,9 @@ class SvgTetrisUI {
   // ── Test Helpers ──
 
   getEngine(): TetrisEngine { return this.engine; }
+  getCvgContext(): CvgContext { return this.cvgCtx; }
+  /** Stop the game loop (for deterministic test assertions). */
+  testStopLoop(): void { this.stopLoop(); }
 }
 
 // ─── Helpers ─────────────────────────────────────────────────
