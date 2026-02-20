@@ -644,15 +644,15 @@ export class Locator {
    * @param event Event kind key matching cbKeyToEventKind: "mouseIn", "mouseOut", "keyDown", etc.
    * @param data Optional event data (x, y, button, key, dx, dy)
    * @example
-   * await ctx.getById('cell').stimulate('mouseIn', { x: 10, y: 20 });
-   * await ctx.getById('input').stimulate('keyDown', { key: 'A' });
+   * await ctx.getById('cell').simulate('mouseIn', { x: 10, y: 20 });
+   * await ctx.getById('input').simulate('keyDown', { key: 'A' });
    */
-  async stimulate(event: string, data?: Record<string, number | string>): Promise<void> {
+  async simulate(event: string, data?: Record<string, number | string>): Promise<void> {
     const widgetId = await this.find();
     if (!widgetId) {
-      throwCallerError(`No widget found with ${this.selectorType}: ${this.selector}`, this.stimulate);
+      throwCallerError(`No widget found with ${this.selectorType}: ${this.selector}`, this.simulate);
     }
-    await this.bridge.send('stimulateEvent', { widgetId, event, ...data }, this.stimulate);
+    await this.bridge.send('simulateEvent', { widgetId, event, ...data }, this.simulate);
   }
 
   /**

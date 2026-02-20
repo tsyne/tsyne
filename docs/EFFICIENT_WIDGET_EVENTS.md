@@ -61,7 +61,7 @@ func (b *ButtonWithHover) MouseIn(e *desktop.MouseEvent) {
 | hover + focus + key | `ButtonWithHoverFocusKey` |
 | no hover | plain `*widget.Button` / `*widget.Label` (dispatcher fallback) |
 
-Widgets that don't need hover (e.g. focus-only) keep their base type; events are dispatched via the `EventDispatcher` fallback path in `handleStimulateEvent`.
+Widgets that don't need hover (e.g. focus-only) keep their base type; events are dispatched via the `EventDispatcher` fallback path in `handleSimulateEvent`.
 
 ---
 
@@ -186,12 +186,12 @@ func (b *Bridge) handleSetWidgetEvents(msg Message) Response {
 
 This runs in **both headed and test mode** — concrete variants are always instantiated.
 
-### handleStimulateEvent (test-mode only)
+### handleSimulateEvent (test-mode only)
 
 Calls **real Fyne interface methods** on concrete variants, exercising the same code path as headed mode:
 
 ```go
-func (b *Bridge) handleStimulateEvent(msg Message) Response {
+func (b *Bridge) handleSimulateEvent(msg Message) Response {
     // Only dispatch to widget methods on our concrete variants.
     // Base Fyne widgets (widget.Button) implement some interfaces
     // natively but their methods don't fire our EventDispatcher.
@@ -220,7 +220,7 @@ func (b *Bridge) handleStimulateEvent(msg Message) Response {
 }
 ```
 
-The `isEventVariant()` guard is critical: base `widget.Button` implements `fyne.Focusable` and `desktop.Hoverable` natively, but those methods don't fire our `EventDispatcher`. Without the guard, `stimulate('focusGained')` on a plain button would call `Button.FocusGained()` (Fyne internal focus highlight) and return success without ever reaching our callback.
+The `isEventVariant()` guard is critical: base `widget.Button` implements `fyne.Focusable` and `desktop.Hoverable` natively, but those methods don't fire our `EventDispatcher`. Without the guard, `simulate('focusGained')` on a plain button would call `Button.FocusGained()` (Fyne internal focus highlight) and return success without ever reaching our callback.
 
 ### Locator.focus() — Fyne canvas.Focus path
 
@@ -249,7 +249,7 @@ This exercises the full Fyne focus management path: `canvas.Focus(widget)` → F
 - Grid of event-wrapped buttons with dynamic text
 - Mixed hbox/vbox layout with variant and plain widgets
 
-**Event Stimulus — dispatcher round-trip** (8 tests) — stimulate fires through the EventDispatcher:
+**Event Stimulus — dispatcher round-trip** (8 tests) — simulate fires through the EventDispatcher:
 - mouseIn/mouseOut with position data
 - mouseMoved with position tracking
 - mouseDown/mouseUp with button and position
@@ -257,9 +257,9 @@ This exercises the full Fyne focus management path: `canvas.Focus(widget)` → F
 - focusGained/focusLost with focused state (dispatcher fallback path)
 - Combined sequence on one widget
 - Rapid 20-event burst
-- Widget state mutation via stimulus callback
+- Widget state mutation via simulate callback
 
-**Concrete variant stimulus — real widget methods** (8 tests) — stimulate calls actual Fyne interface methods:
+**Concrete variant stimulus — real widget methods** (8 tests) — simulate calls actual Fyne interface methods:
 - `ButtonWithHover.MouseIn()`/`MouseMoved()`/`MouseOut()` with position data
 - `ButtonWithHoverMouse.MouseDown()`/`MouseUp()` with button data
 - `ButtonWithHoverFocusKey` via `focus()` → Fyne `canvas.Focus()` → `FocusGained()` + `KeyDown()`/`KeyUp()`
@@ -267,7 +267,7 @@ This exercises the full Fyne focus management path: `canvas.Focus(widget)` → F
 - `getText`/`setText` on all concrete variant types
 - Full interaction sequence: mouseIn → mouseMoved → focusGained → keyDown → keyUp → focusLost → mouseOut
 - `click()` on concrete variant fires `onClick`
-- Mixed variant and plain widgets: click, stimulate, getText all work
+- Mixed variant and plain widgets: click, simulate, getText all work
 
 ---
 
@@ -287,7 +287,7 @@ This exercises the full Fyne focus management path: `canvas.Focus(widget)` → F
 |---|---|
 | `core/bridge/event_capabilities.go` | Bitmask constants, `EventKind` enum, `EventDispatcher`, capability structs (`HoverableCap`, `FocusableCap`, etc.), helper data builders |
 | `core/bridge/event_widgets.go` | Concrete variant types: `ButtonWithHover`, `ButtonWithHoverMouse`, `ButtonWithHoverFocusKey`, `LabelWithHover` |
-| `core/bridge/widget_properties.go` | `handleSetWidgetEvents`, `handleStimulateEvent`, `isEventVariant()`, `buttonVariant()`, `labelVariant()`, Fyne event struct builders |
+| `core/bridge/widget_properties.go` | `handleSetWidgetEvents`, `handleSimulateEvent`, `isEventVariant()`, `buttonVariant()`, `labelVariant()`, Fyne event struct builders |
 | `core/src/widgets/base.ts` | `registerEvent()`, `flushEvents()`, `eventKeyToBit` mapping, fluent methods |
-| `core/src/test.ts` | `Locator.stimulate()`, `Locator.focus()` |
+| `core/src/test.ts` | `Locator.simulate()`, `Locator.focus()` |
 | `examples/event-system.test.ts` | 30 integration tests across 3 suites |

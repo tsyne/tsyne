@@ -442,8 +442,8 @@ func (b *Bridge) handleMessage(msg Message) Response {
 		return b.handleSetPointerEnter(msg)
 	case "setWidgetEvents":
 		return b.handleSetWidgetEvents(msg)
-	case "stimulateEvent":
-		return b.handleStimulateEvent(msg)
+	case "simulateEvent":
+		return b.handleSimulateEvent(msg)
 	case "createMenu":
 		return b.handleCreateMenu(msg)
 	case "setScrollMinHeight":

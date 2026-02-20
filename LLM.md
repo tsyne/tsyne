@@ -394,6 +394,68 @@ a.checkbox('Enable', onChanged)
 a.select(options, onSelected)
 ```
 
+## Widget Events
+
+Any widget can receive mouse, keyboard, and focus events via fluent methods (all return `this` for chaining):
+
+```typescript
+a.label('Hover me')
+  .onMouseIn((e) => console.log('in', e.position.x, e.position.y))
+  .onMouseOut(() => console.log('out'))
+  .onKeyDown((e) => console.log('key', e.key))
+  .onFocusChange((e) => console.log('focused?', e.focused))
+  .setCursor('pointer')
+```
+
+### Event Method Reference
+
+| Method | Callback signature | Notes |
+|--------|-------------------|-------|
+| `.onMouseIn(cb)` | `(e: { position: { x, y } }) => void` | Mouse enters widget |
+| `.onMouseMoved(cb)` | `(e: { position: { x, y } }) => void` | Mouse moves within widget |
+| `.onMouseOut(cb)` | `() => void` | Mouse leaves widget |
+| `.onMouse({ in?, moved?, out? })` | Combined — same signatures as above | Convenience for registering multiple hover callbacks at once |
+| `.onMouseDown(cb)` | `(e: { button, position: { x, y } }) => void` | Mouse button pressed |
+| `.onMouseUp(cb)` | `(e: { button, position: { x, y } }) => void` | Mouse button released |
+| `.onKeyDown(cb)` | `(e: { key: string }) => void` | Key pressed (widget must be focused) |
+| `.onKeyUp(cb)` | `(e: { key: string }) => void` | Key released |
+| `.onFocusChange(cb)` | `(e: { focused: boolean }) => void` | Widget gained/lost focus |
+| `.setCursor(cursor)` | `'default' \| 'text' \| 'crosshair' \| 'pointer' \| 'hResize' \| 'vResize'` | Sets cursor on hover |
+| `.focus()` | `async` — no callback | Programmatically focus the widget |
+
+### Constructor Options
+
+The same events can be passed via a `WidgetEventOptions` object in constructors that accept options:
+
+```typescript
+interface WidgetEventOptions {
+  onMouseIn?: (e: { position: { x, y } }) => void;
+  onMouseOut?: () => void;
+  onMouseMoved?: (e: { position: { x, y } }) => void;
+  onMouseDown?: (e: { button, position: { x, y } }) => void;
+  onMouseUp?: (e: { button, position: { x, y } }) => void;
+  onKeyDown?: (e: { key: string }) => void;
+  onKeyUp?: (e: { key: string }) => void;
+  onFocusChange?: (e: { focused: boolean }) => void;
+  cursor?: 'default' | 'text' | 'crosshair' | 'pointer' | 'hResize' | 'vResize';
+}
+```
+
+### Microtask Batching
+
+All fluent event calls within a single synchronous context are batched into one wire message via `queueMicrotask`. Chaining `.onMouseIn().onMouseOut().onKeyDown().onFocusChange()` sends a single `setWidgetEvents` message to the bridge.
+
+### Go-Side Concrete Variants
+
+Fyne requires concrete types to implement event interfaces. When events are registered, the bridge upgrades widgets to concrete variants that embed both the original widget and an `EventDispatcher`:
+
+- `LabelWithHover` — Label + `desktop.Hoverable`
+- `ButtonWithHover` — Button + `desktop.Hoverable`
+- `ButtonWithHoverMouse` — Button + `desktop.Hoverable` + `desktop.Mouseable`
+- `ButtonWithHoverFocusKey` — Button + `desktop.Hoverable` + `fyne.Focusable` + `desktop.Keyable`
+
+The variant is selected automatically based on which event bits are registered (see `buttonVariant()`/`labelVariant()` in `widget_properties.go`).
+
 ## Builder Lifecycle: Reentrant & Idempotent
 
 **Critical:** Tsyne operates under an OS-wide **Inversion of Control (IoC)** environment. The framework controls lifecycle, not the app. Builders must follow these rules:
@@ -631,6 +693,30 @@ await testApp.run();
 await ctx.getById('helloBtn').click(); // Always prefer getById
 await ctx.getById('resultLabel').within(500).shouldBe('Result');
 ```
+
+**Testing widget events with `simulate()` and `focus()`:**
+
+`click()` exercises the full Fyne tap path. For lower-level events (hover, keyboard, mouse buttons), use `simulate()`:
+
+```typescript
+// Hover enter/leave
+await ctx.getById('hoverLabel').simulate('mouseIn', { x: 10, y: 5 });
+await ctx.getById('statusText').within(500).shouldBe('Hovering');
+await ctx.getById('hoverLabel').simulate('mouseOut');
+
+// Keyboard — widget must be focused first
+await ctx.getById('myWidget').focus();
+await ctx.getById('myWidget').simulate('keyDown', { key: 'A' });
+await ctx.getById('myWidget').simulate('keyUp', { key: 'A' });
+
+// Focus change detection
+await ctx.getById('focusTarget').focus();
+await ctx.getById('focusStatus').within(500).shouldBe('focused: true');
+```
+
+**`simulate()` vs `click()`:** Use `click()` for tap/button-press interactions. Use `simulate()` for events that `click()` doesn't cover: hover, keyboard, mouse down/up, drag, scroll. `simulate()` calls real Fyne widget methods on concrete variants (not just the dispatcher), so it exercises the full Go→TS callback path.
+
+Supported `simulate()` events: `mouseIn`, `mouseOut`, `mouseMoved`, `mouseDown`, `mouseUp`, `keyDown`, `keyUp`, `focusGained`, `focusLost`, `tap`, `doubleTap`, `secondaryTap`, `dragged`, `dragEnd`, `scrolled`.
 
 **Browser mode (TsyneBrowserTest):**
 ```typescript

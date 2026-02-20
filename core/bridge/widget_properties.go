@@ -1459,17 +1459,17 @@ func (b *Bridge) handleSetWidgetEvents(msg Message) Response {
 	}
 }
 
-// handleStimulateEvent fires an event on a widget by calling its real Fyne
+// handleSimulateEvent fires an event on a widget by calling its real Fyne
 // interface methods (MouseIn, FocusGained, KeyDown, etc.), exercising the same
 // code path as headed mode. Falls back to direct dispatcher fire for widgets
 // without concrete variants.
 // Test-mode only — in headed mode, real input events drive callbacks.
-func (b *Bridge) handleStimulateEvent(msg Message) Response {
+func (b *Bridge) handleSimulateEvent(msg Message) Response {
 	if !b.testMode {
 		return Response{
 			ID:      msg.ID,
 			Success: false,
-			Error:   "stimulateEvent is only available in test mode",
+			Error:   "simulateEvent is only available in test mode",
 		}
 	}
 
@@ -1646,7 +1646,7 @@ func (b *Bridge) handleStimulateEvent(msg Message) Response {
 	}
 }
 
-// Fyne event struct builders for stimulateEvent interface dispatch
+// Fyne event struct builders for simulateEvent interface dispatch
 
 func buildMouseEvent(msg Message) *desktop.MouseEvent {
 	return &desktop.MouseEvent{

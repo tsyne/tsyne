@@ -11,7 +11,7 @@
  * 5. Labels, entries, and non-button widgets with events
  * 6. getText/setText through concrete variant types (ButtonWithHover*, LabelWithHover)
  * 7. Mixed event + non-event widgets in the same container
- * 8. stimulate() calls real widget interface methods on concrete variants
+ * 8. simulate() calls real widget interface methods on concrete variants
  * 9. focus() exercises Fyne's canvas.Focus() → FocusGained() path
  */
 
@@ -670,7 +670,7 @@ describe('Event System Integration', () => {
 
 /**
  * Stimulus Tests — exercise the real EventDispatcher→sendEvent→gRPC→TS callback path
- * using ctx.getById(...).stimulate() to fire events directly on the Go dispatcher.
+ * using ctx.getById(...).simulate() to fire events directly on the Go dispatcher.
  */
 describe('Event Stimulus (real dispatcher round-trip)', () => {
   let tsyneTest: TsyneTest;
@@ -705,9 +705,9 @@ describe('Event Stimulus (real dispatcher round-trip)', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getById('cell').stimulate('mouseIn', { x: 10, y: 20 });
+    await ctx.getById('cell').simulate('mouseIn', { x: 10, y: 20 });
     await ctx.wait(50);
-    await ctx.getById('cell').stimulate('mouseOut');
+    await ctx.getById('cell').simulate('mouseOut');
     await ctx.wait(50);
 
     expect(events).toHaveLength(2);
@@ -737,8 +737,8 @@ describe('Event Stimulus (real dispatcher round-trip)', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getById('track').stimulate('mouseMoved', { x: 50, y: 60 });
-    await ctx.getById('track').stimulate('mouseMoved', { x: 100, y: 120 });
+    await ctx.getById('track').simulate('mouseMoved', { x: 50, y: 60 });
+    await ctx.getById('track').simulate('mouseMoved', { x: 100, y: 120 });
     await ctx.wait(50);
 
     expect(positions).toHaveLength(2);
@@ -765,8 +765,8 @@ describe('Event Stimulus (real dispatcher round-trip)', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getById('target').stimulate('mouseDown', { button: 1, x: 5, y: 10 });
-    await ctx.getById('target').stimulate('mouseUp', { button: 1, x: 5, y: 10 });
+    await ctx.getById('target').simulate('mouseDown', { button: 1, x: 5, y: 10 });
+    await ctx.getById('target').simulate('mouseUp', { button: 1, x: 5, y: 10 });
     await ctx.wait(50);
 
     expect(events).toHaveLength(2);
@@ -796,8 +796,8 @@ describe('Event Stimulus (real dispatcher round-trip)', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getById('input').stimulate('keyDown', { key: 'A' });
-    await ctx.getById('input').stimulate('keyUp', { key: 'A' });
+    await ctx.getById('input').simulate('keyDown', { key: 'A' });
+    await ctx.getById('input').simulate('keyUp', { key: 'A' });
     await ctx.wait(50);
 
     expect(keys).toHaveLength(2);
@@ -823,9 +823,9 @@ describe('Event Stimulus (real dispatcher round-trip)', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getById('focusable').stimulate('focusGained');
+    await ctx.getById('focusable').simulate('focusGained');
     await ctx.wait(50);
-    await ctx.getById('focusable').stimulate('focusLost');
+    await ctx.getById('focusable').simulate('focusLost');
     await ctx.wait(50);
 
     expect(focusEvents).toHaveLength(2);
@@ -858,14 +858,14 @@ describe('Event Stimulus (real dispatcher round-trip)', () => {
     await testApp.run();
 
     // Simulate a full interaction sequence
-    await ctx.getById('multi').stimulate('focusGained');
-    await ctx.getById('multi').stimulate('mouseIn', { x: 5, y: 5 });
-    await ctx.getById('multi').stimulate('mouseDown', { button: 1, x: 5, y: 5 });
-    await ctx.getById('multi').stimulate('mouseUp', { button: 1, x: 5, y: 5 });
-    await ctx.getById('multi').stimulate('keyDown', { key: 'Return' });
-    await ctx.getById('multi').stimulate('keyUp', { key: 'Return' });
-    await ctx.getById('multi').stimulate('mouseOut');
-    await ctx.getById('multi').stimulate('focusLost');
+    await ctx.getById('multi').simulate('focusGained');
+    await ctx.getById('multi').simulate('mouseIn', { x: 5, y: 5 });
+    await ctx.getById('multi').simulate('mouseDown', { button: 1, x: 5, y: 5 });
+    await ctx.getById('multi').simulate('mouseUp', { button: 1, x: 5, y: 5 });
+    await ctx.getById('multi').simulate('keyDown', { key: 'Return' });
+    await ctx.getById('multi').simulate('keyUp', { key: 'Return' });
+    await ctx.getById('multi').simulate('mouseOut');
+    await ctx.getById('multi').simulate('focusLost');
     await ctx.wait(100);
 
     expect(log).toEqual([
@@ -874,7 +874,7 @@ describe('Event Stimulus (real dispatcher round-trip)', () => {
     ]);
   });
 
-  test('rapid stimulate calls in quick succession', async () => {
+  test('rapid simulate calls in quick succession', async () => {
     let count = 0;
 
     const testApp = await tsyneTest.createApp((app: App) => {
@@ -894,7 +894,7 @@ describe('Event Stimulus (real dispatcher round-trip)', () => {
 
     // Fire 20 mouseIn events rapidly
     for (let i = 0; i < 20; i++) {
-      await ctx.getById('counter').stimulate('mouseIn', { x: i, y: i });
+      await ctx.getById('counter').simulate('mouseIn', { x: i, y: i });
     }
     await ctx.wait(100);
 
@@ -921,10 +921,10 @@ describe('Event Stimulus (real dispatcher round-trip)', () => {
 
     await ctx.getById('status').getText().within(1000).shouldBe('idle');
 
-    await ctx.getById('target').stimulate('mouseIn', { x: 5, y: 5 });
+    await ctx.getById('target').simulate('mouseIn', { x: 5, y: 5 });
     await ctx.getById('status').getText().within(1000).shouldBe('hovering');
 
-    await ctx.getById('target').stimulate('mouseOut');
+    await ctx.getById('target').simulate('mouseOut');
     await ctx.getById('status').getText().within(1000).shouldBe('idle');
   });
 });
@@ -932,7 +932,7 @@ describe('Event Stimulus (real dispatcher round-trip)', () => {
 /**
  * Concrete Variant Tests — exercise the real widget interface methods
  * (ButtonWithHover.MouseIn, ButtonWithHoverFocusKey.FocusGained, etc.)
- * via stimulate, which now calls the widget's Fyne interface methods
+ * via simulate, which now calls the widget's Fyne interface methods
  * instead of disp.fire() directly.
  */
 describe('Concrete variant stimulus (real widget methods)', () => {
@@ -969,10 +969,10 @@ describe('Concrete variant stimulus (real widget methods)', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    // These stimulate calls now go through ButtonWithHover.MouseIn() → Button.MouseIn() + disp.fire()
-    await ctx.getById('hoverBtn').stimulate('mouseIn', { x: 10, y: 20 });
-    await ctx.getById('hoverBtn').stimulate('mouseMoved', { x: 15, y: 25 });
-    await ctx.getById('hoverBtn').stimulate('mouseOut');
+    // These simulate calls now go through ButtonWithHover.MouseIn() → Button.MouseIn() + disp.fire()
+    await ctx.getById('hoverBtn').simulate('mouseIn', { x: 10, y: 20 });
+    await ctx.getById('hoverBtn').simulate('mouseMoved', { x: 15, y: 25 });
+    await ctx.getById('hoverBtn').simulate('mouseOut');
     await ctx.wait(50);
 
     expect(events).toHaveLength(3);
@@ -1004,10 +1004,10 @@ describe('Concrete variant stimulus (real widget methods)', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getById('mouseBtn').stimulate('mouseIn', { x: 5, y: 5 });
-    await ctx.getById('mouseBtn').stimulate('mouseDown', { button: 1, x: 10, y: 10 });
-    await ctx.getById('mouseBtn').stimulate('mouseUp', { button: 1, x: 10, y: 10 });
-    await ctx.getById('mouseBtn').stimulate('mouseOut');
+    await ctx.getById('mouseBtn').simulate('mouseIn', { x: 5, y: 5 });
+    await ctx.getById('mouseBtn').simulate('mouseDown', { button: 1, x: 10, y: 10 });
+    await ctx.getById('mouseBtn').simulate('mouseUp', { button: 1, x: 10, y: 10 });
+    await ctx.getById('mouseBtn').simulate('mouseOut');
     await ctx.wait(50);
 
     expect(events).toHaveLength(4);
@@ -1049,8 +1049,8 @@ describe('Concrete variant stimulus (real widget methods)', () => {
     await ctx.wait(50);
 
     // Key events on the focused widget
-    await ctx.getById('fkBtn').stimulate('keyDown', { key: 'A' });
-    await ctx.getById('fkBtn').stimulate('keyUp', { key: 'A' });
+    await ctx.getById('fkBtn').simulate('keyDown', { key: 'A' });
+    await ctx.getById('fkBtn').simulate('keyUp', { key: 'A' });
     await ctx.wait(50);
 
     expect(log).toContain('focusGained');
@@ -1080,10 +1080,10 @@ describe('Concrete variant stimulus (real widget methods)', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getById('trackLabel').stimulate('mouseIn', { x: 0, y: 0 });
-    await ctx.getById('trackLabel').stimulate('mouseMoved', { x: 50, y: 30 });
-    await ctx.getById('trackLabel').stimulate('mouseMoved', { x: 100, y: 60 });
-    await ctx.getById('trackLabel').stimulate('mouseOut');
+    await ctx.getById('trackLabel').simulate('mouseIn', { x: 0, y: 0 });
+    await ctx.getById('trackLabel').simulate('mouseMoved', { x: 50, y: 30 });
+    await ctx.getById('trackLabel').simulate('mouseMoved', { x: 100, y: 60 });
+    await ctx.getById('trackLabel').simulate('mouseOut');
     await ctx.wait(50);
 
     expect(inCount).toBe(1);
@@ -1153,13 +1153,13 @@ describe('Concrete variant stimulus (real widget methods)', () => {
     await testApp.run();
 
     // Full interaction: hover → focus → key → unfocus → leave
-    await ctx.getById('seqBtn').stimulate('mouseIn', { x: 5, y: 5 });
-    await ctx.getById('seqBtn').stimulate('mouseMoved', { x: 10, y: 10 });
-    await ctx.getById('seqBtn').stimulate('focusGained');
-    await ctx.getById('seqBtn').stimulate('keyDown', { key: 'Return' });
-    await ctx.getById('seqBtn').stimulate('keyUp', { key: 'Return' });
-    await ctx.getById('seqBtn').stimulate('focusLost');
-    await ctx.getById('seqBtn').stimulate('mouseOut');
+    await ctx.getById('seqBtn').simulate('mouseIn', { x: 5, y: 5 });
+    await ctx.getById('seqBtn').simulate('mouseMoved', { x: 10, y: 10 });
+    await ctx.getById('seqBtn').simulate('focusGained');
+    await ctx.getById('seqBtn').simulate('keyDown', { key: 'Return' });
+    await ctx.getById('seqBtn').simulate('keyUp', { key: 'Return' });
+    await ctx.getById('seqBtn').simulate('focusLost');
+    await ctx.getById('seqBtn').simulate('mouseOut');
     await ctx.wait(100);
 
     expect(log).toEqual([
@@ -1248,9 +1248,9 @@ describe('Concrete variant stimulus (real widget methods)', () => {
     expect(log).toContain('hover-click');
     await ctx.getById('status').getText().within(1000).shouldBe('hover');
 
-    // Stimulate hover on label variant
-    await ctx.getById('hoverLabel').stimulate('mouseIn', { x: 5, y: 5 });
-    await ctx.getById('hoverLabel').stimulate('mouseOut');
+    // Simulate hover on label variant
+    await ctx.getById('hoverLabel').simulate('mouseIn', { x: 5, y: 5 });
+    await ctx.getById('hoverLabel').simulate('mouseOut');
     await ctx.wait(50);
     expect(log).toContain('label-in');
     expect(log).toContain('label-out');

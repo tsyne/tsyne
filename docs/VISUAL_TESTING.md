@@ -236,6 +236,52 @@ When debugging visual problems (e.g., "rectangles are black instead of colored",
 - **Create isolation tests** - strip away complexity to find the root cause
 - **Prefer `.within()` over `ctx.wait()`** - instead of `await ctx.wait(500)`, use `await ctx.getById('x').within(500).shouldBe('value')` which polls intelligently and doesn't lengthen tests long term, more than is needed
 
+## Testing Widget Events
+
+Use `simulate()` and `focus()` to exercise hover, keyboard, and focus interactions, combined with screenshots for visual debugging.
+
+### Hover Enter/Leave with Screenshots
+
+```typescript
+const ctx = test.getContext();
+
+// Verify hover highlight appears
+await ctx.getById('hoverBtn').simulate('mouseIn', { x: 10, y: 5 });
+await test.screenshot('/tmp/hover-highlight-on.png');
+
+await ctx.getById('hoverBtn').simulate('mouseOut');
+await test.screenshot('/tmp/hover-highlight-off.png');
+```
+
+### Focus + Keyboard
+
+```typescript
+// Focus a widget, then send key events
+await ctx.getById('inputWidget').focus();
+await test.screenshot('/tmp/focus-ring.png'); // Verify focus ring renders
+
+await ctx.getById('inputWidget').simulate('keyDown', { key: 'A' });
+await ctx.getById('inputWidget').simulate('keyUp', { key: 'A' });
+await ctx.getById('output').within(500).shouldBe('A');
+```
+
+### Drag Sequence
+
+```typescript
+await ctx.getById('draggable').simulate('mouseDown', { button: 0, x: 50, y: 50 });
+await ctx.getById('draggable').simulate('dragged', { x: 100, y: 100, dx: 50, dy: 50 });
+await test.screenshot('/tmp/mid-drag.png');
+await ctx.getById('draggable').simulate('dragEnd');
+await test.screenshot('/tmp/after-drag.png');
+```
+
+### Key Points
+
+- **`simulate()` calls real Fyne widget methods** on concrete Go variants (e.g., `ButtonWithHoverFocusKey.KeyDown()`), not just the event dispatcher — so it exercises the full native event path
+- **Use `click()` for taps**, `simulate()` for everything else (hover, keyboard, mouse buttons, drag, scroll)
+- **Combine with screenshots** to verify visual state changes: hover highlights, focus rings, cursor changes, drag positions
+- **Supported events:** `mouseIn`, `mouseOut`, `mouseMoved`, `mouseDown`, `mouseUp`, `keyDown`, `keyUp`, `focusGained`, `focusLost`, `tap`, `doubleTap`, `secondaryTap`, `dragged`, `dragEnd`, `scrolled`
+
 ## Examples
 
 See `test-screenshot-headed.ts` for a complete working example of screenshot capture in headed mode.
