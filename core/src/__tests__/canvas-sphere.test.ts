@@ -1776,7 +1776,7 @@ describe('CanvasSphere', () => {
         'updateCanvasSphereBuffer',
         expect.objectContaining({
           widgetId: sphere.id,
-          buffer: expect.any(String),  // Base64 encoded buffer
+          buffer: expect.any(Uint8Array),
         })
       );
     });

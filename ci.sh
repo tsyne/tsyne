@@ -761,9 +761,9 @@ if [ "$SKIP_TESTS" = false ] && [ "$UNIT_ONLY" = false ] && [ "$QUICK_MODE" = fa
     local _exit=0
     if [ -n "$bridge_mode" ]; then
       echo "Using bridge mode: $bridge_mode"
-      TSYNE_BRIDGE_MODE=$bridge_mode timeout 120 pnpm test --forceExit --json --outputFile="$json_file" || _exit=$?
+      TSYNE_BRIDGE_MODE=$bridge_mode timeout 180 pnpm test --forceExit --maxWorkers=1 --json --outputFile="$json_file" || _exit=$?
     else
-      timeout 120 pnpm test --forceExit --json --outputFile="$json_file" || _exit=$?
+      timeout 180 pnpm test --forceExit --maxWorkers=1 --json --outputFile="$json_file" || _exit=$?
     fi
     local _elapsed=$(( $(date +%s) - _ts ))
     SECTION_DURATIONS["Ported: ${app_name}"]=$_elapsed
@@ -846,7 +846,7 @@ if [ "$SKIP_TESTS" = false ] && [ "$UNIT_ONLY" = false ] && [ "$QUICK_MODE" = fa
     cd "${app_dir}"
     local _ts=$(date +%s)
     local _exit=0
-    timeout 120 pnpm test --forceExit --json --outputFile="$json_file" || _exit=$?
+    timeout 180 pnpm test --forceExit --maxWorkers=1 --json --outputFile="$json_file" || _exit=$?
     local _elapsed=$(( $(date +%s) - _ts ))
     SECTION_DURATIONS["Phone: ${app_name}"]=$_elapsed
     capture_test_results "Phone: ${app_name}" "$json_file"
@@ -920,7 +920,7 @@ if [ "$SKIP_TESTS" = false ] && [ "$UNIT_ONLY" = false ] && [ "$QUICK_MODE" = fa
     cd "${launcher_dir}"
     local _ts=$(date +%s)
     local _exit=0
-    timeout 120 npx jest --json --outputFile="$json_file" || _exit=$?
+    timeout 180 npx jest --forceExit --maxWorkers=1 --json --outputFile="$json_file" || _exit=$?
     local _elapsed=$(( $(date +%s) - _ts ))
     SECTION_DURATIONS["Launcher: ${launcher_name}"]=$_elapsed
     capture_test_results "Launcher: ${launcher_name}" "$json_file"
@@ -962,7 +962,7 @@ if [ "$SKIP_TESTS" = false ] && [ "$UNIT_ONLY" = false ] && [ "$QUICK_MODE" = fa
     cd "${app_dir}"
     local _ts=$(date +%s)
     local _exit=0
-    timeout 120 pnpm test --json --outputFile="$json_file" || _exit=$?
+    timeout 180 pnpm test --forceExit --maxWorkers=1 --json --outputFile="$json_file" || _exit=$?
     local _elapsed=$(( $(date +%s) - _ts ))
     SECTION_DURATIONS["Larger: ${app_name}"]=$_elapsed
     capture_test_results "Larger: ${app_name}" "$json_file"
