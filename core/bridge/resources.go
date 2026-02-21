@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/base64"
 	"fmt"
 )
 
@@ -16,36 +15,12 @@ func (b *Bridge) handleRegisterResource(msg Message) Response {
 		}
 	}
 
-	resourceData, ok := msg.Payload["data"].(string)
-	if !ok {
-		return Response{
-			ID:      msg.ID,
-			Success: false,
-			Error:   "Missing or invalid 'data' parameter",
-		}
-	}
-
-	// Decode base64 image data
-	// Expected format: "data:image/png;base64,..." or just base64 data
-	var base64Data string
-	if len(resourceData) > 0 && resourceData[0:5] == "data:" {
-		// Parse data URI format
-		for i := 0; i < len(resourceData); i++ {
-			if resourceData[i] == ',' {
-				base64Data = resourceData[i+1:]
-				break
-			}
-		}
-	} else {
-		base64Data = resourceData
-	}
-
-	imgData, err := base64.StdEncoding.DecodeString(base64Data)
+	imgData, err := extractBinary(msg.Payload["data"])
 	if err != nil {
 		return Response{
 			ID:      msg.ID,
 			Success: false,
-			Error:   fmt.Sprintf("Invalid base64 data: %v", err),
+			Error:   fmt.Sprintf("Invalid image data: %v", err),
 		}
 	}
 

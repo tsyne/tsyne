@@ -1036,8 +1036,8 @@ func (b *Bridge) glLinkProgram(canvas *GLCanvas, args map[string]interface{}) er
 		program.convertedVertexSrc = ConvertVertexShader(program.vertexSrc, getShaderTarget())
 
 		// Write vertex shader to tmp file for debugging (with program ID for uniqueness)
-		_ = writeShaderDebugFile(fmt.Sprintf("/tmp/vertex_shader_%d.glsl", programId), program.vertexSrc)
-		_ = writeShaderDebugFile(fmt.Sprintf("/tmp/vertex_shader_%d_converted.glsl", programId), program.convertedVertexSrc)
+		_ = writeShaderDebugFile(fmt.Sprintf("/tmp/vertex_shader_%d.glsl", uint32(programId)), program.vertexSrc)
+		_ = writeShaderDebugFile(fmt.Sprintf("/tmp/vertex_shader_%d_converted.glsl", uint32(programId)), program.convertedVertexSrc)
 
 		// Debug: check for USE_COLOR in vertex shader
 		// if strings.Contains(program.vertexSrc, "#define USE_COLOR") {
@@ -1053,8 +1053,8 @@ func (b *Bridge) glLinkProgram(canvas *GLCanvas, args map[string]interface{}) er
 		program.convertedFragSrc = ConvertFragmentShader(program.fragSrc, getShaderTarget())
 
 		// Write shader to tmp file for debugging
-		_ = writeShaderDebugFile(fmt.Sprintf("/tmp/fragment_shader_%d.glsl", programId), program.fragSrc)
-		_ = writeShaderDebugFile(fmt.Sprintf("/tmp/fragment_shader_%d_converted.glsl", programId), program.convertedFragSrc)
+		_ = writeShaderDebugFile(fmt.Sprintf("/tmp/fragment_shader_%d.glsl", uint32(programId)), program.fragSrc)
+		_ = writeShaderDebugFile(fmt.Sprintf("/tmp/fragment_shader_%d_converted.glsl", uint32(programId)), program.convertedFragSrc)
 
 		// Debug logging for shader analysis (enable when debugging shader issues)
 		// hasLightDefines := false

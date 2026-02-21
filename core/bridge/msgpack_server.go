@@ -22,7 +22,7 @@ type encoderPoolItem struct {
 	buf *bytes.Buffer
 }
 
-// MsgpackServer handles MessagePack over Unix Domain Socket communication
+// MsgpackServer handles MessagePack over Unix Domain Socket or TCP communication
 type MsgpackServer struct {
 	bridge     *Bridge
 	socketPath string
@@ -31,6 +31,7 @@ type MsgpackServer struct {
 	mu         sync.Mutex
 	bufferPool  sync.Pool // Pool for frame buffers to reduce allocations
 	encoderPool sync.Pool // Pool for msgpack encoders (#6 optimization)
+	authToken  string    // Shared secret for auth (empty = no auth)
 
 	// Message batching (#5 optimization)
 	batchEnabled  bool
@@ -102,6 +103,37 @@ func NewMsgpackServer(bridge *Bridge) *MsgpackServer {
 	return server
 }
 
+// NewMsgpackServerWithListener creates a MsgpackServer with a pre-created listener.
+// Use this for TCP mode or any case where the caller manages the listener lifecycle.
+func NewMsgpackServerWithListener(bridge *Bridge, listener net.Listener) *MsgpackServer {
+	server := &MsgpackServer{
+		bridge:       bridge,
+		listener:     listener,
+		batchEnabled: false,
+		batchWindow:  2 * time.Millisecond,
+		batchFlushCh: make(chan struct{}, 1),
+	}
+
+	server.bufferPool.New = func() interface{} {
+		return make([]byte, 8192)
+	}
+
+	server.encoderPool.New = func() interface{} {
+		buf := bytes.NewBuffer(make([]byte, 0, 4096))
+		enc := msgpack.NewEncoder(buf)
+		return &encoderPoolItem{enc: enc, buf: buf}
+	}
+
+	return server
+}
+
+// SetAuthToken sets a shared secret for client authentication.
+// When set, clients must send an auth message as their first message.
+// When empty (default), no authentication is required.
+func (s *MsgpackServer) SetAuthToken(token string) {
+	s.authToken = token
+}
+
 // EnableBatching enables message batching with the specified window (#5 optimization)
 func (s *MsgpackServer) EnableBatching(window time.Duration) {
 	s.batchMu.Lock()
@@ -123,16 +155,19 @@ func (s *MsgpackServer) DisableBatching() {
 	s.flushBatchLocked()
 }
 
-// Start starts the MessagePack UDS server
+// Start starts the MessagePack server (UDS or TCP depending on how it was created)
 func (s *MsgpackServer) Start() error {
-	// Remove existing socket file if present
-	os.Remove(s.socketPath)
+	if s.listener == nil {
+		// UDS mode: create listener from socketPath
+		os.Remove(s.socketPath)
 
-	var err error
-	s.listener, err = net.Listen("unix", s.socketPath)
-	if err != nil {
-		return fmt.Errorf("failed to listen on unix socket: %w", err)
+		var err error
+		s.listener, err = net.Listen("unix", s.socketPath)
+		if err != nil {
+			return fmt.Errorf("failed to listen on unix socket: %w", err)
+		}
 	}
+	// Listener already set (TCP mode via NewMsgpackServerWithListener) — just accept
 
 	// Start accepting connections in background
 	go s.acceptConnections()
@@ -150,7 +185,10 @@ func (s *MsgpackServer) Close() {
 	if s.listener != nil {
 		s.listener.Close()
 	}
-	os.Remove(s.socketPath)
+	// Only remove socket file for UDS mode (TCP has no socket file)
+	if s.socketPath != "" {
+		os.Remove(s.socketPath)
+	}
 }
 
 // SendEvent sends an event to all connected clients synchronously
@@ -234,12 +272,19 @@ func (s *MsgpackServer) acceptConnections() {
 func (s *MsgpackServer) handleClient(conn net.Conn) {
 	defer conn.Close()
 
-	// Register client for events
+	reader := bufio.NewReader(conn)
+
+	// Auth gate: if a token is set, the first message must be an auth message
+	if s.authToken != "" {
+		if !s.authenticateClient(conn, reader) {
+			return
+		}
+	}
+
+	// Register client for events (only after successful auth)
 	clientID := fmt.Sprintf("%p", conn)
 	s.clients.Store(clientID, conn)
 	defer s.clients.Delete(clientID)
-
-	reader := bufio.NewReader(conn)
 
 	for {
 		// Read length prefix (4 bytes, big-endian)
@@ -296,6 +341,77 @@ func (s *MsgpackServer) handleClient(conn net.Conn) {
 		// Return buffer to pool
 		s.putFrameBuffer(frameBuf)
 	}
+}
+
+// authenticateClient reads the first message from a client and validates the auth token.
+// Returns true if auth succeeds, false if it fails (connection should be closed).
+func (s *MsgpackServer) authenticateClient(conn net.Conn, reader *bufio.Reader) bool {
+	// Read length prefix (4 bytes, big-endian)
+	lengthBuf := make([]byte, 4)
+	_, err := io.ReadFull(reader, lengthBuf)
+	if err != nil {
+		log.Printf("[msgpack] Auth: error reading length: %v", err)
+		return false
+	}
+
+	length := binary.BigEndian.Uint32(lengthBuf)
+	if length > 1024 { // Auth messages should be small
+		log.Printf("[msgpack] Auth: message too large: %d bytes", length)
+		return false
+	}
+
+	msgBuf := make([]byte, length)
+	_, err = io.ReadFull(reader, msgBuf)
+	if err != nil {
+		log.Printf("[msgpack] Auth: error reading message: %v", err)
+		return false
+	}
+
+	var msg MsgpackMessage
+	if err := msgpack.Unmarshal(msgBuf, &msg); err != nil {
+		log.Printf("[msgpack] Auth: error decoding message: %v", err)
+		return false
+	}
+
+	if msg.Type != "auth" {
+		log.Printf("[msgpack] Auth: expected auth message, got %q", msg.Type)
+		s.sendAuthResponse(conn, msg.ID, false, "expected auth message as first message")
+		return false
+	}
+
+	token, _ := msg.Payload["token"].(string)
+	if token != s.authToken {
+		log.Printf("[msgpack] Auth: invalid token from %v", conn.RemoteAddr())
+		s.sendAuthResponse(conn, msg.ID, false, "invalid auth token")
+		return false
+	}
+
+	log.Printf("[msgpack] Auth: client %v authenticated", conn.RemoteAddr())
+	s.sendAuthResponse(conn, msg.ID, true, "")
+	return true
+}
+
+// sendAuthResponse sends an auth success/failure response to the client.
+func (s *MsgpackServer) sendAuthResponse(conn net.Conn, id string, success bool, errMsg string) {
+	resp := MsgpackResponse{
+		ID:      id,
+		Success: success,
+		Error:   errMsg,
+	}
+	if success {
+		resp.Result = map[string]interface{}{"authenticated": true}
+	}
+
+	respBuf, err := s.encodeWithPool(resp)
+	if err != nil {
+		log.Printf("[msgpack] Auth: error encoding response: %v", err)
+		return
+	}
+
+	frameBuf := make([]byte, 4+len(respBuf))
+	binary.BigEndian.PutUint32(frameBuf[0:4], uint32(len(respBuf)))
+	copy(frameBuf[4:], respBuf)
+	conn.Write(frameBuf)
 }
 
 func (s *MsgpackServer) handleMessage(msg MsgpackMessage) MsgpackResponse {

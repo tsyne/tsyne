@@ -19,6 +19,7 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
+	BridgeService_Ping_FullMethodName                        = "/bridge.BridgeService/Ping"
 	BridgeService_CreateWindow_FullMethodName                = "/bridge.BridgeService/CreateWindow"
 	BridgeService_ShowWindow_FullMethodName                  = "/bridge.BridgeService/ShowWindow"
 	BridgeService_SetContent_FullMethodName                  = "/bridge.BridgeService/SetContent"
@@ -119,7 +120,11 @@ const (
 	BridgeService_UpdateTappableCanvasRaster_FullMethodName  = "/bridge.BridgeService/UpdateTappableCanvasRaster"
 	BridgeService_SetTappableCanvasImage_FullMethodName      = "/bridge.BridgeService/SetTappableCanvasImage"
 	BridgeService_SetTappableCanvasRect_FullMethodName       = "/bridge.BridgeService/SetTappableCanvasRect"
+	BridgeService_SetTappableCanvasBuffer_FullMethodName     = "/bridge.BridgeService/SetTappableCanvasBuffer"
 	BridgeService_UpdateCanvasShader_FullMethodName          = "/bridge.BridgeService/UpdateCanvasShader"
+	BridgeService_UpdateCanvasSphereBuffer_FullMethodName    = "/bridge.BridgeService/UpdateCanvasSphereBuffer"
+	BridgeService_SetShaderTextureUniform_FullMethodName     = "/bridge.BridgeService/SetShaderTextureUniform"
+	BridgeService_SetShaderCubemapUniform_FullMethodName     = "/bridge.BridgeService/SetShaderCubemapUniform"
 	BridgeService_SaveRasterBackground_FullMethodName        = "/bridge.BridgeService/SaveRasterBackground"
 	BridgeService_CreateRasterSprite_FullMethodName          = "/bridge.BridgeService/CreateRasterSprite"
 	BridgeService_MoveRasterSprite_FullMethodName            = "/bridge.BridgeService/MoveRasterSprite"
@@ -268,6 +273,8 @@ const (
 //
 // BridgeService provides high-performance binary protocol for Tsyne bridge
 type BridgeServiceClient interface {
+	// Health check
+	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*Response, error)
 	// ============================================================================
 	// Window operations
 	// ============================================================================
@@ -390,7 +397,11 @@ type BridgeServiceClient interface {
 	UpdateTappableCanvasRaster(ctx context.Context, in *UpdateTappableCanvasRasterRequest, opts ...grpc.CallOption) (*Response, error)
 	SetTappableCanvasImage(ctx context.Context, in *SetTappableCanvasImageRequest, opts ...grpc.CallOption) (*Response, error)
 	SetTappableCanvasRect(ctx context.Context, in *SetTappableCanvasRectRequest, opts ...grpc.CallOption) (*Response, error)
+	SetTappableCanvasBuffer(ctx context.Context, in *SetTappableCanvasBufferRequest, opts ...grpc.CallOption) (*Response, error)
 	UpdateCanvasShader(ctx context.Context, in *UpdateCanvasShaderRequest, opts ...grpc.CallOption) (*Response, error)
+	UpdateCanvasSphereBuffer(ctx context.Context, in *UpdateCanvasSphereBufferRequest, opts ...grpc.CallOption) (*Response, error)
+	SetShaderTextureUniform(ctx context.Context, in *SetShaderTextureUniformRequest, opts ...grpc.CallOption) (*Response, error)
+	SetShaderCubemapUniform(ctx context.Context, in *SetShaderCubemapUniformRequest, opts ...grpc.CallOption) (*Response, error)
 	// Sprite system - efficient dirty-rectangle based animation
 	SaveRasterBackground(ctx context.Context, in *SaveRasterBackgroundRequest, opts ...grpc.CallOption) (*Response, error)
 	CreateRasterSprite(ctx context.Context, in *CreateRasterSpriteRequest, opts ...grpc.CallOption) (*Response, error)
@@ -585,6 +596,16 @@ type bridgeServiceClient struct {
 
 func NewBridgeServiceClient(cc grpc.ClientConnInterface) BridgeServiceClient {
 	return &bridgeServiceClient{cc}
+}
+
+func (c *bridgeServiceClient) Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_Ping_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *bridgeServiceClient) CreateWindow(ctx context.Context, in *CreateWindowRequest, opts ...grpc.CallOption) (*Response, error) {
@@ -1587,10 +1608,50 @@ func (c *bridgeServiceClient) SetTappableCanvasRect(ctx context.Context, in *Set
 	return out, nil
 }
 
+func (c *bridgeServiceClient) SetTappableCanvasBuffer(ctx context.Context, in *SetTappableCanvasBufferRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_SetTappableCanvasBuffer_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *bridgeServiceClient) UpdateCanvasShader(ctx context.Context, in *UpdateCanvasShaderRequest, opts ...grpc.CallOption) (*Response, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Response)
 	err := c.cc.Invoke(ctx, BridgeService_UpdateCanvasShader_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) UpdateCanvasSphereBuffer(ctx context.Context, in *UpdateCanvasSphereBufferRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_UpdateCanvasSphereBuffer_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) SetShaderTextureUniform(ctx context.Context, in *SetShaderTextureUniformRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_SetShaderTextureUniform_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) SetShaderCubemapUniform(ctx context.Context, in *SetShaderCubemapUniformRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_SetShaderCubemapUniform_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -3012,6 +3073,8 @@ func (c *bridgeServiceClient) Quit(ctx context.Context, in *QuitRequest, opts ..
 //
 // BridgeService provides high-performance binary protocol for Tsyne bridge
 type BridgeServiceServer interface {
+	// Health check
+	Ping(context.Context, *PingRequest) (*Response, error)
 	// ============================================================================
 	// Window operations
 	// ============================================================================
@@ -3134,7 +3197,11 @@ type BridgeServiceServer interface {
 	UpdateTappableCanvasRaster(context.Context, *UpdateTappableCanvasRasterRequest) (*Response, error)
 	SetTappableCanvasImage(context.Context, *SetTappableCanvasImageRequest) (*Response, error)
 	SetTappableCanvasRect(context.Context, *SetTappableCanvasRectRequest) (*Response, error)
+	SetTappableCanvasBuffer(context.Context, *SetTappableCanvasBufferRequest) (*Response, error)
 	UpdateCanvasShader(context.Context, *UpdateCanvasShaderRequest) (*Response, error)
+	UpdateCanvasSphereBuffer(context.Context, *UpdateCanvasSphereBufferRequest) (*Response, error)
+	SetShaderTextureUniform(context.Context, *SetShaderTextureUniformRequest) (*Response, error)
+	SetShaderCubemapUniform(context.Context, *SetShaderCubemapUniformRequest) (*Response, error)
 	// Sprite system - efficient dirty-rectangle based animation
 	SaveRasterBackground(context.Context, *SaveRasterBackgroundRequest) (*Response, error)
 	CreateRasterSprite(context.Context, *CreateRasterSpriteRequest) (*Response, error)
@@ -3331,6 +3398,9 @@ type BridgeServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedBridgeServiceServer struct{}
 
+func (UnimplementedBridgeServiceServer) Ping(context.Context, *PingRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method Ping not implemented")
+}
 func (UnimplementedBridgeServiceServer) CreateWindow(context.Context, *CreateWindowRequest) (*Response, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateWindow not implemented")
 }
@@ -3631,8 +3701,20 @@ func (UnimplementedBridgeServiceServer) SetTappableCanvasImage(context.Context, 
 func (UnimplementedBridgeServiceServer) SetTappableCanvasRect(context.Context, *SetTappableCanvasRectRequest) (*Response, error) {
 	return nil, status.Error(codes.Unimplemented, "method SetTappableCanvasRect not implemented")
 }
+func (UnimplementedBridgeServiceServer) SetTappableCanvasBuffer(context.Context, *SetTappableCanvasBufferRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetTappableCanvasBuffer not implemented")
+}
 func (UnimplementedBridgeServiceServer) UpdateCanvasShader(context.Context, *UpdateCanvasShaderRequest) (*Response, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateCanvasShader not implemented")
+}
+func (UnimplementedBridgeServiceServer) UpdateCanvasSphereBuffer(context.Context, *UpdateCanvasSphereBufferRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateCanvasSphereBuffer not implemented")
+}
+func (UnimplementedBridgeServiceServer) SetShaderTextureUniform(context.Context, *SetShaderTextureUniformRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetShaderTextureUniform not implemented")
+}
+func (UnimplementedBridgeServiceServer) SetShaderCubemapUniform(context.Context, *SetShaderCubemapUniformRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetShaderCubemapUniform not implemented")
 }
 func (UnimplementedBridgeServiceServer) SaveRasterBackground(context.Context, *SaveRasterBackgroundRequest) (*Response, error) {
 	return nil, status.Error(codes.Unimplemented, "method SaveRasterBackground not implemented")
@@ -4073,6 +4155,24 @@ func RegisterBridgeServiceServer(s grpc.ServiceRegistrar, srv BridgeServiceServe
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&BridgeService_ServiceDesc, srv)
+}
+
+func _BridgeService_Ping_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PingRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).Ping(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_Ping_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).Ping(ctx, req.(*PingRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _BridgeService_CreateWindow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -5875,6 +5975,24 @@ func _BridgeService_SetTappableCanvasRect_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
+func _BridgeService_SetTappableCanvasBuffer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetTappableCanvasBufferRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).SetTappableCanvasBuffer(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_SetTappableCanvasBuffer_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).SetTappableCanvasBuffer(ctx, req.(*SetTappableCanvasBufferRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _BridgeService_UpdateCanvasShader_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UpdateCanvasShaderRequest)
 	if err := dec(in); err != nil {
@@ -5889,6 +6007,60 @@ func _BridgeService_UpdateCanvasShader_Handler(srv interface{}, ctx context.Cont
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(BridgeServiceServer).UpdateCanvasShader(ctx, req.(*UpdateCanvasShaderRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_UpdateCanvasSphereBuffer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateCanvasSphereBufferRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).UpdateCanvasSphereBuffer(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_UpdateCanvasSphereBuffer_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).UpdateCanvasSphereBuffer(ctx, req.(*UpdateCanvasSphereBufferRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_SetShaderTextureUniform_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetShaderTextureUniformRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).SetShaderTextureUniform(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_SetShaderTextureUniform_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).SetShaderTextureUniform(ctx, req.(*SetShaderTextureUniformRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_SetShaderCubemapUniform_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetShaderCubemapUniformRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).SetShaderCubemapUniform(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_SetShaderCubemapUniform_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).SetShaderCubemapUniform(ctx, req.(*SetShaderCubemapUniformRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -8414,6 +8586,10 @@ var BridgeService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*BridgeServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
+			MethodName: "Ping",
+			Handler:    _BridgeService_Ping_Handler,
+		},
+		{
 			MethodName: "CreateWindow",
 			Handler:    _BridgeService_CreateWindow_Handler,
 		},
@@ -8814,8 +8990,24 @@ var BridgeService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _BridgeService_SetTappableCanvasRect_Handler,
 		},
 		{
+			MethodName: "SetTappableCanvasBuffer",
+			Handler:    _BridgeService_SetTappableCanvasBuffer_Handler,
+		},
+		{
 			MethodName: "UpdateCanvasShader",
 			Handler:    _BridgeService_UpdateCanvasShader_Handler,
+		},
+		{
+			MethodName: "UpdateCanvasSphereBuffer",
+			Handler:    _BridgeService_UpdateCanvasSphereBuffer_Handler,
+		},
+		{
+			MethodName: "SetShaderTextureUniform",
+			Handler:    _BridgeService_SetShaderTextureUniform_Handler,
+		},
+		{
+			MethodName: "SetShaderCubemapUniform",
+			Handler:    _BridgeService_SetShaderCubemapUniform_Handler,
 		},
 		{
 			MethodName: "SaveRasterBackground",

@@ -358,8 +358,8 @@ export class VBox {
     const registrationPromise = this.ctx.bridge.send('registerCustomId', {
       widgetId: this.id,
       customId
-    }).then(() => {}).catch(err => {
-      console.error('Failed to register custom ID:', err);
+    }).then(() => {}).catch(() => {
+      // Connection errors are logged by the bridge itself
     });
     this.ctx.trackRegistration(registrationPromise);
     return this;

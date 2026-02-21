@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/base64"
 	"fmt"
 	"image"
 	"io"
@@ -503,36 +502,10 @@ func (b *Bridge) handleCreateImage(msg Message) Response {
 		img = canvas.NewImageFromImage(decodedImg)
 		// Set MinSize to ensure proper layout - this is critical for display!
 		img.SetMinSize(fyne.NewSize(float32(width), float32(height)))
-	} else if !hasPath || path == "" {
-		// If path is empty, create a blank image (will be updated with base64 later)
-		img = canvas.NewImageFromImage(nil)
-	} else if strings.HasPrefix(path, "data:") {
-		// Handle base64 data URI directly
-		// Parse the data URL format: "data:image/png;base64,..."
-		parts := strings.SplitN(path, ",", 2)
-		if len(parts) != 2 {
-			return Response{
-				ID:      msg.ID,
-				Success: false,
-				Error:   "Invalid data URL format",
-			}
-		}
-
-		base64Data := parts[1]
-		imageData, err := base64.StdEncoding.DecodeString(base64Data)
+	} else if rawBytes, ok := msg.Payload["path"].([]byte); ok {
+		// Raw image bytes (from gRPC/msgpack native binary)
+		decodedImg, _, err := image.Decode(bytes.NewReader(rawBytes))
 		if err != nil {
-			log.Printf("[Image] Error decoding base64: %v", err)
-			return Response{
-				ID:      msg.ID,
-				Success: false,
-				Error:   fmt.Sprintf("Failed to decode base64: %v", err),
-			}
-		}
-
-		// Decode image data
-		decodedImg, _, err := image.Decode(bytes.NewReader(imageData))
-		if err != nil {
-			log.Printf("[Image] Error decoding image: %v", err)
 			return Response{
 				ID:      msg.ID,
 				Success: false,
@@ -544,7 +517,34 @@ func (b *Bridge) handleCreateImage(msg Message) Response {
 		width, height := bounds.Dx(), bounds.Dy()
 
 		img = canvas.NewImageFromImage(decodedImg)
-		// Set MinSize to ensure proper layout - this is critical for display!
+		img.SetMinSize(fyne.NewSize(float32(width), float32(height)))
+	} else if !hasPath || path == "" {
+		// If path is empty, create a blank image (will be updated with base64 later)
+		img = canvas.NewImageFromImage(nil)
+	} else if strings.HasPrefix(path, "data:") {
+		// Handle base64 data URI
+		imageData, err := extractBinary(path)
+		if err != nil {
+			return Response{
+				ID:      msg.ID,
+				Success: false,
+				Error:   fmt.Sprintf("Failed to decode base64: %v", err),
+			}
+		}
+
+		decodedImg, _, err := image.Decode(bytes.NewReader(imageData))
+		if err != nil {
+			return Response{
+				ID:      msg.ID,
+				Success: false,
+				Error:   fmt.Sprintf("Failed to decode image: %v", err),
+			}
+		}
+
+		bounds := decodedImg.Bounds()
+		width, height := bounds.Dx(), bounds.Dy()
+
+		img = canvas.NewImageFromImage(decodedImg)
 		img.SetMinSize(fyne.NewSize(float32(width), float32(height)))
 	} else {
 		// Load image from file - use file reading for better SVG support

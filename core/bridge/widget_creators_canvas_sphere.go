@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/base64"
 	"image"
 	"image/color"
 
@@ -774,15 +773,6 @@ func (b *Bridge) handleUpdateCanvasSphere(msg Message) Response {
 // handleUpdateCanvasSphereBuffer receives a pre-rendered pixel buffer for custom patterns
 func (b *Bridge) handleUpdateCanvasSphereBuffer(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
-	bufferBase64, ok := msg.Payload["buffer"].(string)
-	if !ok {
-		return Response{
-			ID:      msg.ID,
-			Success: false,
-			Error:   "Missing buffer data",
-		}
-	}
-
 	width, _ := getFloat64(msg.Payload["width"])
 	height, _ := getFloat64(msg.Payload["height"])
 	if width <= 0 || height <= 0 {
@@ -793,8 +783,7 @@ func (b *Bridge) handleUpdateCanvasSphereBuffer(msg Message) Response {
 		}
 	}
 
-	// Decode base64 buffer
-	bufferData, err := base64.StdEncoding.DecodeString(bufferBase64)
+	bufferData, err := extractBinary(msg.Payload["buffer"])
 	if err != nil {
 		return Response{
 			ID:      msg.ID,

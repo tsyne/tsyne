@@ -2,12 +2,23 @@ package main
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"log"
 
 	pb "github.com/paul-hammant/tsyne/bridge/proto"
 )
+
+// ============================================================================
+// Health check
+// ============================================================================
+
+// Ping returns a simple pong response for connectivity testing
+func (s *grpcBridgeService) Ping(ctx context.Context, req *pb.PingRequest) (*pb.Response, error) {
+	return &pb.Response{
+		Success: true,
+		Result:  map[string]string{"pong": "true"},
+	}, nil
+}
 
 // ============================================================================
 // Resource management
@@ -16,15 +27,12 @@ import (
 // RegisterResource registers a reusable resource
 func (s *grpcBridgeService) RegisterResource(ctx context.Context, req *pb.RegisterResourceRequest) (*pb.Response, error) {
 
-	// Convert raw bytes to base64 for the existing handler
-	base64Data := base64.StdEncoding.EncodeToString(req.Data)
-
 	msg := Message{
 		ID:   req.Name,
 		Type: "registerResource",
 		Payload: map[string]interface{}{
 			"name": req.Name,
-			"data": base64Data,
+			"data": req.Data, // pass []byte directly — extractBinary handles both
 		},
 	}
 
@@ -69,7 +77,7 @@ func (s *grpcBridgeService) UpdateImage(ctx context.Context, req *pb.UpdateImage
 	// Handle source (inline data or resource reference)
 	switch src := req.Source.(type) {
 	case *pb.UpdateImageRequest_InlineData:
-		payload["source"] = fmt.Sprintf("data:image/png;base64,%s", base64.StdEncoding.EncodeToString(src.InlineData))
+		payload["imageData"] = src.InlineData // pass []byte directly — extractBinary handles both
 	case *pb.UpdateImageRequest_ResourceName:
 		payload["resource"] = src.ResourceName
 	}

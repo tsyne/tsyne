@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/base64"
-	"fmt"
 
 	pb "github.com/paul-hammant/tsyne/bridge/proto"
 )
@@ -25,8 +23,8 @@ func (s *grpcBridgeService) CreateImage(ctx context.Context, req *pb.CreateImage
 	// Go handler expects "path" for data URLs/file paths, "resource" for resource names, and "url" for remote URLs
 	switch src := req.Source.(type) {
 	case *pb.CreateImageRequest_InlineData:
-		// Convert bytes to base64 data URL - Go handler expects this in "path" field
-		payload["path"] = fmt.Sprintf("data:image/png;base64,%s", base64.StdEncoding.EncodeToString(src.InlineData))
+		// Pass raw bytes directly — handleCreateImage checks for []byte on "path" field
+		payload["path"] = src.InlineData
 	case *pb.CreateImageRequest_ResourceName:
 		payload["resource"] = src.ResourceName
 	case *pb.CreateImageRequest_Path:

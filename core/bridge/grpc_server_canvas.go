@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/base64"
 
 	pb "github.com/paul-hammant/tsyne/bridge/proto"
 )
@@ -162,17 +161,14 @@ func (s *grpcBridgeService) CreateCanvasText(ctx context.Context, req *pb.Create
 
 // CreateCanvasRaster creates a canvas raster
 func (s *grpcBridgeService) CreateCanvasRaster(ctx context.Context, req *pb.CreateCanvasRasterRequest) (*pb.Response, error) {
-	// Convert pixels to base64
-	pixelData := base64.StdEncoding.EncodeToString(req.Pixels)
-
 	payload := map[string]interface{}{
 		"id":     req.WidgetId,
 		"width":  float64(req.Width),
 		"height": float64(req.Height),
-		"pixels": pixelData,
+		"pixels": req.Pixels, // pass []byte directly
 	}
 	if len(req.RawPixels) > 0 {
-		payload["rawPixels"] = base64.StdEncoding.EncodeToString(req.RawPixels)
+		payload["rawPixels"] = req.RawPixels // pass []byte directly
 	}
 	if blendMode := convertBlendMode(req.BlendMode); blendMode != "" {
 		payload["blendMode"] = blendMode
@@ -375,13 +371,11 @@ func (s *grpcBridgeService) CreateCanvasPolygon(ctx context.Context, req *pb.Cre
 
 // CreateTappableCanvasRaster creates a tappable canvas raster
 func (s *grpcBridgeService) CreateTappableCanvasRaster(ctx context.Context, req *pb.CreateTappableCanvasRasterRequest) (*pb.Response, error) {
-	pixelData := base64.StdEncoding.EncodeToString(req.Pixels)
-
 	payload := map[string]interface{}{
 		"id":                    req.WidgetId,
 		"width":                 float64(req.Width),
 		"height":                float64(req.Height),
-		"pixels":                pixelData,
+		"pixels":                req.Pixels, // pass []byte directly
 		"onKeyDownCallbackId":   req.OnKeyDownCallbackId,
 		"onKeyUpCallbackId":     req.OnKeyUpCallbackId,
 		"onScrollCallbackId":    req.OnScrollCallbackId,
@@ -723,15 +717,12 @@ func (s *grpcBridgeService) UpdateTappableCanvasRaster(ctx context.Context, req 
 
 // SetTappableCanvasImage sets canvas from PNG image bytes
 func (s *grpcBridgeService) SetTappableCanvasImage(ctx context.Context, req *pb.SetTappableCanvasImageRequest) (*pb.Response, error) {
-	// Encode raw image bytes to base64 for message handler
-	imageB64 := base64.StdEncoding.EncodeToString(req.Image)
-
 	msg := Message{
 		ID:   req.WidgetId,
 		Type: "setTappableCanvasImage",
 		Payload: map[string]interface{}{
 			"widgetId": req.WidgetId,
-			"image":    imageB64,
+			"image":    req.Image, // pass []byte directly
 		},
 	}
 
@@ -745,9 +736,6 @@ func (s *grpcBridgeService) SetTappableCanvasImage(ctx context.Context, req *pb.
 
 // SetTappableCanvasRect sets a rectangular region of pixels
 func (s *grpcBridgeService) SetTappableCanvasRect(ctx context.Context, req *pb.SetTappableCanvasRectRequest) (*pb.Response, error) {
-	// Encode raw pixel bytes to base64 for message handler
-	bufferB64 := base64.StdEncoding.EncodeToString(req.Buffer)
-
 	msg := Message{
 		ID:   req.WidgetId,
 		Type: "setTappableCanvasRect",
@@ -757,11 +745,107 @@ func (s *grpcBridgeService) SetTappableCanvasRect(ctx context.Context, req *pb.S
 			"y":        int(req.Y),
 			"width":    int(req.Width),
 			"height":   int(req.Height),
-			"buffer":   bufferB64,
+			"buffer":   req.Buffer, // pass []byte directly
 		},
 	}
 
 	resp := s.bridge.handleSetTappableCanvasRect(msg)
+
+	return &pb.Response{
+		Success: resp.Success,
+		Error:   resp.Error,
+	}, nil
+}
+
+// SetTappableCanvasBuffer sets all pixels at once from raw RGBA buffer
+func (s *grpcBridgeService) SetTappableCanvasBuffer(ctx context.Context, req *pb.SetTappableCanvasBufferRequest) (*pb.Response, error) {
+	payload := map[string]interface{}{
+		"widgetId": req.WidgetId,
+		"buffer":   req.Buffer, // pass []byte directly
+	}
+	if req.BlendMode != "" {
+		payload["blendMode"] = req.BlendMode
+	}
+
+	msg := Message{
+		ID:      req.WidgetId,
+		Type:    "setTappableCanvasBuffer",
+		Payload: payload,
+	}
+
+	resp := s.bridge.handleSetTappableCanvasBuffer(msg)
+
+	return &pb.Response{
+		Success: resp.Success,
+		Error:   resp.Error,
+	}, nil
+}
+
+// UpdateCanvasSphereBuffer updates sphere canvas with pre-rendered pixel buffer
+func (s *grpcBridgeService) UpdateCanvasSphereBuffer(ctx context.Context, req *pb.UpdateCanvasSphereBufferRequest) (*pb.Response, error) {
+	msg := Message{
+		ID:   req.WidgetId,
+		Type: "updateCanvasSphereBuffer",
+		Payload: map[string]interface{}{
+			"widgetId": req.WidgetId,
+			"buffer":   req.Buffer, // pass []byte directly
+			"width":    float64(req.Width),
+			"height":   float64(req.Height),
+		},
+	}
+
+	resp := s.bridge.handleUpdateCanvasSphereBuffer(msg)
+
+	return &pb.Response{
+		Success: resp.Success,
+		Error:   resp.Error,
+	}, nil
+}
+
+// SetShaderTextureUniform sets a 2D texture uniform on a shader canvas
+func (s *grpcBridgeService) SetShaderTextureUniform(ctx context.Context, req *pb.SetShaderTextureUniformRequest) (*pb.Response, error) {
+	msg := Message{
+		ID:   req.WidgetId,
+		Type: "setShaderTextureUniform",
+		Payload: map[string]interface{}{
+			"widgetId":    req.WidgetId,
+			"uniformName": req.UniformName,
+			"imageData":   req.ImageData, // pass []byte directly
+			"width":       float64(req.Width),
+			"height":      float64(req.Height),
+		},
+	}
+
+	resp := s.bridge.handleSetShaderTextureUniform(msg)
+
+	return &pb.Response{
+		Success: resp.Success,
+		Error:   resp.Error,
+	}, nil
+}
+
+// SetShaderCubemapUniform sets a cubemap uniform on a shader canvas
+func (s *grpcBridgeService) SetShaderCubemapUniform(ctx context.Context, req *pb.SetShaderCubemapUniformRequest) (*pb.Response, error) {
+	faces := make([]interface{}, len(req.Faces))
+	for i, face := range req.Faces {
+		faces[i] = map[string]interface{}{
+			"imageData": face.ImageData, // pass []byte directly
+			"width":     float64(face.Width),
+			"height":    float64(face.Height),
+		}
+	}
+
+	msg := Message{
+		ID:   req.WidgetId,
+		Type: "setShaderCubemapUniform",
+		Payload: map[string]interface{}{
+			"widgetId":    req.WidgetId,
+			"uniformName": req.UniformName,
+			"faces":       faces,
+		},
+	}
+
+	resp := s.bridge.handleSetShaderCubemapUniform(msg)
 
 	return &pb.Response{
 		Success: resp.Success,

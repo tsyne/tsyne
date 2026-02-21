@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"path/filepath"
@@ -496,5 +497,284 @@ func BenchmarkEncoderDirect(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		msgpack.Marshal(event)
+	}
+}
+
+// =============================================================================
+// TCP transport tests
+// =============================================================================
+
+// helper: create a framed msgpack message from a MsgpackMessage
+func frameMessage(t *testing.T, msg MsgpackMessage) []byte {
+	t.Helper()
+	msgBuf, err := msgpack.Marshal(msg)
+	if err != nil {
+		t.Fatalf("Failed to marshal message: %v", err)
+	}
+	frame := make([]byte, 4+len(msgBuf))
+	binary.BigEndian.PutUint32(frame[0:4], uint32(len(msgBuf)))
+	copy(frame[4:], msgBuf)
+	return frame
+}
+
+// helper: read one framed response from a connection
+func readFramedResponse(t *testing.T, conn net.Conn) MsgpackResponse {
+	t.Helper()
+	conn.SetReadDeadline(time.Now().Add(5 * time.Second))
+
+	lengthBuf := make([]byte, 4)
+	if _, err := io.ReadFull(conn, lengthBuf); err != nil {
+		t.Fatalf("Failed to read response length: %v", err)
+	}
+	length := binary.BigEndian.Uint32(lengthBuf)
+	if length > 1024*1024 {
+		t.Fatalf("Response too large: %d bytes", length)
+	}
+
+	respBuf := make([]byte, length)
+	if _, err := io.ReadFull(conn, respBuf); err != nil {
+		t.Fatalf("Failed to read response body: %v", err)
+	}
+
+	var resp MsgpackResponse
+	if err := msgpack.Unmarshal(respBuf, &resp); err != nil {
+		t.Fatalf("Failed to unmarshal response: %v", err)
+	}
+	return resp
+}
+
+// TestTcpListenerConnection tests basic TCP connectivity: connect, send ping, get pong
+func TestTcpListenerConnection(t *testing.T) {
+	// Create a TCP listener on a random port
+	listener, err := net.Listen("tcp", "localhost:0")
+	if err != nil {
+		t.Fatalf("Failed to create TCP listener: %v", err)
+	}
+	defer listener.Close()
+
+	// Create a minimal Bridge just for handling ping
+	bridge := &Bridge{}
+
+	server := NewMsgpackServerWithListener(bridge, listener)
+	if err := server.Start(); err != nil {
+		t.Fatalf("Failed to start server: %v", err)
+	}
+	defer server.Close()
+
+	// Connect a raw TCP client
+	addr := listener.Addr().String()
+	conn, err := net.DialTimeout("tcp", addr, 2*time.Second)
+	if err != nil {
+		t.Fatalf("Failed to connect to %s: %v", addr, err)
+	}
+	defer conn.Close()
+
+	// Send a framed ping message
+	ping := MsgpackMessage{
+		ID:      "tcp_ping_1",
+		Type:    "ping",
+		Payload: map[string]interface{}{},
+	}
+	conn.Write(frameMessage(t, ping))
+
+	// Read the framed response
+	resp := readFramedResponse(t, conn)
+
+	if resp.ID != "tcp_ping_1" {
+		t.Errorf("Response ID mismatch: got %q, want %q", resp.ID, "tcp_ping_1")
+	}
+	if !resp.Success {
+		t.Errorf("Expected success=true, got false (error: %s)", resp.Error)
+	}
+	if resp.Result["pong"] != true {
+		t.Errorf("Expected pong=true in result, got %v", resp.Result)
+	}
+}
+
+// TestTcpAuthSuccess tests: set token, client sends correct auth, then ping works
+func TestTcpAuthSuccess(t *testing.T) {
+	listener, err := net.Listen("tcp", "localhost:0")
+	if err != nil {
+		t.Fatalf("Failed to create listener: %v", err)
+	}
+	defer listener.Close()
+
+	bridge := &Bridge{}
+	server := NewMsgpackServerWithListener(bridge, listener)
+	server.SetAuthToken("secret123")
+	if err := server.Start(); err != nil {
+		t.Fatalf("Failed to start server: %v", err)
+	}
+	defer server.Close()
+
+	conn, err := net.DialTimeout("tcp", listener.Addr().String(), 2*time.Second)
+	if err != nil {
+		t.Fatalf("Failed to connect: %v", err)
+	}
+	defer conn.Close()
+
+	// Step 1: Send auth message with correct token
+	authMsg := MsgpackMessage{
+		ID:      "auth_1",
+		Type:    "auth",
+		Payload: map[string]interface{}{"token": "secret123"},
+	}
+	conn.Write(frameMessage(t, authMsg))
+
+	authResp := readFramedResponse(t, conn)
+	if !authResp.Success {
+		t.Fatalf("Auth should have succeeded, got error: %s", authResp.Error)
+	}
+	if authResp.ID != "auth_1" {
+		t.Errorf("Auth response ID mismatch: got %q, want %q", authResp.ID, "auth_1")
+	}
+
+	// Step 2: Send a regular ping — should work after auth
+	ping := MsgpackMessage{
+		ID:      "post_auth_ping",
+		Type:    "ping",
+		Payload: map[string]interface{}{},
+	}
+	conn.Write(frameMessage(t, ping))
+
+	pingResp := readFramedResponse(t, conn)
+	if !pingResp.Success {
+		t.Errorf("Ping after auth should succeed, got error: %s", pingResp.Error)
+	}
+	if pingResp.Result["pong"] != true {
+		t.Errorf("Expected pong=true, got %v", pingResp.Result)
+	}
+}
+
+// TestTcpAuthFailure tests: set token, client sends wrong token, gets error and connection closes
+func TestTcpAuthFailure(t *testing.T) {
+	listener, err := net.Listen("tcp", "localhost:0")
+	if err != nil {
+		t.Fatalf("Failed to create listener: %v", err)
+	}
+	defer listener.Close()
+
+	bridge := &Bridge{}
+	server := NewMsgpackServerWithListener(bridge, listener)
+	server.SetAuthToken("secret123")
+	if err := server.Start(); err != nil {
+		t.Fatalf("Failed to start server: %v", err)
+	}
+	defer server.Close()
+
+	conn, err := net.DialTimeout("tcp", listener.Addr().String(), 2*time.Second)
+	if err != nil {
+		t.Fatalf("Failed to connect: %v", err)
+	}
+	defer conn.Close()
+
+	// Send auth with WRONG token
+	authMsg := MsgpackMessage{
+		ID:      "auth_bad",
+		Type:    "auth",
+		Payload: map[string]interface{}{"token": "wrong_token"},
+	}
+	conn.Write(frameMessage(t, authMsg))
+
+	authResp := readFramedResponse(t, conn)
+	if authResp.Success {
+		t.Fatal("Auth with wrong token should have failed")
+	}
+	if authResp.Error == "" {
+		t.Error("Expected error message in auth failure response")
+	}
+
+	// The server should close the connection — further reads should fail
+	conn.SetReadDeadline(time.Now().Add(2 * time.Second))
+	buf := make([]byte, 1)
+	_, err = conn.Read(buf)
+	if err == nil {
+		t.Error("Expected connection to be closed after auth failure, but read succeeded")
+	}
+}
+
+// TestTcpAuthRequired tests: token is set but client sends a non-auth message first
+func TestTcpAuthRequired(t *testing.T) {
+	listener, err := net.Listen("tcp", "localhost:0")
+	if err != nil {
+		t.Fatalf("Failed to create listener: %v", err)
+	}
+	defer listener.Close()
+
+	bridge := &Bridge{}
+	server := NewMsgpackServerWithListener(bridge, listener)
+	server.SetAuthToken("secret123")
+	if err := server.Start(); err != nil {
+		t.Fatalf("Failed to start server: %v", err)
+	}
+	defer server.Close()
+
+	conn, err := net.DialTimeout("tcp", listener.Addr().String(), 2*time.Second)
+	if err != nil {
+		t.Fatalf("Failed to connect: %v", err)
+	}
+	defer conn.Close()
+
+	// Send a ping directly (not an auth message) — should be rejected
+	ping := MsgpackMessage{
+		ID:      "sneaky_ping",
+		Type:    "ping",
+		Payload: map[string]interface{}{},
+	}
+	conn.Write(frameMessage(t, ping))
+
+	resp := readFramedResponse(t, conn)
+	if resp.Success {
+		t.Fatal("Non-auth first message should have been rejected")
+	}
+	if resp.Error == "" {
+		t.Error("Expected error message about requiring auth")
+	}
+
+	// Connection should be closed
+	conn.SetReadDeadline(time.Now().Add(2 * time.Second))
+	buf := make([]byte, 1)
+	_, err = conn.Read(buf)
+	if err == nil {
+		t.Error("Expected connection to be closed after auth rejection")
+	}
+}
+
+// TestTcpNoAuthWhenNotSet tests: no token set, client sends ping directly — should work
+func TestTcpNoAuthWhenNotSet(t *testing.T) {
+	listener, err := net.Listen("tcp", "localhost:0")
+	if err != nil {
+		t.Fatalf("Failed to create listener: %v", err)
+	}
+	defer listener.Close()
+
+	bridge := &Bridge{}
+	server := NewMsgpackServerWithListener(bridge, listener)
+	// Deliberately NOT calling server.SetAuthToken()
+	if err := server.Start(); err != nil {
+		t.Fatalf("Failed to start server: %v", err)
+	}
+	defer server.Close()
+
+	conn, err := net.DialTimeout("tcp", listener.Addr().String(), 2*time.Second)
+	if err != nil {
+		t.Fatalf("Failed to connect: %v", err)
+	}
+	defer conn.Close()
+
+	// Send ping directly — no auth needed
+	ping := MsgpackMessage{
+		ID:      "noauth_ping",
+		Type:    "ping",
+		Payload: map[string]interface{}{},
+	}
+	conn.Write(frameMessage(t, ping))
+
+	resp := readFramedResponse(t, conn)
+	if !resp.Success {
+		t.Errorf("Ping without auth (when no token set) should succeed, got error: %s", resp.Error)
+	}
+	if resp.Result["pong"] != true {
+		t.Errorf("Expected pong=true, got %v", resp.Result)
 	}
 }

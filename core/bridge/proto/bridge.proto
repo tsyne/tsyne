@@ -6,6 +6,9 @@ option go_package = "github.com/paul-hammant/tsyne/bridge/proto";
 
 // BridgeService provides high-performance binary protocol for Tsyne bridge
 service BridgeService {
+  // Health check
+  rpc Ping(PingRequest) returns (Response);
+
   // ============================================================================
   // Window operations
   // ============================================================================
@@ -135,7 +138,11 @@ service BridgeService {
   rpc UpdateTappableCanvasRaster(UpdateTappableCanvasRasterRequest) returns (Response);
   rpc SetTappableCanvasImage(SetTappableCanvasImageRequest) returns (Response);
   rpc SetTappableCanvasRect(SetTappableCanvasRectRequest) returns (Response);
+  rpc SetTappableCanvasBuffer(SetTappableCanvasBufferRequest) returns (Response);
   rpc UpdateCanvasShader(UpdateCanvasShaderRequest) returns (Response);
+  rpc UpdateCanvasSphereBuffer(UpdateCanvasSphereBufferRequest) returns (Response);
+  rpc SetShaderTextureUniform(SetShaderTextureUniformRequest) returns (Response);
+  rpc SetShaderCubemapUniform(SetShaderCubemapUniformRequest) returns (Response);
 
   // Sprite system - efficient dirty-rectangle based animation
   rpc SaveRasterBackground(SaveRasterBackgroundRequest) returns (Response);
@@ -846,6 +853,10 @@ message EventSubscription {
   repeated string event_types = 1;  // Which events to subscribe to
 }
 
+// Health check
+message PingRequest {
+}
+
 // Lifecycle
 message QuitRequest {
 }
@@ -1395,6 +1406,44 @@ message SetTappableCanvasRectRequest {
   int32 width = 4;  // Width of the rectangle
   int32 height = 5; // Height of the rectangle
   bytes buffer = 6; // RGBA pixel data for the rectangle
+}
+
+// Set all pixels at once from raw RGBA buffer
+message SetTappableCanvasBufferRequest {
+  string widget_id = 1;
+  bytes buffer = 2;          // RGBA pixel data
+  string blend_mode = 3;     // Optional: "normal", "additive", "multiply", "screen"
+}
+
+// Update sphere canvas with pre-rendered pixel buffer
+message UpdateCanvasSphereBufferRequest {
+  string widget_id = 1;
+  bytes buffer = 2;    // RGBA pixel data
+  int32 width = 3;
+  int32 height = 4;
+}
+
+// Set a 2D texture uniform on a shader canvas
+message SetShaderTextureUniformRequest {
+  string widget_id = 1;
+  string uniform_name = 2;
+  bytes image_data = 3;   // RGBA pixel data
+  int32 width = 4;
+  int32 height = 5;
+}
+
+// A single cubemap face
+message CubemapFace {
+  bytes image_data = 1;   // RGBA pixel data
+  int32 width = 2;
+  int32 height = 3;
+}
+
+// Set a cubemap uniform on a shader canvas (6 faces: +X, -X, +Y, -Y, +Z, -Z)
+message SetShaderCubemapUniformRequest {
+  string widget_id = 1;
+  string uniform_name = 2;
+  repeated CubemapFace faces = 3;  // Exactly 6 faces
 }
 
 // Sprite system messages

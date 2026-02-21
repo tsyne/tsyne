@@ -1,12 +1,15 @@
 package main
 
 import (
+	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"image"
 	"image/color"
 	"image/draw"
 	"log"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -171,6 +174,24 @@ func getFloat64(v interface{}) (float64, bool) {
 		return float64(val), true
 	default:
 		return 0, false
+	}
+}
+
+// extractBinary accepts []byte (msgpack/gRPC native binary) or a base64 string
+// (stdio/JSON), optionally with a data: URI prefix. Returns raw bytes.
+func extractBinary(v interface{}) ([]byte, error) {
+	switch val := v.(type) {
+	case []byte:
+		return val, nil
+	case string:
+		if len(val) > 5 && val[:5] == "data:" {
+			if i := strings.Index(val, ","); i != -1 {
+				val = val[i+1:]
+			}
+		}
+		return base64.StdEncoding.DecodeString(val)
+	default:
+		return nil, fmt.Errorf("expected []byte or base64 string, got %T", v)
 	}
 }
 
@@ -1820,7 +1841,7 @@ func (b *Bridge) sendEvent(event Event) {
 	switch b.transport {
 	case "msgpack":
 		if b.msgpackServer != nil {
-			b.msgpackServer.SendEvent(event)
+			b.msgpackServer.SendEventBatched(event)
 		}
 	case "grpc":
 		if b.grpcEventChan != nil {

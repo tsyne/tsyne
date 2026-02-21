@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { BridgeInterface, Event } from './fynebridge';
+import { BridgeInterface, Event, encodeBinaryFields } from './fynebridge';
 
 // Import koffi at runtime
 let koffi: any;
@@ -147,7 +147,7 @@ export class FfiBridgeConnection implements BridgeInterface {
     }
 
     const id = `msg_${this.messageId++}`;
-    const message = { id, type, payload };
+    const message = { id, type, payload: encodeBinaryFields(payload) };
     const messageJson = JSON.stringify(message);
 
     // Call the FFI function

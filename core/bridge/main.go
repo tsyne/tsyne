@@ -9,6 +9,7 @@ import (
 	"bufio"
 	"context"
 	"crypto/rand"
+	"crypto/tls"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -18,9 +19,14 @@ import (
 	"log"
 	"net"
 	"os"
+	"os/signal"
+	"strings"
+	"syscall"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
 	pb "github.com/paul-hammant/tsyne/bridge/proto"
 )
@@ -681,10 +687,14 @@ func generateSecureToken(length int) string {
 	return hex.EncodeToString(bytes)
 }
 
-// tokenAuthInterceptor validates the auth token for gRPC requests
+// tokenAuthInterceptor validates the auth token for gRPC requests.
+// When expectedToken is empty, all requests are allowed (no auth on localhost).
 func tokenAuthInterceptor(expectedToken string) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-		// Extract token from metadata
+		if expectedToken == "" {
+			return handler(ctx, req)
+		}
+
 		md, ok := metadata.FromIncomingContext(ctx)
 		if !ok {
 			return nil, fmt.Errorf("missing metadata")
@@ -699,10 +709,14 @@ func tokenAuthInterceptor(expectedToken string) grpc.UnaryServerInterceptor {
 	}
 }
 
-// tokenStreamInterceptor validates the auth token for streaming gRPC requests
+// tokenStreamInterceptor validates the auth token for streaming gRPC requests.
+// When expectedToken is empty, all requests are allowed (no auth on localhost).
 func tokenStreamInterceptor(expectedToken string) grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-		// Extract token from metadata
+		if expectedToken == "" {
+			return handler(srv, ss)
+		}
+
 		md, ok := metadata.FromIncomingContext(ss.Context())
 		if !ok {
 			return fmt.Errorf("missing metadata")
@@ -717,24 +731,32 @@ func tokenStreamInterceptor(expectedToken string) grpc.StreamServerInterceptor {
 	}
 }
 
-// startGrpcServer starts the gRPC server on the specified port
-func startGrpcServer(port int, token string, bridge *Bridge, readyChan chan<- bool) error {
-	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", port))
-	if err != nil {
-		return err
-	}
+// startGrpcServer starts the gRPC server on the given listener
+func startGrpcServer(lis net.Listener, token string, bridge *Bridge, readyChan chan<- bool, tlsCertFile, tlsKeyFile string) error {
 
-	// Performance-optimized gRPC server options
-	grpcServer := grpc.NewServer(
+	// Build server options
+	opts := []grpc.ServerOption{
 		grpc.UnaryInterceptor(tokenAuthInterceptor(token)),
 		grpc.StreamInterceptor(tokenStreamInterceptor(token)),
 		// Larger buffers for reduced syscalls
-		grpc.WriteBufferSize(64*1024),
-		grpc.ReadBufferSize(64*1024),
+		grpc.WriteBufferSize(64 * 1024),
+		grpc.ReadBufferSize(64 * 1024),
 		// Disable max connection age for persistent connections
-		grpc.MaxRecvMsgSize(100*1024*1024),
-		grpc.MaxSendMsgSize(100*1024*1024),
-	)
+		grpc.MaxRecvMsgSize(100 * 1024 * 1024),
+		grpc.MaxSendMsgSize(100 * 1024 * 1024),
+	}
+
+	// Add TLS credentials if cert+key provided
+	if tlsCertFile != "" && tlsKeyFile != "" {
+		creds, err := credentials.NewServerTLSFromFile(tlsCertFile, tlsKeyFile)
+		if err != nil {
+			return fmt.Errorf("failed to load TLS credentials: %w", err)
+		}
+		opts = append(opts, grpc.Creds(creds))
+		log.Println("[gRPC] TLS enabled")
+	}
+
+	grpcServer := grpc.NewServer(opts...)
 
 	pb.RegisterBridgeServiceServer(grpcServer, &grpcBridgeService{bridge: bridge})
 
@@ -744,63 +766,112 @@ func startGrpcServer(port int, token string, bridge *Bridge, readyChan chan<- bo
 	return grpcServer.Serve(lis)
 }
 
-// runGrpcMode runs the bridge in gRPC mode
-func runGrpcMode(testMode bool) {
-	// 1. Find free port
-	port := findFreePort()
-
-	// 2. Generate secure token
-	token := generateSecureToken(32)
-
-	// 3. Create bridge
+// runGrpcMode runs the bridge in gRPC mode.
+// When bindAddr is empty, runs as child process (random port, auto token, stdout handshake).
+// When bindAddr is set, runs as standalone TCP server (like msgpack-tcp remote mode).
+func runGrpcMode(testMode bool, bindAddr string, token string, tlsCertFile, tlsKeyFile string) {
+	// 1. Create bridge
 	bridge := NewBridge(testMode)
 	bridge.transport = "grpc"
-	bridge.grpcEventChan = make(chan Event, 256) // Larger buffer for better throughput
+	bridge.grpcEventChan = make(chan Event, 256)
 
-	// 4. Start gRPC server in background - server signals ready via channel
-	grpcReady := make(chan bool, 1)
-	go func() {
-		if err := startGrpcServer(port, token, bridge, grpcReady); err != nil {
-			log.Fatalf("gRPC server failed: %v", err)
+	standalone := bindAddr != ""
+
+	if standalone {
+		// Standalone/remote mode — explicit bind address and token
+		// Security guard: refuse to bind to non-localhost without a token
+		if token == "" && (strings.Contains(bindAddr, "0.0.0.0") || (!strings.HasPrefix(bindAddr, "localhost") && !strings.HasPrefix(bindAddr, "127."))) {
+			log.Fatalf("SECURITY: --token is required when binding to non-localhost address %q", bindAddr)
 		}
-	}()
+		// No auto-generated token in standalone mode — empty token means no auth on localhost
+		// (matches msgpack-tcp behavior)
 
-	// Wait for server to be ready (signaled from startGrpcServer after registration)
-	<-grpcReady
+		lis, err := net.Listen("tcp", bindAddr)
+		if err != nil {
+			log.Fatalf("Failed to listen on %s: %v", bindAddr, err)
+		}
 
-	// 5. Send connection info with version handshake to TypeScript via stdout
-	initMsg := map[string]interface{}{
-		"grpcPort":        port,
-		"token":           token,
-		"protocol":        "grpc",
-		"protocolVersion": ProtocolVersion,
-		"bridgeVersion":   BridgeVersion,
-	}
-	jsonData, _ := json.Marshal(initMsg)
-	os.Stdout.Write(jsonData)
-	os.Stdout.Write([]byte("\n"))
-	os.Stdout.Sync()
-
-	// 6. Keep stdin open for shutdown signal
-	shutdownChan := make(chan bool)
-	go func() {
-		scanner := bufio.NewScanner(os.Stdin)
-		for scanner.Scan() {
-			line := scanner.Text()
-			if line == "shutdown" {
-				shutdownChan <- true
-				break
+		grpcReady := make(chan bool, 1)
+		go func() {
+			if err := startGrpcServer(lis, token, bridge, grpcReady, tlsCertFile, tlsKeyFile); err != nil {
+				log.Fatalf("gRPC server failed: %v", err)
 			}
+		}()
+		<-grpcReady
+
+		log.Printf("LISTEN grpc on %s", lis.Addr().String())
+
+		// Shutdown via SIGTERM/SIGINT (no stdin reader — standalone mode)
+		sigChan := make(chan os.Signal, 1)
+		signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+		go func() {
+			<-sigChan
+			log.Println("[gRPC] Shutting down...")
+			if !testMode {
+				fyne.DoAndWait(func() {
+					bridge.app.Quit()
+				})
+			}
+			os.Exit(0)
+		}()
+
+		if !testMode {
+			bridge.app.Run()
+		} else {
+			select {} // Block forever in test mode
 		}
-	}()
+	} else {
+		// Child process mode — random port, auto token, stdout handshake
+		port := findFreePort()
+		token = generateSecureToken(32)
 
-	// 7. Run the Fyne app
-	if !testMode {
-		go bridge.app.Run()
+		lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", port))
+		if err != nil {
+			log.Fatalf("Failed to listen on localhost:%d: %v", port, err)
+		}
+
+		grpcReady := make(chan bool, 1)
+		go func() {
+			if err := startGrpcServer(lis, token, bridge, grpcReady, "", ""); err != nil {
+				log.Fatalf("gRPC server failed: %v", err)
+			}
+		}()
+		<-grpcReady
+
+		// Send connection info to TypeScript via stdout
+		initMsg := map[string]interface{}{
+			"grpcPort":        port,
+			"token":           token,
+			"protocol":        "grpc",
+			"protocolVersion": ProtocolVersion,
+			"bridgeVersion":   BridgeVersion,
+		}
+		jsonData, _ := json.Marshal(initMsg)
+		os.Stdout.Write(jsonData)
+		os.Stdout.Write([]byte("\n"))
+		os.Stdout.Sync()
+
+		// Keep stdin open for shutdown signal
+		shutdownChan := make(chan bool)
+		go func() {
+			scanner := bufio.NewScanner(os.Stdin)
+			for scanner.Scan() {
+				line := scanner.Text()
+				if line == "shutdown" {
+					shutdownChan <- true
+					break
+				}
+			}
+		}()
+
+		if !testMode {
+			go bridge.app.Run()
+		}
+
+		<-shutdownChan
+		log.Println("[gRPC] Bridge shutting down...")
 	}
-
-	<-shutdownChan
-	log.Println("[gRPC] Bridge shutting down...")
 }
 
 // runMsgpackUdsMode runs the bridge in MessagePack over Unix Domain Socket mode
@@ -863,6 +934,81 @@ func runMsgpackUdsMode(testMode bool) {
 	} else {
 		<-shutdownChan
 		msgpackServer.Close()
+	}
+}
+
+// runMsgpackTcpMode runs the bridge as a standalone TCP server (no parent process)
+func runMsgpackTcpMode(testMode bool, bindAddr string, token string, tlsCertFile, tlsKeyFile string) {
+	if bindAddr == "" {
+		bindAddr = "localhost:9800"
+	}
+	// Security guard: refuse to bind to non-localhost without a token
+	if token == "" && (strings.Contains(bindAddr, "0.0.0.0") || (!strings.HasPrefix(bindAddr, "localhost") && !strings.HasPrefix(bindAddr, "127."))) {
+		log.Fatalf("SECURITY: --token is required when binding to non-localhost address %q", bindAddr)
+	}
+
+	// 1. Create bridge
+	bridge := NewBridge(testMode)
+	bridge.transport = "msgpack"
+
+	// 2. Create TCP listener
+	listener, err := net.Listen("tcp", bindAddr)
+	if err != nil {
+		log.Fatalf("Failed to listen on %s: %v", bindAddr, err)
+	}
+
+	// 2b. Wrap with TLS if cert+key provided
+	if tlsCertFile != "" && tlsKeyFile != "" {
+		cert, err := tls.LoadX509KeyPair(tlsCertFile, tlsKeyFile)
+		if err != nil {
+			log.Fatalf("Failed to load TLS certificate: %v", err)
+		}
+		listener = tls.NewListener(listener, &tls.Config{Certificates: []tls.Certificate{cert}})
+		log.Println("[msgpack-tcp] TLS enabled")
+	}
+
+	// 3. Create server with the pre-created listener
+	msgpackServer := NewMsgpackServerWithListener(bridge, listener)
+	if token != "" {
+		msgpackServer.SetAuthToken(token)
+	}
+
+	// 3b. Auto-enable event batching for TCP (higher per-write overhead than UDS)
+	msgpackServer.EnableBatching(2 * time.Millisecond)
+
+	// 4. Wire events
+	bridge.msgpackServer = msgpackServer
+
+	// 5. Start accepting connections
+	if err := msgpackServer.Start(); err != nil {
+		log.Fatalf("MessagePack TCP server failed to start: %v", err)
+	}
+
+	// 6. Log to stderr (no stdout — standalone mode has no parent process)
+	log.Printf("LISTEN msgpack-tcp on %s", listener.Addr().String())
+
+	// 7. Shutdown via SIGTERM/SIGINT (no stdin reader — standalone mode)
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		<-sigChan
+		log.Println("[msgpack-tcp] Shutting down...")
+		msgpackServer.Close()
+		if !testMode {
+			fyne.DoAndWait(func() {
+				bridge.app.Quit()
+			})
+		}
+		os.Exit(0)
+	}()
+
+	// 8. Run Fyne app on main goroutine (required by Fyne)
+	if !testMode {
+		bridge.app.Run()
+	} else {
+		// In test mode, block until signal
+		select {}
 	}
 }
 
@@ -996,7 +1142,7 @@ func StartBridgeGrpc(testMode C.int) C.int {
 	perfEnabled := os.Getenv("TSYNE_PERF_SAMPLE") == "true"
 	InitPerfMonitor(perfEnabled)
 
-	runGrpcMode(testMode != 0)
+	runGrpcMode(testMode != 0, "", "", "", "")
 
 	return 0
 }
@@ -1028,7 +1174,11 @@ func main() {
 	InitPerfMonitor(perfEnabled)
 
 	// Parse command-line flags
-	mode := flag.String("mode", "stdio", "Communication mode: stdio, grpc, or msgpack-uds")
+	mode := flag.String("mode", "stdio", "Communication mode: stdio, grpc, msgpack-uds, or msgpack-tcp")
+	bind := flag.String("bind", "", "TCP bind address (default localhost:9800 for msgpack-tcp)")
+	token := flag.String("token", "", "Shared secret for auth (required for non-localhost in msgpack-tcp mode)")
+	tlsCert := flag.String("tls-cert", "", "Path to TLS certificate PEM file (gRPC and msgpack-tcp modes)")
+	tlsKey := flag.String("tls-key", "", "Path to TLS private key PEM file (gRPC and msgpack-tcp modes)")
 	// Filter out --headless and --test flags before parsing, as they're not recognized by flag package
 	filteredArgs := []string{}
 	for _, arg := range os.Args[1:] {
@@ -1041,9 +1191,11 @@ func main() {
 	// Run in the specified mode
 	switch *mode {
 	case "grpc":
-		runGrpcMode(testMode)
+		runGrpcMode(testMode, *bind, *token, *tlsCert, *tlsKey)
 	case "msgpack-uds":
 		runMsgpackUdsMode(testMode)
+	case "msgpack-tcp":
+		runMsgpackTcpMode(testMode, *bind, *token, *tlsCert, *tlsKey)
 	case "stdio":
 		runStdioMode(testMode)
 	default:

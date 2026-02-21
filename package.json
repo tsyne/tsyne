@@ -6,6 +6,7 @@
   "scripts": {
     "build": "pnpm run build:bridge && pnpm run build:core",
     "build:bridge": "cd core/bridge && ./setup-fyne-fork.sh && go build -o ../bin/tsyne-bridge .",
+    "build:proto": "make -C core/bridge proto",
     "build:core": "pnpm -C core run build",
     "build:designer": "pnpm -C designer run build",
     "build:all": "pnpm run build && pnpm run build:designer",

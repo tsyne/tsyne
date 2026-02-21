@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/base64"
 	"fmt"
 	"image"
 	"io"
@@ -913,7 +912,12 @@ func (b *Bridge) handleUpdateImage(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	// Check which type of image source is provided
+	// imageData can be string (data: URI / base64) or []byte (native binary from gRPC/msgpack)
 	imageData, hasImageData := msg.Payload["imageData"].(string)
+	imageDataBytes, hasImageDataBytes := msg.Payload["imageData"].([]byte)
+	if hasImageDataBytes {
+		hasImageData = true
+	}
 	path, hasPath := msg.Payload["path"].(string)
 	resourceName, hasResource := msg.Payload["resource"].(string)
 	svgString, hasSVG := msg.Payload["svg"].(string)
@@ -1020,36 +1024,27 @@ func (b *Bridge) handleUpdateImage(msg Message) Response {
 				Error:   fmt.Sprintf("Failed to decode image from URL: %v", err),
 			}
 		}
-	} else if hasImageData && imageData != "" {
-		// Base64 data URI (backwards compatible)
-		var base64Data string
-		if strings.HasPrefix(imageData, "data:") {
-			// Split on comma to separate header from data
-			parts := strings.SplitN(imageData, ",", 2)
-			if len(parts) != 2 {
-				return Response{
-					ID:      msg.ID,
-					Success: false,
-					Error:   "Invalid data URL format",
-				}
-			}
-			base64Data = parts[1]
-		} else {
-			// Assume it's already base64 without the data URL prefix
-			base64Data = imageData
-		}
-
-		// Decode base64
-		imgBytes, err := base64.StdEncoding.DecodeString(base64Data)
+	} else if hasImageDataBytes {
+		// Raw binary image data (from gRPC/msgpack native binary)
+		decodedImg, _, err = image.Decode(bytes.NewReader(imageDataBytes))
 		if err != nil {
 			return Response{
 				ID:      msg.ID,
 				Success: false,
-				Error:   fmt.Sprintf("Failed to decode base64: %v", err),
+				Error:   fmt.Sprintf("Failed to decode image: %v", err),
+			}
+		}
+	} else if hasImageData && imageData != "" {
+		// Base64 data URI or plain base64 string (backwards compatible)
+		imgBytes, err := extractBinary(imageData)
+		if err != nil {
+			return Response{
+				ID:      msg.ID,
+				Success: false,
+				Error:   fmt.Sprintf("Failed to decode image data: %v", err),
 			}
 		}
 
-		// Decode image bytes
 		decodedImg, _, err = image.Decode(bytes.NewReader(imgBytes))
 		if err != nil {
 			return Response{

@@ -18,7 +18,7 @@
  * @tsyne-app:count many
  */
 
-import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
+import { app, Bridge, standaloneShutdownStrategy } from 'tsyne';
 import type { App, Window } from 'tsyne';
 import { cvg } from 'cosyne';
 import type { CvgContext } from 'cosyne';
@@ -377,7 +377,7 @@ export async function createChessApp(a: App, aiDelayMs?: number): Promise<ChessU
  * Main application entry point - standalone execution
  */
 if (require.main === module) {
-  const appInstance = app(resolveTransport(), { title: 'Chess' }, async (a: App) => {
+  const appInstance = app(Bridge.fromArgsOrEnv(process.argv), { title: 'Chess' }, async (a: App) => {
     await createChessApp(a);
     appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));
   });

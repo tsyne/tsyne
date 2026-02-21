@@ -415,8 +415,8 @@ export abstract class Widget {
       customId
     }).then(() => {
       // Registration complete
-    }).catch(err => {
-      console.error('Failed to register custom ID:', err);
+    }).catch(() => {
+      // Connection errors are logged by the bridge itself
     });
 
     this.ctx.trackRegistration(registrationPromise);

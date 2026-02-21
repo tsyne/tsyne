@@ -23,6 +23,29 @@ export interface Event {
 }
 
 /**
+ * Recursively encode Uint8Array/Buffer values in a payload to base64 strings.
+ * Used by JSON-based transports (stdio, FFI) before JSON.stringify.
+ * Msgpack and gRPC transports handle binary natively and don't need this.
+ */
+export function encodeBinaryFields(payload: Record<string, unknown>): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(payload)) {
+    if (value instanceof Uint8Array || Buffer.isBuffer(value)) {
+      result[key] = Buffer.from(value).toString('base64');
+    } else if (Array.isArray(value)) {
+      result[key] = value.map(item =>
+        typeof item === 'object' && item !== null && !Array.isArray(item)
+          ? encodeBinaryFields(item as Record<string, unknown>)
+          : item
+      );
+    } else {
+      result[key] = value;
+    }
+  }
+  return result;
+}
+
+/**
  * Common interface for bridge implementations (stdio and gRPC)
  */
 export interface BridgeInterface {
@@ -295,7 +318,8 @@ export class BridgeConnection implements BridgeInterface {
     }
 
     const id = `msg_${this.messageId++}`;
-    const message: Message = { id, type, payload };
+    // Encode binary fields to base64 for JSON transport
+    const message: Message = { id, type, payload: encodeBinaryFields(payload) };
 
     // Capture stack trace at call site for better error reporting
     // Skip internal frames up to callerFn (or this.send if not provided) to point to actual caller

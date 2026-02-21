@@ -1,4 +1,4 @@
-import { App, AppOptions, BridgeMode, resolveTransport, TextGridStyle } from './app';
+import { App, AppOptions, Bridge, BridgeConfig, BridgeMode, resolveTransport, TextGridStyle } from './app';
 import { Context } from './context';
 import { initResvg, Resvg } from './resvg-loader';
 import { SandboxedApp } from './sandboxed-app';
@@ -107,23 +107,25 @@ export function __setGlobalContext(app: App | null, context: Context | null): vo
   globalContext = context;
 }
 
+import { BridgeInterface } from './fynebridge';
+
 /**
  * Create and run a Tsyne desktop application with declarative syntax.
  *
  * This is the main entry point for Tsyne applications. The builder function receives
  * the app instance, providing a scoped declarative API following IoC/DI principles.
  *
- * @param bridgeMode - Transport mode for TypeScript <-> Go communication. Use resolveTransport()
- *                     to get from TSYNE_BRIDGE_MODE env var or default to 'msgpack-uds'.
+ * @param bridgeOrMode - A BridgeInterface instance (from Bridge.connect() or Bridge.fromEnv()),
+ *                       or a BridgeMode string for backward compatibility.
  * @param options - Application configuration options (title, inspector, etc.)
  * @param builder - Builder function that receives the app instance and constructs the UI
  * @returns The created App instance
  *
  * @example
  * ```typescript
- * import { app, resolveTransport } from 'tsyne';
+ * import { app, Bridge } from 'tsyne';
  *
- * app(resolveTransport(), { title: 'My App' }, (a) => {
+ * app(Bridge.fromEnv(), { title: 'My App' }, (a) => {
  *   a.window({ title: 'Hello', width: 400, height: 300 }, (win) => {
  *     win.setContent(() => {
  *       a.vbox(() => {
@@ -137,7 +139,7 @@ export function __setGlobalContext(app: App | null, context: Context | null): vo
  * ```
  */
 export function app(
-  bridgeMode: BridgeMode,
+  bridgeOrMode: BridgeMode | BridgeInterface,
   options: AppOptions,
   builder: (app: App) => void | Promise<void>
 ): App {
@@ -172,7 +174,7 @@ export function app(
     }
   }
 
-  const appInstance = new App(bridgeMode, options);
+  const appInstance = new App(bridgeOrMode, options);
 
   // For backward compatibility, also set global context
   globalApp = appInstance;
@@ -858,7 +860,7 @@ export async function setFontScale(scale: number): Promise<void> {
 }
 
 // Export bridge mode factory
-export { resolveTransport };
+export { resolveTransport, Bridge };
 
 // Export classes for advanced usage
 export {
@@ -947,7 +949,8 @@ export {
   Resvg,
   SandboxedApp,
 };
-export type { AppOptions, BridgeMode, WindowOptions, MenuItem, NavigationOptions, TextGridStyle };
+export type { AppOptions, BridgeConfig, BridgeMode, WindowOptions, MenuItem, NavigationOptions, TextGridStyle };
+export type { BridgeInterface } from './fynebridge';
 
 // Export theming types
 export type { CustomThemeColors, FontTextStyle, FontInfo } from './app';

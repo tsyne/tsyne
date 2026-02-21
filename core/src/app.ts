@@ -1,6 +1,7 @@
 import { BridgeConnection, BridgeInterface } from './fynebridge';
-import { GrpcBridgeConnection } from './grpcbridge';
+import { GrpcBridgeConnection, GrpcTcpBridgeConnection } from './grpcbridge';
 import { MsgpackBridgeConnection } from './msgpackbridge';
+import { MsgpackTcpBridgeConnection, MsgpackTlsConfig } from './msgpacktcpbridge';
 import { FfiBridgeConnection } from './ffibridge';
 import { WebRendererBridge } from './webrendererbridge';
 import { Context } from './context';
@@ -128,7 +129,24 @@ import { initializeGlobals } from './globals';
 import { ResourceManager } from './resources';
 import { Widget } from './widgets/base';
 
-export type BridgeMode = 'stdio' | 'grpc' | 'msgpack-uds' | 'ffi' | 'web-renderer';
+export type BridgeMode = 'stdio' | 'grpc' | 'grpcs' | 'msgpack-uds' | 'msgpack-tcp' | 'msgpack-tcp+tls' | 'ffi' | 'web-renderer';
+
+const VALID_BRIDGE_MODES: ReadonlySet<string> = new Set<string>([
+  'stdio', 'grpc', 'grpcs', 'msgpack-uds', 'msgpack-tcp', 'msgpack-tcp+tls', 'ffi', 'web-renderer',
+]);
+
+function isValidBridgeMode(s: string): s is BridgeMode {
+  return VALID_BRIDGE_MODES.has(s);
+}
+
+export interface BridgeConfig {
+  mode: BridgeMode;
+  host?: string;
+  port?: number;
+  token?: string;
+  /** Path to CA certificate PEM file for TLS (grpcs:// mode, self-signed certs) */
+  tlsCaCert?: string;
+}
 
 export interface AppOptions {
   title?: string;
@@ -259,45 +277,138 @@ export interface ThemeConfig {
 /**
  * Resolve the transport mode for TypeScript <-> Go bridge communication.
  *
+ * @deprecated Use Bridge.fromEnv() instead.
+ *
  * Checks the TSYNE_BRIDGE_MODE environment variable first. If not set or invalid,
  * defaults to 'msgpack-uds' (MessagePack over Unix Domain Sockets), the fastest
  * transport option.
- *
- * Available transports:
- * - 'msgpack-uds': MessagePack over Unix Domain Sockets (~10x faster than stdio)
- * - 'stdio': JSON over stdin/stdout (simple, debuggable)
- * - 'grpc': gRPC/protobuf (structured, typed)
- * - 'ffi': C-Go FFI (experimental, in-process)
- *
- * @example
- * ```typescript
- * // Explicit transport resolution in main()
- * app(resolveTransport(), { title: 'My App' }, (a) => { ... });
- *
- * // Override via environment variable
- * // TSYNE_BRIDGE_MODE=stdio npm run myapp
- * ```
  *
  * @returns The resolved BridgeMode from env var, or 'msgpack-uds' as default
  */
 export function resolveTransport(): BridgeMode {
   const envMode = process.env.TSYNE_BRIDGE_MODE;
-  if (envMode === 'grpc' || envMode === 'stdio' || envMode === 'msgpack-uds' || envMode === 'ffi' || envMode === 'web-renderer') {
-    return envMode;
+  if (isValidBridgeMode(envMode || '')) {
+    return envMode as BridgeMode;
   }
   return 'msgpack-uds';
 }
 
 /**
- * Factory function to create the appropriate bridge implementation
- * based on the specified mode
+ * Static factory for creating bridge connections.
+ *
+ * @example
+ * ```typescript
+ * // Explicit URL:
+ * const bridge = Bridge.connect('msgpack-tcp://192.168.1.42:9800#secret');
+ * app(bridge, { title: 'Chess' }, (a) => { ... });
+ *
+ * // From env var (reads TSYNE_BRIDGE, falls back to TSYNE_BRIDGE_MODE, defaults msgpack-uds):
+ * const bridge = Bridge.fromEnv();
+ * app(bridge, { title: 'Chess' }, (a) => { ... });
+ *
+ * // Bare scheme for local transports:
+ * const bridge = Bridge.connect('msgpack-uds');
+ * app(bridge, { title: 'Chess' }, (a) => { ... });
+ * ```
  */
-function createBridge(mode: BridgeMode, testMode: boolean): BridgeInterface {
-  switch (mode) {
+export class Bridge {
+  /** Parse a URL or bare scheme and create the appropriate BridgeInterface */
+  static connect(url: string, testMode: boolean = false, overrides?: Partial<BridgeConfig>): BridgeInterface {
+    const config = { ...Bridge.parse(url), ...overrides };
+    return createBridge(config, testMode);
+  }
+
+  /** Read TSYNE_BRIDGE env var (falling back to TSYNE_BRIDGE_MODE) and connect */
+  static fromEnv(testMode: boolean = false): BridgeInterface {
+    const url = process.env.TSYNE_BRIDGE
+      || process.env.TSYNE_BRIDGE_MODE
+      || 'msgpack-uds';
+    return Bridge.connect(url, testMode);
+  }
+
+  /**
+   * Parse --bridge=<url> from CLI args, falling back to env vars.
+   *
+   * Resolution order:
+   * 1. --bridge=<url> in argv
+   * 2. TSYNE_BRIDGE env var
+   * 3. TSYNE_BRIDGE_MODE env var
+   * 4. Default: msgpack-uds
+   *
+   * @param argv - CLI arguments to scan for --bridge=
+   *
+   * @example
+   * ```typescript
+   * const bridge = Bridge.fromArgsOrEnv(process.argv);
+   * app(bridge, { title: 'Chess' }, (a) => { ... });
+   *
+   * // Launch:  node chess.js --bridge=msgpack-tcp://192.168.1.42:9800#secret
+   * // Or without args, falls back to TSYNE_BRIDGE env var, then msgpack-uds
+   * ```
+   */
+  static fromArgsOrEnv(argv: string[], testMode: boolean = false): BridgeInterface {
+    for (const arg of argv) {
+      if (arg.startsWith('--bridge=')) {
+        const url = arg.substring('--bridge='.length);
+        return Bridge.connect(url, testMode);
+      }
+    }
+    return Bridge.fromEnv(testMode);
+  }
+
+  /** Parse URL into structured config */
+  static parse(url: string): BridgeConfig {
+    if (!url.includes('://')) {
+      // Bare scheme
+      if (!isValidBridgeMode(url)) throw new Error(`Invalid bridge URL: ${url}`);
+      return { mode: url as BridgeMode };
+    }
+    const schemeEnd = url.indexOf('://');
+    const scheme = url.substring(0, schemeEnd);
+    if (!isValidBridgeMode(scheme)) throw new Error(`Invalid bridge scheme: ${scheme}`);
+
+    let rest = url.substring(schemeEnd + 3);
+    let token: string | undefined;
+    const hashIdx = rest.indexOf('#');
+    if (hashIdx !== -1) {
+      token = rest.substring(hashIdx + 1);
+      rest = rest.substring(0, hashIdx);
+    }
+    let host: string | undefined;
+    let port: number | undefined;
+    if (rest) {
+      const colonIdx = rest.lastIndexOf(':');
+      if (colonIdx !== -1) {
+        host = rest.substring(0, colonIdx);
+        port = parseInt(rest.substring(colonIdx + 1), 10);
+      } else {
+        host = rest;
+      }
+    }
+    return { mode: scheme as BridgeMode, host, port, token };
+  }
+}
+
+/**
+ * Factory function to create the appropriate bridge implementation
+ * based on the specified config
+ */
+function createBridge(config: BridgeConfig, testMode: boolean): BridgeInterface {
+  switch (config.mode) {
+    case 'grpcs':
+      return new GrpcTcpBridgeConnection(testMode, config.host, config.port, config.token, undefined, { tls: true, caCertPath: config.tlsCaCert });
     case 'grpc':
+      if (config.host || config.port) {
+        return new GrpcTcpBridgeConnection(testMode, config.host, config.port, config.token);
+      }
       return new GrpcBridgeConnection(testMode);
     case 'msgpack-uds':
       return new MsgpackBridgeConnection(testMode);
+    case 'msgpack-tcp':
+      return new MsgpackTcpBridgeConnection(testMode, config.host, config.port, config.token);
+    case 'msgpack-tcp+tls':
+      return new MsgpackTcpBridgeConnection(testMode, config.host, config.port, config.token, undefined,
+        { tls: true, caCertPath: config.tlsCaCert });
     case 'ffi':
       return new FfiBridgeConnection(testMode);
     case 'web-renderer':
@@ -318,12 +429,16 @@ export class App {
   private cleanupCallbacks: Array<() => void | Promise<void>> = [];
   private onLastWindowClose?: () => void | Promise<void>;
 
-  constructor(bridgeMode: BridgeMode, options?: AppOptions, testMode: boolean = false) {
+  constructor(bridgeOrMode: BridgeMode | BridgeInterface, options?: AppOptions, testMode: boolean = false) {
     // Initialize browser compatibility globals
     initializeGlobals();
 
-    // Create bridge using factory
-    this.bridge = createBridge(bridgeMode, testMode);
+    // Create bridge using factory, or use injected instance directly
+    if (typeof bridgeOrMode === 'string') {
+      this.bridge = createBridge({ mode: bridgeOrMode }, testMode);
+    } else {
+      this.bridge = bridgeOrMode;
+    }
 
     this.ctx = new Context(this.bridge);
     this.resources = new ResourceManager(this.bridge);

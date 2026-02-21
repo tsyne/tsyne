@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/base64"
 	"image"
 	"image/color"
 	"log"
@@ -117,9 +116,17 @@ func (b *Bridge) handleUpdateCanvasShader(msg Message) Response {
 func (b *Bridge) handleSetShaderTextureUniform(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 	uniformName := msg.Payload["uniformName"].(string)
-	imageDataB64 := msg.Payload["imageData"].(string)
 	width := int(toFloat64(msg.Payload["width"]))
 	height := int(toFloat64(msg.Payload["height"]))
+
+	imageData, err := extractBinary(msg.Payload["imageData"])
+	if err != nil {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Failed to decode image data: " + err.Error(),
+		}
+	}
 
 	b.mu.RLock()
 	w, exists := b.widgets[widgetID]
@@ -139,16 +146,6 @@ func (b *Bridge) handleSetShaderTextureUniform(msg Message) Response {
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a shader",
-		}
-	}
-
-	// Decode base64 image data
-	imageData, err := base64.StdEncoding.DecodeString(imageDataB64)
-	if err != nil {
-		return Response{
-			ID:      msg.ID,
-			Success: false,
-			Error:   "Failed to decode base64 image data: " + err.Error(),
 		}
 	}
 
@@ -225,24 +222,15 @@ func (b *Bridge) handleSetShaderCubemapUniform(msg Message) Response {
 			}
 		}
 
-		imageDataB64, ok := face["imageData"].(string)
-		if !ok {
-			return Response{
-				ID:      msg.ID,
-				Success: false,
-				Error:   "Missing imageData for face",
-			}
-		}
 		width := int(toFloat64(face["width"]))
 		height := int(toFloat64(face["height"]))
 
-		// Decode base64 image data
-		imageData, err := base64.StdEncoding.DecodeString(imageDataB64)
+		imageData, err := extractBinary(face["imageData"])
 		if err != nil {
 			return Response{
 				ID:      msg.ID,
 				Success: false,
-				Error:   "Failed to decode base64 image data for face " + string(rune('0'+i)) + ": " + err.Error(),
+				Error:   "Failed to decode image data for face " + string(rune('0'+i)) + ": " + err.Error(),
 			}
 		}
 
