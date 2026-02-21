@@ -1630,11 +1630,12 @@ if (require.main === module) {
   console.log(`[STARTUP] beginning at ${(Date.now() / 1000).toFixed(3)}...`);
   const appInstance = app(resolveTransport(), { title: '3D Cube' }, async (a: App) => {
     console.log(`[STARTUP] app callback: ${Date.now() - startTime}ms`);
-  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));    const ui = create3DCubeApp(a);
+    const ui = create3DCubeApp(a);
     console.log(`[STARTUP] UI created: ${Date.now() - startTime}ms`);
     await a.run();
     console.log(`[STARTUP] a.run() done: ${Date.now() - startTime}ms`);
     await ui.initialize();
     console.log(`[STARTUP] initialized: ${Date.now() - startTime}ms`);
   });
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));
 }

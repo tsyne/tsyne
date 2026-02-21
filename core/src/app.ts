@@ -128,8 +128,18 @@ export type { TextGridOptions, TextGridStyle, NavigationOptions, ThemeIconName, 
 import { initializeGlobals } from './globals';
 import { ResourceManager } from './resources';
 import { Widget } from './widgets/base';
+import {
+  IAudioBackend,
+  AudioListener,
+  Audio,
+  AudioAnalyser,
+  NodejsAudioBackend,
+  BridgeAudioBackend,
+} from './audio';
 
 export type BridgeMode = 'stdio' | 'grpc' | 'grpcs' | 'msgpack-uds' | 'msgpack-tcp' | 'msgpack-tcp+tls' | 'ffi' | 'web-renderer';
+
+export type AudioMode = 'nodejs' | 'bridge';
 
 const VALID_BRIDGE_MODES: ReadonlySet<string> = new Set<string>([
   'stdio', 'grpc', 'grpcs', 'msgpack-uds', 'msgpack-tcp', 'msgpack-tcp+tls', 'ffi', 'web-renderer',
@@ -426,6 +436,7 @@ export class App {
   private windows: Window[] = [];
   private bridge: BridgeInterface;
   public resources: ResourceManager;
+  public audioBackend: IAudioBackend;
   private cleanupCallbacks: Array<() => void | Promise<void>> = [];
   private onLastWindowClose?: () => void | Promise<void>;
 
@@ -442,6 +453,14 @@ export class App {
 
     this.ctx = new Context(this.bridge);
     this.resources = new ResourceManager(this.bridge);
+
+    // Initialize audio backend
+    const audioMode = App.resolveAudioMode(typeof bridgeOrMode === 'string' ? bridgeOrMode : undefined);
+    if (audioMode === 'bridge') {
+      this.audioBackend = new BridgeAudioBackend(this.bridge);
+    } else {
+      this.audioBackend = new NodejsAudioBackend();
+    }
 
     // Store the onLastWindowClose callback
     this.onLastWindowClose = options?.onLastWindowClose;
@@ -1569,6 +1588,45 @@ export class App {
    * Displays the source file in a dialog window
    * @param filePath - Path to the source file (use __filename or require.main?.filename)
    */
+  /**
+   * Resolve the audio mode from CLI args, env var, or default.
+   * --audio=nodejs|bridge, or TSYNE_AUDIO env var.
+   * Default: 'nodejs' for local transports, 'bridge' for TCP.
+   */
+  private static resolveAudioMode(bridgeMode?: string): AudioMode {
+    // Check CLI args
+    for (const arg of process.argv) {
+      if (arg.startsWith('--audio=')) {
+        const mode = arg.substring('--audio='.length);
+        if (mode === 'nodejs' || mode === 'bridge') return mode;
+      }
+    }
+    // Check env var
+    const envMode = process.env.TSYNE_AUDIO;
+    if (envMode === 'nodejs' || envMode === 'bridge') return envMode;
+    // Default based on bridge mode
+    if (bridgeMode === 'msgpack-tcp' || bridgeMode === 'msgpack-tcp+tls' || bridgeMode === 'grpc' || bridgeMode === 'grpcs') {
+      return 'bridge';
+    }
+    return 'nodejs';
+  }
+
+  /**
+   * Create an AudioListener (Three.js-style audio context).
+   * Use this as the entry point for the audio API.
+   *
+   * @example
+   * ```typescript
+   * const listener = a.createAudioListener();
+   * const sound = new Audio(listener);
+   * await sound.load('music.mp3');
+   * sound.play();
+   * ```
+   */
+  createAudioListener(): AudioListener {
+    return new AudioListener(this.audioBackend);
+  }
+
   showSource(filePath?: string): void {
     try {
       const fs = require('fs');

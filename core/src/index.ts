@@ -1214,3 +1214,8 @@ export function phoneShutdownStrategy(app: App): () => void {
 // Export app launcher utility
 export { createAppLauncher, type LauncherOptions } from './index-launcher';
 
+// Export audio subsystem
+export { AudioListener, Audio, AudioAnalyser, NodejsAudioBackend, BridgeAudioBackend } from './audio';
+export type { IAudioBackend } from './audio';
+export type { AudioMode } from './app';
+

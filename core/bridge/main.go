@@ -647,6 +647,29 @@ func (b *Bridge) handleMessage(msg Message) Response {
 		return b.handleTypeRune(msg)
 	case "typeKey":
 		return b.handleTypeKey(msg)
+	// Audio subsystem
+	case "audio.createListener":
+		return b.handleAudioCreateListener(msg)
+	case "audio.setMasterVolume":
+		return b.handleAudioSetMasterVolume(msg)
+	case "audio.load":
+		return b.handleAudioLoad(msg)
+	case "audio.play":
+		return b.handleAudioPlay(msg)
+	case "audio.pause":
+		return b.handleAudioPause(msg)
+	case "audio.stop":
+		return b.handleAudioStop(msg)
+	case "audio.setVolume":
+		return b.handleAudioSetVolume(msg)
+	case "audio.setLoop":
+		return b.handleAudioSetLoop(msg)
+	case "audio.setPlaybackRate":
+		return b.handleAudioSetPlaybackRate(msg)
+	case "audio.getIsPlaying":
+		return b.handleAudioGetIsPlaying(msg)
+	case "audio.dispose":
+		return b.handleAudioDispose(msg)
 	// WebGL/OpenGL operations
 	case "createGLCanvas":
 		return b.handleCreateGLCanvas(msg)

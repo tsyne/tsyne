@@ -2,45 +2,41 @@
  * Common utilities for Waveform Visualizer demos
  *
  * Shared code between canvas.ts and widget.ts modes:
- * - Audio file path and playback control
+ * - Audio file path and playback control (via Tsyne Audio API)
  * - Waveform data structures and processing
  * - Time formatting utilities
  */
 
 import * as path from 'path';
-import { spawn, ChildProcess, execSync } from 'child_process';
+import { execSync } from 'child_process';
+import { AudioListener, Audio, NodejsAudioBackend } from 'tsyne';
 
 // Audio file path - use short 5s clip for faster tests
 export const AUDIO_FILE = path.join(__dirname, 'test-clip-5s.mp3');
 
-// Audio player process (ffplay or mpv)
-let audioProcess: ChildProcess | null = null;
+// Shared audio backend and sound instance for playback
+const audioBackend = new NodejsAudioBackend();
+const audioListener = new AudioListener(audioBackend);
+const sound = new Audio(audioListener);
+
+// Load audio lazily on first play
+let audioLoaded = false;
+async function ensureLoaded(): Promise<void> {
+  if (!audioLoaded) {
+    await sound.load(AUDIO_FILE);
+    audioLoaded = true;
+  }
+}
 
 /**
- * Start audio playback at the specified position
- * Tries ffplay first (from ffmpeg), then falls back to mpv
+ * Start audio playback at the specified position.
+ * Uses the Tsyne Audio API (NodejsAudioBackend → ffplay/mpv).
  */
 export function startAudioPlayback(seekPosition: number = 0): void {
   stopAudioPlayback();
-
-  audioProcess = spawn('ffplay', [
-    '-nodisp',
-    '-autoexit',
-    '-ss', seekPosition.toString(),
-    AUDIO_FILE
-  ], { stdio: 'ignore' });
-
-  audioProcess.on('error', () => {
-    // ffplay not available, try mpv
-    audioProcess = spawn('mpv', [
-      '--no-video',
-      `--start=${seekPosition}`,
-      AUDIO_FILE
-    ], { stdio: 'ignore' });
-
-    audioProcess.on('error', () => {
-      console.error('No audio player found (install ffmpeg or mpv)');
-    });
+  ensureLoaded().then(() => {
+    audioBackend.seekTo(sound.id, seekPosition);
+    sound.play();
   });
 }
 
@@ -48,10 +44,7 @@ export function startAudioPlayback(seekPosition: number = 0): void {
  * Stop audio playback
  */
 export function stopAudioPlayback(): void {
-  if (audioProcess) {
-    audioProcess.kill();
-    audioProcess = null;
-  }
+  sound.stop();
 }
 
 /**
@@ -168,8 +161,12 @@ export function formatTime(seconds: number): string {
  * Call this once at module load to ensure audio stops on exit
  */
 export function registerCleanupHandlers(): void {
-  process.on('exit', stopAudioPlayback);
-  process.on('SIGINT', () => { stopAudioPlayback(); process.exit(); });
-  process.on('SIGTERM', () => { stopAudioPlayback(); process.exit(); });
+  const cleanup = () => {
+    sound.dispose();
+    audioBackend.disposeAll();
+  };
+  process.on('exit', cleanup);
+  process.on('SIGINT', () => { cleanup(); process.exit(); });
+  process.on('SIGTERM', () => { cleanup(); process.exit(); });
 }
 
