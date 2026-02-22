@@ -1,9 +1,82 @@
 steps:
-  - label: ":golang: :nodejs: Build and Test"
-    command: "./ci.sh"
+  - label: ":broom: Cleanup"
+    command: "./ci.sh cleanup"
     agents:
       queue: "default-queue"
-    timeout_in_minutes: 45
+    timeout_in_minutes: 1
+
+  - label: ":golang: Bridge"
+    command: "./ci.sh bridge"
+    agents:
+      queue: "default-queue"
+    timeout_in_minutes: 10
     artifact_paths:
       - "bin/tsyne-bridge"
-      - "dist/**/*"
+      - "bin/libtsyne.*"
+
+  - label: ":nodejs: Core"
+    command: "./ci.sh core"
+    agents:
+      queue: "default-queue"
+    timeout_in_minutes: 12
+
+  - label: ":art: Cosyne"
+    command: "./ci.sh cosyne"
+    agents:
+      queue: "default-queue"
+    timeout_in_minutes: 5
+
+  - label: ":three: Trine"
+    command: "./ci.sh trine"
+    agents:
+      queue: "default-queue"
+    timeout_in_minutes: 5
+
+  - label: ":art: Designer"
+    command: "./ci.sh designer"
+    agents:
+      queue: "default-queue"
+    timeout_in_minutes: 5
+
+  - label: ":bulb: Examples"
+    command: "./ci.sh examples"
+    agents:
+      queue: "default-queue"
+    timeout_in_minutes: 5
+
+  - label: ":package: Ported Apps"
+    command: "./ci.sh ported-apps"
+    agents:
+      queue: "default-queue"
+    timeout_in_minutes: 15
+
+  - label: ":iphone: Phone Apps"
+    command: "./ci.sh phone-apps"
+    agents:
+      queue: "default-queue"
+    timeout_in_minutes: 15
+
+  - label: ":computer: Launchers"
+    command: "./ci.sh launchers"
+    agents:
+      queue: "default-queue"
+    timeout_in_minutes: 5
+
+  - label: ":rocket: Larger Apps"
+    command: "./ci.sh larger-apps"
+    agents:
+      queue: "default-queue"
+    timeout_in_minutes: 5
+
+  - label: ":test_tube: Test Apps"
+    command: "./ci.sh test-apps"
+    agents:
+      queue: "default-queue"
+    timeout_in_minutes: 5
+
+  - label: ":android: Android"
+    command: "./ci.sh android"
+    agents:
+      queue: "default-queue"
+    timeout_in_minutes: 10
+    soft_fail: true

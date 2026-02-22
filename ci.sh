@@ -12,6 +12,7 @@ VERBOSE=false
 QUICK_MODE=false
 UNIT_ONLY=false
 BUILD_BRIDGE_ONLY=false
+TARGET=""
 
 # Track timing for sections
 declare -A SECTION_TIMES
@@ -32,6 +33,13 @@ report_section_time() {
     local elapsed_s=$(echo "scale=2; $elapsed_ms / 1000" | bc)
     echo "⏱️  ${name}: ${elapsed_s}s"
   fi
+}
+
+# should_run checks if a given section should execute based on TARGET.
+# If TARGET is empty, everything runs. Otherwise only the matching section runs.
+should_run() {
+  local section="$1"
+  [ -z "$TARGET" ] || [ "$TARGET" = "$section" ]
 }
 
 while [[ $# -gt 0 ]]; do
@@ -60,7 +68,22 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     --help|-h)
-      echo "Usage: $0 [OPTIONS]"
+      echo "Usage: $0 [TARGET] [OPTIONS]"
+      echo ""
+      echo "Targets (optional — blank runs everything):"
+      echo "  cleanup        Kill orphaned processes from previous runs"
+      echo "  bridge         Go bridge build only"
+      echo "  core           Core build + unit tests"
+      echo "  cosyne         Cosyne build + tests (assumes core already built)"
+      echo "  trine          Three.js setup + tests"
+      echo "  designer       Designer build + tests"
+      echo "  examples       Examples tests"
+      echo "  ported-apps    Ported app tests"
+      echo "  phone-apps     Phone app tests"
+      echo "  launchers      Desktop/PhoneTop launcher tests"
+      echo "  larger-apps    Larger app tests"
+      echo "  test-apps      Test apps (calculator-advanced)"
+      echo "  android        Android native build"
       echo ""
       echo "Options:"
       echo "  --skip-tests, --no-tests  Skip all test execution (build only)"
@@ -71,16 +94,36 @@ while [[ $# -gt 0 ]]; do
       echo "  --help, -h                Show this help message"
       exit 0
       ;;
-    *)
+    -*)
       echo "Unknown option: $1"
       echo "Use --help for usage information"
       exit 1
       ;;
+    *)
+      # Positional argument = target
+      TARGET="$1"
+      shift
+      ;;
   esac
 done
 
+# Validate target if specified
+if [ -n "$TARGET" ]; then
+  case "$TARGET" in
+    cleanup|bridge|core|cosyne|trine|designer|examples|ported-apps|phone-apps|launchers|larger-apps|test-apps|android)
+      echo "Target: $TARGET"
+      ;;
+    *)
+      echo "Unknown target: $TARGET"
+      echo "Use --help to see available targets"
+      exit 1
+      ;;
+  esac
+fi
+
 echo ""
 echo "Mode summary:"
+[ -n "$TARGET" ] && echo "  ✓ Target: $TARGET" || echo "  ✓ Target: all"
 [ "$SKIP_TESTS" = true ] && echo "  ✓ Tests SKIPPED" || echo "  ✓ Tests ENABLED"
 [ "$QUICK_MODE" = true ] && echo "  ✓ Quick mode (fewer tests)"
 [ "$UNIT_ONLY" = true ] && echo "  ✓ Unit tests only"
@@ -364,6 +407,29 @@ fi
 rm -f "$WAIT_TIME_FILE"
 
 # ============================================================================
+# Cleanup: kill orphaned processes from previous CI runs
+# ============================================================================
+if should_run cleanup; then
+  echo "--- :broom: Cleanup orphaned processes"
+  log_ts "▶ Cleanup"
+  KILLED=0
+  # Kill orphaned tsyne-bridge processes (left behind by tests that didn't clean up)
+  if pkill -f "tsyne-bridge --mode=" 2>/dev/null; then
+    KILLED=$((KILLED + 1))
+    echo "Killed orphaned tsyne-bridge processes"
+  fi
+  # Kill orphaned jest-worker processes
+  if pkill -f "jest-worker" 2>/dev/null; then
+    KILLED=$((KILLED + 1))
+    echo "Killed orphaned jest-worker processes"
+  fi
+  if [ $KILLED -eq 0 ]; then
+    echo "No orphaned processes found"
+  fi
+  log_ts "◀ Cleanup"
+fi
+
+# ============================================================================
 # Portable timeout command (macOS doesn't have GNU timeout by default)
 # ============================================================================
 if [ "$OS" = "macos" ]; then
@@ -447,6 +513,7 @@ $GO_CMD version
 # ============================================================================
 # STEP 1: Go Bridge Build
 # ============================================================================
+if should_run bridge; then
 echo "--- :golang: Building Go bridge"
 log_ts "▶ Go Bridge Build"
 time_section "Go Bridge Build"
@@ -459,6 +526,9 @@ env GOPROXY=direct $GO_CMD mod tidy
 env CGO_ENABLED=1 GOPROXY=direct $GO_CMD build -o ../bin/tsyne-bridge .
 
 echo "Building Go shared library for FFI..."
+# Brief pause to let CGO/gcc processes from the bridge build fully exit,
+# avoiding "fork/exec: resource temporarily unavailable" on constrained CI agents.
+sleep 2
 if [ "$OS" = "linux" ]; then
   env CGO_ENABLED=1 GOPROXY=direct $GO_CMD build -buildmode=c-shared -o ../bin/libtsyne.so .
 elif [ "$OS" = "macos" ]; then
@@ -473,21 +543,28 @@ if [ "$BUILD_BRIDGE_ONLY" = true ]; then
   echo "--- :white_check_mark: Bridge build complete (--bridge-only mode)"
   exit 0
 fi
+fi # should_run bridge
 
 # ============================================================================
-# STEP 1.5: Install root dependencies (needed for install.sh)
+# STEP 1.5: Install root dependencies
 # ============================================================================
+# Always run pnpm install — it's fast when node_modules exists and every
+# JS target needs it. Skip only for bridge/cleanup/android which don't.
+if [ -z "$TARGET" ] || ! echo "bridge cleanup android" | grep -qw "$TARGET"; then
 echo "--- :nodejs: Installing root dependencies"
 log_ts "▶ pnpm install"
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}
 pnpm install --ignore-scripts
 log_ts "◀ pnpm install"
+fi
 
 # ============================================================================
-# STEP 1.6: Test tsyne install and failure modes
+# STEP 1.6: Test tsyne install and failure modes (full run only)
 # ============================================================================
+if [ -z "$TARGET" ]; then
 echo "--- :package: Testing tsyne install"
 log_ts "▶ tsyne install test"
+cd ${BUILDKITE_BUILD_CHECKOUT_PATH}
 ./scripts/install.sh
 
 # Test failure modes
@@ -496,10 +573,12 @@ echo "Testing tsyne failure modes..."
   echo "⚠️  Failure mode tests failed (non-fatal)"
 }
 log_ts "◀ tsyne install test"
+fi # no TARGET (full run only)
 
 # ============================================================================
 # STEP 2: Core (Tsyne Core Library)
 # ============================================================================
+if should_run core; then
 echo "--- :nodejs: Core - Build"
 log_ts "▶ Core Build"
 time_section "Core Build"
@@ -555,10 +634,12 @@ if [ "$SKIP_TESTS" = false ]; then
   report_section_time "Core Tests"
   log_ts "◀ Core Tests" "$(format_duration $_elapsed)"
 fi
+fi # should_run core
 
 # ============================================================================
 # STEP 2.5: Cosyne - Declarative Canvas Library
 # ============================================================================
+if should_run cosyne; then
 echo "--- :art: Cosyne - Build"
 log_ts "▶ Cosyne Build"
 time_section "Cosyne Build"
@@ -589,10 +670,12 @@ if [ "$SKIP_TESTS" = false ]; then
   report_section_time "Cosyne Tests"
   log_ts "◀ Cosyne Tests" "$(format_duration $_elapsed)"
 fi
+fi # should_run cosyne
 
 # ============================================================================
 # STEP 2.6: Tsyne-Three - Three.js Integration
 # ============================================================================
+if should_run trine; then
 if [ "$UNIT_ONLY" = true ]; then
   echo "⏭️  Trine - Skipping (--unit-only mode)"
 else
@@ -630,10 +713,12 @@ else
     log_ts "◀ Trine Tests" "$(format_duration $_elapsed)"
   fi
 fi
+fi # should_run trine
 
 # ============================================================================
 # STEP 3: Designer Sub-Project
 # ============================================================================
+if should_run designer; then
 if [ "$UNIT_ONLY" = true ]; then
   echo "⏭️  Designer - Skipping (--unit-only mode)"
 else
@@ -684,10 +769,12 @@ else
   echo "⚠️  No package.json found in designer/ - skipping"
 fi
 fi
+fi # should_run designer
 
 # ============================================================================
 # STEP 4: Examples Sub-Project
 # ============================================================================
+if should_run examples; then
 if [ "$UNIT_ONLY" = true ]; then
   echo "⏭️  Examples - Skipping (--unit-only mode)"
 else
@@ -729,10 +816,12 @@ if [ "$SKIP_TESTS" = false ]; then
   log_ts "◀ Examples GUI Tests" "$(format_duration $_elapsed)"
 fi
 fi
+fi # should_run examples
 
 # ============================================================================
 # STEP 5: Ported Apps Sub-Projects
 # ============================================================================
+if should_run ported-apps; then
 if [ "$SKIP_TESTS" = false ] && [ "$UNIT_ONLY" = false ] && [ "$QUICK_MODE" = false ]; then
   echo "--- :package: Ported Apps - Test"
 elif [ "$UNIT_ONLY" = true ] || [ "$QUICK_MODE" = true ]; then
@@ -818,10 +907,12 @@ if [ "$SKIP_TESTS" = false ] && [ "$UNIT_ONLY" = false ] && [ "$QUICK_MODE" = fa
 
   set -e  # Re-enable exit-on-error
 fi
+fi # should_run ported-apps
 
 # ============================================================================
 # STEP 6: Phone Apps Sub-Projects
 # ============================================================================
+if should_run phone-apps; then
 if [ "$SKIP_TESTS" = false ] && [ "$UNIT_ONLY" = false ] && [ "$QUICK_MODE" = false ]; then
   echo "--- :iphone: Phone Apps - Test"
 elif [ "$UNIT_ONLY" = true ] || [ "$QUICK_MODE" = true ]; then
@@ -892,10 +983,12 @@ if [ "$SKIP_TESTS" = false ] && [ "$UNIT_ONLY" = false ] && [ "$QUICK_MODE" = fa
   test_phone_app "weather" || true
   set -e  # Re-enable exit-on-error
 fi
+fi # should_run phone-apps
 
 # ============================================================================
 # STEP 6.5: Launchers (Desktop, PhoneTop)
 # ============================================================================
+if should_run launchers; then
 if [ "$SKIP_TESTS" = false ] && [ "$UNIT_ONLY" = false ] && [ "$QUICK_MODE" = false ]; then
   echo "--- :computer: Launchers - Test"
 elif [ "$UNIT_ONLY" = true ] || [ "$QUICK_MODE" = true ]; then
@@ -934,10 +1027,12 @@ if [ "$SKIP_TESTS" = false ] && [ "$UNIT_ONLY" = false ] && [ "$QUICK_MODE" = fa
   test_launcher "phonetop" || true
   set -e  # Re-enable exit-on-error
 fi
+fi # should_run launchers
 
 # ============================================================================
 # STEP 7: Larger Apps Sub-Projects
 # ============================================================================
+if should_run larger-apps; then
 if [ "$SKIP_TESTS" = false ] && [ "$UNIT_ONLY" = false ] && [ "$QUICK_MODE" = false ]; then
   echo "--- :rocket: Larger Apps - Test"
 elif [ "$UNIT_ONLY" = true ] || [ "$QUICK_MODE" = true ]; then
@@ -976,10 +1071,12 @@ if [ "$SKIP_TESTS" = false ] && [ "$UNIT_ONLY" = false ] && [ "$QUICK_MODE" = fa
   test_larger_app "realtime-paris-density-simulation" || true
   set -e  # Re-enable exit-on-error
 fi
+fi # should_run larger-apps
 
 # ============================================================================
 # STEP 8: Test Apps (Logic + GUI Tests)
 # ============================================================================
+if should_run test-apps; then
 if [ "$SKIP_TESTS" = false ]; then
   echo "--- :test_tube: Test Apps - Tests"
 
@@ -1049,10 +1146,12 @@ if [ "$SKIP_TESTS" = false ]; then
   test_test_app_gui "calculator-advanced" || true
   set -e  # Re-enable exit-on-error
 fi
+fi # should_run test-apps
 
 # ============================================================================
 # STEP 9: Android Native Build (optional - requires Android SDK)
 # ============================================================================
+if should_run android; then
 echo "--- :android: Android Native - Build"
 log_ts "▶ Android Build"
 
@@ -1079,6 +1178,7 @@ else
   echo "⚠️  Android SDK not found (ANDROID_HOME not set) - skipping Android build"
 fi
 log_ts "◀ Android Build"
+fi # should_run android
 
 # ============================================================================
 # Cleanup (do this before summary so it always runs)
