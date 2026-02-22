@@ -269,7 +269,6 @@ export class ImageViewer {
     this.editParams.brightness = Math.max(-100, Math.min(100, value));
     this.editGen++;
     this.applyEditsAndDisplay();
-    this.updateDisplay();
   }
 
   /**
@@ -279,7 +278,6 @@ export class ImageViewer {
     this.editParams.contrast = Math.max(-100, Math.min(100, value));
     this.editGen++;
     this.applyEditsAndDisplay();
-    this.updateDisplay();
   }
 
   /**
@@ -289,7 +287,6 @@ export class ImageViewer {
     this.editParams.saturation = Math.max(-100, Math.min(100, value));
     this.editGen++;
     this.applyEditsAndDisplay();
-    this.updateDisplay();
   }
 
   /**
@@ -299,13 +296,12 @@ export class ImageViewer {
     this.editParams.hue = Math.max(-180, Math.min(180, value));
     this.editGen++;
     this.applyEditsAndDisplay();
-    this.updateDisplay();
   }
 
   /**
    * Reset all edit parameters
    */
-  resetEdits(): void {
+  async resetEdits(): Promise<void> {
     this.editParams = {
       brightness: 0,
       contrast: 0,
@@ -314,7 +310,7 @@ export class ImageViewer {
     };
     this.editGen++;
     this.applyEditsAndDisplay();
-    this.updateDisplay();
+    await this.updateDisplay();
   }
 
   /**

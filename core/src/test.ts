@@ -865,39 +865,98 @@ export class Locator {
   }
 
   /**
-   * Fluent API: Assert widget has specific value (fast fail)
+   * Fluent API: Assert widget has specific value
+   * Without .within(), fast-fails. With .within(ms), polls until match or timeout.
    * Returns this locator for chaining
    * @example
    * await ctx.getById("volume").shouldHaveValue(75);
-   * await ctx.getById("country").shouldHaveValue("US");
+   * await ctx.getById("volume").within(2000).shouldHaveValue(75);
    */
   async shouldHaveValue(expected: string | number): Promise<Locator> {
-    const widgetId = await this.find();
-    if (!widgetId) throwCallerError(`No widget found with ${this.selectorType}: ${this.selector}`, this.shouldHaveValue);
-    const info = await this.bridge.send('getWidgetInfo', { widgetId }, this.shouldHaveValue) as WidgetInfo;
-    // Use !== undefined to handle 0 values correctly (0 is falsy but valid)
-    const actual = info.value !== undefined ? String(info.value) : '';
+    // Consume and clear timeout immediately so it doesn't leak to next operation
+    const timeout = this.withinTimeout;
+    this.withinTimeout = undefined;
     const expectedStr = String(expected);
-    if (actual !== expectedStr) {
-      throwCallerError(`Expected widget value to equal:\n  ${expectedStr}\nReceived:\n  ${actual}`, this.shouldHaveValue);
+
+    if (!timeout) {
+      // Fast fail - no retry
+      const widgetId = await this.find();
+      if (!widgetId) throwCallerError(`No widget found with ${this.selectorType}: ${this.selector}`, this.shouldHaveValue);
+      const info = await this.bridge.send('getWidgetInfo', { widgetId }, this.shouldHaveValue) as WidgetInfo;
+      const actual = info.value !== undefined ? String(info.value) : '';
+      if (actual !== expectedStr) {
+        throwCallerError(`Expected widget value to equal:\n  ${expectedStr}\nReceived:\n  ${actual}`, this.shouldHaveValue);
+      }
+      return this;
     }
-    return this;
+
+    // within() drives explicit retry polling
+    const startTime = Date.now();
+    let lastActual = '';
+    while (Date.now() - startTime < timeout) {
+      try {
+        const widgetId = await this.find();
+        if (widgetId) {
+          const info = await this.bridge.send('getWidgetInfo', { widgetId }, this.shouldHaveValue) as WidgetInfo;
+          const actual = info.value !== undefined ? String(info.value) : '';
+          if (actual === expectedStr) {
+            return this;
+          }
+          lastActual = actual;
+        }
+      } catch (error) {
+        // Widget not found yet, keep trying
+      }
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
+    // Timeout - fail with last value
+    throwCallerError(`Expected widget value to equal:\n  ${expectedStr}\nReceived:\n  ${lastActual}`, this.shouldHaveValue);
   }
 
   /**
-   * Fluent API: Assert select/radiogroup has specific selected text (fast fail)
+   * Fluent API: Assert select/radiogroup has specific selected text
+   * Without .within(), fast-fails. With .within(ms), polls until match or timeout.
    * Returns this locator for chaining
    * @example
    * await ctx.getById("country").shouldHaveSelected("United States");
+   * await ctx.getById("country").within(2000).shouldHaveSelected("United States");
    */
   async shouldHaveSelected(expected: string): Promise<Locator> {
-    const widgetId = await this.find();
-    if (!widgetId) throwCallerError(`No widget found with ${this.selectorType}: ${this.selector}`, this.shouldHaveSelected);
-    const info = await this.bridge.send('getWidgetInfo', { widgetId }, this.shouldHaveSelected) as WidgetInfo;
-    if (info.selected !== expected) {
-      throwCallerError(`Expected selected option to equal:\n  ${expected}\nReceived:\n  ${info.selected}`, this.shouldHaveSelected);
+    // Consume and clear timeout immediately so it doesn't leak to next operation
+    const timeout = this.withinTimeout;
+    this.withinTimeout = undefined;
+
+    if (!timeout) {
+      // Fast fail - no retry
+      const widgetId = await this.find();
+      if (!widgetId) throwCallerError(`No widget found with ${this.selectorType}: ${this.selector}`, this.shouldHaveSelected);
+      const info = await this.bridge.send('getWidgetInfo', { widgetId }, this.shouldHaveSelected) as WidgetInfo;
+      if (info.selected !== expected) {
+        throwCallerError(`Expected selected option to equal:\n  ${expected}\nReceived:\n  ${info.selected}`, this.shouldHaveSelected);
+      }
+      return this;
     }
-    return this;
+
+    // within() drives explicit retry polling
+    const startTime = Date.now();
+    let lastSelected = '';
+    while (Date.now() - startTime < timeout) {
+      try {
+        const widgetId = await this.find();
+        if (widgetId) {
+          const info = await this.bridge.send('getWidgetInfo', { widgetId }, this.shouldHaveSelected) as WidgetInfo;
+          if (info.selected === expected) {
+            return this;
+          }
+          lastSelected = info.selected || '';
+        }
+      } catch (error) {
+        // Widget not found yet, keep trying
+      }
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
+    // Timeout - fail with last value
+    throwCallerError(`Expected selected option to equal:\n  ${expected}\nReceived:\n  ${lastSelected}`, this.shouldHaveSelected);
   }
 
   /**

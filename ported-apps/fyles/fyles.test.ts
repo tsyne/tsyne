@@ -79,10 +79,7 @@ describe('Fyles File Browser Tests', () => {
     await ctx.getByText(testDir).within(2000).shouldExist();
   });
 
-  test.skip('should display test files in grid', async () => {
-    // FIXME: App shows /tmp instead of test directory
-    // FylesStore.loadDirectory is async but called without await in constructor (race condition)
-    // App may also be navigating away from test directory during initialization
+  test('should display test files in grid', async () => {
     await ctx.getByText('test-file.txt').within(2000).shouldExist();
     await ctx.getByText('README.md').within(2000).shouldExist();
     await ctx.getByText('subfolder').within(2000).shouldExist();
@@ -139,9 +136,8 @@ describe('Fyles File Browser Tests', () => {
     await ctx.getByText('test-file.txt').within(2000).shouldExist();
   });
 
-  test.skip('should navigate to home directory', async () => {
-    // FIXME: Test has inter-dependency issues - previous tests leave app in unknown state
-    // Click home button - use ID for reliability
+  test('should navigate to home directory', async () => {
+    // Click home button
     await ctx.getById('panel-0-home').within(500).click();
 
     // Path should show home directory
@@ -157,9 +153,8 @@ describe('Fyles File Browser Tests', () => {
     await ctx.getByText('📁 subfolder').within(2000).shouldExist();
   });
 
-  test.skip('should show empty directory message', async () => {
-    // FIXME: Test has inter-dependency issues - previous tests leave app in unknown state
-    // Navigate to empty subfolder
+  test('should show empty directory message', async () => {
+    // Navigate to empty subfolder (hidden-folder has no children)
     await ctx.getByText('subfolder').within(500).click();
 
     // Should show no subdirectories message

@@ -87,7 +87,7 @@ describe('Image Viewer Tests', () => {
     await ctx.expect(ctx.getByText('Last modified: -')).toBeVisible();
   });
 
-  test.skip('should display Editor tab', async () => {
+  test('should display Editor tab', async () => {
     const testApp = await tsyneTest.createApp((app) => {
       createImageViewerApp(app);
     });
@@ -95,8 +95,7 @@ describe('Image Viewer Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    // Editor tab should be visible
-    await ctx.expect(ctx.getByText('Editor')).toBeVisible();
+    // Editor tab content should be visible
     await ctx.expect(ctx.getByText('Editing Controls:')).toBeVisible();
     await ctx.expect(ctx.getByText('General:')).toBeVisible();
   });
@@ -289,7 +288,7 @@ describe('Image Viewer Tests', () => {
     await ctx.getById('edit-hue').within(2000).shouldHaveValue(10);
   });
 
-  test.skip('should handle open image', async () => {
+  test('should handle open image', async () => {
     const testApp = await tsyneTest.createApp((app) => {
       createImageViewerApp(app);
     });
@@ -310,7 +309,7 @@ describe('Image Viewer Tests', () => {
     // Image info should be populated (allow extra time for Jimp processing)
     await ctx.getById('info-width').within(10000).shouldContain('1920px');
     await ctx.getById('info-height').within(10000).shouldContain('1080px');
-  });
+  }, 15000);
 
   test('should reset all edits to zero', async () => {
     const testApp = await tsyneTest.createApp((app) => {
@@ -340,7 +339,7 @@ describe('Image Viewer Tests', () => {
     await ctx.getById('edit-hue').within(2000).shouldHaveValue(0);
   });
 
-  test.skip('should handle complex editing sequence', async () => {
+  test('should handle complex editing sequence', async () => {
     const testApp = await tsyneTest.createApp((app) => {
       createImageViewerApp(app);
     });
@@ -348,13 +347,16 @@ describe('Image Viewer Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    // Mock the file dialog to return the sample image path
-    const sampleImagePath = path.join(__dirname, 'sample-image.png');
-    tsyneTest.mockFileDialog('open', sampleImagePath);
+    // Use small test image for faster Jimp processing during edits
+    const smallImagePath = path.join(__dirname, 'small-test-image.png');
+    tsyneTest.mockFileDialog('open', smallImagePath);
 
     // Load image (using toolbar action ID)
     await ctx.getById('open-btn').click();
-    await ctx.getById('info-width').within(10000).shouldContain('1920px');
+    await ctx.getById('info-width').within(10000).shouldContain('64px');
+
+    // Wait for loadImage's updateDisplay to finish setting sliders to 0
+    await ctx.getById('edit-brightness').within(5000).shouldHaveValue(0);
 
     // Apply multiple edits using sliders
     await ctx.getById('edit-brightness').setValue(20);
@@ -372,15 +374,15 @@ describe('Image Viewer Tests', () => {
     await ctx.getById('reset-edits-btn').click();
 
     // Edit values reset but zoom persists
-    await ctx.getById('edit-brightness').within(2000).shouldHaveValue(0);
+    await ctx.getById('edit-brightness').within(5000).shouldHaveValue(0);
     await ctx.getById('zoom-status').within(2000).shouldContain('110%');
 
     // Reset zoom (using toolbar action ID)
     await ctx.getById('reset-zoom-btn').click();
     await ctx.getById('zoom-status').within(2000).shouldContain('100%');
-  });
+  }, 15000);
 
-  test.skip('should maintain UI after multiple operations', async () => {
+  test('should maintain UI after multiple operations', async () => {
     const testApp = await tsyneTest.createApp((app) => {
       createImageViewerApp(app);
     });
@@ -388,22 +390,26 @@ describe('Image Viewer Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    // Mock the file dialog to return the sample image path
-    const sampleImagePath = path.join(__dirname, 'sample-image.png');
-    tsyneTest.mockFileDialog('open', sampleImagePath);
+    // Use small test image for faster Jimp processing during edits
+    const smallImagePath = path.join(__dirname, 'small-test-image.png');
+    tsyneTest.mockFileDialog('open', smallImagePath);
 
     // Perform various operations (using toolbar action IDs)
     await ctx.getById('open-btn').click();
-    await ctx.getById('info-width').within(10000).shouldContain('1920px');
+    await ctx.getById('info-width').within(10000).shouldContain('64px');
+
+    // Wait for loadImage's updateDisplay to finish setting sliders to 0
+    await ctx.getById('edit-brightness').within(5000).shouldHaveValue(0);
+
     await ctx.getById('zoom-in-btn').click();
     await ctx.getById('zoom-status').within(2000).shouldContain('110%');
     await ctx.getById('edit-brightness').setValue(10);
     await ctx.getById('edit-brightness').within(2000).shouldHaveValue(10);
     await ctx.getById('reset-edits-btn').click();
-    await ctx.getById('edit-brightness').within(2000).shouldHaveValue(0);
+    await ctx.getById('edit-brightness').within(5000).shouldHaveValue(0);
 
-    // Key UI elements should still be visible
-    await ctx.expect(ctx.getByText('Information')).toBeVisible();
-    await ctx.expect(ctx.getByText('Editor')).toBeVisible();
-  });
+    // Key UI elements should still be visible (check tab content, not tab titles)
+    await ctx.expect(ctx.getByText('Image Information:')).toBeVisible();
+    await ctx.expect(ctx.getByText('Editing Controls:')).toBeVisible();
+  }, 15000);
 });
