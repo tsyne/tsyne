@@ -138,6 +138,15 @@ func (pr *PathRaster) Refresh() {
 func (pr *PathRaster) render(w, h int) image.Image {
 	dc := gg.NewContext(w, h)
 
+	// Scale for HiDPI: Fyne passes device-pixel dimensions (w,h) which may be
+	// larger than the logical size (pr.width, pr.height) on HiDPI displays.
+	// Path coordinates are in logical pixel space, so we must scale up.
+	if pr.width > 0 && pr.height > 0 {
+		sx := float64(w) / float64(pr.width)
+		sy := float64(h) / float64(pr.height)
+		dc.Scale(sx, sy)
+	}
+
 	// Set line style
 	dc.SetLineCap(pr.lineCap)
 	dc.SetLineJoin(pr.lineJoin)
@@ -146,10 +155,22 @@ func (pr *PathRaster) render(w, h int) image.Image {
 	// Parse and draw the path
 	pr.drawPath(dc)
 
+	// Compute HiDPI scale factors for gradient coordinate conversion
+	sx := 1.0
+	sy := 1.0
+	if pr.width > 0 && pr.height > 0 {
+		sx = float64(w) / float64(pr.width)
+		sy = float64(h) / float64(pr.height)
+	}
+
 	// Fill with gradient or solid color
 	if pr.fillGradient != nil && len(pr.fillGradient.Stops) > 0 {
-		// Compute path bounding box from the drawn path
+		// Compute path bounding box (logical pixels) and scale to device pixels
 		minX, minY, maxX, maxY := pr.computePathBounds()
+		minX *= sx
+		minY *= sy
+		maxX *= sx
+		maxY *= sy
 		bw := maxX - minX
 		bh := maxY - minY
 		if bw < 1 {
@@ -179,12 +200,12 @@ func (pr *PathRaster) render(w, h int) image.Image {
 				ry = 0.5
 			}
 			if pr.fillGradient.PixelSpace {
-				// userSpaceOnUse: cx/cy/rx/ry in pixel coords
+				// userSpaceOnUse: cx/cy/rx/ry in logical pixel coords — scale to device pixels
 				rg := &bboxRadialGradient{
-					cx: pr.fillGradient.Cx,
-					cy: pr.fillGradient.Cy,
-					rx: rx, ry: ry,
-					fx: pr.fillGradient.Fx, fy: pr.fillGradient.Fy,
+					cx: pr.fillGradient.Cx * sx,
+					cy: pr.fillGradient.Cy * sy,
+					rx: rx * sx, ry: ry * sy,
+					fx: pr.fillGradient.Fx * sx, fy: pr.fillGradient.Fy * sy,
 					hasFocal: pr.fillGradient.HasFocal,
 					minX: 0, minY: 0, bw: 1, bh: 1, // identity: bx = px
 					stops: paddedStops,
@@ -205,10 +226,10 @@ func (pr *PathRaster) render(w, h int) image.Image {
 				dc.SetFillStyle(rg)
 			}
 		} else if pr.fillGradient.PixelSpace {
-			// userSpaceOnUse: project in pixel space to preserve gradient angle
+			// userSpaceOnUse: project in pixel space — scale to device pixels
 			grad := &pixelLinearGradient{
-				x1: pr.fillGradient.X1, y1: pr.fillGradient.Y1,
-				x2: pr.fillGradient.X2, y2: pr.fillGradient.Y2,
+				x1: pr.fillGradient.X1 * sx, y1: pr.fillGradient.Y1 * sy,
+				x2: pr.fillGradient.X2 * sx, y2: pr.fillGradient.Y2 * sy,
 				stops: paddedStops,
 				spreadMethod: sm,
 			}
@@ -234,6 +255,9 @@ func (pr *PathRaster) render(w, h int) image.Image {
 		// Gradient stroke via mask: render stroke as white-on-black mask,
 		// then composite gradient color at each mask pixel.
 		maskDC := gg.NewContext(w, h)
+		if pr.width > 0 && pr.height > 0 {
+			maskDC.Scale(sx, sy)
+		}
 		maskDC.SetLineCap(pr.lineCap)
 		maskDC.SetLineJoin(pr.lineJoin)
 		pr.drawPath(maskDC)
@@ -246,9 +270,14 @@ func (pr *PathRaster) render(w, h int) image.Image {
 		grad := pr.strokeGradient
 		paddedStops := padStops(grad.Stops)
 		var pattern gradientPattern
-		minX, minY, maxX, maxY := pr.computePathBounds()
-		bw := maxX - minX
-		bh := maxY - minY
+		// Scale bounds from logical to device pixels
+		sMinX, sMinY, sMaxX, sMaxY := pr.computePathBounds()
+		sMinX *= sx
+		sMinY *= sy
+		sMaxX *= sx
+		sMaxY *= sy
+		bw := sMaxX - sMinX
+		bh := sMaxY - sMinY
 		if bw < 1 {
 			bw = 1
 		}
@@ -266,14 +295,14 @@ func (pr *PathRaster) render(w, h int) image.Image {
 				ry = 0.5
 			}
 			if grad.PixelSpace {
-				pattern = &bboxRadialGradient{cx: grad.Cx, cy: grad.Cy, rx: rx, ry: ry, fx: grad.Fx, fy: grad.Fy, hasFocal: grad.HasFocal, minX: 0, minY: 0, bw: 1, bh: 1, stops: paddedStops, spreadMethod: ssm}
+				pattern = &bboxRadialGradient{cx: grad.Cx * sx, cy: grad.Cy * sy, rx: rx * sx, ry: ry * sy, fx: grad.Fx * sx, fy: grad.Fy * sy, hasFocal: grad.HasFocal, minX: 0, minY: 0, bw: 1, bh: 1, stops: paddedStops, spreadMethod: ssm}
 			} else {
-				pattern = &bboxRadialGradient{cx: grad.Cx, cy: grad.Cy, rx: rx, ry: ry, fx: grad.Fx, fy: grad.Fy, hasFocal: grad.HasFocal, minX: minX, minY: minY, bw: bw, bh: bh, stops: paddedStops, spreadMethod: ssm}
+				pattern = &bboxRadialGradient{cx: grad.Cx, cy: grad.Cy, rx: rx, ry: ry, fx: grad.Fx, fy: grad.Fy, hasFocal: grad.HasFocal, minX: sMinX, minY: sMinY, bw: bw, bh: bh, stops: paddedStops, spreadMethod: ssm}
 			}
 		} else if grad.PixelSpace {
-			pattern = &pixelLinearGradient{x1: grad.X1, y1: grad.Y1, x2: grad.X2, y2: grad.Y2, stops: paddedStops, spreadMethod: ssm}
+			pattern = &pixelLinearGradient{x1: grad.X1 * sx, y1: grad.Y1 * sy, x2: grad.X2 * sx, y2: grad.Y2 * sy, stops: paddedStops, spreadMethod: ssm}
 		} else {
-			pattern = &bboxLinearGradient{x1: grad.X1, y1: grad.Y1, x2: grad.X2, y2: grad.Y2, minX: minX, minY: minY, bw: bw, bh: bh, stops: paddedStops, spreadMethod: ssm}
+			pattern = &bboxLinearGradient{x1: grad.X1, y1: grad.Y1, x2: grad.X2, y2: grad.Y2, minX: sMinX, minY: sMinY, bw: bw, bh: bh, stops: paddedStops, spreadMethod: ssm}
 		}
 
 		// Composite: where mask is non-zero, draw gradient color
