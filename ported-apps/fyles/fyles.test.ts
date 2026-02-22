@@ -92,14 +92,14 @@ describe('Fyles File Browser Tests', () => {
   });
 
   test('should toggle hidden files visibility', async () => {
-    // Click toggle hidden files button
-    await ctx.getByText('👁️‍🗨️').within(500).click();
+    // Click toggle hidden files button (use ID — emoji encoding varies across systems)
+    await ctx.getById('panel-0-hidden').within(500).click();
 
     // Now hidden file should be visible
     await ctx.getByText('.hidden').within(2000).shouldExist();
 
-    // Toggle back - just verify the button works
-    await ctx.getByText('👁️').within(500).click();
+    // Toggle back
+    await ctx.getById('panel-0-hidden').within(500).click();
 
     // Verify we're still showing the test directory
     await ctx.getByText(testDir).within(2000).shouldExist();
@@ -154,8 +154,8 @@ describe('Fyles File Browser Tests', () => {
   });
 
   test('should show empty directory message', async () => {
-    // Navigate to empty subfolder (hidden-folder has no children)
-    await ctx.getByText('subfolder').within(500).click();
+    // Navigate to subfolder using grid button ID (avoids matching nav panel label)
+    await ctx.getById('panel-0-grid-folder-subfolder').within(500).click();
 
     // Should show no subdirectories message
     await ctx.getByText('(no subdirectories)').within(2000).shouldExist();
