@@ -1,3 +1,8 @@
+# NOTE: BUILDKITE_GIT_CLEAN_FLAGS="-ffd" is set in the agent's environment hook
+# (/buildkite/hooks/environment) to preserve gitignored build artifacts
+# (bin/tsyne-bridge, node_modules, dist/) between pipeline steps.
+# It CANNOT be set here — Buildkite treats it as a protected variable.
+
 steps:
   - label: ":broom: Cleanup"
     command: "./ci.sh cleanup"
@@ -11,8 +16,8 @@ steps:
       queue: "default-queue"
     timeout_in_minutes: 10
     artifact_paths:
-      - "bin/tsyne-bridge"
-      - "bin/libtsyne.*"
+      - "core/bin/tsyne-bridge"
+      - "core/bin/libtsyne.*"
 
   - label: ":nodejs: Core"
     command: "./ci.sh core"
@@ -80,3 +85,9 @@ steps:
       queue: "default-queue"
     timeout_in_minutes: 10
     soft_fail: true
+
+  - label: ":bar_chart: Summary"
+    command: "./ci.sh summary"
+    agents:
+      queue: "default-queue"
+    timeout_in_minutes: 1

@@ -166,7 +166,9 @@ export class MsgpackTcpBridgeConnection implements BridgeInterface {
         if (settled) return;
         settled = true;
         if (timeoutHandle) clearTimeout(timeoutHandle);
-        console.error(`[msgpack-tcp] Connection failed (${this.host}:${this.port}): ${err.message}`);
+        // TODO: Log connection failures for remote bridge mode (security auditing).
+        // Localhost failures are just "bridge not ready yet", but remote TCP
+        // connections should log failed attempts to detect unauthorized access.
         reject(err);
       };
 

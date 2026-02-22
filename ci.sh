@@ -73,6 +73,7 @@ while [[ $# -gt 0 ]]; do
       echo "Targets (optional — blank runs everything):"
       echo "  cleanup        Kill orphaned processes from previous runs"
       echo "  bridge         Go bridge build only"
+      echo "  summary        Aggregate and print test results from all steps"
       echo "  core           Core build + unit tests"
       echo "  cosyne         Cosyne build + tests (assumes core already built)"
       echo "  trine          Three.js setup + tests"
@@ -110,7 +111,7 @@ done
 # Validate target if specified
 if [ -n "$TARGET" ]; then
   case "$TARGET" in
-    cleanup|bridge|core|cosyne|trine|designer|examples|ported-apps|phone-apps|launchers|larger-apps|test-apps|android)
+    cleanup|bridge|core|cosyne|trine|designer|examples|ported-apps|phone-apps|launchers|larger-apps|test-apps|android|summary)
       echo "Target: $TARGET"
       ;;
     *)
@@ -409,7 +410,7 @@ rm -f "$WAIT_TIME_FILE"
 # ============================================================================
 # Cleanup: kill orphaned processes from previous CI runs
 # ============================================================================
-if should_run cleanup; then
+if [ "$TARGET" = "cleanup" ]; then
   echo "--- :broom: Cleanup orphaned processes"
   log_ts "▶ Cleanup"
   KILLED=0
@@ -1181,6 +1182,43 @@ log_ts "◀ Android Build"
 fi # should_run android
 
 # ============================================================================
+# Summary: Aggregate all /tmp/*-test-results.json into a results table
+# ============================================================================
+if should_run summary; then
+  echo "--- :bar_chart: Test Results Summary"
+  log_ts "▶ Summary"
+
+  # Re-read all JSON result files and feed them into the existing aggregation
+  for json_file in /tmp/*-test-results.json; do
+    [ -f "$json_file" ] || continue
+    basename=$(basename "$json_file" -test-results.json)
+
+    # Map filename back to section name
+    case "$basename" in
+      core)                      section="Core" ;;
+      cosyne)                    section="Cosyne" ;;
+      trine)                     section="Trine" ;;
+      designer-unit)             section="Designer: Unit" ;;
+      designer-gui)              section="Designer: GUI" ;;
+      examples-logic)            section="Examples: Logic" ;;
+      examples-gui)              section="Examples: GUI" ;;
+      test-app-*-logic)          section="TestApp: ${basename#test-app-}"; section="${section%-logic} Logic" ;;
+      test-app-*-gui)            section="TestApp: ${basename#test-app-}"; section="${section%-gui} GUI" ;;
+      ported-*)                  section="Ported: ${basename#ported-}" ;;
+      phone-*)                   section="Phone: ${basename#phone-}" ;;
+      launcher-*)                section="Launcher: ${basename#launcher-}" ;;
+      larger-*)                  section="Larger: ${basename#larger-}" ;;
+      *)                         section="$basename" ;;
+    esac
+
+    capture_test_results "$section" "$json_file"
+  done
+
+  print_test_summary
+  log_ts "◀ Summary"
+fi
+
+# ============================================================================
 # Cleanup (do this before summary so it always runs)
 # ============================================================================
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}
@@ -1190,9 +1228,9 @@ if [ "$OS" = "linux" ] && [ -n "${XVFB_PID}" ]; then
 fi
 
 # ============================================================================
-# Print Test Summary (this will exit with failure code if tests failed)
+# Print Test Summary (full-run mode only — for sub-target builds, use "summary")
 # ============================================================================
-if [ "$SKIP_TESTS" = false ]; then
+if [ -z "$TARGET" ] && [ "$SKIP_TESTS" = false ]; then
   print_test_summary
 fi
 
