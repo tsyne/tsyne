@@ -200,11 +200,18 @@ capture_test_results() {
   local json_file="$2"
   local duration=${SECTION_DURATIONS[$section_name]:-""}
 
-  # Format duration
+  # Format duration — fall back to Jest JSON timing if SECTION_DURATIONS not available
   local duration_str=""
   if [ -n "$duration" ] && [ "$duration" -gt 0 ] 2>/dev/null; then
     TOTAL_DURATION=$((TOTAL_DURATION + duration))
     duration_str=$(format_duration "$duration")
+  elif [ -f "$json_file" ]; then
+    # Extract duration from Jest JSON (max endTime - startTime)
+    local json_duration=$(jq '(([.testResults[].endTime] | max) - .startTime) / 1000 | round' "$json_file" 2>/dev/null)
+    if [ -n "$json_duration" ] && [ "$json_duration" -gt 0 ] 2>/dev/null; then
+      TOTAL_DURATION=$((TOTAL_DURATION + json_duration))
+      duration_str=$(format_duration "$json_duration")
+    fi
   fi
 
   if [ -f "$json_file" ]; then
@@ -308,7 +315,7 @@ print_test_summary() {
   output_line "─────────────────────────────────────────────────────────────────────────────────────"
 
   for result in "${TEST_RESULTS[@]}"; do
-    IFS='|' read -r name tests passed failed skipped duration suites <<< "$result"
+    IFS='|' read -r name tests passed failed skipped duration suites suites_passed suites_failed <<< "$result"
     printf "%-30s %8s %8s %8s %8s %9s %8s\n" "$name" "$tests" "$passed" "$failed" "$skipped" "$duration" "$suites" | tee -a "$output_file"
   done
 
