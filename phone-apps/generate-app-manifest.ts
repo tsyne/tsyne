@@ -52,7 +52,7 @@ interface ParsedAppMetadata {
 const EXCLUDE_PATTERNS = [
   /\.test\.ts$/,
   /\.d\.ts$/,
-  /^index\.ts$/,
+  /^index\.ts$/,  // Exclude files named index.ts (matched against basename)
   /^phonetop\.ts$/,
   /^phonetop-android\.ts$/,
   /^phonetop-groups\.ts$/,
@@ -66,6 +66,11 @@ const EXCLUDE_PATTERNS = [
   /[\/\\]signal($|[\/\\])/,     // Requires 'signal' package
   /[\/\\]solitaire($|[\/\\])/,  // Has nested @resvg dependency issues
   /nomad\.ts$/,                  // Has require('./index') issue
+];
+
+// Files that should be included even if they match an exclude pattern above
+const INCLUDE_OVERRIDES = [
+  /trine[\/\\]examples[\/\\]index\.ts$/,  // Three.js Examples launcher
 ];
 
 // Default icon for apps without one
@@ -228,6 +233,10 @@ function parseAppMetadata(filePath: string): ParsedAppMetadata | null {
 function shouldExclude(filePath: string): boolean {
   const relativePath = path.relative(process.cwd(), filePath);
   const fileName = path.basename(filePath);
+  // Check include overrides first (takes priority over excludes)
+  if (INCLUDE_OVERRIDES.some(pattern => pattern.test(relativePath) || pattern.test(filePath))) {
+    return false;
+  }
   // Check against both relative path and filename
   return EXCLUDE_PATTERNS.some(pattern =>
     pattern.test(relativePath) || pattern.test(fileName)

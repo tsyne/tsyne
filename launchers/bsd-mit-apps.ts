@@ -63,6 +63,9 @@ export const ALL_BSD_OR_MIT_APPS = [
   tryResolve('../phone-apps/voice-assistant/voice-assistant'),
   tryResolve('../phone-apps/weather/weather'),
 
+  // trine (Three.js examples launcher)
+  tryResolve('../trine/examples/index'),
+
   // examples (all MIT)
   tryResolve('../examples/02-counter'),
   tryResolve('../examples/15-tip-calculator'),

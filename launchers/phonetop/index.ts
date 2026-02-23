@@ -171,8 +171,8 @@ class PhoneTop {
   private folderHeaderCount: Label | null = null;
   /** App view max wrapper (for expansion in stack) */
   private appMaxContainer: Max | null = null;
-  /** App view container (for running apps) */
-  private appContainer: VBox | null = null;
+  /** App view container (for running apps) - Max so content fills space */
+  private appContainer: Max | null = null;
   /** Whether keyboard has been built (only build once) */
   private keyboardBuilt: boolean = false;
   /** Current window dimensions */
@@ -981,10 +981,10 @@ class PhoneTop {
               });
               this.folderMaxContainer.hide();  // Start hidden
 
-              // App view - max wrapper ensures vbox expands to fill stack
+              // App view - nested max so content fills available space
               this.appMaxContainer = this.a.max(() => {
-                this.appContainer = this.a.vbox(() => {
-                  // Content added when app is launched
+                this.appContainer = this.a.max(() => {
+                  this.a.label('');  // placeholder, replaced when app launches
                 });
               });
               this.appMaxContainer.hide();  // Start hidden
@@ -1389,6 +1389,7 @@ class PhoneTop {
    * App content renders as a layer over the home screen
    */
   async launchApp(metadata: AppMetadata) {
+    console.log(`[phonetop] launchApp: ${metadata.name} (${metadata.filePath})`);
     // On phone, 'desktop-many' apps are treated as single instance
     // Only 'many' allows multiple instances on phone
     const isMultiInstance = metadata.count === 'many';
@@ -1539,7 +1540,6 @@ class PhoneTop {
   switchToApp(appId: string | null) {
     if (!this.win) return;
 
-    console.log(`[phonetop] switchToApp: ${appId}`);
     this.frontAppId = appId;
 
     if (appId === null) {
@@ -1550,7 +1550,6 @@ class PhoneTop {
     } else {
       const runningApp = this.runningApps.get(appId);
       if (runningApp) {
-        console.log(`[phonetop] showing app: ${runningApp.metadata.name}, hasContentBuilder: ${!!runningApp.adapter.contentBuilder}`);
         // Show app - hide home and folder containers
         this.homeMaxContainer?.hide();
         this.folderMaxContainer?.hide();
@@ -1576,9 +1575,7 @@ class PhoneTop {
    * This caused stack overflow crashes when clicking dialer buttons.
    */
   private async showAppContent(runningApp: RunningApp) {
-    console.log(`[phonetop] showAppContent: ${runningApp.metadata.name}, win=${!!this.win}, appContainer=${!!this.appContainer}`);
     if (!this.win || !this.appContainer) {
-      console.error(`[phonetop] showAppContent: early return - win=${!!this.win}, appContainer=${!!this.appContainer}`);
       return;
     }
 
@@ -1606,94 +1603,85 @@ class PhoneTop {
     this.a.getContext().setResourceScope(runningApp.resourceScope);
     this.a.getContext().setLayoutScale(this.getLayoutScale());
 
-    // Capture appVbox from inside add() - will be assigned synchronously
-    let appVbox: VBox;
+    // Use border layout: header in top, app content in center (expands to fill)
+    // This solves the vbox expansion problem where scroll/border content collapses
+    let appBorder: any;
 
-    // Add app header SYNCHRONOUSLY (this is critical - async callbacks break add()!)
-    this.appContainer.add(() => {
-      // Create vbox to hold app header + content
-      appVbox = this.a.vbox(() => {
-        // Header with back button, quit button, menu button, and app name
-        this.a.hbox(() => {
-          this.sizedButton('← Home', { onClick: () => {
-            this.hideKeyboard();
-            this.goHome();
-          }});
-          this.sizedButton('✕ Quit', { onClick: () => {
-            this.hideKeyboard();
-            if (appId) this.quitApp(appId);
-          }});
-
-          // Menu button if app has menus
-          const menuDef = runningApp.adapter.menuDefinition;
-          if (menuDef && menuDef.length > 0) {
-            this.sizedButton('☰', { onClick: async () => {
-              // Build menu options for form dialog
-              const allOptions: string[] = [];
-              const allCallbacks: Map<string, () => void> = new Map();
-
-              for (const menu of menuDef) {
-                for (const item of menu.items) {
-                  if (!item.isSeparator && item.label) {
-                    const label = `${menu.label} → ${item.label}`;
-                    allOptions.push(label);
-                    const callback = item.onSelected || item.onClick;
-                    if (callback) {
-                      allCallbacks.set(label, callback);
-                    }
-                  }
-                }
-              }
-
-              // Show as selection dialog
-              if (this.win && allOptions.length > 0) {
-                const result = await this.win.showForm('Menu', [{
-                  name: 'action',
-                  type: 'select',
-                  label: 'Action',
-                  options: allOptions
-                }]);
-
-                if (result?.submitted && result.values?.action) {
-                  const selected = result.values.action as string;
-                  const callback = allCallbacks.get(selected);
-                  if (callback) callback();
-                }
-              }
-            }});
-          }
-
-          this.a.spacer();
-          this.sizedLabel(runningApp.adapter.title);
-          this.a.spacer();
-        });
-        this.a.separator();
-      });
-    });
-
-    // Build app content OUTSIDE of add() - this allows async operations
-    // The contentBuilder may be async, so we await it here
+    // Build app content and header together in a border layout
     try {
-      console.log(`[phonetop] building content for ${runningApp.metadata.name}...`);
-      this.a.getContext().pushContainer();
-      await contentBuilder();
-      const appWidgetIds = this.a.getContext().popContainer();
-      console.log(`[phonetop] content built: ${appWidgetIds.length} widgets`);
+      this.appContainer.add(() => {
+        appBorder = this.a.border({
+          top: () => {
+            this.a.vbox(() => {
+              // Header with back button, quit button, menu button, and app name
+              this.a.hbox(() => {
+                this.sizedButton('← Home', { onClick: () => {
+                  this.hideKeyboard();
+                  this.goHome();
+                }});
+                this.sizedButton('✕ Quit', { onClick: () => {
+                  this.hideKeyboard();
+                  if (appId) this.quitApp(appId);
+                }});
 
-      // Add app widgets to the app vbox
-      for (const childId of appWidgetIds) {
-        this.a.getContext().bridge.send('containerAdd', {
-          containerId: appVbox!.id,
-          childId
+                // Menu button if app has menus
+                const menuDef = runningApp.adapter.menuDefinition;
+                if (menuDef && menuDef.length > 0) {
+                  this.sizedButton('☰', { onClick: async () => {
+                    const allOptions: string[] = [];
+                    const allCallbacks: Map<string, () => void> = new Map();
+
+                    for (const menu of menuDef) {
+                      for (const item of menu.items) {
+                        if (!item.isSeparator && item.label) {
+                          const label = `${menu.label} → ${item.label}`;
+                          allOptions.push(label);
+                          const callback = item.onSelected || item.onClick;
+                          if (callback) {
+                            allCallbacks.set(label, callback);
+                          }
+                        }
+                      }
+                    }
+
+                    if (this.win && allOptions.length > 0) {
+                      const result = await this.win.showForm('Menu', [{
+                        name: 'action',
+                        type: 'select',
+                        label: 'Action',
+                        options: allOptions
+                      }]);
+
+                      if (result?.submitted && result.values?.action) {
+                        const selected = result.values.action as string;
+                        const callback = allCallbacks.get(selected);
+                        if (callback) callback();
+                      }
+                    }
+                  }});
+                }
+
+                this.a.spacer();
+                this.sizedLabel(runningApp.adapter.title);
+                this.a.spacer();
+              });
+              this.a.separator();
+            });
+          },
+          center: () => {
+            // App content goes here - center region expands to fill
+            contentBuilder();
+          }
         });
-      }
+      });
+
     } catch (err) {
       // Pop the container even on error to maintain context stack integrity
       try { this.a.getContext().popContainer(); } catch { /* ignore */ }
 
       // Show error message in the app area instead of crashing
       console.error(`[phonetop] App "${runningApp.metadata.name}" crashed:`, err);
-      appVbox!.add(() => {
+      this.appContainer!.add(() => {
         this.a.vbox(() => {
           this.sizedLabel(`App Error: ${runningApp.metadata.name}`);
           this.sizedLabel(err instanceof Error ? err.message : String(err));
@@ -1710,9 +1698,10 @@ class PhoneTop {
     this.a.getContext().setResourceScope(null);
     this.a.getContext().setLayoutScale(1.0);
 
-    // Show app container (via max wrapper)
-    console.log(`[phonetop] showing appMaxContainer for ${runningApp.metadata.name}`);
+    // Show app container and force layout refresh
     this.appMaxContainer?.show();
+    this.appContainer?.refresh();
+    this.appMaxContainer?.refresh();
   }
 
   /**
