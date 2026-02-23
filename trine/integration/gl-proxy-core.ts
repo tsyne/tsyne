@@ -138,6 +138,37 @@ export class TsyneGLProxy implements WebGL2RenderingContext {
         }
       }
 
+      // Process keyboard events
+      const keyEvents = response?.keyEvents || response?.Result?.keyEvents;
+      if (keyEvents && Array.isArray(keyEvents)) {
+        for (const evt of keyEvents) {
+          const eventType = evt.Type || evt.type;
+          const key = evt.Key || evt.key;
+          this.canvas.dispatchKeyboardEvent(eventType, key);
+        }
+      }
+
+      // Process scroll events
+      const scrollEvents = response?.scrollEvents || response?.Result?.scrollEvents;
+      if (scrollEvents && Array.isArray(scrollEvents)) {
+        for (const evt of scrollEvents) {
+          const dx = evt.DX ?? evt.dx ?? 0;
+          const dy = evt.DY ?? evt.dy ?? 0;
+          this.canvas.dispatchWheelEvent(dx, dy);
+        }
+      }
+
+      // Process drag events
+      const dragEvents = response?.dragEvents || response?.Result?.dragEvents;
+      if (dragEvents && Array.isArray(dragEvents)) {
+        for (const evt of dragEvents) {
+          const eventType = evt.Type || evt.type;
+          const dx = evt.DX ?? evt.dx ?? 0;
+          const dy = evt.DY ?? evt.dy ?? 0;
+          this.canvas.dispatchDragEvent(eventType, dx, dy);
+        }
+      }
+
       // Process readPixels result if pending
       const pixelData = response?.pixelData || response?.Result?.pixelData;
       if (pixelData && this._pendingReadPixels) {

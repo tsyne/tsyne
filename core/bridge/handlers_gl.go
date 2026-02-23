@@ -70,6 +70,18 @@ type GLCanvas struct {
 	// Mouse event buffer (accumulated between frames, drained on request)
 	pendingMouseEvents []MouseEvent
 	mouseEventMu       sync.Mutex
+
+	// Keyboard event buffer
+	pendingKeyEvents []KeyEvent
+	keyEventMu       sync.Mutex
+
+	// Scroll event buffer
+	pendingScrollEvents []ScrollEvent
+	scrollEventMu       sync.Mutex
+
+	// Drag event buffer
+	pendingDragEvents []DragEvent
+	dragEventMu       sync.Mutex
 }
 
 // MouseEvent represents a buffered mouse event
@@ -78,6 +90,25 @@ type MouseEvent struct {
 	X      float32 `json:"x"`
 	Y      float32 `json:"y"`
 	Button int     `json:"button"` // 0=left, 1=middle, 2=right (DOM convention)
+}
+
+// KeyEvent represents a buffered keyboard event
+type KeyEvent struct {
+	Type string `json:"type"` // "keydown", "keyup"
+	Key  string `json:"key"`
+}
+
+// ScrollEvent represents a buffered scroll event
+type ScrollEvent struct {
+	DX float32 `json:"dx"`
+	DY float32 `json:"dy"`
+}
+
+// DragEvent represents a buffered drag event
+type DragEvent struct {
+	Type string  `json:"type"` // "drag", "dragend"
+	DX   float32 `json:"dx"`
+	DY   float32 `json:"dy"`
 }
 
 // centerNoMinLayout centers children like container.NewCenter but reports
@@ -317,10 +348,33 @@ void main() {
 			// Convert Fyne button (1=primary, 2=secondary, 4=tertiary) to DOM button (0=left, 2=right, 1=middle)
 			domButton := fyneButtonToDOM(button)
 			b.sendMouseEvent(canvasID, "mousedown", x, y, domButton)
+
+			// Request focus on first mouse click so keyboard events work
+			fyne.Do(func() {
+				fyneCanvas := fyne.CurrentApp().Driver().CanvasForObject(hoverableObject)
+				if fyneCanvas != nil {
+					fyneCanvas.Focus(hoverableObject)
+				}
+			})
 		})
 		hoverableObject.SetOnMouseUp(func(x, y float32, button int) {
 			domButton := fyneButtonToDOM(button)
 			b.sendMouseEvent(canvasID, "mouseup", x, y, domButton)
+		})
+		hoverableObject.SetOnKeyDown(func(key string) {
+			b.sendKeyEvent(canvasID, "keydown", key)
+		})
+		hoverableObject.SetOnKeyUp(func(key string) {
+			b.sendKeyEvent(canvasID, "keyup", key)
+		})
+		hoverableObject.SetOnScrolled(func(dx, dy float32) {
+			b.sendScrollEvent(canvasID, dx, dy)
+		})
+		hoverableObject.SetOnDragged(func(dx, dy float32) {
+			b.sendDragEvent(canvasID, "drag", dx, dy)
+		})
+		hoverableObject.SetOnDragEnd(func() {
+			b.sendDragEvent(canvasID, "dragend", 0, 0)
 		})
 	}
 
@@ -593,6 +647,24 @@ func (b *Bridge) handleExecuteBatch(msg Message) Response {
 	events := drainMouseEvents(canvasID)
 	if len(events) > 0 {
 		result["mouseEvents"] = events
+	}
+
+	// Include keyboard events
+	keyEvents := drainKeyEvents(canvasID)
+	if len(keyEvents) > 0 {
+		result["keyEvents"] = keyEvents
+	}
+
+	// Include scroll events
+	scrollEvents := drainScrollEvents(canvasID)
+	if len(scrollEvents) > 0 {
+		result["scrollEvents"] = scrollEvents
+	}
+
+	// Include drag events
+	dragEvents := drainDragEvents(canvasID)
+	if len(dragEvents) > 0 {
+		result["dragEvents"] = dragEvents
 	}
 
 	// Include readPixels data if requested
@@ -2859,6 +2931,100 @@ func hasPendingMouseEvents(canvasID string) bool {
 	defer canvas.mouseEventMu.Unlock()
 
 	return len(canvas.pendingMouseEvents) > 0
+}
+
+// sendKeyEvent buffers a keyboard event for the given canvas
+func (b *Bridge) sendKeyEvent(canvasID string, eventType string, key string) {
+	canvas, exists := glCanvases[canvasID]
+	if !exists {
+		return
+	}
+
+	canvas.keyEventMu.Lock()
+	defer canvas.keyEventMu.Unlock()
+
+	canvas.pendingKeyEvents = append(canvas.pendingKeyEvents, KeyEvent{
+		Type: eventType,
+		Key:  key,
+	})
+}
+
+// drainKeyEvents returns and clears pending keyboard events for a canvas
+func drainKeyEvents(canvasID string) []KeyEvent {
+	canvas, exists := glCanvases[canvasID]
+	if !exists {
+		return nil
+	}
+
+	canvas.keyEventMu.Lock()
+	defer canvas.keyEventMu.Unlock()
+
+	events := canvas.pendingKeyEvents
+	canvas.pendingKeyEvents = nil
+	return events
+}
+
+// sendScrollEvent buffers a scroll event for the given canvas
+func (b *Bridge) sendScrollEvent(canvasID string, dx, dy float32) {
+	canvas, exists := glCanvases[canvasID]
+	if !exists {
+		return
+	}
+
+	canvas.scrollEventMu.Lock()
+	defer canvas.scrollEventMu.Unlock()
+
+	canvas.pendingScrollEvents = append(canvas.pendingScrollEvents, ScrollEvent{
+		DX: dx,
+		DY: dy,
+	})
+}
+
+// drainScrollEvents returns and clears pending scroll events for a canvas
+func drainScrollEvents(canvasID string) []ScrollEvent {
+	canvas, exists := glCanvases[canvasID]
+	if !exists {
+		return nil
+	}
+
+	canvas.scrollEventMu.Lock()
+	defer canvas.scrollEventMu.Unlock()
+
+	events := canvas.pendingScrollEvents
+	canvas.pendingScrollEvents = nil
+	return events
+}
+
+// sendDragEvent buffers a drag event for the given canvas
+func (b *Bridge) sendDragEvent(canvasID string, eventType string, dx, dy float32) {
+	canvas, exists := glCanvases[canvasID]
+	if !exists {
+		return
+	}
+
+	canvas.dragEventMu.Lock()
+	defer canvas.dragEventMu.Unlock()
+
+	canvas.pendingDragEvents = append(canvas.pendingDragEvents, DragEvent{
+		Type: eventType,
+		DX:   dx,
+		DY:   dy,
+	})
+}
+
+// drainDragEvents returns and clears pending drag events for a canvas
+func drainDragEvents(canvasID string) []DragEvent {
+	canvas, exists := glCanvases[canvasID]
+	if !exists {
+		return nil
+	}
+
+	canvas.dragEventMu.Lock()
+	defer canvas.dragEventMu.Unlock()
+
+	events := canvas.pendingDragEvents
+	canvas.pendingDragEvents = nil
+	return events
 }
 
 // halfToFloat converts an IEEE 754 binary16 half-precision float to float32

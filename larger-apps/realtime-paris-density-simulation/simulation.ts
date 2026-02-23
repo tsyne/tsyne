@@ -26,7 +26,7 @@ export interface TimeOfWeek {
 }
 
 // 60+ major Paris hotspots with their characteristics
-const HOTSPOTS: Hotspot[] = [
+export const HOTSPOTS: Hotspot[] = [
   // Tourist attractions
   { name: 'Eiffel Tower', lat: 48.8584, lng: 2.2945, basePop: 90, radius: 0.8, type: 'tourist' },
   { name: 'Louvre Museum', lat: 48.8606, lng: 2.3352, basePop: 85, radius: 0.7, type: 'tourist' },
@@ -77,7 +77,52 @@ const HOTSPOTS: Hotspot[] = [
   { name: 'Neuilly-sur-Seine', lat: 48.8821, lng: 2.2641, basePop: 30, radius: 0.8, type: 'residential' },
   { name: 'Bois de Vincennes', lat: 48.8268, lng: 2.4369, basePop: 35, radius: 1.2, type: 'park' },
   { name: 'Île de la Cité', lat: 48.8530, lng: 2.3484, basePop: 45, radius: 0.5, type: 'tourist' },
-  { name: 'Île Saint-Louis', lat: 48.8518, lng: 2.3553, basePop: 35, radius: 0.4, type: 'residential' }
+  { name: 'Île Saint-Louis', lat: 48.8518, lng: 2.3553, basePop: 35, radius: 0.4, type: 'residential' },
+
+  // Tourist landmarks (from OG)
+  { name: 'Musée d\'Orsay', lat: 48.8600, lng: 2.3266, basePop: 75, radius: 0.5, type: 'tourist' },
+  { name: 'Centre Pompidou', lat: 48.8606, lng: 2.3522, basePop: 70, radius: 0.5, type: 'tourist' },
+  { name: 'Trocadéro', lat: 48.8616, lng: 2.2875, basePop: 80, radius: 0.7, type: 'tourist' },
+  { name: 'Invalides', lat: 48.8550, lng: 2.3125, basePop: 65, radius: 0.6, type: 'tourist' },
+
+  // Shopping (from OG)
+  { name: 'Printemps', lat: 48.8745, lng: 2.3285, basePop: 82, radius: 0.5, type: 'shopping' },
+  { name: 'Saint-Germain', lat: 48.8539, lng: 2.3338, basePop: 72, radius: 0.8, type: 'shopping' },
+  { name: 'Rue de Rivoli', lat: 48.8590, lng: 2.3420, basePop: 70, radius: 1.0, type: 'shopping' },
+  { name: 'Boulevard Haussmann', lat: 48.8750, lng: 2.3300, basePop: 75, radius: 0.9, type: 'shopping' },
+
+  // Business (from OG)
+  { name: 'Bourse', lat: 48.8690, lng: 2.3410, basePop: 70, radius: 0.5, type: 'business' },
+
+  // Transport hubs (from OG)
+  { name: 'Châtelet', lat: 48.8584, lng: 2.3474, basePop: 90, radius: 0.9, type: 'transport' },
+  { name: 'République', lat: 48.8675, lng: 2.3640, basePop: 75, radius: 0.6, type: 'transport' },
+  { name: 'Nation', lat: 48.8485, lng: 2.3958, basePop: 70, radius: 0.5, type: 'transport' },
+  { name: 'Bastille', lat: 48.8533, lng: 2.3692, basePop: 78, radius: 0.6, type: 'transport' },
+
+  // Nightlife (from OG)
+  { name: 'Oberkampf', lat: 48.8656, lng: 2.3778, basePop: 68, radius: 0.6, type: 'nightlife' },
+  { name: 'Canal Saint-Martin', lat: 48.8710, lng: 2.3650, basePop: 65, radius: 0.7, type: 'nightlife' },
+  { name: 'Grands Boulevards', lat: 48.8710, lng: 2.3420, basePop: 72, radius: 0.7, type: 'nightlife' },
+
+  // Parks (from OG)
+  { name: 'Champ de Mars', lat: 48.8556, lng: 2.2986, basePop: 70, radius: 1.0, type: 'park' },
+  { name: 'Parc Monceau', lat: 48.8794, lng: 2.3089, basePop: 45, radius: 0.5, type: 'park' },
+  { name: 'Buttes-Chaumont', lat: 48.8811, lng: 2.3828, basePop: 40, radius: 0.9, type: 'park' },
+  { name: 'Père Lachaise', lat: 48.8614, lng: 2.3933, basePop: 35, radius: 0.9, type: 'park' },
+
+  // Education / cultural (from OG)
+  { name: 'Sorbonne', lat: 48.8489, lng: 2.3443, basePop: 65, radius: 0.5, type: 'education' },
+  { name: 'Odéon', lat: 48.8515, lng: 2.3388, basePop: 62, radius: 0.5, type: 'education' },
+
+  // Residential (from OG)
+  { name: 'Ménilmontant', lat: 48.8660, lng: 2.3900, basePop: 45, radius: 0.6, type: 'residential' },
+  { name: 'Batignolles', lat: 48.8867, lng: 2.3172, basePop: 42, radius: 0.7, type: 'residential' },
+  { name: 'Alésia', lat: 48.8280, lng: 2.3270, basePop: 45, radius: 0.6, type: 'residential' },
+  { name: 'Convention', lat: 48.8375, lng: 2.2968, basePop: 40, radius: 0.6, type: 'residential' },
+  { name: 'Denfert-Rochereau', lat: 48.8337, lng: 2.3326, basePop: 48, radius: 0.5, type: 'residential' },
+  { name: 'Place d\'Italie', lat: 48.8311, lng: 2.3558, basePop: 55, radius: 0.7, type: 'residential' },
+  { name: 'Bercy', lat: 48.8396, lng: 2.3825, basePop: 52, radius: 0.8, type: 'residential' },
 ];
 
 // Time multipliers by hotspot type and hour of day
@@ -106,6 +151,10 @@ const TIME_MULTIPLIERS: Record<string, number[]> = {
     0.1, 0.05, 0.05, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8,
     0.75, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.05, 0.05, 0.05, 0.1, 0.1
   ],
+  education: [
+    0.05, 0.02, 0.02, 0.02, 0.02, 0.05, 0.15, 0.4, 0.8, 1.0, 0.95, 0.85,
+    0.7, 0.75, 0.9, 0.95, 0.85, 0.7, 0.45, 0.25, 0.15, 0.1, 0.08, 0.05
+  ],
   residential: [
     0.3, 0.2, 0.1, 0.05, 0.1, 0.3, 0.5, 0.6, 0.4, 0.2, 0.1, 0.1,
     0.1, 0.1, 0.1, 0.2, 0.3, 0.5, 0.7, 0.8, 0.8, 0.6, 0.5, 0.4
@@ -120,15 +169,16 @@ const DAY_MULTIPLIERS: Record<string, number[]> = {
   transport: [0.8, 1.0, 1.0, 1.0, 1.0, 0.9, 0.7],    // Consistent with peaks
   nightlife: [0.5, 0.5, 0.6, 0.6, 0.7, 1.0, 1.0],    // Weekend surge
   park: [0.7, 0.6, 0.6, 0.6, 0.7, 1.0, 1.0],         // Busier on weekends
+  education: [0.1, 1.0, 1.0, 1.0, 1.0, 0.9, 0.15],    // Weekday only
   residential: [0.8, 0.8, 0.8, 0.8, 0.8, 1.0, 1.0]   // Weekend increase
 };
 
-function getTimeMultiplier(type: string, hour: number): number {
+export function getTimeMultiplier(type: string, hour: number): number {
   const multipliers = TIME_MULTIPLIERS[type] || TIME_MULTIPLIERS.residential;
   return multipliers[hour % 24];
 }
 
-function getDayMultiplier(type: string, day: number): number {
+export function getDayMultiplier(type: string, day: number): number {
   const multipliers = DAY_MULTIPLIERS[type] || DAY_MULTIPLIERS.residential;
   return multipliers[day % 7];
 }

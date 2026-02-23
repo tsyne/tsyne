@@ -1,8 +1,10 @@
 package canvas
 
 import (
+	"strings"
 	"time"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/driver/desktop"
 )
 
@@ -226,9 +228,19 @@ type MouseEventCallback func(x, y float32)
 // MouseButtonCallback is a callback for mouse button events (down/up)
 type MouseButtonCallback func(x, y float32, button int)
 
-// HoverableShader is a Shader that can receive mouse hover and click events.
-// Use this instead of Shader when you need mouse tracking (e.g., for raycasting).
-// Implements desktop.Hoverable and desktop.Mouseable.
+// KeyCallback is a callback for keyboard events
+type KeyCallback func(key string)
+
+// ScrollCallback is a callback for scroll events
+type ScrollCallback func(dx, dy float32)
+
+// DragCallback is a callback for drag events
+type DragCallback func(dx, dy float32)
+
+// HoverableShader is a Shader that can receive mouse hover, click, keyboard,
+// scroll, and drag events.
+// Implements desktop.Hoverable, desktop.Mouseable, fyne.Focusable,
+// desktop.Keyable, fyne.Scrollable, and fyne.Draggable.
 type HoverableShader struct {
 	*Shader
 	onMouseIn    MouseEventCallback
@@ -236,14 +248,22 @@ type HoverableShader struct {
 	onMouseOut   func()
 	onMouseDown  MouseButtonCallback
 	onMouseUp    MouseButtonCallback
+	onKeyDown    KeyCallback
+	onKeyUp      KeyCallback
+	onScrolled   ScrollCallback
+	onDragged    DragCallback
+	onDragEnd    func()
 	isHovered    bool
+	focused      bool
+	keysPressed  map[string]bool
 }
 
 // NewHoverableShader creates a new hoverable shader canvas object.
 func NewHoverableShader(width, height float32, fragmentSrc string) *HoverableShader {
 	return &HoverableShader{
-		Shader:    NewShader(width, height, fragmentSrc),
-		isHovered: false,
+		Shader:      NewShader(width, height, fragmentSrc),
+		isHovered:   false,
+		keysPressed: make(map[string]bool),
 	}
 }
 
@@ -254,9 +274,13 @@ func (h *HoverableShader) Refresh() {
 	Refresh(h) // Refresh the HoverableShader, not the embedded Shader
 }
 
-// Verify HoverableShader implements desktop.Hoverable and desktop.Mouseable
+// Verify HoverableShader implements all event interfaces
 var _ desktop.Hoverable = (*HoverableShader)(nil)
 var _ desktop.Mouseable = (*HoverableShader)(nil)
+var _ fyne.Focusable = (*HoverableShader)(nil)
+var _ desktop.Keyable = (*HoverableShader)(nil)
+var _ fyne.Scrollable = (*HoverableShader)(nil)
+var _ fyne.Draggable = (*HoverableShader)(nil)
 
 // MouseIn is called when the mouse enters the widget
 func (h *HoverableShader) MouseIn(event *desktop.MouseEvent) {
@@ -323,4 +347,117 @@ func (h *HoverableShader) SetOnMouseUp(callback MouseButtonCallback) {
 // IsHovered returns whether the mouse is currently over the widget
 func (h *HoverableShader) IsHovered() bool {
 	return h.isHovered
+}
+
+// --- fyne.Focusable ---
+
+// FocusGained is called when the widget gains keyboard focus
+func (h *HoverableShader) FocusGained() {
+	h.focused = true
+}
+
+// FocusLost is called when the widget loses keyboard focus
+func (h *HoverableShader) FocusLost() {
+	h.focused = false
+	// Release all pressed keys
+	for k := range h.keysPressed {
+		if h.onKeyUp != nil {
+			h.onKeyUp(k)
+		}
+		delete(h.keysPressed, k)
+	}
+}
+
+// hoverableNormalizeKey lowercases single-character keys for consistency
+func hoverableNormalizeKey(key string) string {
+	if len(key) == 1 {
+		return strings.ToLower(key)
+	}
+	return key
+}
+
+// TypedRune is called when a printable character is typed while focused
+func (h *HoverableShader) TypedRune(r rune) {
+	key := hoverableNormalizeKey(string(r))
+	if !h.keysPressed[key] {
+		h.keysPressed[key] = true
+		if h.onKeyDown != nil {
+			h.onKeyDown(key)
+		}
+	}
+}
+
+// TypedKey is called when a special key is typed while focused
+func (h *HoverableShader) TypedKey(e *fyne.KeyEvent) {
+	key := hoverableNormalizeKey(string(e.Name))
+	if !h.keysPressed[key] {
+		h.keysPressed[key] = true
+		if h.onKeyDown != nil {
+			h.onKeyDown(key)
+		}
+	}
+}
+
+// --- desktop.Keyable ---
+
+// KeyDown is a no-op — we use TypedRune/TypedKey for key-down events
+func (h *HoverableShader) KeyDown(e *fyne.KeyEvent) {}
+
+// KeyUp is called when a key is released
+func (h *HoverableShader) KeyUp(e *fyne.KeyEvent) {
+	key := hoverableNormalizeKey(string(e.Name))
+	delete(h.keysPressed, key)
+	if h.onKeyUp != nil {
+		h.onKeyUp(key)
+	}
+}
+
+// SetOnKeyDown sets the callback for key press events
+func (h *HoverableShader) SetOnKeyDown(callback KeyCallback) {
+	h.onKeyDown = callback
+}
+
+// SetOnKeyUp sets the callback for key release events
+func (h *HoverableShader) SetOnKeyUp(callback KeyCallback) {
+	h.onKeyUp = callback
+}
+
+// --- fyne.Scrollable ---
+
+// Scrolled is called when a scroll event occurs
+func (h *HoverableShader) Scrolled(e *fyne.ScrollEvent) {
+	if h.onScrolled != nil {
+		h.onScrolled(e.Scrolled.DX, e.Scrolled.DY)
+	}
+}
+
+// SetOnScrolled sets the callback for scroll events
+func (h *HoverableShader) SetOnScrolled(callback ScrollCallback) {
+	h.onScrolled = callback
+}
+
+// --- fyne.Draggable ---
+
+// Dragged is called during a drag gesture
+func (h *HoverableShader) Dragged(e *fyne.DragEvent) {
+	if h.onDragged != nil {
+		h.onDragged(e.Dragged.DX, e.Dragged.DY)
+	}
+}
+
+// DragEnd is called when a drag gesture ends
+func (h *HoverableShader) DragEnd() {
+	if h.onDragEnd != nil {
+		h.onDragEnd()
+	}
+}
+
+// SetOnDragged sets the callback for drag events
+func (h *HoverableShader) SetOnDragged(callback DragCallback) {
+	h.onDragged = callback
+}
+
+// SetOnDragEnd sets the callback for drag end events
+func (h *HoverableShader) SetOnDragEnd(callback func()) {
+	h.onDragEnd = callback
 }

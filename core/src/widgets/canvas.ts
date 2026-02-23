@@ -1,5 +1,5 @@
 import { Context } from '../context';
-import { ReactiveBinding, Widget } from './base';
+import { ReactiveBinding, Widget, WidgetEventOptions } from './base';
 
 // ============================================================================
 // Animation System - D3/QML-inspired declarative animations
@@ -2882,7 +2882,7 @@ export class CanvasGauge {
 // Canvas Shader - GPU-accelerated GLSL fragment shader rendering
 // ============================================================================
 
-export interface CanvasShaderOptions {
+export interface CanvasShaderOptions extends WidgetEventOptions {
   /** Initial uniforms to set (name -> value) */
   uniforms?: Record<string, number | number[]>;
 }
@@ -2910,6 +2910,23 @@ export interface CanvasShaderOptions {
  * shader.setUniform('u_center', [0.0, 0.0]);
  * ```
  */
+// Bitmask constants for CanvasShader event plumbing (mirrors base.ts)
+const evBitHover  = 1 << 3;
+const evBitMouse  = 1 << 4;
+const evBitFocus  = 1 << 5;
+const evBitKey    = 1 << 6;
+const evBitDrag   = 1 << 7;
+const evBitScroll = 1 << 8;
+
+const shaderEventKeyToBit: Record<string, number> = {
+  mouseIn: evBitHover, mouseOut: evBitHover, mouseMoved: evBitHover,
+  mouseDown: evBitMouse, mouseUp: evBitMouse,
+  focusGained: evBitFocus, focusLost: evBitFocus,
+  keyDown: evBitKey, keyUp: evBitKey,
+  dragged: evBitDrag, dragEnd: evBitDrag,
+  scrolled: evBitScroll,
+};
+
 export class CanvasShader {
   private ctx: Context;
   public id: string;
@@ -2917,6 +2934,10 @@ export class CanvasShader {
   private _height: number;
   private _fragmentSource: string;
   private _uniforms: Record<string, number | number[]>;
+
+  // Microtask batching for event registration (same pattern as Widget base)
+  private pendingEvents?: Map<string, string>;
+  private flushScheduled = false;
 
   constructor(
     ctx: Context,
@@ -2939,6 +2960,15 @@ export class CanvasShader {
       fragmentSource,
       uniforms: this._uniforms,
     };
+
+    // Apply event options at construction time if present
+    if (options) {
+      const eventData = this.applyEventOptions(options);
+      if (eventData) {
+        payload.events = eventData.events;
+        payload.cbs = eventData.cbs;
+      }
+    }
 
     ctx.bridge.send('createCanvasShader', payload);
     ctx.addToCurrentContainer(this.id);
@@ -3053,6 +3083,26 @@ export class CanvasShader {
   }
 
   /**
+   * Set a raw RGBA texture uniform.
+   * Unlike setHeightmapTexture (which normalizes to grayscale), this sends
+   * the RGBA data as-is, allowing multi-channel data (e.g., packed x/y/weight/radius).
+   *
+   * @param name Uniform name (e.g., 'u_hotspots')
+   * @param data Uint8Array of RGBA pixel data (length must be width * height * 4)
+   * @param width Width of the texture
+   * @param height Height of the texture
+   */
+  async setTextureData(name: string, data: Uint8Array, width: number, height: number): Promise<void> {
+    await this.ctx.bridge.send('setShaderTextureUniform', {
+      widgetId: this.id,
+      uniformName: name,
+      imageData: data,
+      width,
+      height,
+    });
+  }
+
+  /**
    * Set a cubemap uniform from 6 face images.
    * Each face should be a Uint8Array or Uint8ClampedArray of RGBA pixel data.
    * Face order: [+X, -X, +Y, -Y, +Z, -Z]
@@ -3078,6 +3128,208 @@ export class CanvasShader {
       widgetId: this.id,
       uniformName: name,
       faces: facesPayload,
+    });
+  }
+
+  // ===========================================================================
+  // Resize
+  // ===========================================================================
+
+  /**
+   * Resize the shader canvas to new dimensions
+   * @param width New width in pixels
+   * @param height New height in pixels
+   */
+  async resize(width: number, height: number): Promise<void> {
+    this._width = width;
+    this._height = height;
+    await this.ctx.bridge.send('resizeCanvasShader', {
+      widgetId: this.id,
+      width,
+      height,
+    });
+  }
+
+  // ===========================================================================
+  // Event registration (post-construction, mirrors Widget base pattern)
+  // ===========================================================================
+
+  private registerEvent(eventKey: string, callbackId: string): void {
+    if (!this.pendingEvents) this.pendingEvents = new Map();
+    this.pendingEvents.set(eventKey, callbackId);
+    if (!this.flushScheduled) {
+      this.flushScheduled = true;
+      queueMicrotask(() => this.flushEvents());
+    }
+  }
+
+  private flushEvents(): void {
+    if (!this.pendingEvents || this.pendingEvents.size === 0) {
+      this.flushScheduled = false;
+      return;
+    }
+    let events = 0;
+    const cbs: Record<string, string> = {};
+    for (const [key, id] of this.pendingEvents) {
+      cbs[key] = id;
+      const bit = shaderEventKeyToBit[key];
+      if (bit) events |= bit;
+    }
+    this.ctx.bridge.send('setWidgetEvents', {
+      widgetId: this.id,
+      events,
+      cbs,
+    });
+    this.pendingEvents = undefined;
+    this.flushScheduled = false;
+  }
+
+  private applyEventOptions(options: WidgetEventOptions): { events: number, cbs: Record<string, string> } | undefined {
+    let events = 0;
+    const cbs: Record<string, string> = {};
+    let hasAny = false;
+
+    const reg = (key: string, bit: number, handler: (data: unknown) => void) => {
+      const cbId = this.ctx.generateId('callback');
+      this.ctx.bridge.registerEventHandler(cbId, handler);
+      cbs[key] = cbId;
+      events |= bit;
+      hasAny = true;
+    };
+
+    if (options.onMouseIn) reg('mouseIn', evBitHover, (d) => options.onMouseIn!(d as any));
+    if (options.onMouseOut) reg('mouseOut', evBitHover, () => options.onMouseOut!());
+    if (options.onMouseMoved) reg('mouseMoved', evBitHover, (d) => options.onMouseMoved!(d as any));
+    if (options.onMouseDown) reg('mouseDown', evBitMouse, (d) => options.onMouseDown!(d as any));
+    if (options.onMouseUp) reg('mouseUp', evBitMouse, (d) => options.onMouseUp!(d as any));
+    if (options.onKeyDown) reg('keyDown', evBitKey, (d) => options.onKeyDown!(d as any));
+    if (options.onKeyUp) reg('keyUp', evBitKey, (d) => options.onKeyUp!(d as any));
+    if (options.onScroll) reg('scrolled', evBitScroll, (d) => options.onScroll!(d as any));
+    if (options.onDrag) reg('dragged', evBitDrag, (d) => options.onDrag!(d as any));
+    if (options.onDragEnd) reg('dragEnd', evBitDrag, () => options.onDragEnd!());
+    if (options.onFocusChange) {
+      const cbIdGained = this.ctx.generateId('callback');
+      const cbIdLost = this.ctx.generateId('callback');
+      this.ctx.bridge.registerEventHandler(cbIdGained, (d) => options.onFocusChange!(d as any));
+      this.ctx.bridge.registerEventHandler(cbIdLost, (d) => options.onFocusChange!(d as any));
+      cbs.focusGained = cbIdGained;
+      cbs.focusLost = cbIdLost;
+      events |= evBitFocus;
+      hasAny = true;
+    }
+
+    return hasAny ? { events, cbs } : undefined;
+  }
+
+  /** Register a callback for when the mouse enters the shader */
+  onMouseIn(callback: (event: { position: { x: number, y: number } }) => void): this {
+    const cbId = this.ctx.generateId('callback');
+    this.ctx.bridge.registerEventHandler(cbId, (d: unknown) => callback(d as any));
+    this.registerEvent('mouseIn', cbId);
+    return this;
+  }
+
+  /** Register a callback for when the mouse moves within the shader */
+  onMouseMoved(callback: (event: { position: { x: number, y: number } }) => void): this {
+    const cbId = this.ctx.generateId('callback');
+    this.ctx.bridge.registerEventHandler(cbId, (d: unknown) => callback(d as any));
+    this.registerEvent('mouseMoved', cbId);
+    return this;
+  }
+
+  /** Register a callback for when the mouse exits the shader */
+  onMouseOut(callback: () => void): this {
+    const cbId = this.ctx.generateId('callback');
+    this.ctx.bridge.registerEventHandler(cbId, callback);
+    this.registerEvent('mouseOut', cbId);
+    return this;
+  }
+
+  /** Register a callback for mouse button press */
+  onMouseDown(callback: (event: { button: number, position: { x: number, y: number } }) => void): this {
+    const cbId = this.ctx.generateId('callback');
+    this.ctx.bridge.registerEventHandler(cbId, (d: unknown) => callback(d as any));
+    this.registerEvent('mouseDown', cbId);
+    return this;
+  }
+
+  /** Register a callback for mouse button release */
+  onMouseUp(callback: (event: { button: number, position: { x: number, y: number } }) => void): this {
+    const cbId = this.ctx.generateId('callback');
+    this.ctx.bridge.registerEventHandler(cbId, (d: unknown) => callback(d as any));
+    this.registerEvent('mouseUp', cbId);
+    return this;
+  }
+
+  /** Register a callback for scroll/mousewheel events */
+  onScroll(callback: (event: { position: { x: number, y: number }, scrolled: { dx: number, dy: number } }) => void): this {
+    const cbId = this.ctx.generateId('callback');
+    this.ctx.bridge.registerEventHandler(cbId, (d: unknown) => callback(d as any));
+    this.registerEvent('scrolled', cbId);
+    return this;
+  }
+
+  /** Register a callback for drag events */
+  onDrag(callback: (event: { position: { x: number, y: number }, dragged: { dx: number, dy: number } }) => void): this {
+    const cbId = this.ctx.generateId('callback');
+    this.ctx.bridge.registerEventHandler(cbId, (d: unknown) => callback(d as any));
+    this.registerEvent('dragged', cbId);
+    return this;
+  }
+
+  /** Register a callback for drag end events */
+  onDragEnd(callback: () => void): this {
+    const cbId = this.ctx.generateId('callback');
+    this.ctx.bridge.registerEventHandler(cbId, callback);
+    this.registerEvent('dragEnd', cbId);
+    return this;
+  }
+
+  // ===========================================================================
+  // Tooltip
+  // ===========================================================================
+
+  /**
+   * Show a tooltip popup at the given canvas-relative position.
+   */
+  async showTooltip(text: string, x: number, y: number): Promise<void> {
+    await this.ctx.bridge.send('showTooltip', { widgetId: this.id, text, x, y });
+  }
+
+  /**
+   * Hide the tooltip popup.
+   */
+  async hideTooltip(): Promise<void> {
+    await this.ctx.bridge.send('hideTooltip', { widgetId: this.id });
+  }
+
+  // ===========================================================================
+  // Focus
+  // ===========================================================================
+
+  /**
+   * Request keyboard focus for this shader.
+   * Once focused, the shader will receive keyboard events (onKeyDown/onKeyUp).
+   */
+  async requestFocus(): Promise<void> {
+    await this.ctx.bridge.send('focusTappableCanvasRaster', {
+      widgetId: this.id,
+    });
+  }
+
+  // ===========================================================================
+  // Auto-Animate
+  // ===========================================================================
+
+  /**
+   * Enable or disable GPU-side 60fps auto-animation.
+   * When enabled, the shader refreshes at ~60fps on the Go side without
+   * requiring per-frame TS→bridge round-trips. u_time advances automatically.
+   */
+  async setAutoAnimate(enabled: boolean): Promise<void> {
+    await this.ctx.bridge.send('setShaderAutoAnimate', {
+      widgetId: this.id,
+      enabled,
     });
   }
 }

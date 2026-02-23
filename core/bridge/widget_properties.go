@@ -1428,6 +1428,11 @@ func (b *Bridge) handleSetWidgetEvents(msg Message) Response {
 		replacement = b.buttonVariant(w, events, disp)
 	case *widget.Label:
 		replacement = b.labelVariant(w, events, disp)
+	case *canvas.Shader:
+		replacement = NewInteractiveShader(w, disp)
+	case *InteractiveShader:
+		// Already wrapped — dispatcher already updated above, no replacement needed
+		replacement = w
 	}
 
 	if replacement != nil && replacement != obj {
@@ -1705,7 +1710,7 @@ func buildScrollEvent(msg Message) *fyne.ScrollEvent {
 // the same interfaces natively, but their methods don't fire our dispatcher.
 func isEventVariant(obj fyne.CanvasObject) bool {
 	switch obj.(type) {
-	case *ButtonWithHover, *ButtonWithHoverMouse, *ButtonWithHoverFocusKey, *LabelWithHover:
+	case *ButtonWithHover, *ButtonWithHoverMouse, *ButtonWithHoverFocusKey, *LabelWithHover, *InteractiveShader:
 		return true
 	}
 	return false
@@ -1737,6 +1742,8 @@ func (b *Bridge) maybeWrapWithEvents(msg Message, widgetID string, obj fyne.Canv
 		return b.buttonVariant(w, events, disp)
 	case *widget.Label:
 		return b.labelVariant(w, events, disp)
+	case *canvas.Shader:
+		return NewInteractiveShader(w, disp)
 	}
 
 	// No concrete variant available — return plain widget with dispatcher registered

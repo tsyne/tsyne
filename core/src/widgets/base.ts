@@ -78,6 +78,9 @@ export interface WidgetEventOptions {
   onKeyDown?: (e: { key: string }) => void;
   onKeyUp?: (e: { key: string }) => void;
   onFocusChange?: (e: { focused: boolean }) => void;
+  onScroll?: (e: { position: { x: number, y: number }, scrolled: { dx: number, dy: number } }) => void;
+  onDrag?: (e: { position: { x: number, y: number }, dragged: { dx: number, dy: number } }) => void;
+  onDragEnd?: () => void;
   cursor?: 'default' | 'text' | 'crosshair' | 'pointer' | 'hResize' | 'vResize';
 }
 
@@ -89,8 +92,8 @@ const evBitHover     = 1 << 3;
 const evBitMouse     = 1 << 4;
 const evBitFocus     = 1 << 5;
 const evBitKey       = 1 << 6;
-// const evBitDrag      = 1 << 7;
-// const evBitScroll    = 1 << 8;
+const evBitDrag      = 1 << 7;
+const evBitScroll    = 1 << 8;
 const evBitCursor    = 1 << 9;
 
 // Maps event key names to the bitmask bit they enable
@@ -106,6 +109,9 @@ const eventKeyToBit: Record<string, number> = {
   focusLost: evBitFocus,
   keyDown: evBitKey,
   keyUp: evBitKey,
+  dragged: evBitDrag,
+  dragEnd: evBitDrag,
+  scrolled: evBitScroll,
   cursor: evBitCursor,
 };
 
@@ -246,6 +252,33 @@ export abstract class Widget {
       cbs.focusGained = cbIdGained;
       cbs.focusLost = cbIdLost;
       events |= evBitFocus;
+      hasAny = true;
+    }
+    if (options.onScroll) {
+      const cbId = this.ctx.generateId('callback');
+      this.ctx.bridge.registerEventHandler(cbId, (data: unknown) => {
+        options.onScroll!(data as { position: { x: number, y: number }, scrolled: { dx: number, dy: number } });
+      });
+      cbs.scrolled = cbId;
+      events |= evBitScroll;
+      hasAny = true;
+    }
+    if (options.onDrag) {
+      const cbId = this.ctx.generateId('callback');
+      this.ctx.bridge.registerEventHandler(cbId, (data: unknown) => {
+        options.onDrag!(data as { position: { x: number, y: number }, dragged: { dx: number, dy: number } });
+      });
+      cbs.dragged = cbId;
+      events |= evBitDrag;
+      hasAny = true;
+    }
+    if (options.onDragEnd) {
+      const cbId = this.ctx.generateId('callback');
+      this.ctx.bridge.registerEventHandler(cbId, () => {
+        options.onDragEnd!();
+      });
+      cbs.dragEnd = cbId;
+      events |= evBitDrag;
       hasAny = true;
     }
     if (options.cursor) {
@@ -665,6 +698,46 @@ export abstract class Widget {
     });
     this.registerEvent('focusGained', cbIdGained);
     this.registerEvent('focusLost', cbIdLost);
+    return this;
+  }
+
+  /**
+   * Register a callback for scroll/mousewheel events (Scrollable interface)
+   * @param callback Function called on scroll, receives position and scroll delta
+   * @returns this for method chaining
+   */
+  onScroll(callback: (event: { position: { x: number, y: number }, scrolled: { dx: number, dy: number } }) => void): this {
+    const callbackId = this.ctx.generateId('callback');
+    this.ctx.bridge.registerEventHandler(callbackId, (data: unknown) => {
+      callback(data as { position: { x: number, y: number }, scrolled: { dx: number, dy: number } });
+    });
+    this.registerEvent('scrolled', callbackId);
+    return this;
+  }
+
+  /**
+   * Register a callback for drag events (Draggable interface)
+   * @param callback Function called during drag, receives position and drag delta
+   * @returns this for method chaining
+   */
+  onDrag(callback: (event: { position: { x: number, y: number }, dragged: { dx: number, dy: number } }) => void): this {
+    const callbackId = this.ctx.generateId('callback');
+    this.ctx.bridge.registerEventHandler(callbackId, (data: unknown) => {
+      callback(data as { position: { x: number, y: number }, dragged: { dx: number, dy: number } });
+    });
+    this.registerEvent('dragged', callbackId);
+    return this;
+  }
+
+  /**
+   * Register a callback for drag end events (Draggable interface)
+   * @param callback Function called when drag ends
+   * @returns this for method chaining
+   */
+  onDragEnd(callback: () => void): this {
+    const callbackId = this.ctx.generateId('callback');
+    this.ctx.bridge.registerEventHandler(callbackId, callback);
+    this.registerEvent('dragEnd', callbackId);
     return this;
   }
 

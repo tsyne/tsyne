@@ -13,6 +13,18 @@ import (
 // Canvas Shader - GPU-accelerated fragment shader rendering
 // ============================================================================
 
+// extractShader unwraps a canvas.Shader from either a plain *canvas.Shader
+// or an *InteractiveShader wrapper.
+func extractShader(obj fyne.CanvasObject) (*canvas.Shader, bool) {
+	if s, ok := obj.(*canvas.Shader); ok {
+		return s, true
+	}
+	if i, ok := obj.(*InteractiveShader); ok {
+		return i.shader, true
+	}
+	return nil, false
+}
+
 func (b *Bridge) handleCreateCanvasShader(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	width := float32(toFloat64(msg.Payload["width"]))
@@ -32,8 +44,21 @@ func (b *Bridge) handleCreateCanvasShader(msg Message) Response {
 		}
 	}
 
+	// If events bitmask is present, wrap in InteractiveShader
+	var widgetObj fyne.CanvasObject = shader
+	if _, hasEvents := msg.Payload["events"]; hasEvents {
+		cbs, _ := msg.Payload["cbs"].(map[string]interface{})
+		disp := b.getOrCreateDispatcher(widgetID)
+		for key, val := range cbs {
+			if id, ok := val.(string); ok {
+				disp.setCallback(cbKeyToEventKind(key), id)
+			}
+		}
+		widgetObj = NewInteractiveShader(shader, disp)
+	}
+
 	b.mu.Lock()
-	b.widgets[widgetID] = shader
+	b.widgets[widgetID] = widgetObj
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "canvasshader", Text: ""}
 	b.mu.Unlock()
 
@@ -59,7 +84,7 @@ func (b *Bridge) handleUpdateCanvasShader(msg Message) Response {
 		}
 	}
 
-	shader, ok := w.(*canvas.Shader)
+	shader, ok := extractShader(w)
 	if !ok {
 		return Response{
 			ID:      msg.ID,
@@ -73,35 +98,31 @@ func (b *Bridge) handleUpdateCanvasShader(msg Message) Response {
 		shader.SetSource(src)
 	}
 
-	// Update uniforms if provided
+	// Set uniforms/textures/cubemaps directly (no per-value Refresh),
+	// then call Refresh once at the end on the main thread.
 	if uniforms, ok := msg.Payload["uniforms"].(map[string]interface{}); ok {
-		for name, val := range uniforms {
-			shader.SetUniform(name, val)
-		}
+		shader.SetUniformsBatch(uniforms)
 	}
 
-	// Update texture uniforms if provided
 	if textures, ok := msg.Payload["textures"].(map[string]interface{}); ok {
 		for name, val := range textures {
 			shader.SetTextureUniform(name, val)
 		}
 	}
 
-	// Update cubemap uniforms if provided
 	if cubemaps, ok := msg.Payload["cubemaps"].(map[string]interface{}); ok {
 		for name, faceVal := range cubemaps {
 			if faces, ok := faceVal.([]interface{}); ok && len(faces) == 6 {
 				var faceArray [6]interface{}
 				copy(faceArray[:], faces)
-				shader.SetCubemapUniform(name, faceArray)
+				shader.SetCubemapUniformSilent(name, faceArray)
 			} else {
-				// Try as map with face names
 				log.Printf("[createCanvasShader] WARNING: Invalid cubemap format for %s", name)
 			}
 		}
 	}
 
-	// Refresh the shader
+	// Single refresh on the main thread
 	fyne.Do(func() {
 		shader.Refresh()
 	})
@@ -140,7 +161,7 @@ func (b *Bridge) handleSetShaderTextureUniform(msg Message) Response {
 		}
 	}
 
-	shader, ok := w.(*canvas.Shader)
+	shader, ok := extractShader(w)
 	if !ok {
 		return Response{
 			ID:      msg.ID,
@@ -201,7 +222,7 @@ func (b *Bridge) handleSetShaderCubemapUniform(msg Message) Response {
 		}
 	}
 
-	shader, ok := w.(*canvas.Shader)
+	shader, ok := extractShader(w)
 	if !ok {
 		return Response{
 			ID:      msg.ID,
@@ -255,6 +276,82 @@ func (b *Bridge) handleSetShaderCubemapUniform(msg Message) Response {
 
 	// Set cubemap uniform with all 6 faces
 	shader.SetCubemapUniform(uniformName, faceImages)
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+	}
+}
+
+// handleSetShaderAutoAnimate enables or disables Go-side 60fps auto-animation
+func (b *Bridge) handleSetShaderAutoAnimate(msg Message) Response {
+	widgetID := msg.Payload["widgetId"].(string)
+	enabled, _ := msg.Payload["enabled"].(bool)
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Shader widget not found",
+		}
+	}
+
+	shader, ok := extractShader(w)
+	if !ok {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a shader",
+		}
+	}
+
+	shader.SetAutoAnimate(enabled)
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+	}
+}
+
+// handleResizeCanvasShader resizes a canvas shader (plain or interactive)
+func (b *Bridge) handleResizeCanvasShader(msg Message) Response {
+	widgetID := msg.Payload["widgetId"].(string)
+	width := float32(toFloat64(msg.Payload["width"]))
+	height := float32(toFloat64(msg.Payload["height"]))
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Shader widget not found",
+		}
+	}
+
+	shader, ok := extractShader(w)
+	if !ok {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a shader",
+		}
+	}
+
+	fyne.DoAndWait(func() {
+		newSize := fyne.NewSize(width, height)
+		shader.Resize(newSize)
+		// If wrapped in InteractiveShader, resize that too
+		if interactive, ok := w.(*InteractiveShader); ok {
+			interactive.Resize(newSize)
+		}
+	})
 
 	return Response{
 		ID:      msg.ID,

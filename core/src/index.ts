@@ -1098,6 +1098,12 @@ export * from './services';
 export { Inspector } from './inspector';
 export type { WidgetNode } from './inspector';
 
+// Export debug server (shared core for desktop/phonetop/standalone debug)
+export { DebugServer } from './debug-server';
+export type { IDebugHost, DebugServerOptions } from './debug-server';
+export { DebugLauncher } from './debug-launcher';
+export type { DebugLauncherOptions } from './debug-launcher';
+
 // Export graphics utilities (platform abstraction and software rasterizer)
 export {
   // Platform abstraction - time/animation
@@ -1165,6 +1171,33 @@ export {
   polygonArea,
   polygonCentroid,
 } from './graphics/geometry';
+
+// Export maps module (tile loading, rendering, viewport math)
+export {
+  TileMapRenderer,
+  TileMapRendererOptions,
+  MapViewport,
+  ImageData as TileImageData,
+  TileImage,
+  decodePNG,
+  fetchTileImage,
+  getTilesForViewport,
+  getTilePosition,
+} from './maps/tileRenderer';
+
+export {
+  TileCoord,
+  TileSource,
+  TILE_SOURCES,
+  lngLatToTile,
+  tileToLngLat,
+  tileBounds,
+  getTilesInBounds,
+  buildTileUrl,
+  fetchTile,
+  TileCache,
+  TileManager,
+} from './maps/tiles';
 
 /**
  * Shutdown strategy for standalone mode: immediately exit the process

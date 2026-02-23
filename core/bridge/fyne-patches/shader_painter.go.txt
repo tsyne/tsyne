@@ -44,12 +44,20 @@ func getDefaultShaderVertexSrc() string {
 		return `#version 300 es
 precision highp float;
 in vec2 vert;
-void main() { gl_Position = vec4(vert, 0.0, 1.0); }
+out vec2 v_texCoord;
+void main() {
+  v_texCoord = vert * 0.5 + 0.5;
+  gl_Position = vec4(vert, 0.0, 1.0);
+}
 `
 	}
 	return `#version 110
 attribute vec2 vert;
-void main() { gl_Position = vec4(vert, 0.0, 1.0); }
+varying vec2 v_texCoord;
+void main() {
+  v_texCoord = vert * 0.5 + 0.5;
+  gl_Position = vec4(vert, 0.0, 1.0);
+}
 `
 }
 
@@ -251,6 +259,12 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 			p.ctx.Uniform1f(loc, float32(v))
 		case uint8:
 			p.ctx.Uniform1f(loc, float32(v))
+		case uint16:
+			p.ctx.Uniform1f(loc, float32(v))
+		case uint32:
+			p.ctx.Uniform1f(loc, float32(v))
+		case uint64:
+			p.ctx.Uniform1f(loc, float32(v))
 		case []int32:
 			if len(v) >= 1 {
 				p.ctx.Uniform1i(loc, v[0])
@@ -293,6 +307,22 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 					floats[i] = f
 				case int:
 					floats[i] = float32(f)
+				case int8:
+					floats[i] = float32(f)
+				case int16:
+					floats[i] = float32(f)
+				case int32:
+					floats[i] = float32(f)
+				case int64:
+					floats[i] = float32(f)
+				case uint8:
+					floats[i] = float32(f)
+				case uint16:
+					floats[i] = float32(f)
+				case uint32:
+					floats[i] = float32(f)
+				case uint64:
+					floats[i] = float32(f)
 				}
 			}
 			switch len(floats) {
@@ -306,6 +336,11 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 				p.ctx.Uniform4f(loc, floats[0], floats[1], floats[2], floats[3])
 			}
 		}
+	}
+
+	// Set user-defined uniforms (e.g. u_center, u_zoom, u_maxIter for fractals)
+	for name, val := range shader.GetUniformsCopy() {
+		setUniform(name, val)
 	}
 
 	if shaderProfile {

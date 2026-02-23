@@ -18,6 +18,12 @@ func (s *Shader) SetCubemapUniform(name string, faces [6]interface{}) {
 	s.Refresh()
 }
 
+// SetCubemapUniformSilent sets a cubemap uniform without triggering Refresh.
+// Caller must call Refresh() after all updates are done.
+func (s *Shader) SetCubemapUniformSilent(name string, faces [6]interface{}) {
+	s.Cubemaps[name] = faces
+}
+
 // GetTextures returns the texture uniforms map (for painter use)
 func (s *Shader) GetTextures() map[string]interface{} {
 	return s.Textures

@@ -207,7 +207,8 @@ func (b *Bridge) handleResizeTappableCanvasRaster(msg Message) Response {
 	}
 }
 
-// handleFocusTappableCanvasRaster requests keyboard focus for a tappable canvas raster
+// handleFocusTappableCanvasRaster requests keyboard focus for a focusable canvas widget
+// (TappableCanvasRaster or InteractiveShader)
 func (b *Bridge) handleFocusTappableCanvasRaster(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
@@ -219,21 +220,33 @@ func (b *Bridge) handleFocusTappableCanvasRaster(msg Message) Response {
 		return Response{
 			ID:      msg.ID,
 			Success: false,
-			Error:   "Tappable raster widget not found",
+			Error:   "Widget not found",
 		}
 	}
 
-	tappable, ok := w.(*TappableCanvasRaster)
+	// Support both TappableCanvasRaster and InteractiveShader
+	focusable, ok := w.(fyne.Focusable)
 	if !ok {
 		return Response{
 			ID:      msg.ID,
 			Success: false,
-			Error:   "Widget is not a tappable canvas raster",
+			Error:   "Widget is not focusable",
+		}
+	}
+
+	canvasObj, ok := w.(fyne.CanvasObject)
+	if !ok {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a canvas object",
 		}
 	}
 
 	fyne.Do(func() {
-		tappable.RequestFocus()
+		if c := fyne.CurrentApp().Driver().CanvasForObject(canvasObj); c != nil {
+			c.Focus(focusable)
+		}
 	})
 
 	return Response{
@@ -399,7 +412,7 @@ func (b *Bridge) handleSetTappableCanvasRect(msg Message) Response {
 	return responseWithDrainedEvents(msg.ID, tappable, nil)
 }
 
-// handleShowTooltip shows a tooltip popup on a tappable canvas raster
+// handleShowTooltip shows a tooltip popup on a tappable canvas raster or interactive shader
 func (b *Bridge) handleShowTooltip(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 	text := msg.Payload["text"].(string)
@@ -414,16 +427,18 @@ func (b *Bridge) handleShowTooltip(msg Message) Response {
 		return Response{ID: msg.ID, Success: false, Error: "Widget not found"}
 	}
 
-	tappable, ok := w.(*TappableCanvasRaster)
-	if !ok {
-		return Response{ID: msg.ID, Success: false, Error: "Widget is not a tappable canvas raster"}
+	switch t := w.(type) {
+	case *TappableCanvasRaster:
+		t.ShowTooltip(text, x, y)
+	case *InteractiveShader:
+		t.ShowTooltip(text, x, y)
+	default:
+		return Response{ID: msg.ID, Success: false, Error: "Widget does not support tooltips"}
 	}
-
-	tappable.ShowTooltip(text, x, y)
 	return Response{ID: msg.ID, Success: true}
 }
 
-// handleHideTooltip hides the tooltip popup on a tappable canvas raster
+// handleHideTooltip hides the tooltip popup on a tappable canvas raster or interactive shader
 func (b *Bridge) handleHideTooltip(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
@@ -435,14 +450,18 @@ func (b *Bridge) handleHideTooltip(msg Message) Response {
 		return Response{ID: msg.ID, Success: false, Error: "Widget not found"}
 	}
 
-	tappable, ok := w.(*TappableCanvasRaster)
-	if !ok {
-		return Response{ID: msg.ID, Success: false, Error: "Widget is not a tappable canvas raster"}
+	switch t := w.(type) {
+	case *TappableCanvasRaster:
+		fyne.Do(func() {
+			t.HideTooltip()
+		})
+	case *InteractiveShader:
+		fyne.Do(func() {
+			t.HideTooltip()
+		})
+	default:
+		return Response{ID: msg.ID, Success: false, Error: "Widget does not support tooltips"}
 	}
-
-	fyne.Do(func() {
-		tappable.HideTooltip()
-	})
 	return Response{ID: msg.ID, Success: true}
 }
 

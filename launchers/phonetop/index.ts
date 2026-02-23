@@ -17,13 +17,8 @@ import { enablePhoneMode, disablePhoneMode, StackPaneAdapter } from 'tsyne';
 import { parseAppMetadata, loadAppBuilder, loadAppBuilderCached, AppMetadata, resolveTransport, phoneShutdownStrategy } from 'tsyne';
 import { ALL_APPS } from '../all-apps';
 import { ScopedResourceManager, ResourceManager } from 'tsyne';
-import { Inspector } from 'tsyne';
+import { DebugServer, IDebugHost } from 'tsyne';
 import { loadSvg } from 'cosyne';
-import * as http from 'http';
-import * as fs from 'fs';
-import * as path from 'path';
-import * as crypto from 'crypto';
-import * as os from 'os';
 import { BridgeKeyboardController } from '../../phone-apps/keyboard/controller';
 import { buildKeyboard } from '../../phone-apps/keyboard/en-gb/keyboard';
 import {
@@ -182,12 +177,8 @@ class PhoneTop {
   private isLandscape: boolean = false;
   /** Font size for UI text (default 14, larger for high-DPI) */
   private fontSize: number = 14;
-  /** Inspector for widget tree queries */
-  private inspector: Inspector | null = null;
-  /** Debug HTTP server */
-  private debugServer: http.Server | null = null;
-  /** Debug server authentication token */
-  private debugToken: string | null = null;
+  /** Debug server */
+  private debugServer: DebugServer | null = null;
 
   constructor(app: App, options: PhoneTopOptions = {}) {
     this.a = app;
@@ -447,114 +438,26 @@ class PhoneTop {
    * Start the remote debug HTTP server
    */
   private startDebugServer(port: number): void {
-    this.inspector = new Inspector(this.a.getContext().bridge);
+    // Capture reference for use in getter (where `this` would be the host object)
+    const phoneTop = this;
 
-    // Use pre-configured token or generate a random one
-    this.debugToken = process.env.TSYNE_DEBUG_TOKEN || crypto.randomBytes(16).toString('hex');
-    console.log(`[phonetop] Debug token: ${this.debugToken}`);
+    const host: IDebugHost = {
+      get mainWindow() { return phoneTop.win; },
 
-    this.debugServer = http.createServer(async (req, res) => {
-      // CORS headers for cross-origin requests
-      res.setHeader('Access-Control-Allow-Origin', '*');
-      res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-      res.setHeader('Content-Type', 'application/json');
-
-      if (req.method === 'OPTIONS') {
-        res.writeHead(200);
-        res.end();
-        return;
-      }
-
-      const url = new URL(req.url || '/', `http://localhost:${port}`);
-
-      // Check authentication token (query param or header)
-      const tokenParam = url.searchParams.get('token');
-      const tokenHeader = req.headers['x-debug-token'] as string | undefined;
-      const providedToken = tokenParam || tokenHeader;
-
-      if (providedToken !== this.debugToken) {
-        res.writeHead(401);
-        res.end(JSON.stringify({ error: 'Unauthorized - invalid or missing token' }));
-        return;
-      }
-
-      try {
-        if (url.pathname === '/') {
-          // Index - list available endpoints
-          res.writeHead(200);
-          res.end(JSON.stringify({
-            endpoints: {
-              '/': 'This index',
-              '/windows': 'List all window IDs',
-              '/tree/:windowId': 'Get widget tree for a window',
-              '/tree': 'Get widget tree for main window',
-              '/widget/:id': 'Get single widget by ID (internal or custom)',
-              '/widget-at?x=N&y=N': 'Find widget at absolute coordinates',
-              '/click?x=N&y=N': 'Click widget at coordinates',
-              '/click?id=widgetId': 'Click widget by ID',
-              '/type?id=widgetId&text=hello': 'Type text into widget',
-              '/type?x=N&y=N&text=hello': 'Type text into widget at coordinates',
-              '/apps': 'List running apps',
-              '/state': 'Get phonetop state (current page, open folder, etc.)',
-              '/screenshot': 'Capture window screenshot (returns base64 PNG)',
-              '/phonetop/home': 'Go to home screen',
-              '/app/quit': 'Quit front app (or /app/quit?id=appId for specific app)',
-              '/app/switchTo?id=appId': 'Bring app to front',
-            }
-          }, null, 2));
-
-        } else if (url.pathname === '/windows') {
-          const windows = await this.inspector!.listWindows();
-          res.writeHead(200);
-          res.end(JSON.stringify({ windows }, null, 2));
-
-        } else if (url.pathname === '/tree') {
-          // Get tree for main window
-          if (!this.win) {
-            res.writeHead(404);
-            res.end(JSON.stringify({ error: 'No main window' }));
-            return;
-          }
-          const tree = await this.inspector!.getWindowTree(this.win.id);
-          res.writeHead(200);
-          res.end(JSON.stringify({ tree }, null, 2));
-
-        } else if (url.pathname.startsWith('/tree/')) {
-          const windowId = url.pathname.slice(6);
-          const tree = await this.inspector!.getWindowTree(windowId);
-          res.writeHead(200);
-          res.end(JSON.stringify({ tree }, null, 2));
-
-        } else if (url.pathname.startsWith('/widget/')) {
-          const widgetId = decodeURIComponent(url.pathname.slice(8));
-          if (!this.win) {
-            res.writeHead(404);
-            res.end(JSON.stringify({ error: 'No main window' }));
-            return;
-          }
-          const tree = await this.inspector!.getWindowTree(this.win.id);
-          const widget = this.inspector!.findById(tree, widgetId)
-                      || this.inspector!.findByCustomId(tree, widgetId);
-          if (!widget) {
-            res.writeHead(404);
-            res.end(JSON.stringify({ error: 'Widget not found', id: widgetId }));
-            return;
-          }
-          res.writeHead(200);
-          res.end(JSON.stringify({ widget }, null, 2));
-
-        } else if (url.pathname === '/apps') {
+      handleCustomEndpoint: async (url, res): Promise<boolean> => {
+        if (url.pathname === '/apps') {
           const apps: any[] = [];
-          for (const [id, app] of this.runningApps) {
+          for (const [id, runApp] of this.runningApps) {
             apps.push({
               id,
-              name: app.metadata.name,
+              name: runApp.metadata.name,
               isFront: id === this.frontAppId,
-              resourceScope: app.resourceScope,
+              resourceScope: runApp.resourceScope,
             });
           }
           res.writeHead(200);
           res.end(JSON.stringify({ apps, frontAppId: this.frontAppId }, null, 2));
+          return true;
 
         } else if (url.pathname === '/state') {
           res.writeHead(200);
@@ -573,165 +476,9 @@ class PhoneTop {
             isLandscape: this.isLandscape,
             windowSize: { width: this.windowWidth, height: this.windowHeight },
           }, null, 2));
-
-        } else if (url.pathname === '/widget-at') {
-          // Find widget at absolute x,y coordinates
-          const x = parseFloat(url.searchParams.get('x') || '0');
-          const y = parseFloat(url.searchParams.get('y') || '0');
-
-          if (!this.win) {
-            res.writeHead(404);
-            res.end(JSON.stringify({ error: 'No main window' }));
-            return;
-          }
-
-          const tree = await this.inspector!.getWindowTree(this.win.id);
-          const widget = this.findWidgetAtPoint(tree, x, y);
-
-          if (widget) {
-            res.writeHead(200);
-            res.end(JSON.stringify({
-              x, y,
-              widget: {
-                id: widget.id,
-                customId: widget.customId,
-                type: widget.type,
-                widgetType: widget.widgetType,
-                text: widget.text,
-                absX: widget.absX,
-                absY: widget.absY,
-                w: widget.w,
-                h: widget.h,
-                visible: widget.visible,
-              }
-            }, null, 2));
-          } else {
-            res.writeHead(200);
-            res.end(JSON.stringify({ x, y, widget: null, message: 'No widget at this point' }, null, 2));
-          }
-
-        } else if (url.pathname === '/click') {
-          // Click a widget by ID or coordinates
-          const id = url.searchParams.get('id');
-          const x = url.searchParams.get('x');
-          const y = url.searchParams.get('y');
-
-          let widgetId = id;
-          let clickedWidget: any = null;
-
-          // If coordinates provided, find widget at that point
-          if (!widgetId && x && y) {
-            if (!this.win) {
-              res.writeHead(404);
-              res.end(JSON.stringify({ error: 'No main window' }));
-              return;
-            }
-            const tree = await this.inspector!.getWindowTree(this.win.id);
-            clickedWidget = this.findWidgetAtPoint(tree, parseFloat(x), parseFloat(y));
-            if (clickedWidget) {
-              widgetId = clickedWidget.id;
-            }
-          }
-
-          if (!widgetId) {
-            res.writeHead(400);
-            res.end(JSON.stringify({ error: 'No widget found. Provide id= or x=&y= params' }));
-            return;
-          }
-
-          await this.a.getContext().bridge.send('clickWidget', { widgetId });
-          res.writeHead(200);
-          res.end(JSON.stringify({
-            success: true,
-            clicked: widgetId,
-            widget: clickedWidget ? {
-              id: clickedWidget.id,
-              type: clickedWidget.type,
-              text: clickedWidget.text,
-            } : undefined
-          }, null, 2));
-
-        } else if (url.pathname === '/type') {
-          // Type text into a widget by ID or coordinates
-          const id = url.searchParams.get('id');
-          const x = url.searchParams.get('x');
-          const y = url.searchParams.get('y');
-          const text = url.searchParams.get('text') || '';
-
-          let widgetId = id;
-          let targetWidget: any = null;
-
-          // If coordinates provided, find widget at that point
-          if (!widgetId && x && y) {
-            if (!this.win) {
-              res.writeHead(404);
-              res.end(JSON.stringify({ error: 'No main window' }));
-              return;
-            }
-            const tree = await this.inspector!.getWindowTree(this.win.id);
-            targetWidget = this.findWidgetAtPoint(tree, parseFloat(x), parseFloat(y));
-            if (targetWidget) {
-              widgetId = targetWidget.id;
-            }
-          }
-
-          if (!widgetId) {
-            res.writeHead(400);
-            res.end(JSON.stringify({ error: 'No widget found. Provide id= or x=&y= params' }));
-            return;
-          }
-
-          await this.a.getContext().bridge.send('typeText', { widgetId, text });
-          res.writeHead(200);
-          res.end(JSON.stringify({
-            success: true,
-            typed: text,
-            into: widgetId,
-            widget: targetWidget ? {
-              id: targetWidget.id,
-              type: targetWidget.type,
-            } : undefined
-          }, null, 2));
-
-        } else if (url.pathname === '/screenshot') {
-          // Capture window screenshot and return as base64 PNG
-          if (!this.win) {
-            res.writeHead(404);
-            res.end(JSON.stringify({ error: 'No main window' }));
-            return;
-          }
-
-          // Use a temp file for capture (os.tmpdir() works cross-platform)
-          const tempPath = path.join(os.tmpdir(), `tsyne-screenshot-${Date.now()}.png`);
-
-          try {
-            await this.win.screenshot(tempPath);
-
-            // Read file and encode as base64
-            const imageBuffer = fs.readFileSync(tempPath);
-            const base64 = imageBuffer.toString('base64');
-
-            // Clean up temp file
-            fs.unlinkSync(tempPath);
-
-            res.writeHead(200);
-            res.end(JSON.stringify({
-              success: true,
-              format: 'png',
-              encoding: 'base64',
-              width: this.windowWidth,
-              height: this.windowHeight,
-              data: base64,
-            }, null, 2));
-          } catch (screenshotErr) {
-            // Clean up on error
-            try { fs.unlinkSync(tempPath); } catch {}
-            res.writeHead(500);
-            res.end(JSON.stringify({ error: `Screenshot failed: ${screenshotErr}` }));
-          }
+          return true;
 
         } else if (url.pathname === '/phonetop/home') {
-          // Go to home screen
           this.goHome();
           res.writeHead(200);
           res.end(JSON.stringify({
@@ -739,23 +486,20 @@ class PhoneTop {
             action: 'home',
             frontAppId: this.frontAppId,
           }, null, 2));
+          return true;
 
         } else if (url.pathname === '/app/switchTo') {
-          // Bring an app to the front
           const appId = url.searchParams.get('id');
-
           if (!appId) {
             res.writeHead(400);
             res.end(JSON.stringify({ error: 'Missing id= param' }));
-            return;
+            return true;
           }
-
           if (!this.runningApps.has(appId)) {
             res.writeHead(404);
             res.end(JSON.stringify({ error: 'App not found', id: appId }));
-            return;
+            return true;
           }
-
           const appName = this.runningApps.get(appId)?.metadata.name;
           this.switchToApp(appId);
           res.writeHead(200);
@@ -765,23 +509,20 @@ class PhoneTop {
             appId,
             appName,
           }, null, 2));
+          return true;
 
         } else if (url.pathname === '/app/quit') {
-          // Quit the front app or a specific app by ID
           const appId = url.searchParams.get('id') || this.frontAppId;
-
           if (!appId) {
             res.writeHead(400);
             res.end(JSON.stringify({ error: 'No app to quit (no front app and no id= param)' }));
-            return;
+            return true;
           }
-
           if (!this.runningApps.has(appId)) {
             res.writeHead(404);
             res.end(JSON.stringify({ error: 'App not found', id: appId }));
-            return;
+            return true;
           }
-
           const appName = this.runningApps.get(appId)?.metadata.name;
           this.quitApp(appId);
           res.writeHead(200);
@@ -791,65 +532,23 @@ class PhoneTop {
             quitAppId: appId,
             quitAppName: appName,
           }, null, 2));
-
-        } else {
-          res.writeHead(404);
-          res.end(JSON.stringify({ error: 'Not found' }));
+          return true;
         }
-      } catch (err) {
-        res.writeHead(500);
-        res.end(JSON.stringify({ error: String(err) }));
-      }
-    });
 
-    this.debugServer.listen(port, '0.0.0.0', () => {
-      console.log(`[phonetop] Debug server listening on http://0.0.0.0:${port}`);
-    });
-  }
+        return false;
+      },
 
-  /**
-   * Find the deepest widget containing the given absolute coordinates.
-   * Returns the most specific (deepest) visible widget at that point.
-   * If the deepest widget has a path-style ID (e.g., "root.0.0.1"), walks up
-   * the parent chain to find the nearest clickable ancestor with a bridge ID.
-   */
-  private findWidgetAtPoint(node: any, x: number, y: number, clickableParent?: any): any | null {
-    // Check if point is within this widget's bounds
-    const inBounds = node.visible !== false &&
-      x >= node.absX &&
-      x < node.absX + node.w &&
-      y >= node.absY &&
-      y < node.absY + node.h;
+      getCustomEndpoints: () => ({
+        '/apps': 'List running apps',
+        '/state': 'Get phonetop state',
+        '/phonetop/home': 'Go to home screen',
+        '/app/switchTo?id=appId': 'Bring app to front',
+        '/app/quit?id=appId': 'Quit app (defaults to front app)',
+      }),
+    };
 
-    if (!inBounds) {
-      return null;
-    }
-
-    // Track clickable parents (widgets with bridge-style IDs that can be clicked)
-    // Bridge IDs start with _ (e.g., "_image_xyz") vs path-style IDs (e.g., "root.0.0.1")
-    const isBridgeId = node.id && node.id.startsWith('_');
-    const isClickable = node.type === 'ClickableContainer' || node.type === 'Button' || node.type === 'TsyneButton';
-    const newClickableParent = (isBridgeId && isClickable) ? node : clickableParent;
-
-    // Check children (depth-first) - return deepest match
-    if (node.children && node.children.length > 0) {
-      // Search in reverse order (last child is often on top)
-      for (let i = node.children.length - 1; i >= 0; i--) {
-        const childMatch = this.findWidgetAtPoint(node.children[i], x, y, newClickableParent);
-        if (childMatch) {
-          return childMatch;
-        }
-      }
-    }
-
-    // No child contains the point, but this widget does
-    // If this widget has a path-style ID (not clickable), return the clickable parent instead
-    const hasPathStyleId = node.id && node.id.startsWith('root.');
-    if (hasPathStyleId && newClickableParent) {
-      return newClickableParent;
-    }
-
-    return node;
+    this.debugServer = new DebugServer(this.a, host, { port, label: 'phonetop' });
+    this.debugServer.start();
   }
 
   /**

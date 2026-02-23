@@ -17,8 +17,8 @@
 import { app, resolveTransport , standaloneShutdownStrategy } from 'tsyne';
 import type { App, CanvasShader, Label, Select } from 'tsyne';
 
-const CANVAS_SIZE = 400;
 const MAX_ITERATIONS = 256;
+const UI_OVERHEAD = 200; // vertical space for controls
 
 // ============================================================================
 // GLSL Shader Library
@@ -36,6 +36,7 @@ uniform float u_maxIter;
 uniform float u_palette;
 uniform vec2 u_juliaC;
 uniform vec2 u_phoenixPQ;
+varying vec2 v_texCoord;
 
 // Complex number operations
 vec2 cmul(vec2 a, vec2 b) {
@@ -137,13 +138,19 @@ vec3 getPaletteColor(float t, float palette) {
   if (palette < 6.5) return palette6(t);
   return palette7(t);
 }
+
+vec2 complexCoord() {
+  vec2 fragPos = v_texCoord * u_resolution;
+  float minDim = min(u_resolution.x, u_resolution.y);
+  float scale = 3.0 / (minDim * u_zoom);
+  return (fragPos - u_resolution * 0.5) * scale + u_center;
+}
 `;
 
 /** Mandelbrot shader */
 const mandelbrotShader = shaderHeader + `
 void main() {
-  vec2 uv = gl_FragCoord.xy / u_resolution;
-  vec2 c = (uv - 0.5) * 3.0 / u_zoom + u_center;
+  vec2 c = complexCoord();
 
   vec2 z = vec2(0.0);
   float iter = 0.0;
@@ -168,8 +175,7 @@ void main() {
 /** Julia set shader */
 const juliaShader = shaderHeader + `
 void main() {
-  vec2 uv = gl_FragCoord.xy / u_resolution;
-  vec2 z = (uv - 0.5) * 3.0 / u_zoom + u_center;
+  vec2 z = complexCoord();
   vec2 c = u_juliaC;
 
   float iter = 0.0;
@@ -194,8 +200,7 @@ void main() {
 /** Tricorn shader */
 const tricornShader = shaderHeader + `
 void main() {
-  vec2 uv = gl_FragCoord.xy / u_resolution;
-  vec2 c = (uv - 0.5) * 3.0 / u_zoom + u_center;
+  vec2 c = complexCoord();
 
   vec2 z = vec2(0.0);
   float iter = 0.0;
@@ -222,8 +227,7 @@ void main() {
 /** Burning Ship shader */
 const burningShipShader = shaderHeader + `
 void main() {
-  vec2 uv = gl_FragCoord.xy / u_resolution;
-  vec2 c = (uv - 0.5) * 3.0 / u_zoom + u_center;
+  vec2 c = complexCoord();
 
   vec2 z = vec2(0.0);
   float iter = 0.0;
@@ -250,8 +254,7 @@ void main() {
 /** Newton fractal shader (z^3 - 1 = 0) */
 const newtonShader = shaderHeader + `
 void main() {
-  vec2 uv = gl_FragCoord.xy / u_resolution;
-  vec2 z = (uv - 0.5) * 3.0 / u_zoom + u_center;
+  vec2 z = complexCoord();
 
   // Roots of z^3 - 1 = 0
   vec2 r1 = vec2(1.0, 0.0);
@@ -293,8 +296,7 @@ void main() {
 /** Mandelbrot^3 shader */
 const mandelbrot3Shader = shaderHeader + `
 void main() {
-  vec2 uv = gl_FragCoord.xy / u_resolution;
-  vec2 c = (uv - 0.5) * 3.0 / u_zoom + u_center;
+  vec2 c = complexCoord();
 
   vec2 z = vec2(0.0);
   float iter = 0.0;
@@ -319,8 +321,7 @@ void main() {
 /** Phoenix fractal shader */
 const phoenixShader = shaderHeader + `
 void main() {
-  vec2 uv = gl_FragCoord.xy / u_resolution;
-  vec2 c = (uv - 0.5) * 3.0 / u_zoom + u_center;
+  vec2 c = complexCoord();
 
   float p = u_phoenixPQ.x;
   float q = u_phoenixPQ.y;
@@ -422,6 +423,10 @@ class FractalsGPUUI {
   private shader: CanvasShader | null = null;
   private statusLabel: Label | null = null;
 
+  // Canvas dimensions
+  private canvasWidth = 100;
+  private canvasHeight = 100;
+
   // State
   private currentFractal = 'mandelbrot';
   private currentPalette = 0;
@@ -483,7 +488,7 @@ class FractalsGPUUI {
   }
 
   async pan(dx: number, dy: number): Promise<void> {
-    const scale = 3 / (CANVAS_SIZE * this.zoom);
+    const scale = 3 / (Math.min(this.canvasWidth, this.canvasHeight) * this.zoom);
     this.centerX += dx * scale * 50;
     this.centerY += dy * scale * 50;
     await this.updateUniforms();
@@ -525,25 +530,27 @@ class FractalsGPUUI {
   build(): void {
     this.a.window({ title: 'Fractal Explorer (GPU)', width: 500, height: 600 }, (win: any) => {
       win.setContent(() => {
-        this.a.vbox(() => {
-          // Fractal selector
-          this.a.hbox(() => {
-            this.a.label('Fractal: ');
-            this.a.select(
-              fractalTypeNames.map(k => fractalTypes[k].name),
-              async (value: string) => {
-                const idx = fractalTypeNames.findIndex(k => fractalTypes[k].name === value);
-                if (idx >= 0) {
-                  await this.setFractal(fractalTypeNames[idx]);
+        this.a.border({
+          top: () => {
+            // Fractal selector
+            this.a.hbox(() => {
+              this.a.label('Fractal: ');
+              const fractalSelect = this.a.select(
+                fractalTypeNames.map(k => fractalTypes[k].name),
+                async (value: string) => {
+                  const idx = fractalTypeNames.findIndex(k => fractalTypes[k].name === value);
+                  if (idx >= 0) {
+                    await this.setFractal(fractalTypeNames[idx]);
+                  }
                 }
-              }
-            );
-          });
-
-          // Shader canvas
-          this.a.center(() => {
+              );
+              fractalSelect.setSelected('Mandelbrot');
+            });
+          },
+          center: () => {
+            // Shader canvas - center region expands to fill available space
             const fractal = fractalTypes[this.currentFractal];
-            this.shader = this.a.canvasShader(CANVAS_SIZE, CANVAS_SIZE, fractal.shader, {
+            this.shader = this.a.canvasShader(this.canvasWidth, this.canvasHeight, fractal.shader, {
               uniforms: {
                 u_center: [this.centerX, this.centerY],
                 u_zoom: this.zoom,
@@ -551,43 +558,66 @@ class FractalsGPUUI {
                 u_palette: this.currentPalette,
                 u_juliaC: [this.juliaR, this.juliaI],
                 u_phoenixPQ: [this.phoenixP, this.phoenixQ],
-              }
+              },
+              onScroll: (e) => {
+                if (e.scrolled.dy > 0) {
+                  this.zoom *= 1.3;
+                } else if (e.scrolled.dy < 0) {
+                  this.zoom = Math.max(0.1, this.zoom / 1.3);
+                }
+                this.updateUniforms();
+              },
+              onDrag: (e) => {
+                const scale = 3 / (Math.min(this.canvasWidth, this.canvasHeight) * this.zoom);
+                this.centerX -= e.dragged.dx * scale;
+                this.centerY += e.dragged.dy * scale;
+                this.updateUniforms();
+              },
             });
-          });
+          },
+          bottom: () => {
+            this.a.vbox(() => {
+              // Status
+              this.statusLabel = this.a.label('GPU-accelerated fractals');
 
-          // Status
-          this.statusLabel = this.a.label('GPU-accelerated fractals');
+              // Zoom controls
+              this.a.hbox(() => {
+                this.a.button('Zoom +', { onClick: () => this.zoomIn() });
+                this.a.button('Zoom -', { onClick: () => this.zoomOut() });
+                this.a.button('Reset', { onClick: () => this.reset() });
+                this.a.button('Palette', { onClick: () => this.nextPalette() });
+              });
 
-          // Zoom controls
-          this.a.hbox(() => {
-            this.a.button('Zoom +', { onClick: () => this.zoomIn() });
-            this.a.button('Zoom -', { onClick: () => this.zoomOut() });
-            this.a.button('Reset', { onClick: () => this.reset() });
-            this.a.button('Palette', { onClick: () => this.nextPalette() });
-          });
+              // Pan controls
+              this.a.hbox(() => {
+                this.a.button('<', { onClick: () => this.pan(-1, 0) });
+                this.a.button('^', { onClick: () => this.pan(0, -1) });
+                this.a.button('v', { onClick: () => this.pan(0, 1) });
+                this.a.button('>', { onClick: () => this.pan(1, 0) });
+              });
 
-          // Pan controls
-          this.a.hbox(() => {
-            this.a.button('<', { onClick: () => this.pan(-1, 0) });
-            this.a.button('^', { onClick: () => this.pan(0, -1) });
-            this.a.button('v', { onClick: () => this.pan(0, 1) });
-            this.a.button('>', { onClick: () => this.pan(1, 0) });
-          });
+              // Julia/Phoenix controls
+              this.a.hbox(() => {
+                this.a.button('c.r-', { onClick: () => this.adjustJuliaR(-0.05) });
+                this.a.button('c.r+', { onClick: () => this.adjustJuliaR(0.05) });
+                this.a.button('c.i-', { onClick: () => this.adjustJuliaI(-0.05) });
+                this.a.button('c.i+', { onClick: () => this.adjustJuliaI(0.05) });
+              });
 
-          // Julia/Phoenix controls
-          this.a.hbox(() => {
-            this.a.button('c.r-', { onClick: () => this.adjustJuliaR(-0.05) });
-            this.a.button('c.r+', { onClick: () => this.adjustJuliaR(0.05) });
-            this.a.button('c.i-', { onClick: () => this.adjustJuliaI(-0.05) });
-            this.a.button('c.i+', { onClick: () => this.adjustJuliaI(0.05) });
-          });
-
-          this.a.separator();
-          this.a.label('GPU-accelerated: 100-1000x faster than CPU');
+              this.a.separator();
+              this.a.label('GPU-accelerated: 100-1000x faster than CPU');
+            });
+          }
         });
       });
 
       win.show();
+
+      // Track canvas size for pan calculations (border layout handles actual shader sizing)
+      win.onResize((newW: number, newH: number) => {
+        this.canvasWidth = newW - 20;
+        this.canvasHeight = Math.max(200, newH - UI_OVERHEAD);
+      });
 
       // Initial status update
       setTimeout(() => this.updateUniforms(), 100);

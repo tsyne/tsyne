@@ -124,6 +124,7 @@ type TexParameteriParams struct {
 type Shader struct {
 	baseObject
 	size            fyne.Size
+	minSize         fyne.Size
 	VertexSource    string                 // GLSL vertex shader source code (optional)
 	FragmentSource  string                 // GLSL fragment shader source code
 	Uniforms        map[string]interface{} // Uniform values: float32, [2]float32, [3]float32, [4]float32
@@ -213,6 +214,12 @@ type Shader struct {
 	readPixelsChan   chan ReadPixelsResult
 	readPixelsReq    *ReadPixelsRequest
 	readPixelsMu     sync.Mutex
+
+	// Auto-animate: Go-side 60fps ticker that calls Refresh() automatically
+	autoAnimate bool
+	animTicker  *time.Ticker
+	animStopCh  chan struct{}
+	animMu      sync.Mutex
 }
 
 // ReadPixelsRequest holds parameters for a pending readPixels call.
@@ -290,6 +297,7 @@ func NewShader(width, height float32, fragmentSrc string) *Shader {
 		attribDivisors:     make(map[string]uint32),
 	}
 	s.size = fyne.NewSize(width, height)
+	s.minSize = s.size
 	return s
 }
 
@@ -316,20 +324,25 @@ func (s *Shader) StartTime() time.Time {
 	return s.startTime
 }
 
-// MinSize returns the minimum size (same as size for shaders)
+// MinSize returns the minimum size for layout purposes.
+// Separate from size so that Resize() (called by layout engines to fill
+// available space) doesn't inflate the minimum, which would create a
+// feedback loop when a shader is inside an expanding container.
 func (s *Shader) MinSize() fyne.Size {
-	return s.size
+	return s.minSize
 }
 
-// Resize changes the shader canvas size
+// Resize changes the shader canvas size (called by layout engine).
+// Does NOT change MinSize — this prevents a feedback loop where
+// expanding the shader causes the window to grow, triggering more resizing.
 func (s *Shader) Resize(size fyne.Size) {
 	s.size = size
 	s.Refresh()
 }
 
-// SetMinSize sets the shader canvas size
+// SetMinSize explicitly sets the minimum size for layout purposes.
 func (s *Shader) SetMinSize(size fyne.Size) {
-	s.size = size
+	s.minSize = size
 }
 
 // SetUniform sets a uniform value. Supported types:
@@ -343,6 +356,16 @@ func (s *Shader) SetUniform(name string, value interface{}) {
 	s.Uniforms[name] = value
 	s.uniformsMu.Unlock()
 	s.Refresh()
+}
+
+// SetUniformsBatch sets multiple uniforms without triggering Refresh.
+// Caller must call Refresh() after all updates are done.
+func (s *Shader) SetUniformsBatch(uniforms map[string]interface{}) {
+	s.uniformsMu.Lock()
+	for name, val := range uniforms {
+		s.Uniforms[name] = val
+	}
+	s.uniformsMu.Unlock()
 }
 
 // GetUniformsCopy returns a thread-safe copy of the uniforms map for iteration.
@@ -395,4 +418,45 @@ func (s *Shader) UniformLocs() map[string]int32 {
 // SetUniformLoc caches a uniform location (for painter use)
 func (s *Shader) SetUniformLoc(name string, loc int32) {
 	s.uniformLocs[name] = loc
+}
+
+// SetAutoAnimate enables or disables Go-side 60fps auto-animation.
+// When enabled, a goroutine calls Refresh() every ~16ms via fyne.Do,
+// advancing u_time automatically without TS→bridge round-trips.
+func (s *Shader) SetAutoAnimate(enabled bool) {
+	s.animMu.Lock()
+	defer s.animMu.Unlock()
+
+	if enabled == s.autoAnimate {
+		return // already in desired state
+	}
+	s.autoAnimate = enabled
+
+	if enabled {
+		s.animStopCh = make(chan struct{})
+		s.animTicker = time.NewTicker(16 * time.Millisecond)
+		stopCh := s.animStopCh
+		ticker := s.animTicker
+		go func() {
+			for {
+				select {
+				case <-stopCh:
+					return
+				case <-ticker.C:
+					fyne.Do(func() {
+						s.Refresh()
+					})
+				}
+			}
+		}()
+	} else {
+		if s.animTicker != nil {
+			s.animTicker.Stop()
+			s.animTicker = nil
+		}
+		if s.animStopCh != nil {
+			close(s.animStopCh)
+			s.animStopCh = nil
+		}
+	}
 }

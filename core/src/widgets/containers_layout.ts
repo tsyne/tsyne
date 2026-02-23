@@ -543,6 +543,40 @@ export class Max {
     return this;
   }
 
+  /**
+   * Dynamically add a widget to this container
+   */
+  add(builder: () => void): void {
+    this.ctx.pushContainer();
+    builder();
+    const newChildren = this.ctx.popContainer();
+
+    for (const childId of newChildren) {
+      this.ctx.bridge.send('containerAdd', {
+        containerId: this.id,
+        childId
+      });
+    }
+  }
+
+  /**
+   * Remove all widgets from this container
+   */
+  removeAll(): void {
+    this.ctx.bridge.send('containerRemoveAll', {
+      containerId: this.id
+    });
+  }
+
+  /**
+   * Refresh the container display
+   */
+  refresh(): void {
+    this.ctx.bridge.send('containerRefresh', {
+      containerId: this.id
+    });
+  }
+
   async hide(): Promise<void> {
     await this.ctx.bridge.send('hideWidget', {
       widgetId: this.id

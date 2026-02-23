@@ -9,18 +9,8 @@
  * @tsyne-app:args app,windowWidth,windowHeight
  */
 
-import { app } #!/usr/bin/env tsyne
-
-/**
- * Line Chart & Zoom/Pan Demo
- *
- * @tsyne-app:name Line Chart Demo
- * @tsyne-app:icon chartIcon
- * @tsyne-app:category Visualization
- * @tsyne-app:args app,windowWidth,windowHeight
- */
-
-import { app , standaloneShutdownStrategy } from 'tsyne';
+import { app, standaloneShutdownStrategy } from 'tsyne';
+import type { App } from 'tsyne';
 import {
   cosyne,
   clearAllCosyneContexts,
@@ -71,7 +61,7 @@ class LineChartDemoStore {
   }
 }
 
-export function buildLineChartDemoApp(a: any) {
+export function buildLineChartDemoApp(a: App) {
   const store = new LineChartDemoStore();
 
   // Generate sample data (fixed seed for consistent display)
@@ -198,16 +188,16 @@ export function buildLineChartDemoApp(a: any) {
             .withId('instructions');
         });
 
-        // Create event capture layer for zoom/pan
-        // onScroll signature: (deltaX, deltaY, x, y)
-        // Fyne: positive deltaY = scroll up, negative = scroll down
-        a.tappableCanvasRaster(canvasWidth, canvasHeight, {
-          onDrag: (x: number, y: number, deltaX: number, deltaY: number) => {
-            store.zoomPan.translate(deltaX, deltaY);
+        // Transparent CanvasShader event capture layer for zoom/pan
+        const transparentShader = `#version 110
+void main() { gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0); }`;
+        a.canvasShader(canvasWidth, canvasHeight, transparentShader, {
+          onDrag: (e) => {
+            store.zoomPan.translate(e.dragged.dx, e.dragged.dy);
           },
-          onScroll: (deltaX: number, deltaY: number, x: number, y: number) => {
+          onScroll: (e) => {
             // Invert deltaY: scroll up (positive) should zoom in
-            store.zoomPan.handleWheel(-deltaY, x, y);
+            store.zoomPan.handleWheel(-e.scrolled.dy, e.position.x, e.position.y);
           },
         });
       });

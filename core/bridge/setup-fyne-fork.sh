@@ -289,6 +289,12 @@ if [ -f "$FORK_DIR/internal/driver/glfw/window.go" ]; then
 fi
 # NOTE: Do NOT set DisableThreadChecks = true — it is incorrect - always solve wrong-thread issues correctly
 
+# 11b. Fix goroutine.go stack trace to show useful caller info
+# The vanilla logStackTop checks for "/fyne/" but our fork path is "/fyne-fork/",
+# so it breaks at the first frame and shows goroutine.go itself instead of the real caller.
+echo "[setup-fyne-fork] Fixing goroutine stack trace..."
+cp "$PATCHES_DIR/goroutine_stacktrace.go.txt" "$FORK_DIR/internal/async/goroutine.go"
+
 # 12. Fix Canvas.Capture() alpha on modern Linux compositors
 # The default framebuffer may have near-zero alpha on Wayland/newer compositors,
 # causing screenshots to appear transparent. Force alpha=255 since Fyne windows are opaque.

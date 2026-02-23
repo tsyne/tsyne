@@ -3,75 +3,24 @@
 // @tsyne-app:builder buildParisDensity
 // Portions copyright Yvann Barbot and portions copyright Paul Hammant 2025
 
-import type { App, Window, Label } from 'tsyne';
-import { standaloneShutdownStrategy, resolveTransport } from 'tsyne';
-import { generateDensityGrid, interpolateDensityGrids, DensityPoint, TimeOfWeek } from './simulation';
-import * as os from 'os';
-import * as path from 'path';
-
-// Import graphics utilities from core
+import type { App, Window, Label, CanvasShader } from 'tsyne';
 import {
+  standaloneShutdownStrategy,
+  resolveTransport,
+  TileMapRenderer,
+  TILE_SOURCES,
   createRenderTarget,
   clearRenderTarget,
-  RenderTarget,
-  renderHeatmap,
-  rgba,
-  HeatmapPoint,
-  Color
 } from 'tsyne';
-
-// Import tile rendering for map background
-// TODO: TileMapRenderer, TILE_SOURCES, MapViewport, TileSource not yet exported from tsyne
-// import {
-//   TileMapRenderer,
-//   TILE_SOURCES,
-//   MapViewport,
-//   TileSource
-// } from 'tsyne';
-
-// Placeholder types until tsyne exports them
-interface TileSource {
-  urlTemplate: string;
-  attribution?: string;
-}
-
-interface MapViewport {
-  center: { lng: number; lat: number };
-  zoom: number;
-  width: number;
-  height: number;
-}
-
-// Placeholder class until tsyne exports it
-class TileMapRenderer {
-  constructor(_source: TileSource, _options?: { cachePath?: string }) {}
-  async render(_target: RenderTarget, _viewport: MapViewport): Promise<void> {}
-  clearCache(): void {}
-}
-
-// Placeholder tile sources
-const TILE_SOURCES = {
-  osmRaster: (): TileSource => ({ urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png' }),
-  mapboxLight: (token: string): TileSource => ({ urlTemplate: `https://api.mapbox.com/styles/v1/mapbox/light-v10/tiles/{z}/{x}/{y}?access_token=${token}` }),
-  mapboxDark: (token: string): TileSource => ({ urlTemplate: `https://api.mapbox.com/styles/v1/mapbox/dark-v10/tiles/{z}/{x}/{y}?access_token=${token}` }),
-  mapboxStreets: (token: string): TileSource => ({ urlTemplate: `https://api.mapbox.com/styles/v1/mapbox/streets-v11/tiles/{z}/{x}/{y}?access_token=${token}` }),
-  mapboxSatellite: (token: string): TileSource => ({ urlTemplate: `https://api.mapbox.com/styles/v1/mapbox/satellite-v9/tiles/{z}/{x}/{y}?access_token=${token}` }),
-};
-
-// Tile cache directory (7-day TTL per OSM policy)
-const TILE_CACHE_PATH = path.join(os.homedir(), '.tsyne', 'realtime-paris-density-simulation', 'map-cache');
+import type { MapViewport } from 'tsyne';
+import { HOTSPOTS, TimeOfWeek, getTimeMultiplier, getDayMultiplier } from './simulation';
+import * as os from 'os';
+import * as path from 'path';
 
 // ============================================================================
 // Paris Map Configuration
 // ============================================================================
 
-// Paris view matching the original app
-const PARIS_VIEW = {
-  center: { lng: 2.3522, lat: 48.8566 },
-  zoom: 12
-};
-
-// Paris geographic bounds (from simulation.ts)
 const PARIS_BOUNDS = {
   minLat: 48.815,
   maxLat: 48.905,
@@ -79,194 +28,429 @@ const PARIS_BOUNDS = {
   maxLng: 2.47
 };
 
-// Calculate aspect ratio correction for heatmap circles
-// Geographic aspect ratio vs canvas aspect ratio determines Y stretch
-function calculateAspectRatioCorrection(canvasWidth: number, canvasHeight: number): number {
-  const geoAspect = (PARIS_BOUNDS.maxLng - PARIS_BOUNDS.minLng) /
-                    (PARIS_BOUNDS.maxLat - PARIS_BOUNDS.minLat);
-  const canvasAspect = canvasWidth / canvasHeight;
-  return geoAspect / canvasAspect;
+// Geographic dimensions of the viewport in km
+const LNG_RANGE = PARIS_BOUNDS.maxLng - PARIS_BOUNDS.minLng; // 0.25°
+const LAT_RANGE = PARIS_BOUNDS.maxLat - PARIS_BOUNDS.minLat; // 0.09°
+const COS_LAT = Math.cos(48.86 * Math.PI / 180); // ≈ 0.658
+const X_KM = LNG_RANGE * 111.0 * COS_LAT; // ≈ 18.3 km
+const Y_KM = LAT_RANGE * 111.0;            // ≈ 10.0 km
+const KM_TO_UV_X = 1.0 / X_KM;
+const UV_Y_SCALE = X_KM / Y_KM; // ≈ 1.83, multiply sigma_x to get sigma_y
+
+// Max hotspot texture slots (must match shader loop limit)
+const MAX_HOTSPOTS = 64;
+
+// Max radius in km across all hotspots (for byte encoding headroom)
+const MAX_RADIUS_KM = 2.0;
+
+// ============================================================================
+// Viewport Geometry Helpers
+// ============================================================================
+
+/** Compute geographic bounds of the visible viewport using Mercator math */
+function getViewportGeoBounds(vp: MapViewport) {
+  const z = Math.round(vp.zoom);
+  const worldSize = 256 * Math.pow(2, z);
+
+  const centerXpx = ((vp.center.lng + 180) / 360) * worldSize;
+  const latRad = vp.center.lat * Math.PI / 180;
+  const centerYpx = ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * worldSize;
+
+  const leftPx = centerXpx - vp.width / 2;
+  const rightPx = centerXpx + vp.width / 2;
+  const topPx = centerYpx - vp.height / 2;
+  const bottomPx = centerYpx + vp.height / 2;
+
+  const minLng = (leftPx / worldSize) * 360 - 180;
+  const maxLng = (rightPx / worldSize) * 360 - 180;
+  const maxLat = Math.atan(Math.sinh(Math.PI * (1 - 2 * topPx / worldSize))) * 180 / Math.PI;
+  const minLat = Math.atan(Math.sinh(Math.PI * (1 - 2 * bottomPx / worldSize))) * 180 / Math.PI;
+
+  return { minLat, maxLat, minLng, maxLng };
 }
 
-// Get Mapbox token from environment
-function getMapboxToken(): string | null {
-  // Try environment variable
-  if (typeof process !== 'undefined' && process.env?.MAPBOX_TOKEN) {
-    return process.env.MAPBOX_TOKEN;
-  }
-  // Could also try reading from .env file here
-  return null;
+/** Compute u_viewScale/u_viewOffset uniforms that map viewport UV to PARIS_BOUNDS reference UV */
+function computeViewTransform(vp: MapViewport) {
+  const bounds = getViewportGeoBounds(vp);
+  const viewLngRange = bounds.maxLng - bounds.minLng;
+  const viewLatRange = bounds.maxLat - bounds.minLat;
+
+  return {
+    viewScale: [viewLngRange / LNG_RANGE, viewLatRange / LAT_RANGE] as [number, number],
+    viewOffset: [
+      (bounds.minLng - PARIS_BOUNDS.minLng) / LNG_RANGE,
+      (bounds.minLat - PARIS_BOUNDS.minLat) / LAT_RANGE,
+    ] as [number, number],
+  };
+}
+
+/** Convert pixel drag delta to geographic offset (Mercator) */
+function pixelDeltaToGeo(dx: number, dy: number, zoom: number, centerLat: number) {
+  const worldSize = 256 * Math.pow(2, Math.round(zoom));
+  // Dragging right → center moves west (negative lng)
+  const dLng = -dx * 360 / worldSize;
+  // Dragging down → center moves south (negative lat) via Mercator derivative
+  const cosLat = Math.cos(centerLat * Math.PI / 180);
+  const dLat = -dy * 360 * cosLat / worldSize;
+  return { dLng, dLat };
 }
 
 // ============================================================================
-// Color Presets (matching original Deck.gl implementation)
+// GLSL Fragment Shader — GPU Heatmap
+// ============================================================================
+
+const HEATMAP_SHADER = `
+// Map tile background texture
+uniform sampler2D u_background;
+uniform float u_hasBackground;
+
+// Per-hotspot data (64×2 texture):
+//   Row 0 (y=0.25): R=x_uv, G=y_uv, B=weight, A=radius_km_encoded
+//   Row 1 (y=0.75): R=phaseX, G=speedX, B=phaseY, A=speedY  (all 0-1 encoded)
+uniform sampler2D u_hotspots;
+// Color lookup tables: 256×1 RGBA gradients
+uniform sampler2D u_mainColors;
+uniform sampler2D u_glowColors;
+uniform sampler2D u_hotColors;
+
+// Number of active hotspots (use float, GLSL 110 has no uniform int)
+uniform float u_count;
+
+// GPU-side jitter amplitude (UV space, ~0.004)
+uniform float u_jitterAmplitude;
+
+// Layer controls
+uniform float u_intensity;
+uniform float u_opacity;
+uniform float u_threshold;
+
+uniform float u_showGlow;
+uniform float u_glowIntensity;
+
+uniform float u_showHotspots;
+uniform float u_hotspotIntensity;
+uniform float u_hotspotThreshold;
+
+// Sigma base for main layer: vec2(radiusKm_to_sigmaX, uvYScale)
+// sigmaX = radiusKm * u_sigmaParams.x, sigmaY = sigmaX * u_sigmaParams.y
+uniform vec2 u_sigmaParams;
+
+// Radius multipliers per layer (relative to hotspot's own radius)
+uniform float u_radiusMain;
+uniform float u_radiusGlow;
+uniform float u_radiusHot;
+
+// Max radius in km (for decoding texture A channel)
+uniform float u_maxRadiusKm;
+
+// Viewport transform: maps viewport UV [0,1] to reference (PARIS_BOUNDS) UV
+uniform vec2 u_viewScale;
+uniform vec2 u_viewOffset;
+
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  // Convert viewport UV to reference UV for hotspot distance computation
+  vec2 refUv = uv * u_viewScale + u_viewOffset;
+
+  float densityMain = 0.0;
+  float densityGlow = 0.0;
+  float densityHot  = 0.0;
+
+  for (int i = 0; i < 64; i++) {
+    if (float(i) >= u_count) break;
+
+    // Sample hotspot data at texel center
+    float tx = (float(i) + 0.5) / 64.0;
+    vec4 hd = texture2D(u_hotspots, vec2(tx, 0.25));
+
+    vec2 center = hd.rg;
+    float weight = hd.b;
+    float radiusKm = hd.a * u_maxRadiusKm;
+
+    // GPU-side jitter from row 1
+    vec4 jd = texture2D(u_hotspots, vec2(tx, 0.75));
+    float phaseX = jd.r * 6.2832; // 0-1 → 0-2π
+    float speedX = 0.3 + jd.g * 0.8; // 0.3-1.1
+    float phaseY = jd.b * 6.2832;
+    float speedY = 0.3 + jd.a * 0.8;
+    float densityFactor = 0.5 + weight * 0.5;
+    center.x += sin(u_time * speedX + phaseX) * u_jitterAmplitude * densityFactor;
+    center.y += sin(u_time * speedY + phaseY) * u_jitterAmplitude * densityFactor;
+
+    vec2 diff = refUv - center;
+
+    // Main layer
+    float sx = radiusKm * u_sigmaParams.x * u_radiusMain;
+    float sy = sx * u_sigmaParams.y;
+    float ex = diff.x / sx;
+    float ey = diff.y / sy;
+    float g = exp(-0.5 * (ex * ex + ey * ey));
+    densityMain += weight * g;
+
+    // Glow layer (wider radius)
+    if (u_showGlow > 0.5) {
+      float gsx = radiusKm * u_sigmaParams.x * u_radiusGlow;
+      float gsy = gsx * u_sigmaParams.y;
+      float gex = diff.x / gsx;
+      float gey = diff.y / gsy;
+      densityGlow += weight * exp(-0.5 * (gex * gex + gey * gey));
+    }
+
+    // Hotspot layer (tighter, only high-weight)
+    if (u_showHotspots > 0.5 && weight > u_hotspotThreshold) {
+      float hsx = radiusKm * u_sigmaParams.x * u_radiusHot;
+      float hsy = hsx * u_sigmaParams.y;
+      float hex2 = diff.x / hsx;
+      float hey = diff.y / hsy;
+      densityHot += weight * exp(-0.5 * (hex2 * hex2 + hey * hey));
+    }
+  }
+
+  // Apply intensity and threshold
+  densityMain *= u_intensity;
+  if (densityMain < u_threshold) densityMain = 0.0;
+  densityMain = clamp(densityMain, 0.0, 1.0);
+
+  densityGlow = clamp(densityGlow * u_glowIntensity, 0.0, 1.0);
+  densityHot  = clamp(densityHot * u_hotspotIntensity, 0.0, 1.0);
+
+  // Look up colors from LUT textures
+  vec4 mainColor = texture2D(u_mainColors, vec2(densityMain, 0.5));
+  vec4 glowColor = texture2D(u_glowColors, vec2(densityGlow, 0.5));
+  vec4 hotColor  = texture2D(u_hotColors,  vec2(densityHot, 0.5));
+
+  // Composite: background → glow → main → hotspot
+  // Start with map tiles or transparent black
+  vec2 bgUv = vec2(uv.x, 1.0 - uv.y); // Flip Y: pixel buffer is top-down, GL is bottom-up
+  vec4 bg = texture2D(u_background, bgUv);
+  vec4 result = mix(vec4(0.078, 0.086, 0.118, 1.0), bg, u_hasBackground);
+
+  // Blend glow (alpha scaled by opacity)
+  float ga = glowColor.a * u_showGlow * u_opacity;
+  result.rgb = mix(result.rgb, glowColor.rgb, ga);
+  result.a = result.a + ga * (1.0 - result.a);
+
+  // Blend main (alpha scaled by opacity)
+  float ma = mainColor.a * u_opacity;
+  result.rgb = mix(result.rgb, mainColor.rgb, ma);
+  result.a = result.a + ma * (1.0 - result.a);
+
+  // Blend hotspot (alpha scaled by opacity)
+  float ha = hotColor.a * u_showHotspots * u_opacity;
+  result.rgb = mix(result.rgb, hotColor.rgb, ha);
+  result.a = result.a + ha * (1.0 - result.a);
+
+  gl_FragColor = result;
+}
+`;
+
+// ============================================================================
+// Color Presets
 // ============================================================================
 
 type ColorPreset = 'vibrant' | 'heat' | 'cool' | 'plasma' | 'fire';
 
-// Color presets with reduced alpha for transparency (map shows through)
-const COLOR_PRESETS: Record<ColorPreset, Array<{ stop: number; color: Color }>> = {
+interface RGBA { r: number; g: number; b: number; a: number; }
+interface ColorStop { stop: number; color: RGBA; }
+
+function rgbaStop(stop: number, r: number, g: number, b: number, a: number): ColorStop {
+  return { stop, color: { r, g, b, a } };
+}
+
+// Main layer color presets (alpha 0-255)
+const COLOR_PRESETS: Record<ColorPreset, ColorStop[]> = {
   vibrant: [
-    { stop: 0.0, color: rgba(64, 196, 255, 0) },
-    { stop: 0.15, color: rgba(59, 130, 246, 40) },
-    { stop: 0.30, color: rgba(16, 185, 129, 70) },
-    { stop: 0.45, color: rgba(34, 197, 94, 100) },
-    { stop: 0.60, color: rgba(250, 204, 21, 130) },
-    { stop: 0.80, color: rgba(249, 115, 22, 160) },
-    { stop: 1.0, color: rgba(239, 68, 68, 180) }
+    rgbaStop(0.0,   64, 196, 255, 0),
+    rgbaStop(0.15,  59, 130, 246, 80),
+    rgbaStop(0.30,  16, 185, 129, 140),
+    rgbaStop(0.45,  34, 197,  94, 180),
+    rgbaStop(0.60, 250, 204,  21, 210),
+    rgbaStop(0.80, 249, 115,  22, 235),
+    rgbaStop(1.0,  239,  68,  68, 255),
   ],
   heat: [
-    { stop: 0.0, color: rgba(0, 0, 0, 0) },
-    { stop: 0.15, color: rgba(30, 0, 100, 30) },
-    { stop: 0.30, color: rgba(120, 0, 180, 60) },
-    { stop: 0.45, color: rgba(200, 50, 50, 100) },
-    { stop: 0.60, color: rgba(255, 100, 0, 130) },
-    { stop: 0.80, color: rgba(255, 200, 0, 160) },
-    { stop: 1.0, color: rgba(255, 255, 200, 180) }
+    rgbaStop(0.0,    0,   0,   0, 0),
+    rgbaStop(0.15,  30,   0, 100, 60),
+    rgbaStop(0.30, 120,   0, 180, 120),
+    rgbaStop(0.45, 200,  50,  50, 180),
+    rgbaStop(0.60, 255, 100,   0, 210),
+    rgbaStop(0.80, 255, 200,   0, 235),
+    rgbaStop(1.0,  255, 255, 200, 255),
   ],
   cool: [
-    { stop: 0.0, color: rgba(0, 50, 100, 0) },
-    { stop: 0.15, color: rgba(0, 100, 150, 40) },
-    { stop: 0.30, color: rgba(0, 150, 200, 70) },
-    { stop: 0.45, color: rgba(50, 200, 200, 100) },
-    { stop: 0.60, color: rgba(100, 220, 180, 130) },
-    { stop: 0.80, color: rgba(150, 240, 160, 160) },
-    { stop: 1.0, color: rgba(200, 255, 200, 180) }
+    rgbaStop(0.0,    0,  50, 100, 0),
+    rgbaStop(0.15,   0, 100, 150, 80),
+    rgbaStop(0.30,   0, 150, 200, 140),
+    rgbaStop(0.45,  50, 200, 200, 180),
+    rgbaStop(0.60, 100, 220, 180, 210),
+    rgbaStop(0.80, 150, 240, 160, 235),
+    rgbaStop(1.0,  200, 255, 200, 255),
   ],
   plasma: [
-    { stop: 0.0, color: rgba(13, 8, 135, 0) },
-    { stop: 0.15, color: rgba(75, 3, 161, 40) },
-    { stop: 0.30, color: rgba(138, 10, 165, 70) },
-    { stop: 0.45, color: rgba(188, 55, 84, 100) },
-    { stop: 0.60, color: rgba(227, 99, 25, 130) },
-    { stop: 0.80, color: rgba(248, 149, 64, 160) },
-    { stop: 1.0, color: rgba(252, 206, 37, 180) }
+    rgbaStop(0.0,   13,   8, 135, 0),
+    rgbaStop(0.15,  75,   3, 161, 80),
+    rgbaStop(0.30, 138,  10, 165, 140),
+    rgbaStop(0.45, 188,  55,  84, 180),
+    rgbaStop(0.60, 227,  99,  25, 210),
+    rgbaStop(0.80, 248, 149,  64, 235),
+    rgbaStop(1.0,  252, 206,  37, 255),
   ],
   fire: [
-    { stop: 0.0, color: rgba(0, 0, 0, 0) },
-    { stop: 0.15, color: rgba(40, 0, 0, 30) },
-    { stop: 0.30, color: rgba(100, 10, 0, 60) },
-    { stop: 0.45, color: rgba(180, 30, 0, 100) },
-    { stop: 0.60, color: rgba(230, 80, 0, 130) },
-    { stop: 0.80, color: rgba(255, 150, 20, 160) },
-    { stop: 1.0, color: rgba(255, 220, 100, 180) }
-  ]
+    rgbaStop(0.0,    0,   0,   0, 0),
+    rgbaStop(0.15,  40,   0,   0, 60),
+    rgbaStop(0.30, 100,  10,   0, 120),
+    rgbaStop(0.45, 180,  30,   0, 180),
+    rgbaStop(0.60, 230,  80,   0, 210),
+    rgbaStop(0.80, 255, 150,  20, 235),
+    rgbaStop(1.0,  255, 220, 100, 255),
+  ],
 };
 
-// Glow layer colors (very soft, subtle background)
-const GLOW_PRESETS: Record<ColorPreset, Array<{ stop: number; color: Color }>> = {
+// Glow layer presets (softer, lower alpha)
+const GLOW_PRESETS: Record<ColorPreset, ColorStop[]> = {
   vibrant: [
-    { stop: 0.0, color: rgba(100, 180, 255, 0) },
-    { stop: 0.25, color: rgba(80, 150, 230, 15) },
-    { stop: 0.50, color: rgba(60, 180, 160, 30) },
-    { stop: 0.75, color: rgba(100, 200, 120, 50) },
-    { stop: 1.0, color: rgba(255, 160, 80, 70) }
+    rgbaStop(0.0,  100, 180, 255, 0),
+    rgbaStop(0.25,  80, 150, 230, 40),
+    rgbaStop(0.50,  60, 180, 160, 80),
+    rgbaStop(0.75, 100, 200, 120, 120),
+    rgbaStop(1.0,  255, 160,  80, 160),
   ],
   heat: [
-    { stop: 0.0, color: rgba(50, 0, 50, 0) },
-    { stop: 0.25, color: rgba(80, 0, 100, 15) },
-    { stop: 0.50, color: rgba(120, 20, 100, 30) },
-    { stop: 0.75, color: rgba(160, 50, 50, 50) },
-    { stop: 1.0, color: rgba(230, 120, 30, 70) }
+    rgbaStop(0.0,   50,   0,  50, 0),
+    rgbaStop(0.25,  80,   0, 100, 40),
+    rgbaStop(0.50, 120,  20, 100, 80),
+    rgbaStop(0.75, 160,  50,  50, 120),
+    rgbaStop(1.0,  230, 120,  30, 160),
   ],
   cool: [
-    { stop: 0.0, color: rgba(0, 80, 120, 0) },
-    { stop: 0.25, color: rgba(0, 100, 140, 15) },
-    { stop: 0.50, color: rgba(20, 130, 160, 30) },
-    { stop: 0.75, color: rgba(40, 160, 180, 50) },
-    { stop: 1.0, color: rgba(120, 210, 170, 70) }
+    rgbaStop(0.0,    0,  80, 120, 0),
+    rgbaStop(0.25,   0, 100, 140, 40),
+    rgbaStop(0.50,  20, 130, 160, 80),
+    rgbaStop(0.75,  40, 160, 180, 120),
+    rgbaStop(1.0,  120, 210, 170, 160),
   ],
   plasma: [
-    { stop: 0.0, color: rgba(30, 20, 100, 0) },
-    { stop: 0.25, color: rgba(60, 20, 130, 15) },
-    { stop: 0.50, color: rgba(100, 30, 140, 30) },
-    { stop: 0.75, color: rgba(150, 50, 100, 50) },
-    { stop: 1.0, color: rgba(220, 120, 60, 70) }
+    rgbaStop(0.0,   30,  20, 100, 0),
+    rgbaStop(0.25,  60,  20, 130, 40),
+    rgbaStop(0.50, 100,  30, 140, 80),
+    rgbaStop(0.75, 150,  50, 100, 120),
+    rgbaStop(1.0,  220, 120,  60, 160),
   ],
   fire: [
-    { stop: 0.0, color: rgba(20, 0, 0, 0) },
-    { stop: 0.25, color: rgba(50, 10, 0, 15) },
-    { stop: 0.50, color: rgba(80, 20, 0, 30) },
-    { stop: 0.75, color: rgba(130, 40, 0, 50) },
-    { stop: 1.0, color: rgba(220, 110, 30, 70) }
-  ]
+    rgbaStop(0.0,   20,   0,   0, 0),
+    rgbaStop(0.25,  50,  10,   0, 40),
+    rgbaStop(0.50,  80,  20,   0, 80),
+    rgbaStop(0.75, 130,  40,   0, 120),
+    rgbaStop(1.0,  220, 110,  30, 160),
+  ],
 };
 
+// Hotspot highlight colors (warm accent, same for all presets)
+const HOTSPOT_COLORS: ColorStop[] = [
+  rgbaStop(0.0,  255, 200,  50, 0),
+  rgbaStop(0.3,  255, 180,  50, 160),
+  rgbaStop(0.5,  255, 140,  40, 200),
+  rgbaStop(0.7,  250, 100,  30, 230),
+  rgbaStop(0.9,  240,  60,  60, 245),
+  rgbaStop(1.0,  220,  40,  80, 255),
+];
+
 // ============================================================================
-// Tile Source Options
+// LUT Builder — convert color stops to 256×1 RGBA texture
 // ============================================================================
 
-type TileSourceKey = 'osm' | 'mapbox-light' | 'mapbox-dark' | 'mapbox-streets' | 'mapbox-satellite';
-
-const TILE_SOURCE_LABELS: Record<TileSourceKey, string> = {
-  'osm': 'OpenStreetMap',
-  'mapbox-light': 'Mapbox Light',
-  'mapbox-dark': 'Mapbox Dark',
-  'mapbox-streets': 'Mapbox Streets',
-  'mapbox-satellite': 'Mapbox Satellite'
-};
-
-function getTileSource(key: TileSourceKey, mapboxToken: string | null): TileSource | null {
-  switch (key) {
-    case 'osm':
-      return TILE_SOURCES.osmRaster();
-    case 'mapbox-light':
-      return mapboxToken ? TILE_SOURCES.mapboxLight(mapboxToken) : null;
-    case 'mapbox-dark':
-      return mapboxToken ? TILE_SOURCES.mapboxDark(mapboxToken) : null;
-    case 'mapbox-streets':
-      return mapboxToken ? TILE_SOURCES.mapboxStreets(mapboxToken) : null;
-    case 'mapbox-satellite':
-      return mapboxToken ? TILE_SOURCES.mapboxSatellite(mapboxToken) : null;
-    default:
-      return null;
+function buildColorLUT(stops: ColorStop[]): Uint8Array {
+  const lut = new Uint8Array(256 * 4);
+  for (let i = 0; i < 256; i++) {
+    const t = i / 255;
+    // Find surrounding stops
+    let lo = stops[0];
+    let hi = stops[stops.length - 1];
+    for (let j = 0; j < stops.length - 1; j++) {
+      if (t >= stops[j].stop && t <= stops[j + 1].stop) {
+        lo = stops[j];
+        hi = stops[j + 1];
+        break;
+      }
+    }
+    const range = hi.stop - lo.stop;
+    const f = range > 0 ? (t - lo.stop) / range : 0;
+    lut[i * 4 + 0] = Math.round(lo.color.r + (hi.color.r - lo.color.r) * f);
+    lut[i * 4 + 1] = Math.round(lo.color.g + (hi.color.g - lo.color.g) * f);
+    lut[i * 4 + 2] = Math.round(lo.color.b + (hi.color.b - lo.color.b) * f);
+    lut[i * 4 + 3] = Math.round(lo.color.a + (hi.color.a - lo.color.a) * f);
   }
+  return lut;
 }
 
 // ============================================================================
-// Point Movement (organic animation)
+// Hotspot Texture Packer
 // ============================================================================
 
-interface PointOffset {
+interface HotspotWeight {
+  x: number;   // UV 0-1
+  y: number;   // UV 0-1
+  weight: number; // 0-1
+  radiusKm: number;
+}
+
+function packHotspotTexture(spots: HotspotWeight[], jitters?: HotspotJitter[]): Uint8Array {
+  // 64×2 texture: row 0 = position/weight/radius, row 1 = jitter params
+  const data = new Uint8Array(MAX_HOTSPOTS * 2 * 4);
+  const count = Math.min(spots.length, MAX_HOTSPOTS);
+  const row1Offset = MAX_HOTSPOTS * 4; // byte offset to row 1
+  for (let i = 0; i < count; i++) {
+    const s = spots[i];
+    // Row 0: position, weight, radius
+    data[i * 4 + 0] = Math.round(Math.max(0, Math.min(1, s.x)) * 255);
+    data[i * 4 + 1] = Math.round(Math.max(0, Math.min(1, s.y)) * 255);
+    data[i * 4 + 2] = Math.round(Math.max(0, Math.min(1, s.weight)) * 255);
+    data[i * 4 + 3] = Math.round(Math.max(0, Math.min(1, s.radiusKm / MAX_RADIUS_KM)) * 255);
+    // Row 1: jitter params (phaseX, speedX, phaseY, speedY) encoded 0-1
+    if (jitters && jitters[i]) {
+      const j = jitters[i];
+      data[row1Offset + i * 4 + 0] = Math.round((j.phaseX / (Math.PI * 2)) * 255);
+      data[row1Offset + i * 4 + 1] = Math.round(((j.speedX - 0.3) / 0.8) * 255);
+      data[row1Offset + i * 4 + 2] = Math.round((j.phaseY / (Math.PI * 2)) * 255);
+      data[row1Offset + i * 4 + 3] = Math.round(((j.speedY - 0.3) / 0.8) * 255);
+    }
+  }
+  return data;
+}
+
+// ============================================================================
+// Organic Movement (per-hotspot jitter)
+// ============================================================================
+
+interface HotspotJitter {
   phaseX: number;
   phaseY: number;
   speedX: number;
   speedY: number;
-  amplitude: number;
+  amplitude: number; // in UV space
 }
 
-function initializePointOffsets(count: number): PointOffset[] {
-  const offsets: PointOffset[] = [];
+function initializeJitter(count: number): HotspotJitter[] {
+  const jitters: HotspotJitter[] = [];
   for (let i = 0; i < count; i++) {
-    offsets.push({
+    jitters.push({
       phaseX: Math.random() * Math.PI * 2,
       phaseY: Math.random() * Math.PI * 2,
       speedX: 0.3 + Math.random() * 0.8,
       speedY: 0.3 + Math.random() * 0.8,
-      amplitude: 0.002 + Math.random() * 0.004 // Normalized coordinate space
+      amplitude: 0.002 + Math.random() * 0.004,
     });
   }
-  return offsets;
+  return jitters;
 }
 
-function applyOrganicMovement(
-  points: DensityPoint[],
-  offsets: PointOffset[],
-  time: number
-): DensityPoint[] {
-  return points.map((point, i) => {
-    const offset = offsets[i % offsets.length];
-    const densityFactor = 0.5 + (point.density / 100) * 0.5;
+// ============================================================================
+// Seed-based noise (matches simulation.ts pattern)
+// ============================================================================
 
-    const offsetX = Math.sin(time * offset.speedX + offset.phaseX) * offset.amplitude * densityFactor;
-    const offsetY = Math.sin(time * offset.speedY + offset.phaseY) * offset.amplitude * densityFactor;
-
-    return {
-      ...point,
-      x: Math.max(0, Math.min(1, point.x + offsetX)),
-      y: Math.max(0, Math.min(1, point.y + offsetY))
-    };
-  });
+function seededRandom(seed: number): number {
+  const x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
 }
 
 // ============================================================================
@@ -274,46 +458,40 @@ function applyOrganicMovement(
 // ============================================================================
 
 interface VisualizationSettings {
-  // Main heatmap
   opacity: number;
   intensity: number;
   radiusPixels: number;
   threshold: number;
 
-  // Glow layer
   showGlow: boolean;
   glowIntensity: number;
   glowRadius: number;
 
-  // Hotspot layer
   showHotspots: boolean;
   hotspotIntensity: number;
   hotspotRadius: number;
   hotspotThreshold: number;
 
-  // Color
   colorPreset: ColorPreset;
 }
 
+// Higher defaults to match OG Deck.gl visual quality
 const DEFAULT_SETTINGS: VisualizationSettings = {
-  // Main heatmap - very transparent to let map show through
-  opacity: 0.3,
-  intensity: 0.4,
+  opacity: 0.85,
+  intensity: 1.5,
   radiusPixels: 50,
   threshold: 0.03,
 
-  // Glow layer - subtle background glow
   showGlow: true,
-  glowIntensity: 0.15,
+  glowIntensity: 0.6,
   glowRadius: 100,
 
-  // Hotspot highlights - more visible but still transparent
   showHotspots: true,
-  hotspotIntensity: 0.8,
+  hotspotIntensity: 2.5,
   hotspotRadius: 30,
-  hotspotThreshold: 45,
+  hotspotThreshold: 0.45,
 
-  colorPreset: 'vibrant'
+  colorPreset: 'vibrant',
 };
 
 // ============================================================================
@@ -321,246 +499,234 @@ const DEFAULT_SETTINGS: VisualizationSettings = {
 // ============================================================================
 
 export function buildParisDensity(a: App) {
-  let time: TimeOfWeek = { hour: 12, day: 0 };
-  let canvas: any;
+  let time: TimeOfWeek = { hour: 14, day: 5 }; // Friday 14:00 (like OG default)
+  let shader: CanvasShader | null = null;
   let timeLabel: Label | undefined;
-  let fpsLabel: Label | undefined;
+  let statusLabel: Label | undefined;
   let statsLabel: Label | undefined;
-
-  // Data caches
-  let currentHourData: DensityPoint[] | null = null;
-  let nextHourData: DensityPoint[] | null = null;
-  let displayData: DensityPoint[] | null = null;
-  let densityCache: Record<string, DensityPoint[]> = {};
-  let pointOffsets: PointOffset[] = [];
 
   // Animation state
   let animationRunning = false;
-  let animationSpeed = 1.0;
-  let progress = 0; // 0-1 progress through current hour
+  let animationSpeed = 2.0; // hours per minute
+  let progress = 0; // 0-1 through current hour
   let lastFrameTime = 0;
-  let frameCount = 0;
-  let lastFpsUpdate = 0;
-  let currentFps = 0;
 
   // Visualization settings
   let settings: VisualizationSettings = { ...DEFAULT_SETTINGS };
 
-  // Canvas dimensions (larger for overlay style)
-  const canvasWidth = 800;
-  const canvasHeight = 600;
+  // Canvas dimensions (responsive — updated on window resize)
+  let canvasWidth = 800;
+  let canvasHeight = 600;
 
-  // Render target
-  let renderTarget: RenderTarget | null = null;
+  // Per-hotspot jitter for organic movement
+  const jitters = initializeJitter(HOTSPOTS.length);
 
-  // Render lock to prevent overlapping renders
-  let renderInProgress = false;
-  let renderPending = false;
-
-  // Map tile renderer
-  let tileRenderer: TileMapRenderer | null = null;
-  let mapTilesEnabled = true;
-  let mapTilesLoaded = false;
-  let currentTileSource: TileSourceKey = 'osm';
-  const mapboxToken = getMapboxToken();
-
-  // Function to create/update tile renderer based on source selection
-  function setTileSource(key: TileSourceKey): boolean {
-    const source = getTileSource(key, mapboxToken);
-    if (source) {
-      tileRenderer = new TileMapRenderer(source, {
-        cachePath: TILE_CACHE_PATH  // Cache tiles to disk (7-day TTL per OSM policy)
-      });
-      currentTileSource = key;
-      mapTilesLoaded = false;
-      return true;
-    }
-    return false;
-  }
-
-  // Initialize with OSM (always available)
-  setTileSource('osm');
-
-  // Map viewport for tile rendering (mutable for panning)
-  let mapViewport: MapViewport = {
-    center: { ...PARIS_VIEW.center },
-    zoom: PARIS_VIEW.zoom,
+  // Map tile renderer for background
+  const tileCachePath = path.join(os.homedir(), '.tsyne', 'realtime-paris-density-simulation', 'map-cache');
+  const tileRenderer = new TileMapRenderer(TILE_SOURCES.osmRaster(), {
+    fsCachePath: tileCachePath,
+  });
+  const mapViewport: MapViewport = {
+    center: { lng: 2.3522, lat: 48.8566 },
+    zoom: 12,
     width: canvasWidth,
-    height: canvasHeight
+    height: canvasHeight,
   };
+  let backgroundLoaded = false;
 
-  // Pan the map by pixel delta
-  function panMap(deltaX: number, deltaY: number) {
-    // Convert pixel delta to geographic delta
-    // At zoom 12, roughly 0.00004 degrees per pixel
-    const pixelsPerDegree = Math.pow(2, mapViewport.zoom) * 256 / 360;
-    const lngDelta = -deltaX / pixelsPerDegree;
-    const latDelta = deltaY / pixelsPerDegree;
+  // Zoom/pan state
+  const MIN_ZOOM = 10;
+  const MAX_ZOOM = 16;
+  let tileReloadTimer: ReturnType<typeof setTimeout> | null = null;
 
-    mapViewport.center = {
-      lng: mapViewport.center.lng + lngDelta,
-      lat: mapViewport.center.lat + latDelta
-    };
-
-    // Don't clear cache - TileMapRenderer has LRU caching that handles this
-    void renderDensityCanvas();
+  /** Update view transform uniforms (instant — just 2 uniform updates) */
+  function updateViewTransform() {
+    if (!shader) return;
+    const { viewScale, viewOffset } = computeViewTransform(mapViewport);
+    shader.setUniforms({
+      u_viewScale: viewScale,
+      u_viewOffset: viewOffset,
+    });
   }
 
-  // ============================================================================
-  // Data Loading
-  // ============================================================================
-
-  function getCacheKey(t: TimeOfWeek): string {
-    return `${t.hour}:${t.day}`;
+  /** Debounced tile background reload (async HTTP fetch) */
+  function scheduleTileReload() {
+    if (tileReloadTimer) clearTimeout(tileReloadTimer);
+    tileReloadTimer = setTimeout(() => {
+      tileReloadTimer = null;
+      loadTileBackground().catch(err => console.error('Tile reload failed:', err));
+    }, 250);
   }
 
-  function getDensityGrid(t: TimeOfWeek): DensityPoint[] {
-    const key = getCacheKey(t);
-    if (!densityCache[key]) {
-      densityCache[key] = generateDensityGrid(t);
+  /** Update status bar: zoom level + center coords + source */
+  function updateStatusLabel() {
+    if (!statusLabel) return;
+    const z = Math.round(mapViewport.zoom);
+    const lat = mapViewport.center.lat.toFixed(4);
+    const lng = mapViewport.center.lng.toFixed(4);
+    statusLabel.setText(`Z${z} | ${lat}N, ${lng}E | OSM`);
+  }
+
+  /** Convert pixel position to geographic coordinates */
+  function pixelToGeo(px: number, py: number): { lat: number, lng: number } {
+    // Pixel → viewport UV (flip Y for GL coords)
+    const uvX = px / canvasWidth;
+    const uvY = py / canvasHeight;
+
+    // Viewport UV → reference UV via view transform
+    const { viewScale, viewOffset } = computeViewTransform(mapViewport);
+    const refUvX = uvX * viewScale[0] + viewOffset[0];
+    const refUvY = uvY * viewScale[1] + viewOffset[1];
+
+    // Reference UV → lat/lng
+    const lng = PARIS_BOUNDS.minLng + refUvX * LNG_RANGE;
+    const lat = PARIS_BOUNDS.minLat + refUvY * LAT_RANGE;
+    return { lat, lng };
+  }
+
+  /** Find nearest hotspot to given lat/lng within maxDistKm */
+  function findNearestHotspot(lat: number, lng: number, maxDistKm = 0.8): { name: string, type: string, index: number } | null {
+    let bestDist = Infinity;
+    let bestIdx = -1;
+    for (let i = 0; i < HOTSPOTS.length; i++) {
+      const h = HOTSPOTS[i];
+      const dLat = (h.lat - lat) * 111.0;
+      const dLng = (h.lng - lng) * 111.0 * COS_LAT;
+      const dist = Math.sqrt(dLat * dLat + dLng * dLng);
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestIdx = i;
+      }
     }
-    return densityCache[key];
+    if (bestDist <= maxDistKm && bestIdx >= 0) {
+      return { name: HOTSPOTS[bestIdx].name, type: HOTSPOTS[bestIdx].type, index: bestIdx };
+    }
+    return null;
   }
 
-  function loadHourData(hour: number, day: number) {
+  // ============================================================================
+  // Hotspot Weight Computation
+  // ============================================================================
+
+  function computeHotspotWeights(
+    hour: number, day: number, hourProgress: number
+  ): HotspotWeight[] {
     const nextHour = (hour + 1) % 24;
+    const spots: HotspotWeight[] = [];
 
-    currentHourData = getDensityGrid({ hour, day });
-    nextHourData = getDensityGrid({ hour: nextHour, day });
+    for (let i = 0; i < HOTSPOTS.length; i++) {
+      const h = HOTSPOTS[i];
 
-    // Initialize point offsets if needed
-    if (pointOffsets.length !== currentHourData.length) {
-      pointOffsets = initializePointOffsets(currentHourData.length);
+      // Temporal weight for current and next hour
+      const noise = 0.8 + seededRandom(h.lat * 1000 + h.lng * 1000 + hour) * 0.2;
+      const w0 = (h.basePop * getTimeMultiplier(h.type, hour) * getDayMultiplier(h.type, day) * noise) / 100;
+      const noiseNext = 0.8 + seededRandom(h.lat * 1000 + h.lng * 1000 + nextHour) * 0.2;
+      const w1 = (h.basePop * getTimeMultiplier(h.type, nextHour) * getDayMultiplier(h.type, day) * noiseNext) / 100;
+
+      // Smoothstep interpolation between hours
+      const t = hourProgress * hourProgress * (3 - 2 * hourProgress);
+      const weight = w0 * (1 - t) + w1 * t;
+
+      // Base UV position (jitter is now GPU-side via u_time in shader)
+      const x = (h.lng - PARIS_BOUNDS.minLng) / LNG_RANGE;
+      const y = (h.lat - PARIS_BOUNDS.minLat) / LAT_RANGE;
+
+      spots.push({ x, y, weight, radiusKm: h.radius });
     }
 
-    // Initialize display data
-    displayData = currentHourData.map(p => ({ ...p }));
-
-    updateStats();
-  }
-
-  function updateStats() {
-    if (!displayData || !statsLabel) return;
-    const avgDensity = displayData.reduce((sum, p) => sum + p.density, 0) / displayData.length;
-    const maxDensity = Math.max(...displayData.map(p => p.density));
-    statsLabel.setText(`Points: ${displayData.length} | Avg: ${avgDensity.toFixed(1)} | Max: ${maxDensity.toFixed(0)}`);
+    return spots;
   }
 
   // ============================================================================
-  // Multi-Layer Rendering
+  // Upload color LUTs to shader
   // ============================================================================
 
-  function toHeatmapPoints(data: DensityPoint[]): HeatmapPoint[] {
-    // Convert normalized (0-1) density coords to geographic coords, then to viewport pixels
-    return data.map(point => {
-      // Convert from normalized to geographic
-      const lng = PARIS_BOUNDS.minLng + point.x * (PARIS_BOUNDS.maxLng - PARIS_BOUNDS.minLng);
-      const lat = PARIS_BOUNDS.maxLat - point.y * (PARIS_BOUNDS.maxLat - PARIS_BOUNDS.minLat);
+  async function uploadColorLUTs() {
+    if (!shader) return;
+    const mainLUT = buildColorLUT(COLOR_PRESETS[settings.colorPreset]);
+    const glowLUT = buildColorLUT(GLOW_PRESETS[settings.colorPreset]);
+    const hotLUT = buildColorLUT(HOTSPOT_COLORS);
+    await Promise.all([
+      shader.setTextureData('u_mainColors', mainLUT, 256, 1),
+      shader.setTextureData('u_glowColors', glowLUT, 256, 1),
+      shader.setTextureData('u_hotColors', hotLUT, 256, 1),
+    ]);
+  }
 
-      // Project geographic to viewport pixels using Web Mercator
-      const worldSize = 256 * Math.pow(2, mapViewport.zoom);
+  // ============================================================================
+  // Load map tiles and upload as background texture
+  // ============================================================================
 
-      // Point in world pixels
-      const pointWorldX = ((lng + 180) / 360) * worldSize;
-      const latRad = lat * Math.PI / 180;
-      const pointWorldY = ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * worldSize;
+  async function loadTileBackground() {
+    if (!shader) return;
+    try {
+      const target = createRenderTarget(canvasWidth, canvasHeight);
+      clearRenderTarget(target, 20, 22, 30, 255); // dark fallback
+      await tileRenderer.render(target, mapViewport);
+      await shader.setTextureData('u_background', target.pixels, canvasWidth, canvasHeight);
+      shader.setUniform('u_hasBackground', 1.0);
+      backgroundLoaded = true;
+    } catch (err) {
+      console.error('Failed to load map tiles:', err);
+      shader.setUniform('u_hasBackground', 0.0);
+    }
+  }
 
-      // Center in world pixels
-      const centerWorldX = ((mapViewport.center.lng + 180) / 360) * worldSize;
-      const centerLatRad = mapViewport.center.lat * Math.PI / 180;
-      const centerWorldY = ((1 - Math.log(Math.tan(centerLatRad) + 1 / Math.cos(centerLatRad)) / Math.PI) / 2) * worldSize;
+  // ============================================================================
+  // Update shader uniforms from settings
+  // ============================================================================
 
-      // Convert to canvas pixels (relative to center)
-      const x = canvasWidth / 2 + (pointWorldX - centerWorldX);
-      const y = canvasHeight / 2 + (pointWorldY - centerWorldY);
+  function updateSettingsUniforms() {
+    if (!shader) return;
 
-      return { x, y, weight: point.density / 100 };
+    // Sigma params: kmToUvX factor and Y scale
+    // User radius slider scales the base sigma
+    const radiusScale = settings.radiusPixels / 50.0; // 50px = default = 1.0x
+    const glowScale = settings.glowRadius / 50.0;
+    const hotScale = settings.hotspotRadius / 50.0;
+
+    shader.setUniforms({
+      u_intensity: settings.intensity,
+      u_opacity: settings.opacity,
+      u_threshold: settings.threshold,
+      u_showGlow: settings.showGlow ? 1.0 : 0.0,
+      u_glowIntensity: settings.glowIntensity,
+      u_showHotspots: settings.showHotspots ? 1.0 : 0.0,
+      u_hotspotIntensity: settings.hotspotIntensity,
+      u_hotspotThreshold: settings.hotspotThreshold,
+      u_sigmaParams: [KM_TO_UV_X, UV_Y_SCALE],
+      u_radiusMain: radiusScale,
+      u_radiusGlow: glowScale,
+      u_radiusHot: hotScale,
+      u_maxRadiusKm: MAX_RADIUS_KM,
     });
   }
 
-  async function renderDensityCanvas() {
-    if (!canvas || !displayData) {
-      return;
-    }
+  // ============================================================================
+  // Render a single frame
+  // ============================================================================
 
-    // If a render is already in progress, mark pending and exit
-    if (renderInProgress) {
-      renderPending = true;
-      return;
-    }
-    renderInProgress = true;
+  async function renderFrame() {
+    if (!shader) return;
 
-    // Initialize render target on first use
-    if (!renderTarget) {
-      renderTarget = createRenderTarget(canvasWidth, canvasHeight);
-    }
+    // Compute per-hotspot weights with interpolation
+    const spots = computeHotspotWeights(time.hour, time.day, progress);
 
-    // Clear to dark background (will be overwritten by map tiles if available)
-    clearRenderTarget(renderTarget, 20, 22, 30, 255);
+    // Pack and upload 64×2 hotspot texture (row 0: data, row 1: jitter)
+    const hotspotTex = packHotspotTexture(spots, jitters);
+    await shader.setTextureData('u_hotspots', hotspotTex, MAX_HOTSPOTS, 2);
 
-    // Render map tiles as background
-    if (mapTilesEnabled && tileRenderer) {
-      try {
-        await tileRenderer.render(renderTarget, mapViewport);
-        mapTilesLoaded = true;
-      } catch (err) {
-        console.error('Failed to render map tiles:', err);
-      }
-    }
-
-    const points = toHeatmapPoints(displayData);
-    const colorStops = COLOR_PRESETS[settings.colorPreset];
-    const glowStops = GLOW_PRESETS[settings.colorPreset];
-
-    // Aspect ratio correction: geographic coords are stretched differently in X vs Y
-    // This makes circles appear as circles in geographic space
-    const aspectCorrection = calculateAspectRatioCorrection(canvasWidth, canvasHeight);
-
-    // Layer 1: Ambient glow (large soft background)
-    if (settings.showGlow) {
-      renderHeatmap(renderTarget, points, {
-        radius: settings.glowRadius,
-        radiusY: Math.round(settings.glowRadius * aspectCorrection),
-        intensity: settings.glowIntensity * settings.opacity,
-        colorStops: glowStops
-      });
-    }
-
-    // Layer 2: Main heatmap
-    renderHeatmap(renderTarget, points, {
-      radius: settings.radiusPixels,
-      radiusY: Math.round(settings.radiusPixels * aspectCorrection),
-      intensity: settings.intensity,
-      colorStops: colorStops
+    // Update count and jitter amplitude
+    shader.setUniforms({
+      u_count: Math.min(HOTSPOTS.length, MAX_HOTSPOTS),
+      u_jitterAmplitude: 0.004,
     });
 
-    // Layer 3: Hotspot highlights (high-intensity areas)
-    if (settings.showHotspots) {
-      const hotspotPoints = points.filter((_, i) => displayData![i].density > settings.hotspotThreshold);
-      if (hotspotPoints.length > 0) {
-        renderHeatmap(renderTarget, hotspotPoints, {
-          radius: settings.hotspotRadius,
-          radiusY: Math.round(settings.hotspotRadius * aspectCorrection),
-          intensity: settings.hotspotIntensity,
-          colorStops: [
-            { stop: 0.0, color: rgba(255, 200, 50, 0) },
-            { stop: 0.3, color: rgba(255, 180, 50, 140) },
-            { stop: 0.5, color: rgba(255, 140, 40, 180) },
-            { stop: 0.7, color: rgba(250, 100, 30, 210) },
-            { stop: 0.9, color: rgba(240, 60, 60, 240) },
-            { stop: 1.0, color: rgba(220, 40, 80, 255) }
-          ]
-        });
-      }
-    }
-
-    await canvas.setPixelBuffer(renderTarget.pixels);
-
-    // Release lock and check for pending render
-    renderInProgress = false;
-    if (renderPending) {
-      renderPending = false;
-      void renderDensityCanvas();
+    // Update stats
+    if (statsLabel) {
+      const avgWeight = spots.reduce((s, p) => s + p.weight, 0) / spots.length;
+      const maxWeight = Math.max(...spots.map(p => p.weight));
+      statsLabel.setText(`${spots.length} hotspots | avg ${(avgWeight * 100).toFixed(0)}% | peak ${(maxWeight * 100).toFixed(0)}%`);
     }
   }
 
@@ -582,51 +748,29 @@ export function buildParisDensity(a: App) {
     if (time.hour === 0) {
       time.day = (time.day + 1) % 7;
     }
-
-    // Shift data
-    currentHourData = nextHourData;
-    const nextHour = (time.hour + 1) % 24;
-    nextHourData = getDensityGrid({ hour: nextHour, day: time.day });
   }
 
-  async function animationFrame(currentTime: number) {
+  /** Simulation tick — runs at ~2Hz. GPU handles 60fps rendering via auto-animate. */
+  async function simulationTick() {
     if (!animationRunning) return;
 
-    // Calculate delta time
+    const currentTime = Date.now();
     const deltaTime = lastFrameTime > 0 ? (currentTime - lastFrameTime) / 1000 : 0;
     lastFrameTime = currentTime;
 
-    // FPS counter
-    frameCount++;
-    if (currentTime - lastFpsUpdate > 1000) {
-      currentFps = Math.round(frameCount * 1000 / (currentTime - lastFpsUpdate));
-      if (fpsLabel) {
-        fpsLabel.setText(`${currentFps} FPS`);
-      }
-      frameCount = 0;
-      lastFpsUpdate = currentTime;
-    }
-
-    // Update progress (full hour in ~10 seconds at speed 1.0)
-    progress += deltaTime * 0.1 * animationSpeed;
-
+    // Advance time (animationSpeed = hours per minute)
+    progress += deltaTime * animationSpeed / 60;
     if (progress >= 1) {
-      progress = 0;
+      progress -= 1;
       advanceHour();
     }
 
-    // Interpolate between hours with organic movement
-    if (currentHourData && nextHourData) {
-      const interpolated = interpolateDensityGrids(currentHourData, nextHourData, progress);
-      displayData = applyOrganicMovement(interpolated, pointOffsets, currentTime / 1000);
-    }
-
     updateTimeLabel();
-    await renderDensityCanvas();
+    await renderFrame();
 
-    // Schedule next frame
+    // Schedule next simulation tick (~2 Hz — GPU auto-animate handles rendering)
     if (animationRunning) {
-      setTimeout(() => animationFrame(Date.now()), 33); // ~30 FPS
+      setTimeout(() => simulationTick(), 500);
     }
   }
 
@@ -634,92 +778,115 @@ export function buildParisDensity(a: App) {
     if (animationRunning) return;
     animationRunning = true;
     lastFrameTime = 0;
-    frameCount = 0;
-    lastFpsUpdate = Date.now();
-    animationFrame(Date.now());
+    // Enable GPU-side 60fps refresh
+    if (shader) shader.setAutoAnimate(true);
+    simulationTick();
   }
 
   function stopAnimation() {
     animationRunning = false;
+    // Disable GPU-side auto-animate
+    if (shader) shader.setAutoAnimate(false);
   }
 
-  function setTime(h: number, d: number) {
+  async function setTimeAndRender(h: number, d: number) {
     time = { hour: h % 24, day: d % 7 };
     progress = 0;
-    loadHourData(time.hour, time.day);
     updateTimeLabel();
-    void renderDensityCanvas();
-  }
-
-  function nextHour() {
-    time.hour = (time.hour + 1) % 24;
-    if (time.hour === 0) {
-      time.day = (time.day + 1) % 7;
-    }
-    progress = 0;
-    loadHourData(time.hour, time.day);
-    updateTimeLabel();
-    void renderDensityCanvas();
-  }
-
-  function prevHour() {
-    time.hour = (time.hour - 1 + 24) % 24;
-    if (time.hour === 23) {
-      time.day = (time.day - 1 + 7) % 7;
-    }
-    progress = 0;
-    loadHourData(time.hour, time.day);
-    updateTimeLabel();
-    void renderDensityCanvas();
+    await renderFrame();
   }
 
   // ============================================================================
   // UI
   // ============================================================================
 
-  // Panel collapsed state
   let panelCollapsed = true;
   let panelContainer: any = null;
-  let hamburgerBtn: any = null;
 
-  // Set contrasting scrollbar color and wider size for dark panel
   a.setCustomTheme({ scrollBar: '#888888' });
   a.setCustomSizes({ scrollBar: 16 });
 
-  a.window({ title: 'Paris Density Simulation', width: 820, height: 620, fixedSize: true }, (win: Window) => {
-    win.setContent(async () => {
-      // Use stack for overlay: canvas on bottom, controls on top-left
-      a.stack(() => {
-        // Bottom layer: Full-size map canvas
-        const rawCanvas = a.tappableCanvasRaster(canvasWidth, canvasHeight, {
-          onTap: (x, y) => {
-            console.log(`Tapped at ${x}, ${y}`);
-          },
-          onDrag: (_x, _y, deltaX, deltaY) => {
-            panMap(deltaX, deltaY);
-          },
-          onDragEnd: () => {
-            // Could trigger a final render here if needed
-          },
-          onScroll: (deltaX, deltaY, _x, _y) => {
-            // Use scroll/mousewheel to pan the map
-            panMap(deltaX * 3, deltaY * 3);
-          }
-        }) as any;
-        canvas = rawCanvas;
-        if (rawCanvas && typeof rawCanvas.withId === 'function') {
-          rawCanvas.withId('densityCanvas');
+  a.window({ title: 'Paris Density Simulation', width: 820, height: 620 }, (win: Window) => {
+    // Responsive resize with throttle
+    let resizeTimer: ReturnType<typeof setTimeout> | null = null;
+    win.onResize((w, h) => {
+      if (resizeTimer) clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        resizeTimer = null;
+        canvasWidth = w;
+        canvasHeight = h;
+        mapViewport.width = w;
+        mapViewport.height = h;
+        if (shader) {
+          shader.resize(w, h);
+          updateViewTransform();
+          scheduleTileReload();
         }
+      }, 100);
+    });
+    win.setContent(async () => {
+      a.stack(() => {
+        // Bottom layer: GPU shader canvas with zoom/pan/hover events
+        let tooltipTimer: ReturnType<typeof setTimeout> | null = null;
+        shader = a.canvasShader(canvasWidth, canvasHeight, HEATMAP_SHADER, {
+          onScroll: (e) => {
+            const oldZoom = Math.round(mapViewport.zoom);
+            if (e.scrolled.dy > 0) {
+              mapViewport.zoom = Math.min(MAX_ZOOM, mapViewport.zoom + 1);
+            } else if (e.scrolled.dy < 0) {
+              mapViewport.zoom = Math.max(MIN_ZOOM, mapViewport.zoom - 1);
+            }
+            if (Math.round(mapViewport.zoom) !== oldZoom) {
+              updateViewTransform();
+              scheduleTileReload();
+              updateStatusLabel();
+            }
+          },
+          onDrag: (e) => {
+            const { dLng, dLat } = pixelDeltaToGeo(
+              e.dragged.dx, e.dragged.dy, mapViewport.zoom, mapViewport.center.lat
+            );
+            mapViewport.center.lng += dLng;
+            mapViewport.center.lat += dLat;
+            updateViewTransform();
+            scheduleTileReload();
+            updateStatusLabel();
+          },
+          onMouseMoved: (e) => {
+            // Throttled tooltip: 50ms debounce
+            if (tooltipTimer) clearTimeout(tooltipTimer);
+            tooltipTimer = setTimeout(() => {
+              if (!shader) return;
+              const geo = pixelToGeo(e.position.x, e.position.y);
+              const hotspot = findNearestHotspot(geo.lat, geo.lng);
+              if (hotspot) {
+                // Get current weight for display
+                const spots = computeHotspotWeights(time.hour, time.day, progress);
+                const density = spots[hotspot.index]?.weight ?? 0;
+                shader.showTooltip(
+                  `${hotspot.name} (${hotspot.type}) ${(density * 100).toFixed(0)}%`,
+                  e.position.x, e.position.y
+                );
+              } else {
+                shader.hideTooltip();
+              }
+            }, 50);
+          },
+          onMouseOut: () => {
+            if (tooltipTimer) { clearTimeout(tooltipTimer); tooltipTimer = null; }
+            if (shader) shader.hideTooltip();
+          },
+        });
 
         // Top layer: Control panel on the left
         a.hbox(() => {
           a.themeoverride('dark', () => {
             a.vbox(() => {
-              // Hamburger button row with title (always visible, with opaque background)
+              // Hamburger bar (always visible)
               a.max(() => {
                 a.rectangle('#1a1a2e', 200, 40);
                 a.hbox(() => {
-                  hamburgerBtn = a.button('☰', { onClick: () => {
+                  a.button('☰', { onClick: () => {
                     panelCollapsed = !panelCollapsed;
                     if (panelContainer) {
                       if (panelCollapsed) {
@@ -733,110 +900,163 @@ export function buildParisDensity(a: App) {
                 });
               });
 
-              // Collapsible panel (scrollable to fit within window)
+              // Collapsible control panel
               panelContainer = a.max(() => {
                 a.rectangle('#1a1a2e', 200, canvasHeight - 40);
                 a.scroll(() => {
                   a.vbox(() => {
-                    fpsLabel = a.label('-- FPS').withId('fpsLabel');
-                    timeLabel = a.label('Sun 12:00').withId('timeLabel');
-                    statsLabel = a.label('Points: --').withId('statsLabel');
+                    statusLabel = a.label(`Z${Math.round(mapViewport.zoom)} | 48.8566N, 2.3522E | OSM`).withId('statusLabel');
+                    timeLabel = a.label('Fri 14:00').withId('timeLabel');
+                    statsLabel = a.label('-- hotspots').withId('statsLabel');
 
+                    // Zoom controls
                     a.hbox(() => {
-                      a.button('< Hour', { onClick: () => prevHour() }).withId('prevHourBtn');
-                      a.button('Hour >', { onClick: () => nextHour() }).withId('nextHourBtn');
+                      a.button('Z+', { onClick: () => {
+                        mapViewport.zoom = Math.min(MAX_ZOOM, mapViewport.zoom + 1);
+                        updateViewTransform();
+                        scheduleTileReload();
+                        updateStatusLabel();
+                      } }).withId('zoomInBtn');
+                      a.button('Z-', { onClick: () => {
+                        mapViewport.zoom = Math.max(MIN_ZOOM, mapViewport.zoom - 1);
+                        updateViewTransform();
+                        scheduleTileReload();
+                        updateStatusLabel();
+                      } }).withId('zoomOutBtn');
+                    });
+
+                    // Time navigation
+                    a.hbox(() => {
+                      a.button('< Hour', { onClick: () => {
+                        time.hour = (time.hour - 1 + 24) % 24;
+                        if (time.hour === 23) time.day = (time.day - 1 + 7) % 7;
+                        void setTimeAndRender(time.hour, time.day);
+                      } }).withId('prevHourBtn');
+                      a.button('Hour >', { onClick: () => {
+                        time.hour = (time.hour + 1) % 24;
+                        if (time.hour === 0) time.day = (time.day + 1) % 7;
+                        void setTimeAndRender(time.hour, time.day);
+                      } }).withId('nextHourBtn');
                     });
                     a.hbox(() => {
                       a.button('< Day', { onClick: () => {
-                        time.day = (time.day - 1 + 7) % 7;
-                        progress = 0;
-                        loadHourData(time.hour, time.day);
-                        updateTimeLabel();
-                        void renderDensityCanvas();
+                        void setTimeAndRender(time.hour, (time.day - 1 + 7) % 7);
                       } }).withId('prevDayBtn');
                       a.button('Day >', { onClick: () => {
-                        time.day = (time.day + 1) % 7;
-                        progress = 0;
-                        loadHourData(time.hour, time.day);
-                        updateTimeLabel();
-                        void renderDensityCanvas();
+                        void setTimeAndRender(time.hour, (time.day + 1) % 7);
                       } }).withId('nextDayBtn');
                     });
 
+                    // Play/Stop
                     a.hbox(() => {
                       a.button('Play', { onClick: () => startAnimation() }).withId('playBtn');
                       a.button('Stop', { onClick: () => stopAnimation() }).withId('pauseBtn');
                     });
 
+                    // --- Heatmap settings ---
                     a.label('— Heatmap —');
-                    let intensityLabel = a.label(`Intensity: ${settings.intensity.toFixed(1)}`);
-                    a.slider(0.1, 2, settings.intensity, (v) => {
+                    let intensityLabel = a.label(`Intensity: ${settings.intensity.toFixed(1)}x`);
+                    a.slider(0.1, 4, settings.intensity, (v) => {
                       settings.intensity = v;
-                      intensityLabel.setText(`Intensity: ${v.toFixed(1)}`);
-                      void renderDensityCanvas();
+                      intensityLabel.setText(`Intensity: ${v.toFixed(1)}x`);
+                      updateSettingsUniforms();
                     });
 
                     let radiusLabel = a.label(`Radius: ${settings.radiusPixels}px`);
                     a.slider(10, 150, settings.radiusPixels, (v) => {
                       settings.radiusPixels = Math.round(v);
                       radiusLabel.setText(`Radius: ${settings.radiusPixels}px`);
-                      void renderDensityCanvas();
+                      updateSettingsUniforms();
                     });
 
-                    let thresholdLabel = a.label(`Threshold: ${settings.threshold.toFixed(2)}`);
+                    let thresholdLabel = a.label(`Threshold: ${Math.round(settings.threshold * 100)}%`);
                     a.slider(0, 0.2, settings.threshold, (v) => {
                       settings.threshold = v;
-                      thresholdLabel.setText(`Threshold: ${v.toFixed(2)}`);
-                      void renderDensityCanvas();
+                      thresholdLabel.setText(`Threshold: ${Math.round(v * 100)}%`);
+                      updateSettingsUniforms();
                     });
 
                     let opacityLabel = a.label(`Opacity: ${Math.round(settings.opacity * 100)}%`);
                     a.slider(0.2, 1, settings.opacity, (v) => {
                       settings.opacity = v;
                       opacityLabel.setText(`Opacity: ${Math.round(v * 100)}%`);
-                      void renderDensityCanvas();
+                      updateSettingsUniforms();
                     });
 
+                    // --- Glow settings ---
                     a.label('— Glow —');
                     let glowIntensityLabel = a.label(`Glow Int: ${settings.glowIntensity.toFixed(1)}`);
-                    a.slider(0, 1, settings.glowIntensity, (v) => {
+                    a.slider(0, 2, settings.glowIntensity, (v) => {
                       settings.glowIntensity = v;
                       glowIntensityLabel.setText(`Glow Int: ${v.toFixed(1)}`);
-                      void renderDensityCanvas();
+                      updateSettingsUniforms();
                     });
 
                     let glowRadiusLabel = a.label(`Glow Rad: ${settings.glowRadius}px`);
                     a.slider(30, 250, settings.glowRadius, (v) => {
                       settings.glowRadius = Math.round(v);
                       glowRadiusLabel.setText(`Glow Rad: ${settings.glowRadius}px`);
-                      void renderDensityCanvas();
+                      updateSettingsUniforms();
                     });
 
+                    // --- Hotspot settings ---
+                    a.label('— Hotspots —');
+                    let hotIntLabel = a.label(`Hot Int: ${settings.hotspotIntensity.toFixed(1)}`);
+                    a.slider(0.5, 5, settings.hotspotIntensity, (v) => {
+                      settings.hotspotIntensity = v;
+                      hotIntLabel.setText(`Hot Int: ${v.toFixed(1)}`);
+                      updateSettingsUniforms();
+                    });
+
+                    let hotRadLabel = a.label(`Hot Rad: ${settings.hotspotRadius}px`);
+                    a.slider(10, 80, settings.hotspotRadius, (v) => {
+                      settings.hotspotRadius = Math.round(v);
+                      hotRadLabel.setText(`Hot Rad: ${settings.hotspotRadius}px`);
+                      updateSettingsUniforms();
+                    });
+
+                    let hotThreshLabel = a.label(`Hot Thresh: ${Math.round(settings.hotspotThreshold * 100)}%`);
+                    a.slider(0.2, 0.8, settings.hotspotThreshold, (v) => {
+                      settings.hotspotThreshold = v;
+                      hotThreshLabel.setText(`Hot Thresh: ${Math.round(v * 100)}%`);
+                      updateSettingsUniforms();
+                    });
+
+                    // --- Animation speed ---
+                    a.label('— Animation —');
+                    let speedLabel = a.label(`Speed: ${animationSpeed.toFixed(1)} h/min`);
+                    a.slider(0.5, 10, animationSpeed, (v) => {
+                      animationSpeed = v;
+                      speedLabel.setText(`Speed: ${v.toFixed(1)} h/min`);
+                    });
+
+                    // --- Color presets ---
                     a.label('— Colors —');
                     a.hbox(() => {
-                      a.button('Vibrant', { onClick: () => { settings.colorPreset = 'vibrant'; void renderDensityCanvas(); } });
-                      a.button('Heat', { onClick: () => { settings.colorPreset = 'heat'; void renderDensityCanvas(); } });
+                      a.button('Vibrant', { onClick: () => { settings.colorPreset = 'vibrant'; void uploadColorLUTs(); } });
+                      a.button('Heat', { onClick: () => { settings.colorPreset = 'heat'; void uploadColorLUTs(); } });
                     });
                     a.hbox(() => {
-                      a.button('Cool', { onClick: () => { settings.colorPreset = 'cool'; void renderDensityCanvas(); } });
-                      a.button('Plasma', { onClick: () => { settings.colorPreset = 'plasma'; void renderDensityCanvas(); } });
+                      a.button('Cool', { onClick: () => { settings.colorPreset = 'cool'; void uploadColorLUTs(); } });
+                      a.button('Plasma', { onClick: () => { settings.colorPreset = 'plasma'; void uploadColorLUTs(); } });
                     });
                     a.hbox(() => {
-                      a.button('Fire', { onClick: () => { settings.colorPreset = 'fire'; void renderDensityCanvas(); } });
+                      a.button('Fire', { onClick: () => { settings.colorPreset = 'fire'; void uploadColorLUTs(); } });
                       a.spacer();
                     });
 
+                    // --- Layer toggles ---
                     a.label('— Layers —');
                     a.hbox(() => {
-                      a.button('Glow', { onClick: () => { settings.showGlow = !settings.showGlow; void renderDensityCanvas(); } }).withId('glowToggle');
-                      a.button('Hotspots', { onClick: () => { settings.showHotspots = !settings.showHotspots; void renderDensityCanvas(); } }).withId('hotspotsToggle');
+                      a.button('Glow', { onClick: () => {
+                        settings.showGlow = !settings.showGlow;
+                        updateSettingsUniforms();
+                      } }).withId('glowToggle');
+                      a.button('Hotspots', { onClick: () => {
+                        settings.showHotspots = !settings.showHotspots;
+                        updateSettingsUniforms();
+                      } }).withId('hotspotsToggle');
                     });
-
-                    a.button('Reset View', { onClick: () => {
-                      mapViewport.center = { ...PARIS_VIEW.center };
-                      if (tileRenderer) { tileRenderer.clearCache(); }
-                      void renderDensityCanvas();
-                    } }).withId('resetViewBtn');
                   });
                 });
               });
@@ -852,18 +1072,23 @@ export function buildParisDensity(a: App) {
         });
       });
 
-      // Initial data load and render
-      loadHourData(time.hour, time.day);
-      updateTimeLabel();
+      // Initial setup: upload LUTs, set uniforms, set view transform, load tiles, render first frame
       await new Promise(resolve => setTimeout(resolve, 50));
-      await renderDensityCanvas();
+      await uploadColorLUTs();
+      updateSettingsUniforms();
+      updateViewTransform();
+      updateStatusLabel();
+      shader!.setUniforms({ u_hasBackground: 0.0, u_jitterAmplitude: 0.004 });
+      await renderFrame();
+      // Load tiles asynchronously (may take time on first run)
+      loadTileBackground().catch(err => console.error('Tile loading failed:', err));
     });
 
     win.show();
   });
 }
 
-// Standalone execution for testing
+// Standalone execution
 if (require.main === module) {
   const { app } = require('tsyne');
   const appInstance = app(resolveTransport(), { title: 'Paris Density Simulation' }, (a: App) => {

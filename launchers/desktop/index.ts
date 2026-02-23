@@ -352,8 +352,8 @@ class Desktop implements IDesktopDebugHost {
 
     // Start debug server if port specified
     if (this.options.debugPort) {
-      this.debugServer = new DesktopDebugServer(this.a, this);
-      this.debugServer.start(this.options.debugPort);
+      this.debugServer = new DesktopDebugServer(this.a, this, this.options.debugPort);
+      this.debugServer.start();
 
       // Register cleanup callback to stop debug server
       this.a.registerCleanup(() => {

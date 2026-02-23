@@ -214,12 +214,16 @@ export class TsyneCanvas {
     });
   }
 
+  // Track modifier key state for synthesized events
+  private modifierState = { ctrlKey: false, shiftKey: false, altKey: false, metaKey: false };
+
   /**
    * Dispatch a mouse event to registered listeners
    * Public so gl-proxy can dispatch events from flush response
    * Also dispatches the corresponding pointer event (e.g., mousemove -> pointermove)
    */
   dispatchMouseEvent(type: string, x: number, y: number, button: number = 0): void {
+    const mods = this.modifierState;
     // Create a fake MouseEvent-like object
     const createEvent = (eventType: string) => ({
       type: eventType,
@@ -233,10 +237,10 @@ export class TsyneCanvas {
       screenY: y,
       button: button,
       buttons: button === 0 ? 1 : (button === 2 ? 2 : 4),
-      ctrlKey: false,
-      shiftKey: false,
-      altKey: false,
-      metaKey: false,
+      ctrlKey: mods.ctrlKey,
+      shiftKey: mods.shiftKey,
+      altKey: mods.altKey,
+      metaKey: mods.metaKey,
       target: this,
       currentTarget: this,
       bubbles: true,
@@ -259,6 +263,119 @@ export class TsyneCanvas {
     if (type === 'mouseup') {
       this.dispatchEvent(createEvent('click'));
     }
+  }
+
+  /**
+   * Dispatch a keyboard event to registered listeners
+   * Public so gl-proxy can dispatch events from flush response
+   */
+  dispatchKeyboardEvent(type: string, key: string): void {
+    // Update modifier state
+    const lk = key.toLowerCase();
+    if (lk === 'shift' || lk === 'leftshift' || lk === 'rightshift') {
+      this.modifierState.shiftKey = (type === 'keydown');
+    } else if (lk === 'control' || lk === 'leftcontrol' || lk === 'rightcontrol') {
+      this.modifierState.ctrlKey = (type === 'keydown');
+    } else if (lk === 'alt' || lk === 'leftalt' || lk === 'rightalt') {
+      this.modifierState.altKey = (type === 'keydown');
+    } else if (lk === 'super' || lk === 'leftsuper' || lk === 'rightsuper') {
+      this.modifierState.metaKey = (type === 'keydown');
+    }
+
+    // Map Fyne key names to DOM key names
+    const domKey = this.fyneKeyToDOM(key);
+
+    const mods = this.modifierState;
+    const event = {
+      type,
+      key: domKey,
+      code: domKey,
+      ctrlKey: mods.ctrlKey,
+      shiftKey: mods.shiftKey,
+      altKey: mods.altKey,
+      metaKey: mods.metaKey,
+      repeat: false,
+      target: this,
+      currentTarget: this,
+      bubbles: true,
+      cancelable: true,
+      preventDefault: () => {},
+      stopPropagation: () => {},
+    } as unknown as KeyboardEvent;
+
+    this.dispatchEvent(event);
+  }
+
+  /**
+   * Dispatch a wheel/scroll event to registered listeners
+   */
+  dispatchWheelEvent(dx: number, dy: number): void {
+    const event = {
+      type: 'wheel',
+      deltaX: dx,
+      deltaY: -dy, // Fyne's DY is inverted relative to DOM convention
+      deltaZ: 0,
+      deltaMode: 0,
+      clientX: 0,
+      clientY: 0,
+      target: this,
+      currentTarget: this,
+      bubbles: true,
+      cancelable: true,
+      preventDefault: () => {},
+      stopPropagation: () => {},
+    } as unknown as WheelEvent;
+
+    this.dispatchEvent(event);
+  }
+
+  /**
+   * Dispatch a drag event to registered listeners
+   * These are custom events (not standard DOM drag events) for camera control
+   */
+  dispatchDragEvent(type: string, dx: number, dy: number): void {
+    const event = {
+      type,
+      dx,
+      dy,
+      target: this,
+      currentTarget: this,
+      bubbles: true,
+      cancelable: true,
+      preventDefault: () => {},
+      stopPropagation: () => {},
+    } as unknown as Event;
+
+    this.dispatchEvent(event);
+  }
+
+  /**
+   * Map Fyne key names to DOM-compatible key names
+   */
+  private fyneKeyToDOM(key: string): string {
+    // Fyne uses names like "Space", "Return", "LeftShift" etc.
+    // Single chars are already lowercase from normalizeKey
+    const mapping: Record<string, string> = {
+      'Space': ' ',
+      'Return': 'Enter',
+      'BackSpace': 'Backspace',
+      'Delete': 'Delete',
+      'Escape': 'Escape',
+      'Tab': 'Tab',
+      'Up': 'ArrowUp',
+      'Down': 'ArrowDown',
+      'Left': 'ArrowLeft',
+      'Right': 'ArrowRight',
+      'LeftShift': 'Shift',
+      'RightShift': 'Shift',
+      'LeftControl': 'Control',
+      'RightControl': 'Control',
+      'LeftAlt': 'Alt',
+      'RightAlt': 'Alt',
+      'LeftSuper': 'Meta',
+      'RightSuper': 'Meta',
+    };
+    return mapping[key] ?? key;
   }
 
   /**
