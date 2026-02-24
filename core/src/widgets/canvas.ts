@@ -1352,7 +1352,8 @@ export class GLCanvas extends Widget {
       width,
       height,
       interactive: this._interactive,
-      asWidget: true
+      asWidget: true,
+      windowId: ctx.getCurrentWindow() ?? ''
     });
 
     // Add to current container

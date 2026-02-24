@@ -405,19 +405,20 @@ void main() {
 	}
 	b.mu.Unlock()
 
-	if !asWidget {
-		// IoC: Get target window from message, or use first available window
-		windowID, _ := payload["windowId"].(string)
-		if windowID == "" {
-			// If no window specified, find the first window
-			b.mu.RLock()
-			for id := range b.windows {
-				windowID = id
-				break
-			}
-			b.mu.RUnlock()
+	// Resolve window ID (needed for pointer lock, keyboard focus, etc.)
+	windowID, _ := payload["windowId"].(string)
+	if windowID == "" {
+		// If no window specified, find the first window
+		b.mu.RLock()
+		for id := range b.windows {
+			windowID = id
+			break
 		}
+		b.mu.RUnlock()
+	}
+	glCanv.WindowID = windowID
 
+	if !asWidget {
 		// Add GL canvas to the specified window, or auto-create one if needed
 		if windowID != "" {
 			b.mu.RLock()
@@ -440,18 +441,14 @@ void main() {
 
 				// Register it in the windows map
 				b.mu.Lock()
-				if windowID == "" {
-					windowID = "gl_window_0"
-				}
+				windowID = "gl_window_0"
 				b.windows[windowID] = glWindow
 				b.mu.Unlock()
 
 				glWindow.Show()
 			})
+			glCanv.WindowID = windowID
 		}
-
-		// Store window ID so pointer lock can find the fyne.Window later
-		glCanv.WindowID = windowID
 	}
 
 	// log.Printf("[GL] Successfully created GL canvas %s, returning response", canvasID)
