@@ -1328,6 +1328,38 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 								}
 							}
 						}
+					} else if cpuImg := shader.GetCPUTexImage(jsTexId); cpuImg != nil {
+						// GPU texture not yet allocated (bindTexture arrived before
+						// texImage2D_gpu in the render command queue).  Proactively
+						// create the GL texture and upload the CPU image now.
+						// Create + bind on the CURRENT active texture unit (set by
+						// the preceding activeTexture command).
+						texFmt := shader.GetGPUTexFormat(jsTexId)
+						rgba := p.textureToRGBA(cpuImg)
+						if rgba != nil && len(rgba.Pix) > 0 {
+							tex := p.ctx.CreateTexture()
+							p.ctx.BindTexture(target, tex)
+							p.ctx.TexParameteri(target, textureMinFilter, linear)
+							p.ctx.TexParameteri(target, textureMagFilter, linear)
+							p.ctx.TexParameteri(target, textureWrapS, clampToEdge)
+							p.ctx.TexParameteri(target, textureWrapT, clampToEdge)
+							w := rgba.Rect.Size().X
+							h := rgba.Rect.Size().Y
+							if texFmt.Format == 0x1903 { // GL_RED
+								redData := make([]byte, w*h)
+								for i := 0; i < w*h; i++ {
+									redData[i] = rgba.Pix[i*4]
+								}
+								p.ctx.TexImage2D(target, 0, w, h, texFmt.Format, unsignedByte, redData)
+							} else {
+								p.ctx.TexImage2D(target, 0, w, h, colorFormatRGBA, unsignedByte, rgba.Pix)
+							}
+							shader.SetGPUTexCache(jsTexId, uint32(tex))
+							shader.SetGPUTexUploaded(jsTexId)
+							if shaderDebug {
+								log.Printf("[drawShader] bindTexture: PROACTIVE created+uploaded %dx%d for js=%d gl=%d", w, h, jsTexId, tex)
+							}
+						}
 					} else if glId := shader.GetTextureCache()[fmt.Sprintf("tex_%d", jsTexId)]; glId != 0 {
 						// Fall back to regular texture cache
 						p.ctx.BindTexture(target, Texture(glId))

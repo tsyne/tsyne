@@ -413,6 +413,82 @@ if [ -f "$FORK_DIR/internal/driver/glfw/window_wasm.go" ]; then
     echo 'func (w *wrapInner) Move(pos fyne.Position) {}' >> "$FORK_DIR/internal/driver/glfw/window_wasm.go"
 fi
 
+# 14c. Add SetPointerLock + SetPointerLockCallback to Window interface
+# This enables FPS-style mouse capture: cursor disabled, mouse deltas via callback.
+# Uses CursorDisabled (GLFW) which gives unbounded virtual coords.
+# When locked, replaces the cursor position callback with a delta-computing one
+# that bypasses Fyne's hit-testing entirely (virtual coords break hit-testing).
+echo "[setup-fyne-fork] Adding Window.SetPointerLock(bool) support..."
+WINDOW_IFACE="$FORK_DIR/window.go"
+if [ -f "$WINDOW_IFACE" ]; then
+    sed -i '/Move(Position)/a\\n\t// SetPointerLock enables or disables pointer lock (cursor grab) mode.\n\t// When enabled, the cursor is disabled and mouse deltas are delivered via\n\t// the callback set by SetPointerLockCallback.\n\tSetPointerLock(bool)\n\n\t// SetPointerLockCallback sets the callback for pointer lock mouse deltas.\n\t// The callback receives (dx, dy) in pixels on each mouse move while locked.\n\tSetPointerLockCallback(func(dx, dy float32))' "$WINDOW_IFACE"
+fi
+# GLFW desktop — CursorDisabled + custom cursor callback for pointer lock
+# When locked, replaces the CursorPosCallback with one that computes deltas
+# and delivers them via the stored callback, completely bypassing Fyne's
+# processMouseMoved (which fails with CursorDisabled virtual coords).
+WINDOW_DESKTOP="$FORK_DIR/internal/driver/glfw/window_desktop.go"
+if [ -f "$WINDOW_DESKTOP" ]; then
+    # Add pointerLockCb field to window struct
+    sed -i '/customCursor \*glfw.Cursor/a\\tpointerLockCb func(dx, dy float32)' "$WINDOW_DESKTOP"
+    # Add methods before CenterOnScreen
+    sed -i '/^func (w \*window) CenterOnScreen/i\
+func (w *window) SetPointerLockCallback(cb func(dx, dy float32)) {\
+\tw.pointerLockCb = cb\
+}\
+\
+func (w *window) SetPointerLock(locked bool) {\
+\tw.runOnMainWhenCreated(func() {\
+\t\tif locked {\
+\t\t\tw.viewport.SetInputMode(CursorMode, CursorDisabled)\
+\t\t\t// Record current pos as baseline for delta computation\
+\t\t\tlastX, lastY := w.viewport.GetCursorPos()\
+\t\t\t// Replace cursor callback: compute deltas, bypass Fyne hit-testing\
+\t\t\tw.viewport.SetCursorPosCallback(func(_ *glfw.Window, xpos, ypos float64) {\
+\t\t\t\tdx := float32(xpos - lastX)\
+\t\t\t\tdy := float32(ypos - lastY)\
+\t\t\t\tlastX = xpos\
+\t\t\t\tlastY = ypos\
+\t\t\t\tif (dx != 0 || dy != 0) && w.pointerLockCb != nil {\
+\t\t\t\t\tw.pointerLockCb(dx, dy)\
+\t\t\t\t}\
+\t\t\t})\
+\t\t} else {\
+\t\t\tw.viewport.SetInputMode(CursorMode, CursorNormal)\
+\t\t\t// Restore original Fyne mouse callback\
+\t\t\tw.viewport.SetCursorPosCallback(w.mouseMoved)\
+\t\t}\
+\t})\
+}\
+' "$WINDOW_DESKTOP"
+fi
+# No-op stubs for other Window implementations
+for STUB_FILE in \
+    "$FORK_DIR/internal/driver/glfw/window_wasm.go" \
+    "$FORK_DIR/internal/driver/mobile/window.go" \
+    "$FORK_DIR/test/window.go" \
+    "$FORK_DIR/internal/driver/embedded/window.go"; do
+    if [ -f "$STUB_FILE" ]; then
+        sed -i '/func (w \*window) Move/a\
+func (w *window) SetPointerLock(locked bool) {}\
+func (w *window) SetPointerLockCallback(cb func(dx, dy float32)) {}' "$STUB_FILE" 2>/dev/null || true
+    fi
+done
+# The embedded driver uses noosWindow not window — match on noosWindow directly
+EMBEDDED_WIN="$FORK_DIR/internal/driver/embedded/window.go"
+if [ -f "$EMBEDDED_WIN" ]; then
+    if ! grep -q 'SetPointerLock' "$EMBEDDED_WIN"; then
+        sed -i '/func (w \*noosWindow) Move/a\
+func (w *noosWindow) SetPointerLock(locked bool) {}\
+func (w *noosWindow) SetPointerLockCallback(cb func(dx, dy float32)) {}' "$EMBEDDED_WIN"
+    fi
+fi
+# The wasm file also has wrapInner type
+if [ -f "$FORK_DIR/internal/driver/glfw/window_wasm.go" ]; then
+    echo 'func (w *wrapInner) SetPointerLock(locked bool) {}
+func (w *wrapInner) SetPointerLockCallback(cb func(dx, dy float32)) {}' >> "$FORK_DIR/internal/driver/glfw/window_wasm.go"
+fi
+
 # 15b. Fix Clip.MinSize() to delegate to Content instead of hardcoded (1,1)
 # Without this, a Clip inside a VBox only gets 1px of height allocated.
 CLIP_FILE="$FORK_DIR/container/clip.go"

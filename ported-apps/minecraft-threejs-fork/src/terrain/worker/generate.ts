@@ -1,3 +1,6 @@
+// TSYNE: Converted from Web Worker (onmessage/postMessage) to exported function.
+// Called from terrain/index.ts either directly or via worker_threads.
+
 import * as THREE from 'three'
 import Block from '../mesh/block'
 import Noise from '../noise'
@@ -17,6 +20,26 @@ enum BlockType {
   bedrock = 11
 }
 
+export interface GenerateParams {
+  distance: number
+  chunk: THREE.Vector2
+  noiseSeed: number
+  treeSeed: number
+  stoneSeed: number
+  coalSeed: number
+  idMap: Map<string, number>
+  blocksFactor: number[]
+  blocksCount: number[]
+  customBlocks: Block[]
+  chunkSize: number
+}
+
+export interface GenerateResult {
+  idMap: Map<string, number>
+  arrays: Float32Array[]
+  blocksCount: number[]
+}
+
 const matrix = new THREE.Matrix4()
 const noise = new Noise()
 const blocks: THREE.InstancedMesh[] = []
@@ -25,22 +48,7 @@ const geometry = new THREE.BoxGeometry()
 
 let isFirstRun = true
 
-onmessage = (
-  msg: MessageEvent<{
-    distance: number
-    chunk: THREE.Vector2
-    noiseSeed: number
-    treeSeed: number
-    stoneSeed: number
-    coalSeed: number
-    idMap: Map<string, number>
-    blocksFactor: number[]
-    blocksCount: number[]
-    customBlocks: Block[]
-    chunkSize: number
-  }>
-) => {
-  // let p1 = performance.now()
+export function generate(params: GenerateParams): GenerateResult {
   const {
     distance,
     chunk,
@@ -53,7 +61,7 @@ onmessage = (
     customBlocks,
     blocksCount,
     chunkSize
-  } = msg.data
+  } = params
 
   const maxCount = (distance * chunkSize * 2 + chunkSize) ** 2 + 500
 
@@ -237,7 +245,15 @@ onmessage = (
     }
   }
 
-  const arrays = blocks.map(block => block.instanceMatrix.array)
-  postMessage({ idMap, arrays, blocksCount })
-  // console.log(performance.now() - p1)
+  const arrays = blocks.map(block => new Float32Array(block.instanceMatrix.array))
+  return { idMap, arrays, blocksCount }
 }
+
+// TSYNE: Original Web Worker onmessage/postMessage code:
+/*
+onmessage = (msg: MessageEvent<{...}>) => {
+  const { distance, chunk, ... } = msg.data
+  // ... same generation logic ...
+  postMessage({ idMap, arrays, blocksCount })
+}
+*/

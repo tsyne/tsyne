@@ -1,12 +1,17 @@
 /**
  * Canvas Interop Experiment — Can CosyneContext and CvgContext share one canvas?
  *
- * Tests three composition strategies with click handling on every shape.
+ * Tests six composition strategies with click handling on every shape.
  *
- * Color key (consistent across all strategies):
+ * Row 1 — cosyne/CVG layering:
  *   GREEN  — CVG elements        (onClick attr + enableEvents())
  *   ORANGE — cosyne-classic      (no native onClick)
  *   BLUE   — tsyne base canvas   (TappableCanvasRectangle hit-areas over cosyne-classic shapes)
+ *
+ * Row 2 — GL canvas (Three.js) + overlay layering:
+ *   4. GL canvas + CVG overlay in stack()           — does it render?
+ *   5. GL canvas + clickable CVG buttons            — do clicks work over GL?
+ *   6. GL canvas + Fyne button + CVG overlay        — native widgets over GL?
  *
  * Run: npx tsx cosyne/demos/canvas-interop-experiment.ts
  */
@@ -15,11 +20,12 @@ import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
 import type { App } from 'tsyne';
 import { cosyne, CosyneContext } from 'cosyne';
 import { cvg, CvgContext } from '../src';
+import { initThreeJSWidget } from '../../trine/integration/init';
 
 const W = 400;
 const H = 400;
 
-type ComponentType = 'cvg' | 'cosyne-classic' | 'tsyne';
+type ComponentType = 'cvg' | 'cosyne-classic' | 'tsyne' | 'fyne';
 
 function log(strategy: number, component: ComponentType, shape: string) {
   console.log(`[Strategy ${strategy}] [${component}] ${shape} clicked`);
@@ -156,17 +162,188 @@ function strategy3(a: App): CvgContext {
   return cvgCtx;
 }
 
+// ─── Helper: start a spinning cube on a Three.js widget canvas ─
+
+async function startSpinningCube(a: App, color: number, interactive: boolean) {
+  const { THREE, canvas } = await initThreeJSWidget(a, { width: W, height: H, interactive });
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x1a1a2e);
+
+  const camera = new THREE.PerspectiveCamera(50, W / H, 0.1, 100);
+  camera.position.set(0, 0, 3);
+
+  const light = new THREE.DirectionalLight(0xffffff, 1);
+  light.position.set(1, 1, 1);
+  scene.add(light);
+  scene.add(new THREE.AmbientLight(0x404040));
+
+  const mesh = new THREE.Mesh(
+    new THREE.BoxGeometry(1, 1, 1),
+    new THREE.MeshPhongMaterial({ color }),
+  );
+  scene.add(mesh);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, canvas: canvas as any });
+  renderer.setSize(W, H);
+
+  const gl = renderer.getContext();
+  const animate = async () => {
+    mesh.rotation.x += 0.008;
+    mesh.rotation.y += 0.012;
+    renderer.render(scene, camera);
+    if (gl?.flush) await (gl as any).flush();
+    setTimeout(animate, 33);
+  };
+  animate();
+  return canvas;
+}
+
+// ─── Strategy 4: GL spinning cube + CVG overlay in stack() ───
+// Tests: does CVG render on top of a live GL scene?
+// GL canvas is non-interactive (passive background).
+
+function strategy4(a: App) {
+  a.stack(() => {
+    startSpinningCube(a, 0xe74c3c, false); // red cube, non-interactive
+
+    a.canvasStack(() => {
+      const cvgCtx = cvg(a, { viewBox: `0 0 ${W} ${H}`, width: W, height: H }, (s) => {
+        s.rect({ x: 0, y: 0, width: W, height: H, fill: '#000000', 'fill-opacity': 0.3 });
+        s.text(
+          { x: W / 2, y: 40, 'text-anchor': 'middle', fill: '#ffffff', 'font-size': 20 },
+          'CVG Overlay on GL Canvas',
+        );
+        s.circle({ cx: 200, cy: 200, r: 80, fill: '#27ae60', 'fill-opacity': 0.4,
+          stroke: '#a9dfbf', 'stroke-width': 2 });
+        s.text(
+          { x: W / 2, y: 380, 'text-anchor': 'middle', fill: '#a9dfbf', 'font-size': 12 },
+          'Strategy 4: GL(non-interactive) + CVG',
+        );
+      });
+      cvgCtx.enableEvents();
+    });
+  });
+}
+
+// ─── Strategy 5: GL cube + clickable CVG buttons ─────────────
+// Tests: do CVG click handlers work over a GL canvas?
+// GL canvas is non-interactive so CVG gets the clicks.
+
+function strategy5(a: App) {
+  let clickCount = 0;
+  let cvgCtxRef: CvgContext;
+
+  a.stack(() => {
+    startSpinningCube(a, 0x3498db, false); // blue cube, non-interactive
+
+    a.canvasStack(() => {
+      cvgCtxRef = cvg(a, { viewBox: `0 0 ${W} ${H}`, width: W, height: H }, (s) => {
+        s.rect({ x: 0, y: 0, width: W, height: H, fill: '#000000', 'fill-opacity': 0.5 });
+
+        s.text(
+          { x: W / 2, y: 60, 'text-anchor': 'middle', fill: '#ffffff', 'font-size': 18 },
+          'Clickable CVG Buttons over GL',
+        );
+
+        const click = (name: string) => {
+          clickCount++;
+          log(5, 'cvg', name);
+          cvgCtxRef.refresh();
+        };
+
+        // "Play" button
+        s.rect({ x: 120, y: 100, width: 160, height: 50, fill: '#27ae60', rx: 8,
+          onClick: () => click('PLAY button') });
+        s.text(
+          { x: 200, y: 132, 'text-anchor': 'middle', fill: '#ffffff', 'font-size': 22,
+            onClick: () => click('PLAY button') },
+          'Play',
+        );
+
+        // "Settings" button
+        s.rect({ x: 120, y: 170, width: 160, height: 50, fill: '#2980b9', rx: 8,
+          onClick: () => click('SETTINGS button') });
+        s.text(
+          { x: 200, y: 202, 'text-anchor': 'middle', fill: '#ffffff', 'font-size': 22,
+            onClick: () => click('SETTINGS button') },
+          'Settings',
+        );
+
+        // "Guide" button
+        s.rect({ x: 120, y: 240, width: 160, height: 50, fill: '#8e44ad', rx: 8,
+          onClick: () => click('GUIDE button') });
+        s.text(
+          { x: 200, y: 272, 'text-anchor': 'middle', fill: '#ffffff', 'font-size': 22,
+            onClick: () => click('GUIDE button') },
+          'Guide',
+        );
+
+        // Click counter (updates via bindText + refresh)
+        s.text(
+          { x: W / 2, y: 340, 'text-anchor': 'middle', fill: '#f39c12', 'font-size': 14 },
+          `Clicks: ${clickCount}`,
+        ).bindText(() => `Clicks: ${clickCount}`);
+
+        s.text(
+          { x: W / 2, y: 380, 'text-anchor': 'middle', fill: '#a9dfbf', 'font-size': 12 },
+          'Strategy 5: GL(non-interactive) + CVG buttons',
+        );
+      });
+      cvgCtxRef!.enableEvents();
+    });
+  });
+}
+
+// ─── Strategy 6: GL cube + Fyne widgets ──────────────────────
+// Tests: do native Fyne widgets work on top of an interactive GL canvas?
+
+function strategy6(a: App) {
+  a.stack(() => {
+    startSpinningCube(a, 0x9b59b6, true); // purple cube, interactive
+
+    // Fyne native widgets on top of GL
+    a.vbox(() => {
+      a.spacer();
+      a.hbox(() => {
+        a.spacer();
+        a.vbox(() => {
+          a.label('Fyne widgets over GL canvas');
+          a.button('Native Button 1', { onClick: () => log(6, 'fyne', 'Button 1') });
+          a.button('Native Button 2', { onClick: () => log(6, 'fyne', 'Button 2') });
+        });
+        a.spacer();
+      });
+      a.spacer();
+    });
+  });
+}
+
 // ─── Standalone ───────────────────────────────────────────────
 
 if (require.main === module) {
   const appInstance = app(resolveTransport(), { title: 'Canvas Interop' }, async (a: App) => {
     const win = a.window(
-      { title: 'CosyneContext + CvgContext Interop', width: W * 3 + 40, height: H + 80, padded: true },
+      { title: 'Canvas Interop Experiment', width: W * 3 + 40, height: H * 2 + 120, padded: true },
       () => {
-        a.hbox(() => {
-          a.vbox(() => { a.label('1. Classic + CVG side by side'); strategy1(a); });
-          a.vbox(() => { a.label('2. Classic over CVG');         strategy2(a); });
-          a.vbox(() => { a.label('3. CVG over Classic');         strategy3(a); });
+        a.vbox(() => {
+          // Row 1: cosyne/CVG layering (existing)
+          a.label('Row 1 — Cosyne / CVG layering');
+          a.hbox(() => {
+            a.vbox(() => { a.label('1. Classic + CVG side by side'); strategy1(a); });
+            a.vbox(() => { a.label('2. Classic over CVG');         strategy2(a); });
+            a.vbox(() => { a.label('3. CVG over Classic');         strategy3(a); });
+          });
+
+          a.separator();
+
+          // Row 2: GL canvas (Three.js spinning cube) + overlay
+          a.label('Row 2 — GL canvas (spinning cube) + overlay');
+          a.hbox(() => {
+            a.vbox(() => { a.label('4. GL + CVG overlay');   strategy4(a); });
+            a.vbox(() => { a.label('5. GL + CVG buttons');   strategy5(a); });
+            a.vbox(() => { a.label('6. GL + Fyne widgets');  strategy6(a); });
+          });
         });
       },
     );

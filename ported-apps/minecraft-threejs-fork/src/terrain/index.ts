@@ -4,7 +4,9 @@ import Block from './mesh/block'
 import Highlight from './highlight'
 import Noise from './noise'
 
-import Generate from './worker/generate?worker'
+// TSYNE: Replaced Vite worker import with direct function import
+// Original: import Generate from './worker/generate?worker'
+import { generate } from './worker/generate'
 
 export enum BlockType {
   grass = 0,
@@ -21,7 +23,7 @@ export enum BlockType {
   bedrock = 11
 }
 export default class Terrain {
-  constructor(scene: THREE.Scene, camera: THREE.PerspectiveCamera) {
+  constructor(scene: THREE.Scene, camera: THREE.PerspectiveCamera, materials?: Materials) {
     this.scene = scene
     this.camera = camera
     this.maxCount =
@@ -29,28 +31,9 @@ export default class Terrain {
     this.highlight = new Highlight(scene, camera, this)
     this.scene.add(this.cloud)
 
-    // generate worker callback handler
-    this.generateWorker.onmessage = (
-      msg: MessageEvent<{
-        idMap: Map<string, number>
-        arrays: ArrayLike<number>[]
-        blocksCount: number[]
-      }>
-    ) => {
-      this.resetBlocks()
-      this.idMap = msg.data.idMap
-      this.blocksCount = msg.data.blocksCount
-
-      for (let i = 0; i < msg.data.arrays.length; i++) {
-        this.blocks[i].instanceMatrix = new THREE.InstancedBufferAttribute(
-          (this.blocks[i].instanceMatrix.array = msg.data.arrays[i]),
-          16
-        )
-      }
-
-      for (const block of this.blocks) {
-        block.instanceMatrix.needsUpdate = true
-      }
+    // TSYNE: Accept injected materials (loaded async in main.ts)
+    if (materials) {
+      this.materials = materials
     }
   }
   // core properties
@@ -91,12 +74,15 @@ export default class Terrain {
   highlight: Highlight
 
   idMap = new Map<string, number>()
-  generateWorker = new Generate()
+
+  // TSYNE: Removed Web Worker instance
+  // Original: generateWorker = new Generate()
 
   // cloud
+  // TSYNE: MeshBasicMaterial instead of MeshStandardMaterial (saves texture units)
   cloud = new THREE.InstancedMesh(
     new THREE.BoxGeometry(20, 5, 14),
-    new THREE.MeshStandardMaterial({
+    new THREE.MeshBasicMaterial({
       transparent: true,
       color: 0xffffff,
       opacity: 0.4
@@ -150,8 +136,9 @@ export default class Terrain {
 
   generate = () => {
     this.blocksCount = new Array(this.blocks.length).fill(0)
-    // post work to generate worker
-    this.generateWorker.postMessage({
+
+    // TSYNE: Call generate() synchronously instead of postMessage to worker
+    const result = generate({
       distance: this.distance,
       chunk: this.chunk,
       noiseSeed: this.noise.seed,
@@ -164,6 +151,22 @@ export default class Terrain {
       customBlocks: this.customBlocks,
       chunkSize: this.chunkSize
     })
+
+    // TSYNE: Apply result directly instead of via onmessage callback
+    this.resetBlocks()
+    this.idMap = result.idMap
+    this.blocksCount = result.blocksCount
+
+    for (let i = 0; i < result.arrays.length; i++) {
+      this.blocks[i].instanceMatrix = new THREE.InstancedBufferAttribute(
+        (this.blocks[i].instanceMatrix.array = result.arrays[i]),
+        16
+      )
+    }
+
+    for (const block of this.blocks) {
+      block.instanceMatrix.needsUpdate = true
+    }
 
     // cloud
 

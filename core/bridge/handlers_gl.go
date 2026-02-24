@@ -29,6 +29,7 @@ type GLCanvas struct {
 	HoverableObject   *canvasPkg.HoverableShader  // Optional: hoverable version for mouse events
 	Container         fyne.CanvasObject        // Container to hold the shader in the widget hierarchy
 	Interactive       bool                     // Whether this canvas receives mouse events
+	WindowID          string                   // ID of the Fyne window containing this canvas
 
 	// GL object tracking (maps JS-side IDs to internal state)
 	programs       map[uint32]*shaderProgram
@@ -362,6 +363,22 @@ void main() {
 			b.sendMouseEvent(canvasID, "mouseup", x, y, domButton)
 		})
 		hoverableObject.SetOnKeyDown(func(key string) {
+			// Escape exits pointer lock (matches browser behavior)
+			if key == "Escape" && hoverableObject.IsPointerLocked() {
+				hoverableObject.SetPointerLock(false)
+				canvas, exists := glCanvases[canvasID]
+				if exists && canvas.WindowID != "" {
+					b.mu.RLock()
+					win, winExists := b.windows[canvas.WindowID]
+					b.mu.RUnlock()
+					if winExists {
+						win.SetPointerLockCallback(nil)
+						fyne.Do(func() {
+							win.SetPointerLock(false)
+						})
+					}
+				}
+			}
 			b.sendKeyEvent(canvasID, "keydown", key)
 		})
 		hoverableObject.SetOnKeyUp(func(key string) {
@@ -432,6 +449,9 @@ void main() {
 				glWindow.Show()
 			})
 		}
+
+		// Store window ID so pointer lock can find the fyne.Window later
+		glCanv.WindowID = windowID
 	}
 
 	// log.Printf("[GL] Successfully created GL canvas %s, returning response", canvasID)
@@ -950,6 +970,12 @@ func (b *Bridge) executeGLCommand(canvas *GLCanvas, cmd string, args map[string]
 		// Actual read is deferred to the painter on the GL thread.
 		// RequestReadPixels stores params; handleExecuteBatch waits for result.
 		return nil
+
+	// Pointer lock (cursor grab for FPS-style mouse control)
+	case "requestPointerLock":
+		return b.glRequestPointerLock(canvas)
+	case "exitPointerLock":
+		return b.glExitPointerLock(canvas)
 
 	default:
 		return fmt.Errorf("unknown GL command: %s", cmd)
@@ -3025,6 +3051,60 @@ func drainDragEvents(canvasID string) []DragEvent {
 	events := canvas.pendingDragEvents
 	canvas.pendingDragEvents = nil
 	return events
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Pointer Lock (cursor grab for FPS-style mouse control)
+// ═══════════════════════════════════════════════════════════════
+
+func (b *Bridge) glRequestPointerLock(canvas *GLCanvas) error {
+	if canvas.HoverableObject == nil {
+		return fmt.Errorf("pointer lock requires interactive canvas")
+	}
+
+	canvas.HoverableObject.SetPointerLock(true)
+
+	if canvas.WindowID != "" {
+		b.mu.RLock()
+		win, exists := b.windows[canvas.WindowID]
+		b.mu.RUnlock()
+		if exists {
+			hoverObj := canvas.HoverableObject
+			// Set delta callback: GLFW cursor callback → HoverableShader.DeliverDelta
+			// This runs on the GLFW main thread, bypassing Fyne's hit-testing.
+			win.SetPointerLockCallback(func(dx, dy float32) {
+				hoverObj.DeliverDelta(dx, dy)
+			})
+			fyne.Do(func() {
+				// Enable CursorDisabled — hides cursor, unbounded virtual coords
+				win.SetPointerLock(true)
+				// Request keyboard focus so Escape key events are delivered
+				fyneCanvas := fyne.CurrentApp().Driver().CanvasForObject(hoverObj)
+				if fyneCanvas != nil {
+					fyneCanvas.Focus(hoverObj)
+				}
+			})
+		}
+	}
+	return nil
+}
+
+func (b *Bridge) glExitPointerLock(canvas *GLCanvas) error {
+	if canvas.HoverableObject != nil {
+		canvas.HoverableObject.SetPointerLock(false)
+	}
+	if canvas.WindowID != "" {
+		b.mu.RLock()
+		win, exists := b.windows[canvas.WindowID]
+		b.mu.RUnlock()
+		if exists {
+			win.SetPointerLockCallback(nil)
+			fyne.Do(func() {
+				win.SetPointerLock(false)
+			})
+		}
+	}
+	return nil
 }
 
 // halfToFloat converts an IEEE 754 binary16 half-precision float to float32

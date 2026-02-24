@@ -1,5 +1,6 @@
 import * as THREE from 'three'
-import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls'
+// TSYNE: Replaced PointerLockControls with manual camera rotation
+// Original: import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls'
 import Player, { Mode } from '../player'
 import Terrain, { BlockType } from '../terrain'
 
@@ -16,6 +17,30 @@ enum Side {
   up
 }
 
+// TSYNE: Simple replacement for PointerLockControls — provides moveForward/moveRight
+// using the same camera-relative math as PointerLockControls.
+class SimpleControls {
+  camera: THREE.PerspectiveCamera
+  constructor(camera: THREE.PerspectiveCamera) {
+    this.camera = camera
+  }
+
+  moveForward(distance: number) {
+    const _vector = new THREE.Vector3()
+    this.camera.updateMatrix()
+    _vector.setFromMatrixColumn(this.camera.matrix, 0)
+    _vector.crossVectors(this.camera.up, _vector)
+    this.camera.position.addScaledVector(_vector, distance)
+  }
+
+  moveRight(distance: number) {
+    const _vector = new THREE.Vector3()
+    this.camera.updateMatrix()
+    _vector.setFromMatrixColumn(this.camera.matrix, 0)
+    this.camera.position.addScaledVector(_vector, distance)
+  }
+}
+
 export default class Control {
   constructor(
     scene: THREE.Scene,
@@ -28,7 +53,8 @@ export default class Control {
     this.camera = camera
     this.player = player
     this.terrain = terrain
-    this.control = new PointerLockControls(camera, document.body)
+    // TSYNE: SimpleControls instead of PointerLockControls
+    this.control = new SimpleControls(camera)
     this.audio = audio
 
     this.raycaster = new THREE.Raycaster()
@@ -36,7 +62,8 @@ export default class Control {
     this.far = this.player.body.height
 
     this.initRayCaster()
-    this.initEventListeners()
+    // TSYNE: Event listeners are wired externally from main.ts via canvas events
+    // Original: this.initEventListeners()
   }
 
   // core properties
@@ -44,9 +71,14 @@ export default class Control {
   camera: THREE.PerspectiveCamera
   player: Player
   terrain: Terrain
-  control: PointerLockControls
+  // TSYNE: SimpleControls type instead of PointerLockControls
+  control: SimpleControls
   audio: Audio
   velocity = new THREE.Vector3(0, 0, 0)
+
+  // TSYNE: Camera rotation state for drag-based look
+  yaw = 0
+  pitch = 0
 
   // collide and jump properties
   frontCollide = false
@@ -114,6 +146,17 @@ export default class Control {
     this.raycasterBack.far = this.player.body.width
     this.raycasterLeft.far = this.player.body.width
     this.raycasterRight.far = this.player.body.width
+  }
+
+  // TSYNE: Camera rotation via drag events — replaces PointerLock mouse delta
+  handleDrag = (dx: number, dy: number) => {
+    const sensitivity = 0.003
+    this.yaw -= dx * sensitivity
+    this.pitch -= dy * sensitivity
+    this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch))
+
+    const euler = new THREE.Euler(this.pitch, this.yaw, 0, 'YXZ')
+    this.camera.quaternion.setFromEuler(euler)
   }
 
   downKeys = {
@@ -329,28 +372,8 @@ export default class Control {
               BlockType[block.object.name as any] as unknown as BlockType
             )
 
-            const mesh = new THREE.Mesh(
-              new THREE.BoxGeometry(1, 1, 1),
-              this.terrain.materials.get(
-                this.terrain.materialType[
-                  parseInt(BlockType[block.object.name as any])
-                ]
-              )
-            )
-            mesh.position.set(position.x, position.y, position.z)
-            this.scene.add(mesh)
-            const time = performance.now()
-            let raf = 0
-            const animate = () => {
-              if (performance.now() - time > 250) {
-                this.scene.remove(mesh)
-                cancelAnimationFrame(raf)
-                return
-              }
-              raf = requestAnimationFrame(animate)
-              mesh.geometry.scale(0.85, 0.85, 0.85)
-            }
-            animate()
+            // TSYNE: Removed block-removal animation (uses requestAnimationFrame + DOM)
+            // Original: const mesh = new THREE.Mesh(...); animate() { requestAnimationFrame(...) }
 
             // update
             block.object.instanceMatrix.needsUpdate = true
@@ -484,24 +507,21 @@ export default class Control {
     }
   }
 
+  /* TSYNE: Original initEventListeners used document.addEventListener('pointerlockchange')
+     to add/remove input handlers on pointer lock/unlock. In tsyne, we're always "locked" —
+     event handlers are wired externally from main.ts via tsyneCanvas events.
+
   initEventListeners = () => {
-    // add / remove handler when pointer lock / unlock
     document.addEventListener('pointerlockchange', () => {
       if (document.pointerLockElement) {
-        document.body.addEventListener(
-          'keydown',
-          this.changeHoldingBlockHandler
-        )
+        document.body.addEventListener('keydown', this.changeHoldingBlockHandler)
         document.body.addEventListener('wheel', this.wheelHandler)
         document.body.addEventListener('keydown', this.setMovementHandler)
         document.body.addEventListener('keyup', this.resetMovementHandler)
         document.body.addEventListener('mousedown', this.mousedownHandler)
         document.body.addEventListener('mouseup', this.mouseupHandler)
       } else {
-        document.body.removeEventListener(
-          'keydown',
-          this.changeHoldingBlockHandler
-        )
+        document.body.removeEventListener('keydown', this.changeHoldingBlockHandler)
         document.body.removeEventListener('wheel', this.wheelHandler)
         document.body.removeEventListener('keydown', this.setMovementHandler)
         document.body.removeEventListener('keyup', this.resetMovementHandler)
@@ -511,6 +531,7 @@ export default class Control {
       }
     })
   }
+  */
 
   // move along X with direction factor
   moveX(distance: number, delta: number) {

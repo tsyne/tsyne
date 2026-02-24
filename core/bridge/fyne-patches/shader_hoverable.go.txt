@@ -256,6 +256,11 @@ type HoverableShader struct {
 	isHovered    bool
 	focused      bool
 	keysPressed  map[string]bool
+
+	// Pointer lock state — when enabled, mouse deltas are delivered directly
+	// from the GLFW cursor callback (bypassing Fyne's hit-testing) via
+	// the onDragged callback. This emulates the browser's requestPointerLock() API.
+	pointerLocked bool
 }
 
 // NewHoverableShader creates a new hoverable shader canvas object.
@@ -290,7 +295,9 @@ func (h *HoverableShader) MouseIn(event *desktop.MouseEvent) {
 	}
 }
 
-// MouseMoved is called when the mouse moves within the widget
+// MouseMoved is called when the mouse moves within the widget.
+// When pointer lock is active, this is NOT called — deltas are delivered
+// directly from the GLFW cursor callback via DeliverDelta/onDragged.
 func (h *HoverableShader) MouseMoved(event *desktop.MouseEvent) {
 	if h.onMouseMoved != nil {
 		h.onMouseMoved(event.Position.X, event.Position.Y)
@@ -400,8 +407,20 @@ func (h *HoverableShader) TypedKey(e *fyne.KeyEvent) {
 
 // --- desktop.Keyable ---
 
-// KeyDown is a no-op — we use TypedRune/TypedKey for key-down events
-func (h *HoverableShader) KeyDown(e *fyne.KeyEvent) {}
+// KeyDown handles desktop.Keyable key-down events.
+// Most keys are handled via TypedRune/TypedKey, but Escape is handled here
+// to ensure pointer lock release works even if TypedKey is intercepted.
+func (h *HoverableShader) KeyDown(e *fyne.KeyEvent) {
+	if e.Name == fyne.KeyEscape && h.pointerLocked {
+		key := hoverableNormalizeKey(string(e.Name))
+		if !h.keysPressed[key] {
+			h.keysPressed[key] = true
+			if h.onKeyDown != nil {
+				h.onKeyDown(key)
+			}
+		}
+	}
+}
 
 // KeyUp is called when a key is released
 func (h *HoverableShader) KeyUp(e *fyne.KeyEvent) {
@@ -460,4 +479,27 @@ func (h *HoverableShader) SetOnDragged(callback DragCallback) {
 // SetOnDragEnd sets the callback for drag end events
 func (h *HoverableShader) SetOnDragEnd(callback func()) {
 	h.onDragEnd = callback
+}
+
+// --- Pointer Lock ---
+
+// SetPointerLock enables or disables pointer lock mode.
+// When enabled, mouse deltas are delivered from the GLFW cursor callback
+// via DeliverDelta, bypassing Fyne's normal event dispatch.
+func (h *HoverableShader) SetPointerLock(locked bool) {
+	h.pointerLocked = locked
+}
+
+// IsPointerLocked returns whether pointer lock mode is active.
+func (h *HoverableShader) IsPointerLocked() bool {
+	return h.pointerLocked
+}
+
+// DeliverDelta delivers a pointer-lock mouse delta to the onDragged callback.
+// Called directly from the GLFW cursor position callback when pointer lock
+// is active, bypassing Fyne's normal event system.
+func (h *HoverableShader) DeliverDelta(dx, dy float32) {
+	if h.onDragged != nil {
+		h.onDragged(dx, dy)
+	}
 }

@@ -24,11 +24,11 @@ export default class BlockHighlight {
   block: THREE.Intersection | null = null
 
   // highlight block mesh
+  // TSYNE: MeshBasicMaterial instead of MeshStandardMaterial (saves texture units)
   geometry = new THREE.BoxGeometry(1.01, 1.01, 1.01)
-  material = new THREE.MeshStandardMaterial({
+  material = new THREE.MeshBasicMaterial({
     transparent: true,
     opacity: 0.25
-    // depthWrite: false
   })
   mesh = new THREE.Mesh(new THREE.BoxGeometry(), this.material)
 

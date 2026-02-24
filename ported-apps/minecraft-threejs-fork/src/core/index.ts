@@ -1,6 +1,23 @@
 import * as THREE from 'three'
 
+// TSYNE: Original created scene/camera/renderer internally using window/document APIs.
+// Now accepts pre-built objects injected from main.ts (created after initThreeJS patches THREE).
 export default class Core {
+  constructor(
+    scene: THREE.Scene,
+    camera: THREE.PerspectiveCamera,
+    renderer: THREE.Renderer
+  ) {
+    this.scene = scene
+    this.camera = camera
+    this.renderer = renderer
+  }
+
+  camera: THREE.PerspectiveCamera
+  scene: THREE.Scene
+  renderer: THREE.Renderer
+
+  /* TSYNE: Original code below — kept for reference, bypassed at runtime.
   constructor() {
     this.camera = new THREE.PerspectiveCamera()
     this.renderer = new THREE.WebGLRenderer()
@@ -9,10 +26,6 @@ export default class Core {
     this.initRenderer()
     this.initCamera()
   }
-
-  camera: THREE.PerspectiveCamera
-  scene: THREE.Scene
-  renderer: THREE.Renderer
 
   initCamera = () => {
     this.camera.fov = 50
@@ -57,4 +70,5 @@ export default class Core {
       this.renderer.setSize(window.innerWidth, window.innerHeight)
     })
   }
+  */
 }

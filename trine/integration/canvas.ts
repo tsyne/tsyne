@@ -437,6 +437,28 @@ export class TsyneCanvas {
     return this.glProxy;
   }
 
+  /**
+   * Request pointer lock — hides cursor and provides unlimited mouse deltas.
+   * Emulates the browser's Element.requestPointerLock() API.
+   * When active, mousemove events stop and drag events fire with (dx, dy)
+   * deltas from mouse motion (no button needed).
+   */
+  requestPointerLock(): void {
+    if (this.glProxy) {
+      this.glProxy.requestPointerLock();
+    }
+  }
+
+  /**
+   * Exit pointer lock — restores normal cursor.
+   * Emulates document.exitPointerLock().
+   */
+  exitPointerLock(): void {
+    if (this.glProxy) {
+      this.glProxy.exitPointerLock();
+    }
+  }
+
   // Standard canvas properties/methods (minimal stubs)
 
   toDataURL(type?: string, quality?: number): string {

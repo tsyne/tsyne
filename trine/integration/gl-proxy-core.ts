@@ -111,6 +111,21 @@ export class TsyneGLProxy implements WebGL2RenderingContext {
   }
 
   /**
+   * Request pointer lock — hides cursor, mouse motion becomes delta events.
+   * Emulates the browser's requestPointerLock() API.
+   */
+  requestPointerLock(): void {
+    this.pushCommand('requestPointerLock');
+  }
+
+  /**
+   * Exit pointer lock — restores normal cursor.
+   */
+  exitPointerLock(): void {
+    this.pushCommand('exitPointerLock');
+  }
+
+  /**
    * Flush the command buffer to the bridge
    * Should be called after each render() call
    */
