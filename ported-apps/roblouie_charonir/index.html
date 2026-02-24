@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="UTF-8">
+    <title>Charon Jr.</title>
+    <style>
+        canvas {
+            width: min(100vw, calc(100vh * 16/9));
+            position: absolute;
+        }
+
+        /* Get rid of any margins, set background black, use flexbox to center */
+        html, body {
+            margin: 0;
+            background-color: black;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+        }
+        html {
+            overflow: hidden;
+        }
+        body {
+            perspective: 845px;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="c3d" width="1920" height="1080"></canvas>
+    <canvas id="c2d" width="1280" height="720"></canvas>
+    <script type="module" src="/src/index.ts"></script>
+</body>
