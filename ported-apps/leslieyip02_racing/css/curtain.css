@@ -1,0 +1,40 @@
+#curtain {
+    position: absolute;
+    width: 100vw;
+    height: 100vh;
+    background-color: #000000;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.fade-to-black {
+    animation: fade-to-black 1s ease-in;
+}
+
+.long-fade-to-black {
+    animation: fade-to-black 3s ease-in forwards;
+}
+
+@keyframes fade-to-black {
+    0% { opacity: 0%; }
+    100% { opacity: 100%; }
+}
+
+.fade-in {
+    animation: fade-in 2s ease-in;
+}
+
+@keyframes fade-in {
+    0% { opacity: 100%; }
+    100% { opacity: 0%; }
+}
+
+.scroll-up {
+    animation-name: scroll-up;
+    animation-duration: 1s;
+}
+
+@keyframes scroll-up {
+    0% { height: 100vh; }
+    100% { height: 0vh; }
+}
