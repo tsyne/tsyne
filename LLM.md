@@ -40,269 +40,53 @@ Set via `TSYNE_BRIDGE_MODE` env var or `bridgeMode` option in `app()`
 
 ## @Grab: Inline npm Dependencies (Groovy-style)
 
-Single-file apps can declare npm dependencies inline—no `package.json` needed:
-
-```typescript
-#!/usr/bin/env tsyne
-
-// @Grab('axios@^1.6.0')
-// @Grab('date-fns@^3.0.0')
-
-import axios from 'axios';
-import { format } from 'date-fns';
-```
-
-**How it works:**
-- `tsyne myapp.ts` parses `@Grab` directives, installs to `~/.tsyne/packages/`, runs with `NODE_PATH`
-- Inspired by Groovy's Grape annotations
-- See `docs/INLINE_DEPENDENCY_DECLARATIONS.md` for details
+Single-file apps can declare npm dependencies inline — no `package.json` needed. `// @Grab('axios@^1.6.0')` comments are parsed by `tsyne myapp.ts`, installed to `~/.tsyne/packages/`, and made available via `NODE_PATH`. Inspired by Groovy's Grape. See `docs/INLINE_DEPENDENCY_DECLARATIONS.md`.
 
 ## Cosyne: Declarative Canvas Library (200+ Tests, ~6000 Lines)
 
 **Pseudo-declarative canvas grammar** with data binding, reactive updates, and interactive events. Use within `a.canvasStack()`.
 
-**Quick API:**
-```typescript
-cosyne(a, (c) => {
-  // Primitives: circle, rect, line, text, path, arc, wedge, polygon, star, grid, heatmap, gauge, dial
-  c.circle(100, 100, 20).fill('#ff0000').withId('c1')
-    .onClick((e) => {...})
-    .onDrag((e) => {...});
+The API follows the same fluent/builder patterns as the rest of Tsyne. Entry point is `cosyne(a, (c) => { ... })`. Primitives: circle, rect, line, text, path, arc, wedge, polygon, star, grid, heatmap, gauge, dial. Collections via plural forms (`circles()`, `rects()`). Bindings via `bindPosition()`, `bindFill()`, etc. — lazy-evaluated, diffed on `refreshBindings()`. Nested coordinate systems via `c.transform()`. Foreign objects via `c.foreign()` to embed Tsyne widgets.
 
-  // Collections: circles(), rects(), lines()
-  c.circles().bindTo(items, { trackBy: (item) => item.id });
+**After state changes:** call `refreshAllCosyneContexts()` to push binding updates.
 
-  // Bindings: position, fill, stroke, alpha, visible, rotation, value
-  c.rect(x, y, w, h).bindPosition(() => ({ x: state.x, y: state.y }));
+**Events** are fluent (`.onClick()`, `.onDrag()`, `.onMouseMove()`, etc.). Hit testing is automatic — each primitive implements `getHitTester()`, and `EventRouter` routes by z-order. Use `.passthrough()` to let events fall through to primitives below.
 
-  // Transforms: nested coordinate systems
-  c.transform({ translate: [50, 50] }, (inner) => {
-    inner.circle(0, 0, 10);
-  });
+**Animations:** Two APIs — `.animate('property', { from, to, duration, easing })` and a fluent builder `.animateFluent('property', from, to).duration(ms).easing(fn).start()`. 30+ easing functions in `cosyne/src/easing.ts`. Global `AnimationManager` singleton coordinates via `requestAnimationFrame`.
 
-  // Projections: 3D → 2D (spherical, isometric)
-  const proj = new SphericalProjection();
+**Performance trap:** Distance-based drag throttling (≥4px) is built in. `refreshBindings()` skips primitives without bindings (`hasAnyBinding()` check) and only updates when values actually change.
 
-  // Foreign objects: embed Tsyne widgets
-  c.foreign(100, 100, (app) => app.label('Text'));
+**Architecture:** `cosyne/src/primitives/` (12 shape types extending `Primitive<T>`), `cosyne/src/binding.ts`, `cosyne/src/events.ts`, `cosyne/src/context.ts`. Tests in `cosyne/test/`.
 
-  // Interactive dial/knob control
-  c.dial(100, 200, {
-    minValue: 0, maxValue: 100, value: 50,
-    style: 'classic',  // 'classic' | 'minimal' | 'vintage' | 'modern'
-    radius: 40,
-    valueSuffix: '%',
-    onValueChange: (v) => console.log('Value:', v),
-  }).withId('volume-dial');
-});
-
-// After state changes, refresh bindings
-refreshAllCosyneContexts();
-
-// Enable interactive events
-enableEventHandling(cosyneCtx, a, { width: 500, height: 500 });
-
-// Advanced: Mix Cosyne with standard canvas widgets in a stack
-a.canvasStack(() => {
-  cosyne(a, ...); // Background/Events
-  a.canvasPath(...); // Standard widgets on top
-});
-```
-
-**Event handlers** (fluent, all return `this`):
-- `.onClick(e => {...})` - Click/tap with `{x, y}`
-- `.onMouseMove(e => {...})` - Continuous tracking
-- `.onMouseEnter(e => {...})` / `.onMouseLeave(() => {...})` - Hover tracking
-- `.onDragStart(e => {...})` / `.onDrag(e => {...})` / `.onDragEnd(() => {...})`
-- `.passthrough()` - Mark primitive as passthrough for hit testing (events pass to primitives below)
-
-**Performance optimizations:**
-- Distance-based drag throttling: Only processes drag events when mouse moves ≥4 pixels
-- Change detection in `refreshBindings()`: Only updates primitives when values actually change
-- `hasAnyBinding()` check: Skips primitives without bindings during refresh cycle
-
-**Hit testing** (automatic):
-- All primitives implement `getHitTester()`
-- Shapes: circle (distance), rect (bbox), line (distance-to-segment), polygon (ray casting), arc/wedge (radial+angle)
-- Router: `EventRouter` class routes canvas events to primitives via hit detection
-
-**Animations** (Phase 9):
-- `.animate('property', { from, to, duration, easing, loop, yoyo })` - Direct animation with control
-- `.animateFluent('property', from, to).duration(ms).easing(fn).loop(true).start()` - Fluent builder API
-- 30+ easing functions: `linear`, `easeIn/Out/InOutQuad`, `easeInOutCubic`, `easeInOutSine`, `easeInOutExpo`, `easeInOutCirc`, `easeInElastic`, `easeInBack`, `easeOutBounce`, etc.
-- Color interpolation: `interpolateColor('#FF0000', '#0000FF', 0.5, easing)`
-- AnimationManager: Global singleton for coordinating animations via `requestAnimationFrame`
-- Fluent animation example:
-  ```typescript
-  c.circle(100, 100, 20)
-    .animateFluent('alpha', 0, 1)
-    .duration(1000)
-    .easing('easeInOutCubic')
-    .loop(true)
-    .yoyo(true)
-    .start();
-  ```
-
-**Architecture:**
-- `cosyne/src/primitives/` - 12 shape types, all extend `Primitive<T>`
-- `cosyne/src/binding.ts` - Lazy-evaluated binding system with diffing
-- `cosyne/src/events.ts` - Hit testers & event routing
-- `cosyne/src/easing.ts` - 30+ parameterized easing functions, interpolation helpers
-- `cosyne/src/animation.ts` - Generic `Animation<T>` class with keyframe support
-- `cosyne/src/animation-manager.ts` - Global animation coordinator with requestAnimationFrame
-- `cosyne/src/context.ts` - Builder context, global registry
-- `cosyne/test/` - 200+ Jest tests covering all features (phase 9: 75+ animation tests)
-
-**Key design:**
-- ✅ Fluent API (all methods return `this`)
-- ✅ Lazy bindings (evaluated on-demand via `refreshBindings()`)
-- ✅ Efficient collections (O(n) diffing via trackBy)
-- ✅ Z-order aware event routing
-- ✅ Mockable hit testers (inject custom logic for tests)
-- ✅ No backward compatibility concerns (free to refactor)
+**Key design:** Fluent API, lazy bindings, O(n) collection diffing via trackBy, z-order aware event routing, mockable hit testers for tests, no backward compatibility concerns.
 
 ## CVG: Cosyne Vector Graphics (SVG-peer with Reactivity)
 
-**SVG-inspired vector graphics system** with reactive bindings, perspective transforms, animation, and interactivity. Renders through Tsyne's canvas primitives. Not an SVG renderer — it's its own system that shares SVG's element vocabulary (`circle`, `rect`, `path`, `g`, `text`, `use`/`defs`).
+SVG-inspired vector graphics system — not an SVG renderer, but shares SVG's element vocabulary (`circle`, `rect`, `path`, `g`, `text`, `use`/`defs`). Renders through Tsyne's canvas primitives.
 
-**What CVG adds beyond SVG:**
-- Reactive bindings: `.bindFill(() => color)`, `.bindPos(() => coords)`, `.bindOpacity(() => n)`
-- Data-driven lists: `.bindTo(items, render, { trackBy, update })` — D3-style enter/update/exit
-- Perspective transforms: `cosynePerspective` on groups (pseudo-3D without a 3D pipeline)
-- Hit testing + events: `onClick`, `onHover`, `onDrag`, `onScroll`, `onKeyDown`
-- Animation: `.animate()`, `.transition()`, keyframes, 7 easing functions
-- Conditional rendering: `.when(predicate)` — show/hide elements reactively
-- Named element lookup: `.name('hour')` + `ctx.find('hour')`
+**What CVG adds beyond SVG:** Reactive bindings (`.bindFill()`, `.bindPos()`), data-driven lists (`.bindTo()` with D3-style enter/update/exit), perspective transforms (`cosynePerspective` on groups), hit testing + events, animation, conditional rendering (`.when()`), named element lookup (`.name()` + `ctx.find()`).
 
-**Two entry points:**
-```typescript
-// 1. Standalone factory
-cvg(app, { viewBox: '0 0 100 100', width: 400, height: 400 }, (s) => {
-  s.circle({ cx: 50, cy: 50, r: 20, fill: '#F00', onClick: (e) => {...} });
-  s.rect({ x: 10, y: 10, width: 80, height: 80 }).fill('#069').bindFill(() => color);
-  s.path({ d: 'M10 10 L90 90', stroke: '#000' });
-  s.g({ transform: { translate: [50, 50], cosynePerspective: { rotateY: 30, distance: 500 } } }, () => {
-    s.rect({ width: 40, height: 40 });  // rendered with perspective
-  });
-});
+**Two entry points:** `cvg(app, { viewBox, width, height }, (s) => { ... })` for standalone, `cvgBuilder(app)` for builder-style.
 
-// 2. Builder-style
-const s = cvgBuilder(app);
-s.svg({ viewBox: "0 0 100 100" }, () => {
-  s.circle({ r: 15, cx: 50, cy: 18 }).fill("#900");
-});
-```
+**SVG import pipeline:** `loadSvg(app, svgString)` for runtime, `transpileSvg()` for SVG → editable TypeScript. All path commands normalized to absolute M/L/C/Z. Tested against 199 W3C SVG files.
 
-**SVG import pipeline:** Can load `.svg` files via `loadSvg(app, svgString)` (runtime) or `transpileSvg()` (SVG → editable TypeScript). All path commands normalized to absolute M/L/C/Z. Tested against 199 SVG files (W3C test suite).
-
-**Architecture:**
-- `cosyne/src/cvg/grammar.ts` — CvgContext, CvgElement, CvgBuilder, PathBuilder
-- `cosyne/src/cvg/parser.ts` — Regex-based SVG XML parser (no dependencies)
-- `cosyne/src/cvg/normalizer.ts` — Path d-string normalizer: all commands → M/L/C/Z
-- `cosyne/src/cvg/transform.ts` — AffineMatrix, ProjectiveMatrix, perspective
-- `cosyne/src/cvg/loader.ts` — Runtime SVG string rendering
-- `cosyne/src/cvg/transpiler.ts` — SVG → TypeScript source code
-- `cosyne/src/cvg/rasterize.ts` — CPU rasterizer for clipPath, gradients, blur
-- `cosyne/src/cvg/types.ts` — Shared types
-- `cosyne/src/cvg/README.md` — Full reference
+**Architecture:** `cosyne/src/cvg/` — grammar, parser (regex-based, no deps), normalizer, transform (affine + projective), loader, transpiler, rasterizer (CPU clipPath/gradients/blur), types. Full reference in `cosyne/src/cvg/README.md`.
 
 ## Cosyne 3D: Declarative Scene Graphs (~300 Tests, ~4000 Lines)
 
-**3D extension** of Cosyne with the same fluent API patterns. Includes primitives, materials, lighting, camera, ray casting, and reactive bindings.
+3D extension of Cosyne with identical fluent API patterns. Primitives: sphere, box, plane, cylinder. Camera (perspective/orthographic), lighting (ambient/directional/point/spot), materials with presets (`Materials.gold()`, etc.). Ray casting for hit detection. Same binding system as 2D (`bindPosition()`, `bindMaterial()`, `bindScale()`). Collections and nested transforms with quaternion-based rotation composition.
 
-**Quick API:**
-```typescript
-import { cosyne3d, refreshAllCosyne3dContexts } from '../cosyne/src/index3d';
+**Current limitation:** Scene graph only — no renderer yet. Demos use a software renderer through Tsyne's canvas primitives.
 
-cosyne3d(a, (ctx) => {
-  // Camera
-  ctx.setCamera({ fov: 60, position: [0, 5, 10], lookAt: [0, 0, 0] });
-
-  // Lighting
-  ctx.light({ type: 'ambient', intensity: 0.3 });
-  ctx.light({ type: 'directional', direction: [0, -1, -1] });
-
-  // Primitives: sphere, box, plane, cylinder
-  ctx.sphere({ radius: 1, position: [0, 1, 0] })
-    .setMaterial({ color: '#ff0000', shininess: 50 })
-    .onClick((hit) => console.log('Clicked', hit.point));
-
-  ctx.box({ size: 2 }).setMaterial(Materials.gold());
-
-  // Bindings (same pattern as 2D Cosyne)
-  ctx.sphere({ id: 'orbiter' })
-    .bindPosition(() => [Math.cos(angle) * 5, 0, Math.sin(angle) * 5]);
-
-  // Collections
-  ctx.spheres<Planet>().bindTo({
-    items: () => planets,
-    render: (p) => ({ radius: p.radius, position: [p.distance, 0, 0] }),
-    trackBy: (p) => p.name,
-  });
-
-  // Transforms (nested coordinate systems)
-  ctx.transform({ translate: [10, 0, 0], rotate: [0, Math.PI/4, 0] }, (c) => {
-    c.sphere({ position: [0, 0, 0] });  // Inherits parent transform
-  });
-});
-
-// Animation loop
-setInterval(() => { angle += 0.01; refreshAllCosyne3dContexts(); }, 16);
-```
-
-**Architecture:**
-- `cosyne/src/context3d.ts` - Builder context, primitive registry, ray casting
-- `cosyne/src/primitives3d/` - Sphere3D, Box3D, Plane3D, Cylinder3D (all extend Primitive3D)
-- `cosyne/src/math3d.ts` - Vector3, Matrix4, Quaternion, Ray, Box3
-- `cosyne/src/camera.ts` - Perspective/orthographic cameras with view/projection matrices
-- `cosyne/src/light.ts` - Ambient, directional, point, spot lights with LightManager
-- `cosyne/src/material.ts` - Material properties + preset factory (gold, silver, glass, etc.)
-- `cosyne/src/binding.ts` - Shared binding system (same as 2D Cosyne)
-- `cosyne/test/cosyne3d/` - 300+ tests for math, primitives, camera, materials, lights
-
-**Key features:**
-- ✅ Ray casting for hit detection (onClick, onHover)
-- ✅ Material presets: `Materials.gold()`, `Materials.silver()`, `Materials.glass()`
-- ✅ Quaternion-based rotation composition in nested transforms
-- ✅ Efficient inverse matrix caching for camera ray casting
-- ✅ Same fluent API as 2D Cosyne (bindPosition, bindMaterial, bindScale, etc.)
-
-**Current limitation:** Scene graph only - no renderer yet. Demos need a software renderer using Tsyne's canvas primitives (`canvasSphere`, `canvasLine`, `canvasRect`) to actually display 3D scenes.
-
-**See:** `cosyne/README-3D.md` and `docs/COSYNE_3D.md` for full API reference.
+**Architecture:** `cosyne/src/context3d.ts`, `cosyne/src/primitives3d/`, `cosyne/src/math3d.ts` (Vector3, Matrix4, Quaternion, Ray, Box3), `cosyne/src/camera.ts`, `cosyne/src/light.ts`, `cosyne/src/material.ts`. See `cosyne/README-3D.md` and `docs/COSYNE_3D.md`.
 
 ## Package Imports: Always Use `'tsyne'`
 
-**All app code should import from the `tsyne` package, never from relative paths like `../core/src`.**
+**All app code imports from the `tsyne` package, never from relative paths like `../core/src`.** The `core/` directory is published as `tsyne` via pnpm workspaces. This applies to everything in `examples/`, `phone-apps/`, `ported-apps/`, `larger-apps/`, and `launchers/`.
 
-The `core/` directory is published as the `tsyne` npm package. Apps in `examples/`, `phone-apps/`, `ported-apps/`, `larger-apps/`, and `launchers/` should always use:
+**Trap:** Relative imports to `core/src` will work initially but break when files move and violate the workspace boundary. If you see them, fix them.
 
-```typescript
-// ✅ CORRECT - import from 'tsyne' package
-import { app, resolveTransport } from 'tsyne';
-import type { App, Window, Label, Button, VBox } from 'tsyne';
-import { TappableCanvasRaster, refreshAllBindings } from 'tsyne';
-
-// ❌ WRONG - never use relative imports to core/src
-import { app } from '../core/src/index';
-import type { Label } from '../../core/src/widgets/display';
-```
-
-**Exported from `tsyne`:**
-- All widgets: `Button`, `Label`, `Entry`, `VBox`, `HBox`, `Grid`, `Tabs`, etc.
-- Canvas primitives: `CanvasLine`, `CanvasCircle`, `CanvasRaster`, `TappableCanvasRaster`, etc.
-- Display extras: `ColorCell`, `Icon`, `FileIcon`, `TextGrid`
-- Animation: `EasingType`, `AnimateOptions`, `EasingFunction`, `cubicBezier`, `bezier`
-- App/Window: `App`, `Window`, `resolveTransport`, `app()`
-- State: `ObservableState`, `StateStore`, `TwoWayBinding`
-- Test utilities: `TsyneTest`, `TestContext`, `Locator`, `Expect`
-- Service interfaces: `IDesktopService`, `DesktopAppInfo`
-
-**Why this matters:**
-- Consistent imports across the codebase
-- Proper dependency resolution via pnpm workspaces
-- Clean separation between library code and app code
-- No broken paths when files move
+Everything is exported from `tsyne` — all widgets, canvas primitives, animation types, App/Window, state management (`ObservableState`, `StateStore`, `TwoWayBinding`), test utilities (`TsyneTest`, `TestContext`, `Locator`, `Expect`), service interfaces. Check `core/src/index.ts` for the full export list.
 
 ## Intended End-User Code Style
 
@@ -335,126 +119,25 @@ app({ title: 'My App' }, (a) => {
 
 **If coming from React/Vue/Angular:** Tsyne uses fluent methods (`.onClick()`, `.onSubmit()`, etc.) instead of constructor parameters.
 
-```typescript
-// ❌ WRONG - bare callback as second parameter
-a.button('Add', onClick);           // Second param must be options object
+**The trap:** `a.button('Add', onClick)` — the second param must be an options object, not a bare callback. Use `a.button('Add', { onClick })` or `a.button('Add').onClick(onClick)`.
 
-// ✅ Correct - use options object
-a.button('Add', { onClick });
-a.entry({ placeholder: 'search', onSubmit: onChange, minWidth: 300 });
+Both options-object and fluent approaches work and can be mixed: `a.button('Add', { onClick: handler }).when(() => isVisible).withId('addBtn')`.
 
-// ✅ Also correct - fluent methods
-a.button('Add').onClick(onClick);
-a.entry('search').onSubmit(onChange).width(300);
+**The rule:** Methods that configure the widget (`.onClick()`, `.when()`, `.withId()`, `.width()`) are fluent and return `this`. Methods that query or act immediately (`getText()`, `setText()`, `requestFocus()`) return Promise/values and don't chain.
 
-// ✅ Chaining works with both approaches
-a.button('Add', { onClick: handler })
-  .when(() => isVisible)
-  .withId('addBtn');
-```
-
-**Why fluent methods?**
-1. **Composable** - build up widget configuration step by step
-2. **Consistent** - all methods follow the same pattern
-3. **Flexible** - add properties in any order
-4. **Type-safe** - each method returns the widget type, so IDE autocomplete works
-5. **Reusable** - can store references and configure later
-
-**Common widget methods:**
-```typescript
-// Event handlers (fluent, return `this`)
-a.button('...').onClick(handler)
-a.entry('...').onSubmit(handler)
-a.checkbox('...').onToggle(handler)
-a.slider().onChange(handler)
-
-// Properties (fluent, return `this`)
-a.label('text').when(() => isVisible)
-a.button('...').withId('myBtn')
-a.entry('...').width(300)
-
-// Direct calls (return Promise/values)
-await label.setText('New text')
-await button.requestFocus()
-const text = await entry.getText()
-```
-
-**Pattern:** Methods that modify the widget (`.onClick()`, `.when()`, `.withId()`) are fluent and chain. Methods that query or immediately act (`getText()`, `setText()`) are not fluent.
-
-**Consistent callback handling:** All input widgets accept callbacks at instantiation time via options objects:
-```typescript
-// Button - onClick in options
-a.button('Add', { onClick: handler })
-// or fluent method (still works)
-a.button('Add').onClick(handler)
-
-// Entry, Checkbox, Select, Slider - callbacks in constructor/options
-a.entry({ placeholder: 'Search', onSubmit: handler })
-a.checkbox('Enable', onChanged)
-a.select(options, onSelected)
-```
+All input widgets accept callbacks at instantiation via options objects — see the widget source for the exact shapes.
 
 ## Widget Events
 
-Any widget can receive mouse, keyboard, and focus events via fluent methods (all return `this` for chaining):
+All widgets support mouse, keyboard, and focus events as fluent chainable methods (`.onMouseIn()`, `.onKeyDown()`, etc.) — naming follows DOM conventions. Events can also be passed as a `WidgetEventOptions` object in constructors.
 
-```typescript
-a.label('Hover me')
-  .onMouseIn((e) => console.log('in', e.position.x, e.position.y))
-  .onMouseOut(() => console.log('out'))
-  .onKeyDown((e) => console.log('key', e.key))
-  .onFocusChange((e) => console.log('focused?', e.focused))
-  .setCursor('pointer')
-```
+**Traps:**
+- Keyboard events only fire if the widget has focus — call `.focus()` first
+- `.onMouse({ in?, moved?, out? })` is a convenience combo — use it instead of three separate calls when you need all three
 
-### Event Method Reference
-
-| Method | Callback signature | Notes |
-|--------|-------------------|-------|
-| `.onMouseIn(cb)` | `(e: { position: { x, y } }) => void` | Mouse enters widget |
-| `.onMouseMoved(cb)` | `(e: { position: { x, y } }) => void` | Mouse moves within widget |
-| `.onMouseOut(cb)` | `() => void` | Mouse leaves widget |
-| `.onMouse({ in?, moved?, out? })` | Combined — same signatures as above | Convenience for registering multiple hover callbacks at once |
-| `.onMouseDown(cb)` | `(e: { button, position: { x, y } }) => void` | Mouse button pressed |
-| `.onMouseUp(cb)` | `(e: { button, position: { x, y } }) => void` | Mouse button released |
-| `.onKeyDown(cb)` | `(e: { key: string }) => void` | Key pressed (widget must be focused) |
-| `.onKeyUp(cb)` | `(e: { key: string }) => void` | Key released |
-| `.onFocusChange(cb)` | `(e: { focused: boolean }) => void` | Widget gained/lost focus |
-| `.setCursor(cursor)` | `'default' \| 'text' \| 'crosshair' \| 'pointer' \| 'hResize' \| 'vResize'` | Sets cursor on hover |
-| `.focus()` | `async` — no callback | Programmatically focus the widget |
-
-### Constructor Options
-
-The same events can be passed via a `WidgetEventOptions` object in constructors that accept options:
-
-```typescript
-interface WidgetEventOptions {
-  onMouseIn?: (e: { position: { x, y } }) => void;
-  onMouseOut?: () => void;
-  onMouseMoved?: (e: { position: { x, y } }) => void;
-  onMouseDown?: (e: { button, position: { x, y } }) => void;
-  onMouseUp?: (e: { button, position: { x, y } }) => void;
-  onKeyDown?: (e: { key: string }) => void;
-  onKeyUp?: (e: { key: string }) => void;
-  onFocusChange?: (e: { focused: boolean }) => void;
-  cursor?: 'default' | 'text' | 'crosshair' | 'pointer' | 'hResize' | 'vResize';
-}
-```
-
-### Microtask Batching
-
-All fluent event calls within a single synchronous context are batched into one wire message via `queueMicrotask`. Chaining `.onMouseIn().onMouseOut().onKeyDown().onFocusChange()` sends a single `setWidgetEvents` message to the bridge.
-
-### Go-Side Concrete Variants
-
-Fyne requires concrete types to implement event interfaces. When events are registered, the bridge upgrades widgets to concrete variants that embed both the original widget and an `EventDispatcher`:
-
-- `LabelWithHover` — Label + `desktop.Hoverable`
-- `ButtonWithHover` — Button + `desktop.Hoverable`
-- `ButtonWithHoverMouse` — Button + `desktop.Hoverable` + `desktop.Mouseable`
-- `ButtonWithHoverFocusKey` — Button + `desktop.Hoverable` + `fyne.Focusable` + `desktop.Keyable`
-
-The variant is selected automatically based on which event bits are registered (see `buttonVariant()`/`labelVariant()` in `widget_properties.go`).
+**Internals worth knowing:**
+- Fluent event chains auto-batch into one wire message via microtask — chain freely
+- Go side upgrades widgets to concrete variants (e.g. `LabelWithHover`, `ButtonWithHoverMouse`) based on which event bits are registered — this is automatic, but explains why you'll see those types in bridge code. See `buttonVariant()`/`labelVariant()` in `widget_properties.go`
 
 ## Builder Lifecycle: Reentrant & Idempotent
 
@@ -516,94 +199,34 @@ The framework manages process lifecycle:
 
 Apps should **never** call `process.exit()` directly except in standalone `main()`. The framework handles shutdown through the IoC pattern.
 
-```typescript
-// In index.ts, app() registers the exit handler:
-appInstance.getBridge().setOnExit(async () => {
-  await appInstance.runCleanupCallbacks();
-  process.exit(0);  // Only the framework calls this
-});
-```
+## Ported Apps Patterns
 
-## Ported Apps Patterns (7 Complete Apps: 314 Tests, 3,963 Lines)
-
-**Quick Reference for App Ports**
-
-✅ **Observable Store Pattern** (all apps):
-```typescript
-class Store {
-  private changeListeners: ChangeListener[] = [];
-  subscribe(listener: ChangeListener): () => void {
-    this.changeListeners.push(listener);
-    return () => { this.changeListeners = this.changeListeners.filter(l => l !== listener); };
-  }
-  private notifyChange() { this.changeListeners.forEach(l => l()); }
-}
-// Usage: store.subscribe(async () => { await updateUI(); await viewStack.refresh(); });
-```
+**Observable Store Pattern** — all ported apps use the same store shape: private `changeListeners` array, `subscribe()` returns unsubscribe function, `notifyChange()` triggers view updates. See any existing ported app for the template.
 
 **Critical Patterns:**
-- ❌ Don't import App type: `import { App }` → TypeScript errors
-- ✅ Use `app: any` parameter + inject store classes only
+- ❌ Don't import App type: `import { App }` → TypeScript errors. Use `app: any` parameter
 - ✅ Defensive copies: `[...array]`, `{...object}` (tests verify immutability)
 - ✅ ID generation: counter pattern `id: 'entity-${String(this.nextId++).padStart(3, '0')}'` (not Date.now())
 - ✅ UI updates: `.when()` + `await viewStack.refresh()` for tabs
 - ✅ Lists: `.bindTo()` with `trackBy: (item) => item.id`
 - ❌ Don't use `prompt()` (returns Promise) → generate default values instead
 
-**Test Template:**
-- Aim for 40-50 Jest tests covering: CRUD (10), relationships (5-7), edge cases (5-7), observable (5), immutability (5)
-- Tests should always be co-located with the app's production code
-- Run: `pnpm test ported-apps/[app]/index.test.ts`
+**Test Template:** Aim for 40-50 Jest tests covering: CRUD (10), relationships (5-7), edge cases (5-7), observable (5), immutability (5). Tests co-located with production code. Run: `pnpm test ported-apps/[app]/index.test.ts`
 
 **Files to Create:**
 1. `ported-apps/[app]/index.ts` (single file, 400-730 lines)
 2. `ported-apps/[app]/index.test.ts` (Jest tests, co-located)
 3. `ported-apps/[app]/index.tsyne.test.ts` (tab navigation + screenshot)
-4. `ported-apps/[app]/package.json` (workspace package — **required**, see below)
-5. `ported-apps/[app]/jest.config.js` (test config — **required**, see below)
+4. `ported-apps/[app]/package.json` (workspace package — **required**)
+5. `ported-apps/[app]/jest.config.js` (test config — **required**)
 6. `ported-apps/[app]/README.md` (ASCII diagrams)
 7. `ported-apps/[app]/LICENSE` (MIT/Apache)
 
 **Workspace Registration (Critical):**
 
-Every new app module **must** have its own `package.json` and be registered in `pnpm-workspace.yaml`. Without this, `pnpm test` walks up to the repo root and runs the **entire** root test suite (~900+ tests) instead of the app's own tests. This silently wastes CI time (8 missing packages = 7,000+ redundant test runs).
+Every new app module **must** have its own `package.json` and be registered in `pnpm-workspace.yaml`. Without this, `pnpm test` walks up to the repo root and runs the **entire** root test suite (~900+ tests) instead of the app's own tests. Copy `package.json` and `jest.config.js` from an existing ported app and adjust the name. Add the new entry alphabetically in `pnpm-workspace.yaml`. Run `pnpm install` to wire up workspace symlinks.
 
-```json
-// ported-apps/[app]/package.json
-{
-  "name": "tsyne-[app-name]",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": { "test": "jest" },
-  "dependencies": { "tsyne": "workspace:*" },
-  "devDependencies": {
-    "@types/jest": "^29.5.0", "@types/node": "^20.0.0",
-    "jest": "^29.7.0", "ts-jest": "^29.4.6", "typescript": "^5.0.0"
-  }
-}
-```
-
-```yaml
-# pnpm-workspace.yaml — add the new entry alphabetically
-packages:
-  - 'ported-apps/[app-name]'
-```
-
-```javascript
-// ported-apps/[app]/jest.config.js
-module.exports = {
-  preset: 'ts-jest',
-  testEnvironment: '../../jest-environment-tsyne.js',
-  testMatch: ['**/?(*.)+(spec|test).ts'],
-  testPathIgnorePatterns: ['/node_modules/', '/dist/'],
-  transform: { '^.+\\.ts$': ['ts-jest', { diagnostics: false }] },
-  moduleFileExtensions: ['ts', 'js', 'json'],
-};
-```
-
-After creating these files, run `pnpm install` to wire up the workspace symlinks.
-
-**See Also:** `/docs/pseudo-declarative-ui-composition.md` → "Lessons from Ported Apps" for detailed patterns
+**See Also:** `/docs/pseudo-declarative-ui-composition.md` → "Lessons from Ported Apps"
 
 ## Widget Categories
 
@@ -612,766 +235,122 @@ After creating these files, run `pnpm install` to wire up the workspace symlinks
 **Display:** label, hyperlink, separator, spacer, progressbar, progressbarInfinite, activity, image, richtext, table, list, tree, toolbar, menu, textgrid, icon, fileicon
 **Canvas:** canvasLine, canvasCircle, canvasRectangle, canvasText, canvasRaster, canvasLinearGradient, canvasArc, canvasPolygon, canvasRadialGradient
 
-**CompletionEntry** - Autocomplete entry (from fyne.io/x, ideal for searching large datasets):
-```typescript
-const cities = ['London', 'Paris', 'Tokyo', ...];
-const entry = a.completionEntry([], 'Search cities...', async (text) => {
-  const filtered = cities.filter(c => c.toLowerCase().startsWith(text.toLowerCase()));
-  await entry.setOptions(filtered);
-  filtered.length > 0 ? await entry.showCompletion() : await entry.hideCompletion();
-});
-```
+**Widgets with non-obvious APIs:**
 
-**MenuButton** - Button with popup menu (positioned below button):
-```typescript
-a.menuButton('…', (menu) => {
-  menu.item('Delete', () => removeItem(id));
-  menu.item('Edit', () => editItem(id));
-  // Can use loops/conditionals inside builder
-  for (const action of actions) {
-    menu.item(action.label, action.handler);
-  }
-}).withId('item-menu');
-```
-*Note: Nested/submenu items not yet supported - flat menus only.*
+- **CompletionEntry** — autocomplete input from fyne.io/x. You create it with an empty options array and a callback; inside the callback, filter and call `entry.setOptions()` then `entry.showCompletion()`/`entry.hideCompletion()`
+- **MenuButton** — button with popup menu. Builder callback gets `menu` with `.item(label, handler)`. Flat menus only, no submenus yet
+- **TappableCanvasRaster** — pixel-level rendering. **Trap:** Use `setPixelBuffer(Uint8Array)` for full-canvas updates, never `setPixels()` with object arrays — that creates 80,000+ objects and crashes the bridge. Keyboard events require `.requestFocus()` first
 
-**TappableCanvasRaster (pixel-based rendering):**
-```typescript
-// Create tappable canvas with callbacks
-const canvas = a.tappableCanvasRaster(width, height, {
-  onTap: (x, y) => handleClick(x, y),
-  onKeyDown: (key) => handleKey(key),  // Requires focus
-});
-
-// ✅ CORRECT: Use setPixelBuffer() with Uint8Array for full-canvas rendering
-const buffer = new Uint8Array(width * height * 4);  // RGBA
-for (let i = 0; i < width * height; i++) {
-  const offset = i * 4;
-  buffer[offset] = r;      // Red
-  buffer[offset + 1] = g;  // Green
-  buffer[offset + 2] = b;  // Blue
-  buffer[offset + 3] = 255; // Alpha
-}
-await canvas.setPixelBuffer(buffer);  // Single efficient call
-
-// ❌ WRONG: Never use setPixels() with object arrays for full canvas
-// This creates 80,000+ objects and crashes the bridge!
-const pixels = [];
-for (let y = 0; y < height; y++) {
-  for (let x = 0; x < width; x++) {
-    pixels.push({ x, y, r, g, b, a: 255 });  // BAD - massive array
-  }
-}
-await canvas.setPixels(pixels);  // CRASHES with large canvases
-
-// Request keyboard focus (required for onKeyDown to work)
-await canvas.requestFocus();
-```
-
-**All widgets support:**
-- `hide()` / `show()` - Imperative visibility control
-- `when(() => boolean)` - Declarative visibility (returns `this` for chaining)
-- `refresh()` - Re-evaluate visibility conditions
-
-**VBox/HBox containers also support:**
-- `model<T>(items: T[])` - Create ModelBoundList for smart list rendering
-- `refreshVisibility()` - Update visibility of all children
+**All widgets support:** `hide()`/`show()` (imperative), `when(() => boolean)` (declarative, chainable), `refresh()` (re-evaluate visibility). VBox/HBox also support `model(items)` for ModelBoundList and `refreshVisibility()`.
 
 ## Testing
 
-**Widget mode (TsyneTest):**
-```typescript
-import { TsyneTest, TestContext } from '../src/index-test';
+**TsyneTest** creates a headless app instance for widget testing. Pattern: create app → get context → interact via locators → assert with polling.
 
+```typescript
 const tsyneTest = new TsyneTest({ headed: false });
-const testApp = await tsyneTest.createApp((app) => {
-  createMyApp(app);
-});
+const testApp = await tsyneTest.createApp((app) => { createMyApp(app); });
 const ctx = tsyneTest.getContext();
 await testApp.run();
 
-await ctx.getById('helloBtn').click(); // Always prefer getById
+await ctx.getById('helloBtn').click();
 await ctx.getById('resultLabel').within(500).shouldBe('Result');
 ```
 
-**Testing widget events with `simulate()` and `focus()`:**
+**`simulate()` vs `click()`:** `click()` exercises the full Fyne tap path. `simulate()` covers everything else — it calls real Fyne widget methods on concrete variants, exercising the full Go→TS callback path. Supported events: `mouseIn`, `mouseOut`, `mouseMoved`, `mouseDown`, `mouseUp`, `keyDown`, `keyUp`, `focusGained`, `focusLost`, `tap`, `doubleTap`, `secondaryTap`, `dragged`, `dragEnd`, `scrolled`. Keyboard events require the widget to be focused first.
 
-`click()` exercises the full Fyne tap path. For lower-level events (hover, keyboard, mouse buttons), use `simulate()`:
-
-```typescript
-// Hover enter/leave
-await ctx.getById('hoverLabel').simulate('mouseIn', { x: 10, y: 5 });
-await ctx.getById('statusText').within(500).shouldBe('Hovering');
-await ctx.getById('hoverLabel').simulate('mouseOut');
-
-// Keyboard — widget must be focused first
-await ctx.getById('myWidget').focus();
-await ctx.getById('myWidget').simulate('keyDown', { key: 'A' });
-await ctx.getById('myWidget').simulate('keyUp', { key: 'A' });
-
-// Focus change detection
-await ctx.getById('focusTarget').focus();
-await ctx.getById('focusStatus').within(500).shouldBe('focused: true');
-```
-
-**`simulate()` vs `click()`:** Use `click()` for tap/button-press interactions. Use `simulate()` for events that `click()` doesn't cover: hover, keyboard, mouse down/up, drag, scroll. `simulate()` calls real Fyne widget methods on concrete variants (not just the dispatcher), so it exercises the full Go→TS callback path.
-
-Supported `simulate()` events: `mouseIn`, `mouseOut`, `mouseMoved`, `mouseDown`, `mouseUp`, `keyDown`, `keyUp`, `focusGained`, `focusLost`, `tap`, `doubleTap`, `secondaryTap`, `dragged`, `dragEnd`, `scrolled`.
-
-**Browser mode (TsyneBrowserTest):**
-```typescript
-import { TsyneBrowserTest } from '../src/index-test';
-
-const test = new TsyneBrowserTest({ headed: false });
-// test.page methods like Playwright
-```
+**Browser mode:** `TsyneBrowserTest` with Playwright-style `test.page` methods.
 
 **Run:** `pnpm test` or `TSYNE_HEADED=1 pnpm test examples/todomvc.test.ts`
 
-### Adding Tests to New Demo Apps (phone-apps/)
+**New demo apps (phone-apps/)** need their own `package.json` and `jest.config.js` — copy from an existing one. CI runs `pnpm test:phone-apps` recursively.
 
-Each demo app with tests needs its own `package.json` and `jest.config.js` so that `pnpm -r test` discovers them. CI runs `pnpm test:phone-apps` which recursively runs tests in all phone-apps workspaces.
+### TsyneTest: The Testing Religion
 
-**Required files for a new testable demo:**
+**Always `getById()`, never `getByText()`.** This is non-negotiable:
+- Text can be duplicated (multiple "Reset" buttons), IDs can't
+- Text changes with UI updates, IDs don't
+- `getByText()` with dynamic content can crash the bridge
+- Every widget tests interact with gets `.withId('stableId')`
 
-1. `phone-apps/my-demo/package.json`:
-```json
-{
-  "name": "tsyne-my-demo",
-  "version": "0.1.0",
-  "description": "My demo description",
-  "private": true,
-  "scripts": {
-    "test": "jest"
-  },
-  "devDependencies": {
-    "@types/jest": "^29.5.0",
-    "@types/node": "^20.0.0",
-    "jest": "^29.7.0",
-    "ts-jest": "^29.4.6",
-    "typescript": "^5.0.0"
-  }
-}
-```
+**The `within()` pattern replaces waits:** `await ctx.getById('status').within(500).shouldBe('Loaded')` — this polls. Never use `ctx.wait()`, never increase Jest timeouts. If a test is slow, the problem is in your code, not the timeout.
 
-2. `phone-apps/my-demo/jest.config.js`:
-```javascript
-module.exports = {
-  preset: 'ts-jest',
-  testEnvironment: 'node',
-  testMatch: ['**/*.test.ts'],
-  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx'],
-  testTimeout: 30000,
-};
-```
+**Internal IDs (`_label_k7m2z9`) vs custom IDs (`resetBtn`):** Internal IDs are auto-generated for bridge plumbing — underscore prefix means "don't use in tests." Only `.withId()` IDs are for test consumption.
 
-3. `phone-apps/my-demo/my-demo.test.ts` - Your actual test file
-
-### TsyneTest Do's and Don'ts
-
-**✅ DO:**
-- **ALWAYS use `ctx.getById()` as your primary selector** - it's unique, stable, and reliable
-- Use `.withId('elementId')` to register custom IDs on all widgets that tests interact with
-- Use `.within(timeout).shouldBe(value)` pattern for assertions with polling
-- Use `.getText()` to retrieve text values directly
-
-**❌ DON'T:**
-- Don't use `ctx.wait()` to fix timing issues - use proper locators instead
-- Don't increase Jest timeouts - find the root cause instead - lengthening timeouts almost never works
-- Don't use `.getValue()` - use `.getText()` or `.within().shouldBe()`
-
-**❌ AVOID getByText() - Use getById() instead**
-
-Why `getById()` is strongly preferred:
-- **Uniqueness**: IDs are guaranteed unique. Text can be duplicated (e.g., multiple "Reset" buttons)
-- **Stability**: IDs don't change. Text changes with UI updates, i18n, or localization
-- **Reliability**: Text-based selectors can randomly find the wrong widget when labels overlap
-- **Performance**: ID lookups are faster than text searches
-- **Bridge safety**: `getByText()` with dynamic content can cause bridge crashes
-
-Only use `getByText()` in rare cases where adding an ID is impossible:
-- Don't use `className` parameter as an ID - it's only for styling
-
-**Internal IDs vs Custom IDs:**
-
-Widgets have two kinds of IDs:
-- **Internal IDs** (e.g., `_label_k7m2z9`) - Auto-generated for bridge communication, NOT for testing
-- **Custom IDs** (e.g., `resetBtn`) - Set via `.withId()`, stable and reliable for testing
-
-Internal IDs use the format `_${type}_${random}` (underscore prefix, widget type, 6-char base36 random).
-The underscore prefix signals "internal - don't use in tests". Like HTML's DOM, only explicit IDs are queryable.
-
-```typescript
-// Internal ID (auto-generated, don't use in tests)
-const label = a.label('Hello');  // Gets ID like "_label_k7m2z9"
-
-// Custom ID (explicit, use this in tests)
-const label = a.label('Hello').withId('greeting');  // Queryable as 'greeting'
-await ctx.getById('greeting').shouldBe('Hello');  // ✅ Stable
-```
-
-**Examples:**
-```typescript
-// ❌ WRONG - using getByText can find the wrong widget
-await ctx.getByText('Reset').click();  // Multiple "Reset" buttons? Random behavior!
-
-// ✅ CORRECT - using getById is unique and reliable
-this.resetBtn = this.a.button('Reset').onClick(() => this.reset()).withId('resetBtn');
-await ctx.getById('resetBtn').click();
-
-// ❌ WRONG - using getByText for dynamic content
-await ctx.getByText('Generation: 0').shouldExist();
-
-// ✅ CORRECT - using withId and getById
-this.generationLabel = this.a.label('0').withId('generationNum');
-await ctx.getById('generationNum').within(100).shouldBe('0');
-
-// ❌ WRONG - trying to use className as ID
-this.label = this.a.label('text', 'myId');  // Second param is className, not ID!
-await ctx.getById('myId').shouldBe('text');  // Won't work
-
-// ✅ CORRECT - using withId for custom ID
-this.label = this.a.label('text').withId('myId');
-await ctx.getById('myId').within(100).shouldBe('text');
-
-// ❌ WRONG - using wait() for timing
-await ctx.wait(1000);
-await ctx.getByText('Loaded').shouldExist();
-
-// ✅ CORRECT - using within() for polling with getById
-await ctx.getById('statusLabel').within(500).shouldBe('Loaded');
-```
-
-**Remote Control:** Tsyne environments (PhoneTop, Desktop, TabletTop) can expose an HTTP debug server for remote testing via `curl`. See [docs/remote_control.md](docs/remote_control.md).
+**Trap:** `a.label('text', 'myId')` — second param is `className`, not ID. Use `a.label('text').withId('myId')`.
 
 ## MVC Pattern
 
-**Model:** Observable store with change listeners
-**View:** Widget references (don't rebuild, just update)
-**Controller:** Event handlers that update model only
+**Model:** Observable store with change listeners. **View:** Widget references (update, don't rebuild). **Controller:** Event handlers that update model only.
 
-**Example (TodoMVC with when()):**
-```typescript
-class TodoStore {
-  private changeListeners: ChangeListener[] = [];
+The pattern: store mutates → `notifyChange()` → subscribers update widgets (`.setText()`, `.refresh()`, etc.). Declarative visibility via `widget.when(() => boolean)`. Smart lists via `container.model(items).trackBy(fn).each(builder)` with O(n) diffing.
 
-  subscribe(listener: ChangeListener) { /* ... */ }
-  private notifyChange() { /* triggers view updates */ }
+**Current limitations:** TodoMVC still rebuilds full lists (ModelBoundList ready but not yet used everywhere), no two-way binding (manual setText/getText), no computed properties. See `more_mvc_like_for_todomvc_app.md` for status.
 
-  addTodo(text: string) {
-    this.todos.push({ id: this.nextId++, text, completed: false });
-    this.notifyChange(); // ← View auto-updates
-  }
-}
+## Dialogs
 
-// Declarative visibility with when()
-todoHBox.when(() => {
-  const filter = store.getFilter();
-  if (filter === 'all') return true;
-  if (filter === 'active') return !todo.completed;
-  if (filter === 'completed') return todo.completed;
-  return true;
-});
+All dialogs are `await`-able methods on **Window** (not App).
 
-// Store subscription triggers view updates
-store.subscribe(() => {
-  rebuildTodoList();  // Can be optimized with ModelBoundList
-  updateStatusLabel();
-  updateFilterButtons();
-});
-```
+- **Info/Error/Confirm:** `win.showInfo(title, msg)`, `win.showError(...)`, `win.showConfirm(...)` — confirm returns boolean
+- **File:** `showFileOpen()`, `showFileSave(default)`, `showFolderOpen()` — all return path or null
+- **Text input:** `showEntryDialog(title, prompt)` — returns string
+- **Form:** `showForm(title, fieldDescriptors[])` — returns `{ submitted, values }`. Field types: entry, password, multiline, select, check
+- **Color:** `showColorPicker(title, default)` — returns `{ hex, r, g, b, a }`
+- **Custom content:** `showCustom(title, builder)` and `showCustomConfirm(title, builder)` — builder callback gets full widget access
+- **Progress:** `showProgress(title, msg, { infinite?, onCancelled? })` — returns handle with `.setValue()` and `.hide()`
 
-**Declarative APIs:**
-- `widget.when(() => boolean)` - Declarative visibility control
-- `container.model(items).trackBy(fn).each(builder)` - Smart list binding
-- `widget.refresh()` - Re-evaluate visibility conditions
-- `container.refreshVisibility()` - Update visibility without rebuild
-
-## Current Capabilities & Limitations
-
-**✅ Implemented:**
-1. **when() method** - Declarative visibility control
-2. **ModelBoundList** - Smart list binding with diffing
-3. **Observable pattern** - Store with change listeners for reactive updates
-
-**⏳ Current Limitations:**
-1. **Still rebuilds on change** - TodoMVC rebuilds entire list (ModelBoundList.update() ready to use)
-2. **No two-way binding** - Manual setText/getText
-3. **No computed properties** - Manual label updates instead of reactive expressions
-4. **when() optimization** - Infrastructure in place, not yet used for filter changes
-
-See `more_mvc_like_for_todomvc_app.md` for implementation status and next steps.
-
-## Declarative Patterns
-
-**when() for conditional visibility:**
-```typescript
-// Single condition
-checkbox.when(() => !isEditing);
-textEntry.when(() => isEditing);
-
-// Complex condition with store lookup
-todoHBox.when(() => {
-  const currentTodo = store.getAllTodos().find(t => t.id === todo.id);
-  if (!currentTodo) return false;
-  const filter = store.getFilter();
-  return filter === 'all' ||
-         (filter === 'active' && !currentTodo.completed) ||
-         (filter === 'completed' && currentTodo.completed);
-});
-```
-
-**ModelBoundList for smart lists (ng-repeat):**
-```typescript
-// Future: Smart list with incremental updates
-const listBinding = todoContainer
-  .model(store.getAllTodos())
-  .trackBy((todo) => todo.id)
-  .each((todo) => {
-    a.hbox(() => {
-      a.checkbox(todo.text, () => store.toggleTodo(todo.id));
-      a.button('Delete').onClick(() => store.deleteTodo(todo.id));
-    });
-  });
-
-// Update with smart diffing
-store.subscribe(() => {
-  listBinding.update(store.getAllTodos());
-});
-```
-
-## Additional Display Widgets
-
-**Icon** - Display theme icons:
-```typescript
-a.icon('confirm');  // Theme icon by name
-a.icon('delete');   // 50+ icons: cancel, confirm, delete, search, home, settings, etc.
-icon.setIconResource('search');  // Update icon
-```
-
-**FileIcon** - Display file type icons:
-```typescript
-a.fileicon('/path/to/document.pdf');  // Shows PDF icon
-fileIcon.setURI('/new/path.jpg');     // Update path
-fileIcon.setSelected(true);           // Selection state
-```
-
-**Calendar** - Standalone calendar picker:
-```typescript
-a.calendar(new Date(), (date) => console.log('Selected:', date));
-// Full calendar UI, different from dateentry inline picker
-```
-
-## Dialog System
-
-All dialogs are methods on `Window` objects:
-
-**Information Dialogs:**
-```typescript
-await win.showInfo('Title', 'Information message');
-await win.showError('Error', 'Something went wrong');
-await win.showConfirm('Confirm', 'Are you sure?');  // Returns boolean
-```
-
-**File Dialogs:**
-```typescript
-const filePath = await win.showFileOpen();      // Returns path or null
-const savePath = await win.showFileSave('default.txt');  // Returns path or null
-const folder = await win.showFolderOpen();      // Returns folder path or null
-```
-
-**Input Dialogs:**
-```typescript
-// Quick text input
-const text = await win.showEntryDialog('Name', 'Enter your name:');
-
-// Complex form with multiple fields
-const result = await win.showForm('User Details', [
-  { type: 'entry', label: 'Name', key: 'name' },
-  { type: 'password', label: 'Password', key: 'pass' },
-  { type: 'multiline', label: 'Bio', key: 'bio' },
-  { type: 'select', label: 'Country', key: 'country', options: ['US', 'UK', 'CA'] },
-  { type: 'check', label: 'Subscribe', key: 'subscribe' }
-]);
-// Returns: { submitted: boolean, values: { name: string, pass: string, ... } }
-```
-
-**Color Picker:**
-```typescript
-const color = await win.showColorPicker('Choose Color', '#ff0000');
-// Returns: { hex: '#ff0000', r: 255, g: 0, b: 0, a: 255 }
-```
-
-**Custom Content Dialogs:**
-```typescript
-// Custom dialog with arbitrary content
-await win.showCustom('Custom', () => {
-  a.vbox(() => {
-    a.label('Any widgets here');
-    a.button('Action').onClick(() => {});
-  });
-}, { dismissText: 'Close' });
-
-// Custom confirm dialog
-const confirmed = await win.showCustomConfirm('Confirm', () => {
-  a.label('Custom content with confirm/cancel');
-}, { confirmText: 'Yes', dismissText: 'No' });
-```
-
-**Progress Dialog:**
-```typescript
-const progress = await win.showProgress('Loading', 'Please wait...', {
-  infinite: false,  // or true for spinner
-  onCancelled: () => console.log('User cancelled')
-});
-progress.setValue(0.5);  // 50% (only for non-infinite)
-progress.hide();         // Close dialog
-```
+**Trap:** Custom dialogs use builder callbacks — same reentrant/idempotent rules apply as `setContent()`.
 
 ## Window Methods
 
-**Window Control:**
-```typescript
-win.resize(1024, 768);         // Resize window
-win.setTitle('New Title');     // Change title
-win.centerOnScreen();          // Center on display
-win.setFullScreen(true);       // Enter fullscreen
-win.setIcon('icon-resource');  // Set window icon
-win.close();                   // Close window
-```
+Standard window control: `resize()`, `setTitle()`, `centerOnScreen()`, `setFullScreen()`, `setIcon()`, `close()`. Close intercept via `win.setCloseIntercept(async () => boolean)`. Application menus via `win.setMainMenu([...])`. Clipboard via `win.getClipboard()`/`win.setClipboard()`. Screenshots via `win.screenshot(path)`.
 
-**Close Intercept:**
-```typescript
-win.setCloseIntercept(async () => {
-  const confirmed = await win.showConfirm('Quit', 'Save changes?');
-  return confirmed;  // Return true to allow close, false to prevent
-});
-```
-
-**Application Menu:**
-```typescript
-win.setMainMenu([
-  {
-    label: 'File',
-    items: [
-      { label: 'New', onClick: () => newFile() },
-      { isSeparator: true },
-      { label: 'Quit', onClick: () => app.quit() }
-    ]
-  },
-  {
-    label: 'Edit',
-    items: [
-      { label: 'Copy', onClick: () => copy() },
-      { label: 'Paste', onClick: () => paste() }
-    ]
-  }
-]);
-```
-
-**Clipboard Access:**
-```typescript
-const content = await win.getClipboard();  // Get clipboard text
-await win.setClipboard('Hello');           // Set clipboard text
-```
-
-**Screenshot:**
-```typescript
-await win.screenshot('/path/to/screenshot.png');  // Capture window to PNG
-```
+All straightforward — see `src/window.ts` for exact signatures.
 
 ## App-Level Features
 
-**Theme Management (Hot-Swappable):**
-```typescript
-// Built-in themes
-app.setTheme('dark');   // or 'light'
-const theme = app.getTheme();  // Returns current theme
+**Themes:** `app.setTheme('dark'|'light')` applies instantly, no reload. `app.setCustomTheme({...})` for custom palettes (20+ color keys), `app.clearCustomTheme()` to revert. Notes app demonstrates the full pattern.
 
-// Themes apply immediately - no reload needed
-// Perfect for user preferences in settings panels
-a.button('Dark Mode', async () => {
-  app.setTheme('dark');
-  // UI updates instantly with new theme
-});
-```
+**Fonts:** `app.setCustomFont(path, style)` where style is regular|bold|italic|boldItalic|monospace|symbol. `app.setFontScale(0.75-1.5)` for global scaling.
 
-**Custom Theming (Hot-Swappable):**
-```typescript
-const customDarkTheme = {
-  background: '#1a1a1a',
-  foreground: '#ffffff',
-  primary: '#0066cc',
-  error: '#ff0000',
-  success: '#00cc00',
-  // 20+ color keys available
-};
+**Persistent prefs:** `app.setPreference(key, val)` / `app.getPreference(key, default)` — also `getPreferenceInt`, `getPreferenceFloat`, `getPreferenceBool`. Persists across sessions. Use this for theme choices, window sizes, etc.
 
-// Apply custom theme instantly
-app.setCustomTheme(customDarkTheme);
+**System tray, notifications:** `app.setSystemTray({ iconPath, menuItems })`, `app.sendNotification(title, msg)` — straightforward, see source for shapes.
 
-// Switch back to default theme
-app.clearCustomTheme();
-
-// Or return to built-in theme
-app.setTheme('light');
-```
-
-**Pattern for Persistent Theme Preferences:**
-```typescript
-// Store theme choice in app preferences
-class Store {
-  getTheme(): 'light' | 'dark' {
-    return app.getPreference('theme', 'light');
-  }
-
-  setTheme(theme: 'light' | 'dark'): void {
-    app.setPreference('theme', theme);
-    app.setTheme(theme);  // Apply immediately
-    this.notifyChange();  // Trigger UI update
-  }
-}
-
-// On app startup, restore saved theme
-const savedTheme = store.getTheme();
-app.setTheme(savedTheme);
-
-// In settings panel
-a.button('Light', async () => {
-  store.setTheme('light');
-  // Theme applies instantly
-});
-a.button('Dark', async () => {
-  store.setTheme('dark');
-  // Theme applies instantly
-});
-```
-
-**Real-World Example (Notes App):**
-The Notes app demonstrates hot-swappable themes with:
-- Light, dark, and custom color palettes
-- Theme buttons that apply instantly
-- Observable store that persists theme preference
-- No page reload or restart needed
-
-**Custom Fonts:**
-```typescript
-app.setCustomFont('/path/to/font.ttf', 'regular');  // regular, bold, italic, boldItalic, monospace, symbol
-app.clearCustomFont('regular');  // or 'all' to clear all
-app.setFontScale(1.2);           // Global font scaling (0.75-1.5)
-const fonts = app.getAvailableFonts();  // Get font info
-```
-
-**System Tray:**
-```typescript
-app.setSystemTray({
-  iconPath: '/path/to/icon.png',
-  menuItems: [
-    { label: 'Show Window', onClick: () => win.show() },
-    { isSeparator: true },
-    { label: 'Quit', onClick: () => app.quit() }
-  ]
-});
-```
-
-**Desktop Notifications:**
-```typescript
-app.sendNotification('Title', 'Notification message content');
-```
-
-**Persistent Preferences:**
-```typescript
-// Store and retrieve preferences (persists across sessions)
-app.setPreference('username', 'john');
-const username = app.getPreference('username', 'default');
-
-// Type-specific getters
-const count = app.getPreferenceInt('count', 0);
-const ratio = app.getPreferenceFloat('ratio', 1.0);
-const enabled = app.getPreferenceBool('enabled', true);
-
-app.removePreference('username');
-```
-
-**Show Source Code:**
-```typescript
-app.showSource();              // Show current app source
-app.showSource('/path/to/file.ts');  // Show specific file
-```
+**Trap:** `app.showSource()` pops a window with the running app's source code. Handy for demos, don't leave it in production.
 
 ## Container Expansion (VBox/HBox Layout)
 
-**The Problem:** Scroll containers collapse to one line in a vbox, even though scrolling works.
+**The trap:** Scroll containers collapse to one line in a vbox because everything sizes to content.
+
+**The rule:** Only `border()` regions (top/center/bottom/left/right) and `max()` expand to fill available space. Everything else sizes to content.
 
 ```typescript
-// ❌ WRONG - scroll collapses
-a.vbox(() => {
-  a.label('Title');
-  a.scroll(a.vbox(many_items));  // ← collapses to 1 line
-  a.label('Footer');
-});
-```
+// ❌ scroll collapses in vbox
+a.vbox(() => { a.label('Title'); a.scroll(a.vbox(items)); a.label('Footer'); });
 
-**Why:** Containers in vbox size to content. Inner vbox height = sum of items, scroll wraps it → one line visible.
-
-**Solution 1: `a.border()` with regions** (for top/center/bottom layout)
-```typescript
-// ✅ CORRECT - center expands
+// ✅ border() with center region expands
 a.border({
   top: () => a.vbox(() => { a.label('Title'); a.separator(); }),
-  center: () => a.scroll(a.vbox(many_items)),  // ← expands to fill
+  center: () => a.scroll(a.vbox(items)),
   bottom: () => a.vbox(() => { a.separator(); a.label('Footer'); })
 });
+
+// ✅ max() wrapper also works
+a.vbox(() => { a.label('Title'); a.max(a.scroll(a.vbox(items))); a.label('Footer'); });
 ```
 
-**Solution 2: `a.max()` wrapper** (for single expanding region)
-```typescript
-// ✅ Also correct
-a.vbox(() => {
-  a.label('Title');
-  a.max(a.scroll(a.vbox(many_items)));  // ← expands to fill
-  a.label('Footer');
-});
-```
+## Container, Interaction, and Display Widgets
 
-**Rule:** Only `border()` regions (`top`, `center`, `bottom`, `left`, `right`) and `max()` expand in a vbox/hbox. Everything else sizes to content.
+DocTabs (dynamic tab management), Navigation (stack-based), InnerWindow, Popup — all follow the builder pattern. Drag & drop via `setDraggable()`/`setDroppable()`. Context menus via `setContextMenu([...])`. Focus management via `focus()`/`focusNext()`/`focusPrevious()`. Accessibility via `setAccessibility({ label, description, role })` and `app.announce()`. Resource management via `app.resources.register()`/`unregister()`.
 
-**See:** `examples/todomvc.ts`, `examples/daily-checklist.ts`, `cosyne/demos/index.ts`
+**TextGrid** — terminal-style character grid with cell-level styling. Used by the terminal app. Key methods: `setText(text)`, `getText()`, `setCell(col, row, char, style?)`, `setRow(row, text, style?)`, `setStyle(col, row, style)`, `setStyleRange(col1, row1, col2, row2, style)`. Style options: `fgColor`, `bgColor`, `bold`, `italic`. See `core/src/widgets/display_data.ts`.
 
-## Container Widget Methods
-
-**DocTabs (dynamic tab management):**
-```typescript
-const tabs = a.doctabs((tab) => { /* initial tabs */ });
-tabs.append('New Tab', () => a.label('Content'), true);  // Add tab, select it
-tabs.remove(0);    // Remove tab by index
-tabs.select(1);    // Select tab by index
-```
-
-**Navigation (stack-based navigation):**
-```typescript
-const nav = a.navigation('Home', () => a.label('Home page'));
-nav.push(() => a.label('Detail page'), 'Details');  // Push new view
-nav.back();       // Pop to previous
-nav.forward();    // Go forward in history
-nav.setTitle('New Title');  // Update current title
-```
-
-**InnerWindow:**
-```typescript
-const inner = a.innerwindow('Title', () => { /* content */ });
-inner.setTitle('New Title');
-inner.close();
-```
-
-**Popup:**
-```typescript
-const popup = a.popup(() => { /* content */ });
-popup.show(100, 200);  // Show at x, y coordinates
-popup.move(150, 250);  // Move to new position
-popup.hide();          // Hide popup
-```
-
-## Interaction Features
-
-**Drag & Drop:**
-```typescript
-widget.setDraggable(true);   // Enable dragging
-widget.setDroppable(true);   // Accept drops
-// Handle via callbacks configured at creation
-```
-
-**Context Menus:**
-```typescript
-widget.setContextMenu([
-  { label: 'Copy', onClick: () => copy() },
-  { label: 'Paste', onClick: () => paste() }
-]);
-```
-
-**Focus Management:**
-```typescript
-widget.focus();      // Set focus to widget
-widget.focusNext();  // Move to next focusable
-widget.focusPrevious();  // Move to previous focusable
-```
-
-**Widget Registration (for testing):**
-```typescript
-widget.registerTestId('my-button');    // Register for automated testing
-widget.registerCustomId('unique-id');  // Custom ID for lookup
-```
-
-## Accessibility
-
-```typescript
-// Set accessibility metadata
-widget.setAccessibility({
-  label: 'Submit button',
-  description: 'Submits the form',
-  role: 'button'
-});
-
-// Screen reader announcements
-app.announce('Form submitted successfully');
-
-// Enable/disable accessibility
-app.enableAccessibility();
-app.disableAccessibility();
-```
-
-## TextGrid Advanced Features
-
-```typescript
-const grid = a.textgrid(80, 24);  // columns, rows
-
-// Set content
-grid.setText('Full grid content');
-grid.setCell(0, 0, 'A', { fgColor: '#ff0000', bold: true });
-grid.setRow(1, 'Entire row text', { bgColor: '#333333' });
-
-// Styling
-grid.setStyle(0, 0, { fgColor: '#00ff00', italic: true });
-grid.setStyleRange(0, 0, 5, 10, { bgColor: '#0000ff' });
-
-// Read content
-const text = grid.getText();
-```
-
-## Resource Management
-
-```typescript
-// Register binary resources (for images, fonts, etc.)
-app.resources.register('my-image', imageBuffer);
-app.resources.unregister('my-image');
-
-// Use registered resources
-a.image({ resource: 'my-image' });
-```
+All other container/interaction widgets are straightforward — read the source when you need exact APIs.
 
 ## Adding Features
 
-**New widget (TypeScript):**
-```typescript
-export class MyWidget extends Widget {
-  constructor(ctx: Context, options: any) {
-    const id = ctx.generateId('mywidget');
-    super(ctx, id);
-    ctx.bridge.send('createMyWidget', { id, ...options });
-    ctx.addToCurrentContainer(id);
-  }
-}
-```
-
-**New widget (Go bridge):**
-```go
-func (b *Bridge) handleCreateMyWidget(msg Message) {
-  widgetID := msg.Payload["id"].(string)
-  widget := widget.NewMyWidget()
-  b.widgets[widgetID] = widget
-  b.sendResponse(Response{ID: msg.ID, Success: true})
-}
-```
+**New widget pattern:** TypeScript side extends `Widget`, generates an ID via `ctx.generateId()`, sends a create message over the bridge, and calls `ctx.addToCurrentContainer(id)`. Go side handles the create message, instantiates the Fyne widget, stores it in `b.widgets[id]`, and sends a success response. See any existing widget pair for the template.
 
 ## Philosophy
 
@@ -1410,8 +389,6 @@ pnpm test
 
 ### Standard Environments (Full Network Access)
 
-If you have unrestricted network access:
-
 ```bash
 pnpm install
 cd bridge && go build -o ../bin/tsyne-bridge && cd ..
@@ -1426,329 +403,49 @@ pnpm test
 
 **CRITICAL: No compiled JavaScript in source directories**
 
-- TypeScript source files live in `src/`, `cosyne/src/`, `core/src/` (`.ts` files only)
-- Compiled output goes to `dist/` directory only (via `pnpm run build`)
-- **NEVER** have `.js`, `.d.ts`, or `.js.map` files in source trees
-- **NEVER** run `tsc` or `npx tsc` directly - it compiles into src/ and breaks everything
+- TypeScript source lives in `src/`, `cosyne/src/`, `core/src/` (`.ts` files only)
+- Compiled output goes to `dist/` only (via `pnpm run build`)
+- **NEVER** run `tsc` or `npx tsc` directly — it compiles into src/ and breaks everything
 - Use `npx tsx` for running applications (compiles on-the-fly with esbuild)
-- This applies to both development AND production - tsx is used everywhere
-- Tests use tsx automatically - no pre-compilation needed
+- Tests use tsx automatically — no pre-compilation needed
 
-**Why this matters:**
-- When `.js` files exist in `src/`, Node.js/tsx loads them instead of compiling `.ts` files
-- This causes stale code issues where your TypeScript changes don't take effect
-- The project depends on tsx on-the-fly compilation, not pre-compiled artifacts
-- `pnpm run build` creates `dist/` for distribution, but runtime uses tsx
+**Why this is a trap:** When `.js` files exist in `src/`, Node.js/tsx loads them instead of compiling `.ts` files. Your TypeScript changes silently don't take effect. If you find `.js`/`.d.ts`/`.js.map` files in source directories, delete them — they're stale artifacts.
 
-**If you find `.js` files in source directories:**
-```bash
-# Clean up stale compiled files from ALL source directories
-rm -f src/*.js src/*.d.ts src/*.js.map src/**/*.js src/**/*.d.ts src/**/*.js.map
-rm -f cosyne/src/*.js cosyne/src/*.d.ts cosyne/src/*.js.map cosyne/src/**/*.js cosyne/src/**/*.d.ts cosyne/src/**/*.js.map
-rm -f core/src/*.js core/src/*.d.ts core/src/*.js.map core/src/**/*.js core/src/**/*.d.ts core/src/**/*.js.map
-```
-
-**Running applications (development and production):**
-```bash
-npx tsx examples/calculator.ts
-npx tsx examples/todomvc.ts
-npx tsx examples/01-hello-world.ts
-npx tsx your-app.ts
-```
+**Running apps:** `npx tsx examples/calculator.ts`, `npx tsx your-app.ts`
 
 ## Troubleshooting
 
-See **[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)** for detailed solutions to common issues:
-- Cloud/LLM environment setup (restricted network access)
-- Go module proxy issues (`storage.googleapis.com`, `fyne.io/systray`)
-- Missing system libraries (X11, OpenGL)
-- Bridge startup problems
-- Test timeouts
-- Stale compiled JavaScript
+See **[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)** for: cloud/LLM environment setup, Go module proxy issues, missing system libraries, bridge startup, test timeouts, stale compiled JavaScript.
 
-### Screenshots Are Blank in Cloud/LLM Environments
-
-**Problem:** You've set up Xvfb, run tests with `TSYNE_HEADED=1 TAKE_SCREENSHOTS=1`, tests pass, but screenshots are blank/white (~600 bytes instead of ~7KB).
-
-**This is expected behavior, not a bug.**
-
-Fyne uses OpenGL for rendering, which requires GPU hardware acceleration. Xvfb provides a software X11 display but cannot render OpenGL content properly. As a result:
-
-- ✅ Tests pass (logic is verified)
-- ✅ Screenshot files are created (capture mechanism works)
-- ❌ Screenshot content is blank (OpenGL doesn't render to software framebuffer)
-
-**What to do:**
-
-1. **Don't worry about it** - Tests verify functionality; screenshots are supplementary
-2. **Use existing screenshots** - `examples/screenshots/` contains pre-captured screenshots from a real display
-3. **Verify screenshots exist** - Check file sizes (~7KB = real content, ~600 bytes = blank)
-
-**For documentation purposes:** The repository's existing screenshots were captured on machines with real displays and show actual UI content. These can be referenced without needing to regenerate them.
-
-See `docs/VISUAL_TESTING.md` for more details on screenshot troubleshooting.
+**Screenshots are blank in cloud environments** — this is expected. Fyne uses OpenGL which needs GPU hardware acceleration. Xvfb provides software X11 but can't render OpenGL. Tests pass (logic verified), screenshots are just blank. Don't worry about it. See `docs/VISUAL_TESTING.md`.
 
 ## Window Abstraction (ITsyneWindow)
 
-### The Problem It Solves
+Apps work in three hosting contexts without code changes: **standalone** (real OS window), **desktop** (MDI inner window), **phone** (stack pane). The framework automatically creates the right window type based on the current mode — apps just call `a.window()` normally.
 
-Apps need to work in **three different hosting contexts**:
-1. **Standalone mode** - Direct OS window (regular desktop app)
-2. **Desktop mode** - Inner window in MDI environment (multiple apps in one process)
-3. **Phone mode** - Stack pane for modal/fullscreen navigation (PhoneTop launcher)
+Methods that don't apply degrade gracefully as no-ops (e.g. `resize()` in phone mode, `centerOnScreen()` in desktop mode). Dialogs are unified across all modes.
 
-Without abstraction, apps would need different code for each context. Instead, Tsyne uses a unified `ITsyneWindow` interface that adapts automatically.
+**The key insight:** Apps should never check which mode they're in. Just use `a.window()` and the framework handles it.
 
-### How It Works
-
-The `ITsyneWindow` interface (`src/tsyne-window.ts`) provides a common API:
-- `Window` - real OS window (resizable, movable, iconifiable)
-- `InnerWindowAdapter` - desktop MDI inner window (resizable, titlebar, close button)
-- `StackPaneAdapter` - phone stack pane (fixed size fullscreen layer, navigational back/close)
-
-**Critical insight:** Apps just call `a.window()` normally. The framework automatically creates the right window type based on the current mode:
-
-```typescript
-// App code (context-agnostic)
-export function buildNotesApp(a: App) {
-  return a.window({ title: 'Notes', width: 900, height: 600 }, (win) => {
-    // Same code works in all three contexts!
-  });
-}
-
-// Framework automatically chooses the implementation:
-// Standalone: a.window() → Window
-// Desktop:   a.window() → InnerWindowAdapter (enabled via enableDesktopMode())
-// Phone:     a.window() → StackPaneAdapter (enabled via enablePhoneMode())
-```
-
-### Window-Specific Methods (Graceful Degradation)
-
-Some window methods don't apply to all contexts - they're no-ops where not applicable:
-- `resize()` - Works in standalone/desktop, no-op in phone (fixed size)
-- `centerOnScreen()` - Works in standalone, no-op in desktop/phone (positioning managed by container)
-- `setFullScreen()` - Works in standalone, no-op in desktop/phone
-- `setIcon()` - Works in standalone, no-op in others
-- `onResize(callback)` - Works in standalone/desktop, no-op in phone (no resize events)
-
-All return promises/values gracefully, so apps don't need conditional logic.
-
-### Dialog System (Unified)
-
-Dialogs are also unified:
-- `showInfo()`, `showError()`, `showConfirm()` - Work the same in all modes
-- File dialogs, forms, color pickers - All delegate to parent window in inner/phone modes
-- No special handling needed in app code
-
-### Context Switching (Framework Level)
-
-The framework enables/disables modes via global context:
-
-```typescript
-// In desktop.ts when launching an app:
-enableDesktopMode({
-  desktopMDI: container,
-  parentWindow: desktopWindow,
-  desktopApp: appInstance
-});
-
-// Now ALL window() calls in that app create InnerWindowAdapters
-const appWindow = a.window(...);  // Creates InnerWindowAdapter
-
-// When app closes
-disableDesktopMode();  // Back to standalone mode
-```
-
-### Pattern for Apps That Work Everywhere
-
-Apps follow this pattern naturally:
-
-```typescript
-export function buildMyApp(a: App) {
-  // Just use a.window() - framework handles the rest
-  a.window({ title: 'My App', width: 800, height: 600 }, (win) => {
-    win.setContent(() => {
-      // Your normal UI code
-    });
-    win.show();
-  });
-}
-```
-
-No special content builders or checks needed. Apps registered in the central `ALL_APPS` registry work in all contexts automatically.
-
-### Decoupled Content Pattern (IRenderTarget)
-
-For maximum reuse, ported apps often decouple content creation from window creation using `IRenderTarget` and `asRenderTarget()`:
-
-```typescript
-import { asRenderTarget, type IRenderTarget, screenshotIfRequested } from 'tsyne';
-
-// App logic only cares about setting content on a target
-export function buildMyApp(a: App, target: IRenderTarget) {
-  target.setContent(() => {
-    a.label('Hello World');
-  });
-}
-
-// Entry point handles the specific hosting context
-if (require.main === module) {
-  // Standalone: Create window -> cast to target
-  app(..., (a) => {
-    a.window(..., (win) => {
-      buildMyApp(a, asRenderTarget(win));
-      win.show();
-      screenshotIfRequested(win, 500); // Helper for CI screenshots
-    });
-  });
-}
-```
-
-**See:** [docs/WINDOW_ADAPTATION.md](docs/WINDOW_ADAPTATION.md) for the full guide on adapting apps to different contexts, including PhoneTop embedding with `windowWidth, windowHeight` parameters and touch controls.
+**Decoupled content pattern:** For maximum reuse, ported apps decouple content from window via `IRenderTarget` and `asRenderTarget(win)` — the app function takes a render target, the entry point creates the appropriate window and casts it. See `docs/WINDOW_ADAPTATION.md`.
 
 ## Desktop Mode & App Sandboxing
 
-Tsyne includes a **desktop environment** that can run multiple apps in inner windows, similar to a traditional desktop OS. Apps are discovered from the central registry in `launchers/all-apps.ts` (which includes `ported-apps/` and `examples/`).
+Desktop environment runs multiple apps in inner windows. Apps discovered from `launchers/all-apps.ts`. Each app gets a `ScopedContext` (widget IDs prefixed with app instance) and `ScopedResourceManager` (resources namespaced per app) — prevents cross-app interference.
 
-**Desktop Architecture:**
-```
-Desktop Environment
-├── App Icons (TsyneDraggableIcon on desktop canvas)
-├── Launch Bar (Show Desktop, All Apps, Running Apps)
-└── Inner Windows (one per running app)
-    └── Sandboxed App Instance
-        ├── ScopedContext (isolated widget IDs)
-        └── ScopedResourceManager (isolated resources)
-```
+**App metadata** via JSDoc: `@tsyne-app:name`, `@tsyne-app:icon`, `@tsyne-app:category`, `@tsyne-app:args`. The `@tsyne-app:args` tag declares the dependency injection signature — `(a: App) => void` is most common. Desktop injects these when launching.
 
-### App Metadata Format
+**Key files:** `launchers/desktop/index.ts`, `src/context.ts` (ScopedContext), `src/sandbox-runtime.ts`.
 
-Apps declare their metadata and dependencies using JSDoc-style comments:
-
-```typescript
-/**
- * Calculator App
- *
- * @tsyne-app:name Calculator
- * @tsyne-app:icon calculatorIcon
- * @tsyne-app:category Utilities
- * @tsyne-app:args (a: App) => void  // Dependency injection signature
- */
-export function buildCalculatorApp(a: App): void {
-  // App implementation using injected App instance
-}
-```
-
-**Metadata Tags:**
-- `@tsyne-app:name` - Display name for the app
-- `@tsyne-app:icon` - Icon resource name (Fyne theme icon)
-- `@tsyne-app:category` - Category for grouping (Games, Utilities, etc.)
-- `@tsyne-app:args` - Builder function signature for dependency injection
-
-**Reading Metadata at Runtime:**
-```typescript
-import { getAppMetadata } from 'tsyne';
-
-// In standalone execution block, derive title from metadata
-if (require.main === module) {
-  const meta = getAppMetadata();
-  app(resolveTransport(), { title: meta?.name ?? 'App' }, buildMyApp);
-}
-```
-
-### Dependency Injection Pattern
-
-Apps receive their dependencies through the builder function signature:
-
-```typescript
-// Pattern 1: App instance only (most common)
-// @tsyne-app:args (a: App) => void
-export function buildMyApp(a: App): void { }
-
-// Pattern 2: App + Window (for dialog access)
-// @tsyne-app:args (a: App, win: Window) => void
-export function buildMyApp(a: App, win: Window): void { }
-
-// Pattern 3: App + Context (for advanced scenarios)
-// @tsyne-app:args (a: App, ctx: Context) => void
-export function buildMyApp(a: App, ctx: Context): void { }
-```
-
-The desktop injects these dependencies when launching the app in its sandboxed environment.
-
-### Sandboxing Architecture
-
-When apps run in desktop mode, they're isolated through:
-
-1. **ScopedContext** - Widget IDs are prefixed with app instance scope
-   - Prevents cross-app widget access
-   - Format: `${appInstanceId}:${widgetId}`
-   - Container stack operations delegate to parent (InnerWindow integration)
-
-2. **ScopedResourceManager** - Resources are namespaced per app
-   - Apps can't access other apps' registered resources
-   - Format: `${appInstanceId}:${resourceName}`
-
-3. **IApp Interface** - Apps use a restricted API surface
-   - `vbox()`, `hbox()`, `label()`, etc. - widget creation
-   - No direct access to system APIs without explicit grants
-
-**Key Files:**
-- `launchers/desktop/index.ts` - Desktop environment, app discovery, launching
-- `src/context.ts` - Context and ScopedContext classes
-- `src/app-transformer.ts` - AST transformer for sandbox preparation (if using VM isolation)
-- `src/sandbox-runtime.ts` - Pluggable sandbox runtime (Node VM, isolated-vm)
-
-### Running the Desktop
-
-```bash
-# Run desktop environment
-npx tsx launchers/desktop/index.ts
-
-# Or via the buildDesktop function
-import { buildDesktop } from 'tsyne';
-app({ title: 'Tsyne Desktop' }, async (a) => {
-  await buildDesktop(a);
-});
-```
-
-### Testing Desktop Apps
-
-Desktop tests use async builders since `buildDesktop` is async:
-
-```typescript
-const testApp = await tsyneTest.createApp(async (app) => {
-  await buildDesktop(app);
-});
-
-// Interact with desktop icons
-await ctx.getById('icon-calculator').click();
-await ctx.getById('icon-calculator').click(); // Double-click to launch
-
-// Interact with launched app
-await ctx.getById('calc-display').shouldBe('0');
-```
+**Run:** `npx tsx launchers/desktop/index.ts`
 
 ## PhoneTop: Phone Launcher
 
-**PhoneTop** (`phone-apps/phonetop.ts`) is a phone-style **launcher** (not an OS) that runs Tsyne apps in a mobile UI. It provides a grid home screen, category folders, swipe navigation, and virtual keyboard. See **[phone-apps/README.md](phone-apps/README.md)** for terminology, stack position, and phone app development.
+Phone-style launcher (`phone-apps/phonetop.ts`) — grid home screen, category folders, swipe navigation, virtual keyboard. It's a launcher, not an OS. See `phone-apps/README.md`.
 
 ## Tauri Mobile (Android APK)
 
-**Build Android APK for all 4 architectures:**
-```bash
-cd tauri-phonetop
-JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 \
-ANDROID_HOME=~/Android/Sdk \
-NDK_HOME=~/Android/Sdk/ndk/26.1.10909125 \
-npx tauri android build
-```
-
-**Prerequisites:** Java 17, Android SDK, NDK 26.x, Rust Android targets (`rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android`)
-
-**Output:** `src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk` (27MB)
-
-**Architecture:** Tauri WebView ←→ WebSocket ←→ Node.js + phonetop.ts (via `TSYNE_BRIDGE_MODE=web-renderer`)
+Build via `npx tauri android build` in `tauri-phonetop/`. Needs Java 17, Android SDK, NDK 26.x, Rust Android targets. Architecture: Tauri WebView ←→ WebSocket ←→ Node.js + phonetop.ts (via `TSYNE_BRIDGE_MODE=web-renderer`). See the build commands in `tauri-phonetop/`.
 
 ## References
 
@@ -1756,24 +453,17 @@ npx tauri android build
 - **[docs/API_REFERENCE.md](docs/API_REFERENCE.md)** - Complete API reference for widgets, layouts, and dialogs
 - **[docs/reference.md](docs/reference.md)** - Comprehensive technical reference with examples
 - **[docs/README.md](docs/README.md)** - Documentation index and navigation
-- `docs/ARCHITECTURE.md` - Deep dive into internal architecture
+- `docs/ARCHITECTURE.md` - Internal architecture deep dive
 - `docs/TESTING.md` - TsyneTest framework guide
 - `docs/BROWSER_TESTING.md` - Browser mode testing guide
-- `docs/remote_control.md` - HTTP API for remote inspection/control of Tsyne environments
+- `docs/remote_control.md` - HTTP API for remote inspection/control
 - `docs/PATTERNS.md` - MVC, MVVM, MVP patterns
 - `docs/ACCESSIBILITY.md` - Accessibility features and guidelines
 - `docs/QUICKSTART.md` - Getting started guide
-- `docs/ROADMAP.md` - Feature roadmap (~85% Fyne coverage, lists remaining APIs)
-- `docs/PROS_AND_CONS.md` - Honest comparison with Electron/Tauri
+- `docs/ROADMAP.md` - Feature roadmap (~85% Fyne coverage)
 - `docs/TROUBLESHOOTING.md` - Common issues and solutions
 
 ### Example Code
 - `examples/todomvc.ts` - Full MVC example with when() and filtering
-- `examples/todomvc-when.ts` - Preserved when() implementation variant
-- `more_mvc_like_for_todomvc_app.md` - Implementation status and next steps
 - `src/widgets/base.ts` - Widget base class, when() implementation
 - `src/widgets/containers.ts` - ModelBoundList, all container widgets
-
-### Community
-- `CODE_OF_CONDUCT.md` - Community guidelines
-- `CONTRIBUTING.md` - Developer guide
