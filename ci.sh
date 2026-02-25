@@ -610,16 +610,22 @@ if [ "$SKIP_TESTS" = false ]; then
   else
     echo "Running in HEADLESS mode"
     if [ "$OS" = "linux" ]; then
-      # Start Xvfb for headless GUI testing (if not already running)
-      if ! pgrep -x Xvfb > /dev/null; then
-        echo "Starting Xvfb..."
-        Xvfb :99 -screen 0 1024x768x24 &
-        XVFB_PID=$!
-        export DISPLAY=:99
-        sleep 2
+      # Require a real GPU — shader tests need hardware-accelerated GL
+      if [ ! -d "/dev/dri" ]; then
+        echo "❌ FATAL: No GPU found (/dev/dri missing)"
+        echo "   Shader tests require hardware-accelerated OpenGL."
+        echo "   Container needs: --device /dev/dri -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=:0"
+        exit 1
+      fi
+      # Check if a host X display is available (e.g. container with X socket mounted)
+      DISPLAY_NUM="${DISPLAY#:}"
+      if [ -n "$DISPLAY" ] && [ -S "/tmp/.X11-unix/X${DISPLAY_NUM}" ]; then
+        echo "Using host display $DISPLAY (hardware-accelerated GL) ✓"
       else
-        echo "Xvfb already running ✓"
-        export DISPLAY=:99
+        echo "❌ FATAL: GPU present but no X display available"
+        echo "   /dev/dri exists but DISPLAY=$DISPLAY has no X socket."
+        echo "   Container needs: -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=:0"
+        exit 1
       fi
     elif [ "$OS" = "macos" ]; then
       # macOS doesn't need Xvfb - Fyne can render headlessly
