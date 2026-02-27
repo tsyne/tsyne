@@ -1,19 +1,21 @@
 import { EnhancedDOMPoint } from '@/engine/enhanced-dom-point';
 
-const canvas = document.createElement('canvas');
-const context = canvas.getContext('2d')!;
-
-// DO NOT USE FOR REAL TIME COLOR CHANGES
-// This is a very small way to convert color but not a fast one obviously
+// Pure JS hex color parsing — no canvas needed
 export function hexToRgba(hex: string): [number, number, number, number] {
-  context.clearRect(0, 0, 1, 1);
-  context.fillStyle = hex;
-  context.fillRect(0, 0, 1, 1);
-  return [...context.getImageData(0, 0, 1, 1).data] as [number, number, number, number];
+  let h = hex.trim();
+  if (h.startsWith('#')) h = h.slice(1);
+
+  // Handle shorthand (#RGB, #RGBA)
+  if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+  if (h.length === 4) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2] + h[3] + h[3];
+
+  const r = parseInt(h.slice(0, 2), 16) || 0;
+  const g = parseInt(h.slice(2, 4), 16) || 0;
+  const b = parseInt(h.slice(4, 6), 16) || 0;
+  const a = h.length >= 8 ? (parseInt(h.slice(6, 8), 16) || 0) : 255;
+  return [r, g, b, a];
 }
 
-// DO NOT USE FOR REAL TIME COLOR CHANGES
-// This is a very small way to convert color but not a fast one obviously
 export function hexToWebgl(hex: string): number[] {
   return hexToRgba(hex).map(val => val / 255);
 }

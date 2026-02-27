@@ -45,40 +45,43 @@ export class Object3d {
   }
 
   setRotation(xRads: number, yRads: number, zRads: number) {
-    this.rotationMatrix = new DOMMatrix();
+    this.rotationMatrix.setIdentity();
     this.rotation.set(radsToDegrees(xRads), radsToDegrees(yRads), radsToDegrees(zRads));
     this.rotationMatrix.rotateSelf(radsToDegrees(xRads), radsToDegrees(yRads), radsToDegrees(zRads));
   }
 
   isUsingLookAt = false;
   getMatrix() {
-    const matrix = new DOMMatrix();
-    matrix.translateSelf(this.position.x, this.position.y, this.position.z);
+    // Reuse localMatrix — reset to identity then apply transforms in-place (zero-alloc)
+    this.localMatrix.setIdentity();
+    this.localMatrix.translateSelf(this.position.x, this.position.y, this.position.z);
     if (this.isUsingLookAt) {
-      matrix.multiplySelf(this.rotationMatrix);
+      this.localMatrix.multiplySelf(this.rotationMatrix);
     } else {
-      matrix.rotateSelf(this.rotation.x, this.rotation.y, this.rotation.z);
+      this.localMatrix.rotateSelf(this.rotation.x, this.rotation.y, this.rotation.z);
     }
-    matrix.scaleSelf(this.scale.x, this.scale.y, this.scale.z);
-    return matrix;
+    this.localMatrix.scaleSelf(this.scale.x, this.scale.y, this.scale.z);
+    return this.localMatrix;
   }
 
   updateWorldMatrix() {
-    // Don't udpate spirites to save time on matrix multiplication. Bit of a hack but ya it works...
+    // Don't update sprites to save time on matrix multiplication. Bit of a hack but ya it works...
     // @ts-ignore
     if (this.color !== undefined) {
       return;
     }
 
-    this.localMatrix = this.getMatrix();
+    this.getMatrix(); // updates localMatrix in-place
 
     if (this.parent) {
-      this.worldMatrix = this.parent.worldMatrix.multiply(this.localMatrix);
+      // worldMatrix = parent.worldMatrix × localMatrix (zero-alloc via copyFrom + multiplySelf)
+      this.worldMatrix.copyFrom(this.parent.worldMatrix);
+      this.worldMatrix.multiplySelf(this.localMatrix);
     } else {
-      this.worldMatrix = DOMMatrix.fromMatrix(this.localMatrix);
+      this.worldMatrix.copyFrom(this.localMatrix);
     }
 
-      this.children.forEach(child => child.updateWorldMatrix());
+    this.children.forEach(child => child.updateWorldMatrix());
   }
 
   allChildren(): Object3d[] {
@@ -104,11 +107,11 @@ export class Object3d {
     this.lookAtX.crossVectors(this.up, this.lookAtZ).normalize();
     this.lookAtY.crossVectors(this.lookAtZ, this.lookAtX).normalize();
 
-    this.rotationMatrix = new DOMMatrix([
-      this.lookAtX.x, this.lookAtX.y, this.lookAtX.z, 0,
-      this.lookAtY.x, this.lookAtY.y, this.lookAtY.z, 0,
-      this.lookAtZ.x, this.lookAtZ.y, this.lookAtZ.z, 0,
-      0, 0, 0, 1,
-    ]);
+    // Set rotation matrix in-place instead of creating new DOMMatrix
+    const v = this.rotationMatrix._values;
+    v[0]  = this.lookAtX.x; v[1]  = this.lookAtX.y; v[2]  = this.lookAtX.z; v[3]  = 0;
+    v[4]  = this.lookAtY.x; v[5]  = this.lookAtY.y; v[6]  = this.lookAtY.z; v[7]  = 0;
+    v[8]  = this.lookAtZ.x; v[9]  = this.lookAtZ.y; v[10] = this.lookAtZ.z; v[11] = 0;
+    v[12] = 0;              v[13] = 0;              v[14] = 0;              v[15] = 1;
   }
 }

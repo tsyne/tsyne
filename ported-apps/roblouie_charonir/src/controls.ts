@@ -11,39 +11,66 @@ class Controls {
   keyMap: Map<string, boolean> = new Map();
   previousState = { isUp: this.isUp, isDown: this.isDown, isSelect: this.isSelect };
 
+  private eventTarget: any = null;
+
   constructor() {
-    document.addEventListener('keydown', event => this.toggleKey(event, true));
-    document.addEventListener('keyup', event => this.toggleKey(event, false));
     this.direction = new EnhancedDOMPoint();
+  }
+
+  /** Bind to a canvas (or document) for keyboard events */
+  bindTo(target: any) {
+    this.eventTarget = target;
+    target.addEventListener('keydown', (event: any) => this.toggleKey(event, true));
+    target.addEventListener('keyup', (event: any) => this.toggleKey(event, false));
+  }
+
+  /** Check if a key (by code or lowercase key name) is pressed */
+  private isKeyDown(code: string): boolean {
+    if (this.keyMap.get(code)) return true;
+    // Fyne dispatches lowercase key values, so also check those
+    const lowerMap: Record<string, string> = {
+      'KeyW': 'w', 'KeyA': 'a', 'KeyS': 's', 'KeyD': 'd',
+      'ArrowUp': 'ArrowUp', 'ArrowDown': 'ArrowDown',
+      'ArrowLeft': 'ArrowLeft', 'ArrowRight': 'ArrowRight',
+      'Enter': 'Enter',
+    };
+    const alt = lowerMap[code];
+    if (alt && this.keyMap.get(alt)) return true;
+    // Also check lowercase version directly
+    if (this.keyMap.get(code.toLowerCase())) return true;
+    return false;
   }
 
   queryController() {
     this.previousState.isUp = this.isUp;
     this.previousState.isDown = this.isDown;
     this.previousState.isSelect = this.isSelect;
-    const gamepad = navigator.getGamepads()[0];
-    const leftVal = (this.keyMap.get('KeyA') || this.keyMap.get('ArrowLeft') || gamepad?.buttons[14]?.pressed) ? -1 : 0;
-    const rightVal = (this.keyMap.get('KeyD') || this.keyMap.get('ArrowRight') || gamepad?.buttons[15].pressed) ? 1 : 0;
-    this.direction.x = (leftVal + rightVal) || gamepad?.axes[0] || 0;
-    this.direction.y = gamepad?.axes[1] ?? 0;
+
+    // No gamepad support in Tsyne
+    const leftVal = (this.isKeyDown('KeyA') || this.isKeyDown('ArrowLeft')) ? -1 : 0;
+    const rightVal = (this.isKeyDown('KeyD') || this.isKeyDown('ArrowRight')) ? 1 : 0;
+    this.direction.x = leftVal + rightVal;
+    this.direction.y = 0;
 
     if (this.direction.magnitude < 0.1) {
       this.direction.x = 0; this.direction.y = 0;
     }
 
-    const keyboardUp = this.keyMap.get('KeyW') || this.keyMap.get('ArrowUp');
-    const keyboardDown = this.keyMap.get('KeyS') || this.keyMap.get('ArrowDown');
+    const keyboardUp = this.isKeyDown('KeyW') || this.isKeyDown('ArrowUp');
+    const keyboardDown = this.isKeyDown('KeyS') || this.isKeyDown('ArrowDown');
 
-    this.isUp = keyboardUp || gamepad?.buttons[12]?.pressed || this.direction.y < 0;
-    this.isDown = keyboardDown || gamepad?.buttons[13].pressed || this.direction.y > 0;
+    this.isUp = keyboardUp || false;
+    this.isDown = keyboardDown || false;
 
-    this.accel = keyboardUp ? 1 : (gamepad?.buttons[7]?.value ?? 0);
-    this.decel = keyboardDown ? 1 : (gamepad?.buttons[6]?.value ?? 0);
-    this.isSelect = this.keyMap.get('Enter') || gamepad?.buttons[0].pressed || gamepad?.buttons[9].pressed;
+    this.accel = keyboardUp ? 1 : 0;
+    this.decel = keyboardDown ? 1 : 0;
+    this.isSelect = this.isKeyDown('Enter');
   }
 
-  private toggleKey(event: KeyboardEvent, isPressed: boolean) {
-    this.keyMap.set(event.code, isPressed);
+  private toggleKey(event: any, isPressed: boolean) {
+    // Store both code and key for maximum compatibility
+    if (event.code) this.keyMap.set(event.code, isPressed);
+    if (event.key) this.keyMap.set(event.key, isPressed);
   }
 }
 

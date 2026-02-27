@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { ConvexGeometry } from "three/examples/jsm/geometries/ConvexGeometry"
+import { ConvexGeometry } from "three/examples/jsm/geometries/ConvexGeometry.js"
 
 export default class Satellite extends THREE.Mesh {
     direction: THREE.Vector3;

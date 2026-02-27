@@ -70,5 +70,20 @@ if [ ! -f "$CLI_PATH" ]; then
     exit 1
 fi
 
+# Prevent V8 lazy GC: cap max-old-space-size to keep RSS low.
+# Also shrink semi-space (young gen) — reduces RSS overhead by ~28MB.
+# Cap Go heap via GOMEMLIMIT to prevent unbounded growth.
+if ! echo "${NODE_OPTIONS:-}" | grep -q 'max-old-space-size'; then
+    export NODE_OPTIONS="${NODE_OPTIONS:+$NODE_OPTIONS }--max-old-space-size=384 --max-semi-space-size=2"
+fi
+export GOMEMLIMIT="${GOMEMLIMIT:-384MiB}"
+
+# When TSYNE_MEM_DIAG=1, enable --expose-gc for forced GC in diagnostics
+# NODE_OPTIONS propagates to tsx subprocess (unlike CLI flags)
+if [ "$TSYNE_MEM_DIAG" = "1" ]; then
+    export NODE_OPTIONS="${NODE_OPTIONS:+$NODE_OPTIONS }--expose-gc --max-old-space-size=256 --max-semi-space-size=2"
+    export GOMEMLIMIT="${GOMEMLIMIT:-256MiB}"
+fi
+
 # Run the TypeScript CLI with all arguments
 NODE_PATH="$EFFECTIVE_NODE_PATH" node "$CLI_PATH" "$@"

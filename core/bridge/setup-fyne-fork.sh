@@ -118,7 +118,11 @@ sed -i '/Viewport(x, y, width, height int)/a\
 \	BindVertexArray(vao uint32)\
 \	DeleteVertexArray(vao uint32)\
 \	GetVertexAttribi(index uint32, pname uint32) int32\
-\	GenerateMipmap(target uint32)' "$FORK_DIR/internal/painter/gl/context.go"
+\	GenerateMipmap(target uint32)\
+\	TexStorage3D(target uint32, levels int32, internalformat uint32, width, height, depth int32)\
+\	TexSubImage3D(target uint32, level, xoffset, yoffset, zoffset, width, height, depth int32, format, typ uint32, pixels []byte)\
+\	Finish()\
+\	Flush()' "$FORK_DIR/internal/painter/gl/context.go"
 
 # 6b. Add Framebuffer and Renderbuffer types to gl_core.go and gl_es.go
 echo "[setup-fyne-fork] Adding FBO types..."

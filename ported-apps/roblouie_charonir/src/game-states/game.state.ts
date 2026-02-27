@@ -18,7 +18,6 @@ import { getGridPosition } from '@/engine/physics/surface-collision';
 import { clamp } from '@/engine/helpers';
 import { Level } from '@/level';
 import { Spirit } from '@/spirit';
-import { draw2d } from '@/engine/draw-2d';
 import { hud } from '@/hud';
 import { gameStates } from '@/index';
 import { ghostFlyAwayAudio, ghostThankYouAudio } from '@/sound-effects';
@@ -268,7 +267,6 @@ export class GameState implements State {
     this.spiritsTransported = 0;
     hud.reset();
     this.isLoaded = true;
-    draw2d.clear();
     this.player.engineGain.gain.value = 0.4;
   }
 
@@ -277,7 +275,6 @@ export class GameState implements State {
   }
 
   onLeave() {
-    draw2d.clear();
     this.player.engineGain.gain.value = 0;
     this.player.drivingThroughWaterGain.gain.value = 0;
     this.spirits.forEach(spirit => spirit.audioPlayer?.stop());

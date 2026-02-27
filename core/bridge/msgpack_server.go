@@ -286,9 +286,12 @@ func (s *MsgpackServer) handleClient(conn net.Conn) {
 	s.clients.Store(clientID, conn)
 	defer s.clients.Delete(clientID)
 
+	// Pre-allocate reusable buffers for the read loop to reduce per-frame GC pressure
+	lengthBuf := make([]byte, 4)
+	var msgBuf []byte // grows as needed, reused across frames
+
 	for {
 		// Read length prefix (4 bytes, big-endian)
-		lengthBuf := make([]byte, 4)
 		_, err := io.ReadFull(reader, lengthBuf)
 		if err != nil {
 			if err != io.EOF {
@@ -303,8 +306,12 @@ func (s *MsgpackServer) handleClient(conn net.Conn) {
 			return
 		}
 
-		// Read message body
-		msgBuf := make([]byte, length)
+		// Reuse message buffer — grow only when needed
+		if cap(msgBuf) < int(length) {
+			msgBuf = make([]byte, length)
+		} else {
+			msgBuf = msgBuf[:length]
+		}
 		_, err = io.ReadFull(reader, msgBuf)
 		if err != nil {
 			log.Printf("[msgpack] Error reading message: %v", err)

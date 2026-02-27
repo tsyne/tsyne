@@ -1,25 +1,42 @@
+// Stub DrawEngine for Tsyne — HUD is rendered via window title instead
 class DrawEngine {
-  context: CanvasRenderingContext2D;
+  context: any;
 
   constructor() {
-    // @ts-ignore
-    this.context = c2d.getContext('2d')!;
+    // Create a minimal stub context that won't crash if accessed
+    this.context = {
+      clearRect() {},
+      fillRect() {},
+      fillText() {},
+      strokeText() {},
+      save() {},
+      restore() {},
+      translate() {},
+      rotate() {},
+      scale() {},
+      resetTransform() {},
+      getImageData(x: number, y: number, w: number, h: number) {
+        return { width: w, height: h, data: new Uint8ClampedArray(w * h * 4) };
+      },
+      putImageData() {},
+      drawImage() {},
+      measureText() { return { width: 0 }; },
+      filter: 'none',
+      fillStyle: '#000',
+      strokeStyle: '#000',
+      lineWidth: 1,
+      globalCompositeOperation: 'source-over',
+      textAlign: 'start',
+      font: '10px sans-serif',
+      textBaseline: 'alphabetic',
+      canvas: { style: {}, width: 1280, height: 720 },
+    };
   }
 
-  clear() {
-    this.context.clearRect(0, 0, 1280, 720);
-  }
+  clear() {}
 
   drawText(text: string, font: string, size: number, x: number, y: number, lineWidth = 1, textAlign: 'center' | 'left' | 'right' = 'center', isItalic = true, fill = 'black') {
-    const context = this.context;
-    context.font = `bold ${isItalic ? 'italic' : ''} ${size}px ${font}, serif-black`;
-    context.textAlign = textAlign;
-    context.textBaseline="middle";
-    context.fillStyle = fill;
-    context.fillText(text, x, y);
-    context.strokeStyle = 'white';
-    context.lineWidth = lineWidth;
-    lineWidth && context.strokeText(text, x, y);
+    // No-op
   }
 }
 

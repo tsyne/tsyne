@@ -430,11 +430,11 @@ proto.getParameter = function (pname: GLenum): any {
     case this.MAX_VARYING_VECTORS:
       return 8;
     case this.MAX_COMBINED_TEXTURE_IMAGE_UNITS:
-      return 16;
+      return 32;
     case this.MAX_TEXTURE_IMAGE_UNITS:
-      return 16;
+      return 32;
     case this.MAX_VERTEX_TEXTURE_IMAGE_UNITS:
-      return 16;
+      return 32;
     case this.COMPRESSED_TEXTURE_FORMATS:
       return new Uint32Array([]);
     case 0x84FF: // MAX_TEXTURE_MAX_ANISOTROPY_EXT

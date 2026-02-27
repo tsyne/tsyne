@@ -14,8 +14,8 @@
  *   gl-proxy.ts            — This barrel file
  */
 
-// Core class + encodeBufferData helper
-import { TsyneGLProxy, encodeBufferData } from './gl-proxy-core';
+// Core class + encodeBufferData helper + arena reset
+import { TsyneGLProxy, encodeBufferData, resetEncodeArena } from './gl-proxy-core';
 
 // Side-effect imports: augment TsyneGLProxy.prototype with method groups
 import './gl-proxy-uniforms';
@@ -23,5 +23,5 @@ import './gl-proxy-textures';
 import './gl-proxy-state';
 
 // Re-export everything consumers need
-export { TsyneGLProxy, encodeBufferData };
+export { TsyneGLProxy, encodeBufferData, resetEncodeArena };
 export { GL_CONSTANTS, applyGLConstants } from './gl-constants';

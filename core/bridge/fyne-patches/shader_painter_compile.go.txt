@@ -7,14 +7,21 @@ import (
 	"strings"
 )
 
-// attrRegex is compiled once at package level for parseVertexAttributes
-var attrRegex = regexp.MustCompile(`(?m)^\s*(?:attribute|in)\s+(vec2|vec3|vec4|float|mat2|mat3|mat4)\s+(\w+)\s*;`)
+// attrRegex matches attribute declarations in GLSL vertex shaders, including:
+// - Standard:  attribute vec3 position; / in vec3 position;
+// - Layout:    layout(location=0)in vec3 position;  (minified, no space before 'in')
+// - Layout:    layout(location = 0) in vec3 position;  (formatted)
+// Uses non-anchored matching so it works on single-line minified shaders.
+var attrRegex = regexp.MustCompile(`(?:layout\s*\(\s*location\s*=\s*(\d+)\s*\)\s*)?(?:attribute|in)\s+(vec2|vec3|vec4|float|mat2|mat3|mat4)\s+(\w+)\s*;`)
 
-// parsedAttrsCache caches parsed vertex attributes keyed by vertex source
+// parsedAttrsCache caches parsed vertex attributes keyed by vertex source.
+// Capped at 64 entries to prevent unbounded growth.
 var parsedAttrsCache = make(map[string][]shaderAttribute)
+const maxParsedAttrsCache = 64
 
 // parseVertexAttributes extracts attribute declarations from a GLSL vertex shader
 // Returns a list of attributes with their names and sizes.
+// Handles both formatted and minified shaders, including layout(location=N) qualifiers.
 // Results are cached by vertex source string.
 func parseVertexAttributes(vertexSrc string) []shaderAttribute {
 	if cached, ok := parsedAttrsCache[vertexSrc]; ok {
@@ -23,22 +30,37 @@ func parseVertexAttributes(vertexSrc string) []shaderAttribute {
 
 	var attrs []shaderAttribute
 
-	// Match: attribute <type> <name>;
-	// Handles: attribute vec2 vert; attribute vec3 position; etc.
 	matches := attrRegex.FindAllStringSubmatch(vertexSrc, -1)
 	for _, match := range matches {
-		if len(match) >= 3 {
-			glslType := match[1]
-			name := match[2]
+		if len(match) >= 4 {
+			// match[1] = layout location (may be empty)
+			// match[2] = GLSL type
+			// match[3] = attribute name
+			glslType := match[2]
+			name := match[3]
 			size := getTypeSize(glslType)
-			attrs = append(attrs, shaderAttribute{
+			attr := shaderAttribute{
 				name:     name,
 				glslType: glslType,
 				size:     size,
-			})
+			}
+			// Store layout location if present (-1 = no layout)
+			attr.layoutLocation = -1
+			if match[1] != "" {
+				loc := 0
+				for _, ch := range match[1] {
+					loc = loc*10 + int(ch-'0')
+				}
+				attr.layoutLocation = loc
+			}
+			attrs = append(attrs, attr)
 		}
 	}
 
+	// Evict entire cache if over limit (simple reset, not LRU — these are cheap to reparse)
+	if len(parsedAttrsCache) >= maxParsedAttrsCache {
+		parsedAttrsCache = make(map[string][]shaderAttribute)
+	}
 	parsedAttrsCache[vertexSrc] = attrs
 	return attrs
 }

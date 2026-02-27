@@ -7,6 +7,7 @@
 
 import { TsyneBridge } from './bridge';
 import { TsyneGLProxy } from './gl-proxy';
+import { SoftCanvas2D } from './canvas-2d-polyfill';
 
 export interface CanvasRenderingContext2DSettings {
   alpha?: boolean;
@@ -38,8 +39,14 @@ export class TsyneCanvas {
   // Canvas ID on the bridge
   private bridgeCanvasId: string | null = null;
 
+  // Overlay container ID on the bridge (for 2D HUD elements)
+  overlayId: string = '';
+
   // GL context (created lazily)
   private glProxy: TsyneGLProxy | null = null;
+
+  // 2D context (created lazily)
+  private ctx2d: SoftCanvas2D | null = null;
 
   // Event listeners
   private eventListeners = new Map<string, Set<EventListener>>();
@@ -66,7 +73,15 @@ export class TsyneCanvas {
   getContext(
     contextType: string,
     attributes?: CanvasRenderingContext2DSettings
-  ): TsyneGLProxy | null {
+  ): TsyneGLProxy | SoftCanvas2D | null {
+    // Support Canvas 2D for procedural texture generation
+    if (contextType === '2d') {
+      if (!this.ctx2d) {
+        this.ctx2d = new SoftCanvas2D(this.width, this.height);
+      }
+      return this.ctx2d as any;
+    }
+
     // Only support WebGL2
     if (contextType !== 'webgl2' && contextType !== 'webgl') {
       console.warn(`Unsupported context type: ${contextType}`);
@@ -178,7 +193,9 @@ export class TsyneCanvas {
   async getBridgeCanvasId(): Promise<string> {
     if (!this.bridgeCanvasId) {
       try {
-        this.bridgeCanvasId = await this.bridge.createGLCanvas(this.width, this.height, this.windowId, this.interactive);
+        const result = await this.bridge.createGLCanvas(this.width, this.height, this.windowId, this.interactive);
+        this.bridgeCanvasId = result.canvasId;
+        this.overlayId = result.overlayId;
 
         // Set up mouse event handlers if interactive
         if (this.interactive) {

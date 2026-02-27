@@ -236,11 +236,28 @@ async function runApp(
     }
   }
 
+  // Auto-detect tsconfig.json near the app for tsx path alias resolution.
+  // tsx searches from CWD which may differ from the app's directory.
+  let tsconfigPath = process.env.TSX_TSCONFIG_PATH;
+  if (!tsconfigPath) {
+    let searchDir = path.dirname(absolutePath);
+    const root = path.parse(searchDir).root;
+    while (searchDir !== root) {
+      const candidate = path.join(searchDir, 'tsconfig.json');
+      if (fs.existsSync(candidate)) {
+        tsconfigPath = candidate;
+        break;
+      }
+      searchDir = path.dirname(searchDir);
+    }
+  }
+
   // Common environment for running the app
-  const runEnv = {
+  const runEnv: Record<string, string | undefined> = {
     ...process.env,
     TSYNE_BRIDGE_PATH: findBridgePath() || undefined,
     NODE_PATH: nodePath || undefined,
+    TSX_TSCONFIG_PATH: tsconfigPath || undefined,
   };
 
   if (!tsxPath) {

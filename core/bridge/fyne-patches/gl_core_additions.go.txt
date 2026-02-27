@@ -208,3 +208,21 @@ func (c *coreContext) GetVertexAttribi(index uint32, pname uint32) int32 {
 func (c *coreContext) GenerateMipmap(target uint32) {
 	gl.GenerateMipmap(target)
 }
+
+func (c *coreContext) TexStorage3D(target uint32, levels int32, internalformat uint32, width, height, depth int32) {
+	gl.TexStorage3D(target, levels, internalformat, width, height, depth)
+}
+
+func (c *coreContext) TexSubImage3D(target uint32, level, xoffset, yoffset, zoffset, width, height, depth int32, format, typ uint32, pixels []byte) {
+	if len(pixels) > 0 {
+		gl.TexSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, typ, gl.Ptr(pixels))
+	}
+}
+
+func (c *coreContext) Finish() {
+	gl.Finish()
+}
+
+func (c *coreContext) Flush() {
+	gl.Flush()
+}

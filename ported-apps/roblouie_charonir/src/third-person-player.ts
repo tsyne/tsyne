@@ -51,10 +51,15 @@ export class ThirdPersonPlayer {
     drivingThroughWaterAudio.start();
   }
 
+  // Pre-allocated scratch points for zero-alloc per-frame operations
+  private _scratchTransform = new EnhancedDOMPoint();
+  private _scratchCamDir = new EnhancedDOMPoint();
+  private _scratchAudioDir = new EnhancedDOMPoint();
+
   private transformIdeal(ideal: EnhancedDOMPoint): EnhancedDOMPoint {
-    return new EnhancedDOMPoint()
-      .set(this.mesh.wrapper.rotationMatrix.transformPoint(ideal))
-      .add(this.mesh.position);
+    this.mesh.wrapper.rotationMatrix.transformPointInto(ideal, this._scratchTransform);
+    this._scratchTransform.add(this.mesh.position);
+    return this._scratchTransform;
   }
 
   private dragRate = 0;
@@ -104,16 +109,16 @@ export class ThirdPersonPlayer {
 
     this.camera.position.lerp(this.transformIdeal(this.idealPosition), 0.07);
 
-    // Keep camera away regardless of lerp
+    // Keep camera away regardless of lerp (zero-alloc via scratch point)
     const distanceToKeep = 17;
-    const {x, z} = this.camera.position.clone()
-      .subtract(this.mesh.position) // distance from camera to player
-      .normalize() // direction of camera to player
-      .scale(distanceToKeep) // scale direction out by distance, giving us a lerp direction but constant distance
-      .add(this.mesh.position); // move back relative to player
+    this._scratchCamDir.set(this.camera.position)
+      .subtract(this.mesh.position)
+      .normalize()
+      .scale(distanceToKeep)
+      .add(this.mesh.position);
 
-    this.camera.position.x = x;
-    this.camera.position.z = z;
+    this.camera.position.x = this._scratchCamDir.x;
+    this.camera.position.z = this._scratchCamDir.z;
 
     this.camera.lookAt(this.transformIdeal(this.idealLookAt));
     this.camera.updateWorldMatrix();
@@ -165,7 +170,7 @@ export class ThirdPersonPlayer {
       this.axis = this.axis.crossVectors(this.mesh.up, floorData.floor.normal);
       const radians = Math.acos(floorData.floor.normal.dot(this.mesh.up));
       this.mesh.isUsingLookAt = true;
-      this.mesh.rotationMatrix = new DOMMatrix();
+      this.mesh.rotationMatrix.setIdentity();
       this.mesh.rotationMatrix.rotateAxisAngleSelf(this.axis.x, this.axis.y, this.axis.z, radsToDegrees(radians));
     } else {
       this.isJumping = true;
@@ -292,13 +297,13 @@ export class ThirdPersonPlayer {
       this.listener.positionZ.value = this.mesh.position.z;
     }
 
-    const cameraPlayerDirection = this.mesh.position.clone()
-      .subtract(this.camera.position) // distance from camera to player
-      .normalize() // direction of camera to player
+    this._scratchAudioDir.set(this.mesh.position)
+      .subtract(this.camera.position)
+      .normalize();
 
     if (this.listener.forwardX) {
-      this.listener.forwardX.value = cameraPlayerDirection.x;
-      this.listener.forwardZ.value = cameraPlayerDirection.z;
+      this.listener.forwardX.value = this._scratchAudioDir.x;
+      this.listener.forwardZ.value = this._scratchAudioDir.z;
     }
   }
 }

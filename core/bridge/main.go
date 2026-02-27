@@ -18,6 +18,8 @@ import (
 	"io"
 	"log"
 	"net"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"strings"
@@ -1195,6 +1197,17 @@ func main() {
 	log.SetOutput(os.Stderr)
 	log.SetPrefix("[tsyne-bridge] ")
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
+
+	// Start pprof HTTP server for heap profiling (env: TSYNE_PPROF=1)
+	// Usage: go tool pprof http://localhost:6060/debug/pprof/heap
+	if os.Getenv("TSYNE_PPROF") == "1" {
+		go func() {
+			log.Printf("pprof server starting on :6060")
+			if err := http.ListenAndServe(":6060", nil); err != nil {
+				log.Printf("pprof server failed: %v", err)
+			}
+		}()
+	}
 
 	// Initialize performance monitoring (env: TSYNE_PERF_SAMPLE=true)
 	perfEnabled := os.Getenv("TSYNE_PERF_SAMPLE") == "true"

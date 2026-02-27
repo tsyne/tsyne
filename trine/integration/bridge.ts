@@ -7,10 +7,10 @@
  * The sendFn should be an async function that returns the response from the bridge.
  */
 
-export interface GLCommand {
-  cmd: string;
-  args: Record<string, any>;
-}
+// Commands are sent as [cmd, args] arrays — msgpack encodes these as arrays
+// instead of maps, saving ~26% of Go-side allocations (no map+key overhead
+// for the outer wrapper).
+export type GLCommand = [string, Record<string, any>];
 
 export interface BridgeMessage {
   type: string;
@@ -76,13 +76,15 @@ export class TsyneBridge {
    * Returns a canvas ID for subsequent GL operations
    * @param interactive - If true, the canvas will receive mouse events
    */
-  async createGLCanvas(width: number, height: number, windowId?: string, interactive?: boolean): Promise<string> {
+  async createGLCanvas(width: number, height: number, windowId?: string, interactive?: boolean): Promise<{ canvasId: string; overlayId: string }> {
     try {
       const response = await this.send('createGLCanvas', { width, height, windowId, interactive: interactive ?? false });
-      return response?.canvasId || response?.Result?.canvasId || 'default_canvas';
+      const canvasId = response?.canvasId || response?.Result?.canvasId || 'default_canvas';
+      const overlayId = response?.overlayId || response?.Result?.overlayId || '';
+      return { canvasId, overlayId };
     } catch (error) {
       console.error(`[TsyneBridge] createGLCanvas error:`, error);
-      return 'error_canvas';
+      return { canvasId: 'error_canvas', overlayId: '' };
     }
   }
 

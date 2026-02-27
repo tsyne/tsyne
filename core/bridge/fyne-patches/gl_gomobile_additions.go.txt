@@ -209,3 +209,19 @@ func (c *mobileContext) GetVertexAttribi(index uint32, pname uint32) int32 {
 func (c *mobileContext) GenerateMipmap(target uint32) {
 	c.glContext.GenerateMipmap(gl.Enum(target))
 }
+
+func (c *mobileContext) TexStorage3D(target uint32, levels int32, internalformat uint32, width, height, depth int32) {
+	// gomobile GL doesn't expose TexStorage3D - no-op
+}
+
+func (c *mobileContext) TexSubImage3D(target uint32, level, xoffset, yoffset, zoffset, width, height, depth int32, format, typ uint32, pixels []byte) {
+	// gomobile GL doesn't expose TexSubImage3D - no-op
+}
+
+func (c *mobileContext) Finish() {
+	// gomobile GL doesn't need explicit Finish - the EGL swap handles sync
+}
+
+func (c *mobileContext) Flush() {
+	// gomobile GL doesn't need explicit Flush - the EGL swap handles sync
+}

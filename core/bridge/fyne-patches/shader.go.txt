@@ -112,6 +112,31 @@ type TexImage2DGPUParams struct {
 	Type           uint32
 }
 
+// TexStorage3DGPUParams holds parameters for GPU texStorage3D (texture arrays)
+type TexStorage3DGPUParams struct {
+	Target         uint32
+	Levels         int
+	Internalformat uint32
+	Width          int
+	Height         int
+	Depth          int
+}
+
+// TexSubImage3DGPUParams holds parameters for GPU texSubImage3D (texture array layer upload)
+type TexSubImage3DGPUParams struct {
+	Target  uint32
+	Level   int
+	Xoffset int
+	Yoffset int
+	Zoffset int
+	Width   int
+	Height  int
+	Depth   int
+	Format  uint32
+	Type    uint32
+	Pixels  []byte
+}
+
 // TexParameteriParams holds parameters for a texParameteri command
 type TexParameteriParams struct {
 	Target uint32
@@ -370,9 +395,13 @@ func (s *Shader) SetUniformsBatch(uniforms map[string]interface{}) {
 
 // GetUniformsCopy returns a thread-safe copy of the uniforms map for iteration.
 // Use this in the painter to avoid concurrent map access.
+// Returns nil if the uniforms map is empty (avoids allocation).
 func (s *Shader) GetUniformsCopy() map[string]interface{} {
 	s.uniformsMu.RLock()
 	defer s.uniformsMu.RUnlock()
+	if len(s.Uniforms) == 0 {
+		return nil
+	}
 	copy := make(map[string]interface{}, len(s.Uniforms))
 	for k, v := range s.Uniforms {
 		copy[k] = v

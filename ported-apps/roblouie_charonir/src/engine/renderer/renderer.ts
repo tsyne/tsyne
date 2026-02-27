@@ -13,10 +13,9 @@ import {
 import { Scene } from '@/engine/renderer/scene';
 import { Mesh } from '@/engine/renderer/mesh';
 import { InstancedMesh } from '@/engine/renderer/instanced-mesh';
+import { textureLoader } from '@/engine/renderer/texture-loader';
 
 // IMPORTANT! The index of a given buffer in the buffer array must match it's respective data location in the shader.
-// This allows us to use the index while looping through buffers to bind the attributes. So setting a buffer
-// happens by placing
 export const enum AttributeLocation {
   Positions,
   Normals,
@@ -26,37 +25,75 @@ export const enum AttributeLocation {
   NormalMatrix = 8,
 }
 
-gl.enable(gl.CULL_FACE);
-gl.enable(gl.DEPTH_TEST);
-gl.enable(gl.BLEND);
-gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-const modelviewProjectionLocation = gl.getUniformLocation(lilgl.program, MODELVIEWPROJECTION)!;
-const normalMatrixLocation =  gl.getUniformLocation(lilgl.program, NORMALMATRIX)!;
-const colorLocation =  gl.getUniformLocation(lilgl.program, COLOR)!;
-const emissiveLocation = gl.getUniformLocation(lilgl.program, EMISSIVE)!;
-const textureRepeatLocation = gl.getUniformLocation(lilgl.program, TEXTUREREPEAT)!;
-const skyboxLocation = gl.getUniformLocation(lilgl.skyboxProgram, U_SKYBOX)!;
-const viewDirectionProjectionInverseLocation = gl.getUniformLocation(lilgl.skyboxProgram, U_VIEWDIRECTIONPROJECTIONINVERSE)!;
-const viewProjectionLocation = gl.getUniformLocation(lilgl.instancedProgram, VIEWPROJECTION)!;
-const instancedColorLocation = gl.getUniformLocation(lilgl.instancedProgram, COLOR)!;
-const instancedEmissiveLocation = gl.getUniformLocation(lilgl.instancedProgram, EMISSIVE)!;
-const instancedTextureRepeatLocation = gl.getUniformLocation(lilgl.instancedProgram, TEXTUREREPEAT);
+// Pre-allocated scratch objects to avoid per-frame GC pressure
+const _scratchViewMatrix = new DOMMatrix();
+const _scratchViewMatrixCopy = new DOMMatrix();
+const _scratchViewProj = new DOMMatrix();
+const _scratchMVP = new DOMMatrix();
+const _scratchInvViewProj = new DOMMatrix();
+const _scratchNormalMatrix = new DOMMatrix();
+const _f32_16 = new Float32Array(16); // reusable buffer for uniformMatrix4fv
+
+// Uniform locations — initialized by setupRenderer()
+let modelviewProjectionLocation: WebGLUniformLocation;
+let normalMatrixLocation: WebGLUniformLocation;
+let colorLocation: WebGLUniformLocation;
+let emissiveLocation: WebGLUniformLocation;
+let textureRepeatLocation: WebGLUniformLocation;
+let skyboxLocation: WebGLUniformLocation;
+let viewDirectionProjectionInverseLocation: WebGLUniformLocation;
+let viewProjectionLocation: WebGLUniformLocation;
+let instancedColorLocation: WebGLUniformLocation;
+let instancedEmissiveLocation: WebGLUniformLocation;
+let instancedTextureRepeatLocation: WebGLUniformLocation | null;
+
+/** Must be called after lilgl.init() */
+export function setupRenderer() {
+  const g = gl;
+  g.enable(g.CULL_FACE);
+  g.enable(g.DEPTH_TEST);
+  g.enable(g.BLEND);
+  g.blendFunc(g.SRC_ALPHA, g.ONE_MINUS_SRC_ALPHA);
+  modelviewProjectionLocation = g.getUniformLocation(lilgl.program, MODELVIEWPROJECTION)!;
+  normalMatrixLocation = g.getUniformLocation(lilgl.program, NORMALMATRIX)!;
+  colorLocation = g.getUniformLocation(lilgl.program, COLOR)!;
+  emissiveLocation = g.getUniformLocation(lilgl.program, EMISSIVE)!;
+  textureRepeatLocation = g.getUniformLocation(lilgl.program, TEXTUREREPEAT)!;
+  skyboxLocation = g.getUniformLocation(lilgl.skyboxProgram, U_SKYBOX)!;
+  viewDirectionProjectionInverseLocation = g.getUniformLocation(lilgl.skyboxProgram, U_VIEWDIRECTIONPROJECTIONINVERSE)!;
+  viewProjectionLocation = g.getUniformLocation(lilgl.instancedProgram, VIEWPROJECTION)!;
+  instancedColorLocation = g.getUniformLocation(lilgl.instancedProgram, COLOR)!;
+  instancedEmissiveLocation = g.getUniformLocation(lilgl.instancedProgram, EMISSIVE)!;
+  instancedTextureRepeatLocation = g.getUniformLocation(lilgl.instancedProgram, TEXTUREREPEAT);
+}
+
+// Reusable 2-element array for texture repeat
+const _texRepeat = [1, 1];
 
 export function render(camera: Camera, scene: Scene) {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-  const viewMatrix = camera.worldMatrix.inverse();
-  const viewMatrixCopy = viewMatrix.scale(1, 1, 1);
-  const viewProjectionMatrix = camera.projection.multiply(viewMatrix);
+  // Re-bind texture array each frame (Tsyne painter resets GL state per paint cycle)
+  textureLoader.bindForRendering();
+  gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+
+  // viewMatrix = inverse(camera.worldMatrix) — zero-alloc via copyFrom + inverseSelf
+  _scratchViewMatrix.copyFrom(camera.worldMatrix).inverseSelf();
+  _scratchViewMatrixCopy.copyFrom(_scratchViewMatrix);
+  // viewProjectionMatrix = projection × viewMatrix
+  _scratchViewProj.copyFrom(camera.projection).multiplySelf(_scratchViewMatrix);
 
   const renderSkybox = (skybox: Skybox) => {
     gl.useProgram(lilgl.skyboxProgram);
+    skybox.bindForRendering();
     gl.uniform1i(skyboxLocation, 0);
-    viewMatrixCopy.m41 = 0;
-    viewMatrixCopy.m42 = 0;
-    viewMatrixCopy.m43 = 0;
-    const inverseViewProjection = camera.projection.multiply(viewMatrixCopy).inverse();
-    gl.uniformMatrix4fv(viewDirectionProjectionInverseLocation, false, inverseViewProjection.toFloat32Array());
+    _scratchViewMatrixCopy.m41 = 0;
+    _scratchViewMatrixCopy.m42 = 0;
+    _scratchViewMatrixCopy.m43 = 0;
+    // inverseViewProjection = inverse(projection × viewMatrixCopy)
+    _scratchInvViewProj.copyFrom(camera.projection).multiplySelf(_scratchViewMatrixCopy).inverseSelf();
+    _scratchInvViewProj.toFloat32ArrayInto(_f32_16);
+    gl.uniformMatrix4fv(viewDirectionProjectionInverseLocation, false, _f32_16);
     gl.bindVertexArray(skybox.vao);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
   }
@@ -65,25 +102,36 @@ export function render(camera: Camera, scene: Scene) {
     // @ts-ignore
     const isInstancedMesh = mesh.count !== undefined;
     gl.useProgram(isInstancedMesh ? lilgl.instancedProgram : lilgl.program);
-    gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-    const modelViewProjectionMatrix = viewProjectionMatrix.multiply(mesh.worldMatrix);
+    // MVP = viewProjection × mesh.worldMatrix
+    _scratchMVP.copyFrom(_scratchViewProj).multiplySelf(mesh.worldMatrix);
 
     gl.uniform4fv(isInstancedMesh ? instancedColorLocation : colorLocation, mesh.material.color);
     gl.uniform4fv(isInstancedMesh ? instancedEmissiveLocation : emissiveLocation, mesh.material.emissive);
     gl.vertexAttrib1f(AttributeLocation.TextureDepth, mesh.material.texture?.id ?? -1.0);
-    const textureRepeat = [mesh.material.texture?.repeat.x ?? 1, mesh.material.texture?.repeat.y ?? 1];
-    gl.uniform2fv(isInstancedMesh ? instancedTextureRepeatLocation : textureRepeatLocation, textureRepeat);
+    _texRepeat[0] = mesh.material.texture?.repeat.x ?? 1;
+    _texRepeat[1] = mesh.material.texture?.repeat.y ?? 1;
+    gl.uniform2fv(isInstancedMesh ? instancedTextureRepeatLocation : textureRepeatLocation, _texRepeat);
 
     gl.bindVertexArray(mesh.geometry.vao!);
 
     if (isInstancedMesh) {
-      gl.uniformMatrix4fv(viewProjectionLocation, false, viewProjectionMatrix.toFloat32Array());
+      _scratchViewProj.toFloat32ArrayInto(_f32_16);
+      gl.uniformMatrix4fv(viewProjectionLocation, false, _f32_16);
       // @ts-ignore
       gl.drawElementsInstanced(gl.TRIANGLES, mesh.geometry.getIndices()!.length, gl.UNSIGNED_SHORT, 0, mesh.count);
     } else {
       // @ts-ignore
-      gl.uniformMatrix4fv(normalMatrixLocation, true, mesh.color ? mesh.cachedMatrixData : mesh.worldMatrix.inverse().toFloat32Array());
-      gl.uniformMatrix4fv(modelviewProjectionLocation, false, modelViewProjectionMatrix.toFloat32Array());
+      if (mesh.color) {
+        // @ts-ignore
+        gl.uniformMatrix4fv(normalMatrixLocation, true, mesh.cachedMatrixData);
+      } else {
+        // normalMatrix = inverse(worldMatrix) — use scratch, zero-alloc
+        _scratchNormalMatrix.copyFrom(mesh.worldMatrix).inverseSelf();
+        _scratchNormalMatrix.toFloat32ArrayInto(_f32_16);
+        gl.uniformMatrix4fv(normalMatrixLocation, true, _f32_16);
+      }
+      _scratchMVP.toFloat32ArrayInto(_f32_16);
+      gl.uniformMatrix4fv(modelviewProjectionLocation, false, _f32_16);
       gl.drawElements(gl.TRIANGLES, mesh.geometry.getIndices()!.length, gl.UNSIGNED_SHORT, 0);
     }
   }
@@ -91,22 +139,13 @@ export function render(camera: Camera, scene: Scene) {
   // Render solid meshes first
   scene.solidMeshes.forEach(renderMesh);
 
-  // Set the depthFunc to less than or equal so the skybox can be drawn at the absolute farthest depth. Without
-  // this the skybox will be at the draw distance and so not drawn. After drawing set this back.
   if (scene.skybox) {
     gl.depthFunc(gl.LEQUAL);
     renderSkybox(scene.skybox!);
     gl.depthFunc(gl.LESS);
   }
 
-  // Now render transparent items. For transparent items, stop writing to the depth mask. If we don't do this
-  // the transparent portion of a transparent mesh will hide other transparent items. After rendering the
-  // transparent items, set the depth mask back to writable.
   gl.depthMask(false);
   scene.transparentMeshes.forEach(renderMesh);
   gl.depthMask(true);
-
-  // Unbinding the vertex array being used to make sure the last item drawn isn't still bound on the next draw call.
-  // In theory this isn't necessary but avoids bugs.
-  // gl.bindVertexArray(null);
 }

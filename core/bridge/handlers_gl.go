@@ -5,8 +5,11 @@ import (
 	"image"
 	"log"
 	"math"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -14,6 +17,9 @@ import (
 	canvasPkg "fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 )
+
+// glDebug mirrors TSYNE_SHADER_DEBUG env var for handlers_gl logging
+var glDebug = os.Getenv("TSYNE_SHADER_DEBUG") == "1"
 
 // GLCanvas represents a WebGL rendering context mapped to Fyne's Shader canvas
 // This bridges three.js GL commands to Fyne's GPU-accelerated rendering pipeline
@@ -28,6 +34,8 @@ type GLCanvas struct {
 	ShaderObject      *canvasPkg.Shader           // The underlying Fyne Shader primitive (set up by setup-fyne-fork.sh)
 	HoverableObject   *canvasPkg.HoverableShader  // Optional: hoverable version for mouse events
 	Container         fyne.CanvasObject        // Container to hold the shader in the widget hierarchy
+	OverlayID         string                   // ID of the overlay container for 2D HUD elements
+	OverlayContainer  *fyne.Container          // WithoutLayout container for overlay widgets
 	Interactive       bool                     // Whether this canvas receives mouse events
 	WindowID          string                   // ID of the Fyne window containing this canvas
 
@@ -46,6 +54,7 @@ type GLCanvas struct {
 	activeTextureUnit uint32                       // Currently active texture unit (0-31)
 	boundTextures     map[uint32]uint32            // Maps texture unit → bound texture ID
 	samplerUniforms   map[string]uint32            // Maps sampler uniform name → texture unit
+	cubemapTextures   map[uint32]bool              // Texture IDs that are cubemaps
 
 	// Attribute location tracking (maps location → attribute name)
 	attribLocations map[int32]string
@@ -58,15 +67,22 @@ type GLCanvas struct {
 		offset   int // bytes
 	}
 
+	// Enabled vertex attribute locations (only enabled attribs should be pushed to shader)
+	enabledAttribs map[int32]bool
+
 	// VAO (Vertex Array Object) tracking
 	vaos       map[uint32]*vaoState // Maps VAO ID → saved state
 	currentVAO uint32               // Currently bound VAO (0 = default)
 
-	// Vertex data accumulation (legacy)
-	vertexData  []float32
+	// Index/vertex state
 	indexData   []uint16
-	vertexDirty bool
 	indexDirty  bool
+
+	// Reusable scratch map for pushAttribBuffersToShader (avoids per-draw allocation)
+	pushedAttrs map[string]bool
+
+	// Debug: batch counter
+	batchNum int
 
 	// Mouse event buffer (accumulated between frames, drained on request)
 	pendingMouseEvents []MouseEvent
@@ -141,6 +157,7 @@ type vaoState struct {
 		offset   int
 	}
 	attribLocations map[int32]string
+	enabledAttribs  map[int32]bool
 	elementBuffer   uint32
 }
 
@@ -188,6 +205,16 @@ type uniformInfo struct {
 var glCanvases = make(map[string]*GLCanvas)
 var glCanvasCounter = 0
 
+// Map size diagnostic logging (env: TSYNE_MAP_DIAG=1)
+var mapDiag = os.Getenv("TSYNE_MAP_DIAG") == "1"
+var mapDiagInterval = 60 // log every N batches
+
+// Memory diagnostic logging (env: TSYNE_MEM_DIAG=1)
+var memDiag = os.Getenv("TSYNE_MEM_DIAG") == "1"
+var memDiagInterval = 30 // log every N batches (~1 second at 30fps)
+var memDiagStats runtime.MemStats
+var pprofStarted sync.Once
+
 // GLCommandBatch represents a batch of GL commands to execute
 type GLCommandBatch struct {
 	CanvasID string
@@ -203,6 +230,39 @@ type GLCommand struct {
 // ═══════════════════════════════════════════════════════════════
 // Zero-copy byte slice reinterpretation helpers
 // ═══════════════════════════════════════════════════════════════
+
+// readFloat32At reads a single float32 from bytes at index i (little-endian).
+// Zero-allocation alternative to bytesToFloat32 for fixed-size uniform reads.
+func readFloat32At(data []byte, i int) float32 {
+	off := i * 4
+	bits := uint32(data[off]) | uint32(data[off+1])<<8 | uint32(data[off+2])<<16 | uint32(data[off+3])<<24
+	return math.Float32frombits(bits)
+}
+
+// readFloat32Array4 reads 4 float32 values from bytes into a fixed-size array.
+// Zero-allocation: the returned array is a value type (no heap escape via interface boxing).
+func readFloat32Array4(data []byte) [4]float32 {
+	return [4]float32{readFloat32At(data, 0), readFloat32At(data, 1), readFloat32At(data, 2), readFloat32At(data, 3)}
+}
+
+// readFloat32Array9 reads 9 float32 values from bytes into a fixed-size array.
+func readFloat32Array9(data []byte) [9]float32 {
+	return [9]float32{
+		readFloat32At(data, 0), readFloat32At(data, 1), readFloat32At(data, 2),
+		readFloat32At(data, 3), readFloat32At(data, 4), readFloat32At(data, 5),
+		readFloat32At(data, 6), readFloat32At(data, 7), readFloat32At(data, 8),
+	}
+}
+
+// readFloat32Array16 reads 16 float32 values from bytes into a fixed-size array.
+func readFloat32Array16(data []byte) [16]float32 {
+	return [16]float32{
+		readFloat32At(data, 0), readFloat32At(data, 1), readFloat32At(data, 2), readFloat32At(data, 3),
+		readFloat32At(data, 4), readFloat32At(data, 5), readFloat32At(data, 6), readFloat32At(data, 7),
+		readFloat32At(data, 8), readFloat32At(data, 9), readFloat32At(data, 10), readFloat32At(data, 11),
+		readFloat32At(data, 12), readFloat32At(data, 13), readFloat32At(data, 14), readFloat32At(data, 15),
+	}
+}
 
 // bytesToFloat32 converts a []byte to []float32 (little-endian).
 // Always copies — source may reference msgpack decode buffers that get reused.
@@ -286,6 +346,7 @@ void main() {
 	var shaderObject *canvasPkg.Shader
 	var hoverableObject *canvasPkg.HoverableShader
 	var glContainer *fyne.Container
+	var overlayContainer *fyne.Container
 
 	// Check if we should skip automatic window attachment
 	asWidget, _ := payload["asWidget"].(bool)
@@ -302,17 +363,25 @@ void main() {
 			shaderContainer = shaderObject
 		}
 
-		// Wrap the shader in a container so it can be added to Fyne widget hierarchies.
+		// Create overlay container for 2D HUD elements (text, rectangles, etc.)
+		// Uses WithoutLayout for absolute positioning; canvas primitives pass events through.
+		overlayContainer = container.NewWithoutLayout()
+		overlayContainer.Resize(fyne.NewSize(width, height))
+
+		// Wrap the shader + overlay in a Stack so the overlay sits on top.
 		// For widget mode, use container.NewStack which passes through child MinSize
 		// so that grid/vbox layouts allocate the correct space.
 		// For full-window mode, use centerNoMinLayout so the window can shrink freely.
 		if asWidget {
-			glContainer = container.NewStack(shaderContainer)
+			glContainer = container.NewStack(shaderContainer, overlayContainer)
 		} else {
-			glContainer = container.New(&centerNoMinLayout{}, shaderContainer)
+			centeredShader := container.New(&centerNoMinLayout{}, shaderContainer)
+			glContainer = container.NewStack(centeredShader, overlayContainer)
 		}
 		glContainer.Resize(fyne.NewSize(width, height))
 	})
+
+	overlayID := canvasID + "_overlay"
 
 	glCanv := &GLCanvas{
 		ID:              canvasID,
@@ -321,6 +390,8 @@ void main() {
 		ShaderObject:    shaderObject,
 		HoverableObject: hoverableObject,
 		Container:       glContainer,
+		OverlayID:       overlayID,
+		OverlayContainer: overlayContainer,
 		Interactive:     interactive,
 		programs:        make(map[uint32]*shaderProgram),
 		buffers:         make(map[uint32]*shaderBuffer),
@@ -329,8 +400,8 @@ void main() {
 		uniformLocs:     make(map[uint32]*uniformInfo),
 		attribLocations: make(map[int32]string),
 		attribBindings:  make(map[int32]struct{ bufferId uint32; size int; stride int; offset int }),
+		enabledAttribs:  make(map[int32]bool),
 		vaos:            make(map[uint32]*vaoState),
-		vertexData:      make([]float32, 0),
 		indexData:       make([]uint16, 0),
 	}
 
@@ -397,11 +468,15 @@ void main() {
 
 	glCanvases[canvasID] = glCanv
 
-	// Register the container as a widget so it can be added to other containers
+	// Register the container and overlay as widgets
 	b.mu.Lock()
 	b.widgets[canvasID] = glContainer
 	b.widgetMeta[canvasID] = WidgetMetadata{
 		Type: "glcanvas",
+	}
+	b.widgets[overlayID] = overlayContainer
+	b.widgetMeta[overlayID] = WidgetMetadata{
+		Type: "container",
 	}
 	b.mu.Unlock()
 
@@ -455,8 +530,9 @@ void main() {
 	return Response{
 		Success: true,
 		Result: map[string]interface{}{
-			"canvasId": canvasID,
-			"widgetId": canvasID, // Can be used to reference this widget in Fyne containers
+			"canvasId":  canvasID,
+			"widgetId":  canvasID, // Can be used to reference this widget in Fyne containers
+			"overlayId": overlayID,
 		},
 	}
 }
@@ -500,6 +576,9 @@ func (b *Bridge) handleResizeGLCanvas(msg Message) Response {
 	fyne.DoAndWait(func() {
 		newSize := fyne.NewSize(width, height)
 		canvas.ShaderObject.SetMinSize(newSize)
+		if canvas.OverlayContainer != nil {
+			canvas.OverlayContainer.Resize(newSize)
+		}
 	})
 
 	log.Printf("[GL] Resized GL canvas %s to %dx%d", canvasID, int(width), int(height))
@@ -529,26 +608,70 @@ func (b *Bridge) handleExecuteBatch(msg Message) Response {
 		return Response{Error: "missing or invalid commands"}
 	}
 
-	// Per-batch logging disabled for performance
-	// log.Printf("[GL] handleExecuteBatch: %d commands for canvas %s", len(commandsRaw), canvasID)
+	canvas.batchNum++
+	batchNum := canvas.batchNum
+	if glDebug {
+		log.Printf("[GL] === executeBatch #%d: %d commands for canvas %s ===", batchNum, len(commandsRaw), canvasID)
+	}
 
-	// Parse and execute each command
+	// Memory diagnostics: log Go heap stats every N batches
+	if memDiag && batchNum%memDiagInterval == 0 {
+		pprofStarted.Do(func() {
+			go func() {
+				log.Println("[MEM_DIAG] pprof server starting on :6060")
+				if err := http.ListenAndServe(":6060", nil); err != nil {
+					log.Printf("[MEM_DIAG] pprof server failed: %v", err)
+				}
+			}()
+		})
+		runtime.ReadMemStats(&memDiagStats)
+		log.Printf("[MEM_DIAG] batch=%d | heap: alloc=%.1fMB sys=%.1fMB inuse=%.1fMB objects=%d | GC: runs=%d pause=%.1fms total=%.1fs | totalAlloc=%.1fMB",
+			batchNum,
+			float64(memDiagStats.HeapAlloc)/1024/1024,
+			float64(memDiagStats.HeapSys)/1024/1024,
+			float64(memDiagStats.HeapInuse)/1024/1024,
+			memDiagStats.HeapObjects,
+			memDiagStats.NumGC,
+			float64(memDiagStats.PauseNs[(memDiagStats.NumGC+255)%256])/1e6,
+			float64(memDiagStats.PauseTotalNs)/1e9,
+			float64(memDiagStats.TotalAlloc)/1024/1024,
+		)
+	}
+
+	// Parse and execute each command.
+	// Commands arrive as [cmd, args] arrays (not maps) to reduce Go allocations.
 	errCount := 0
 	for i, cmdRaw := range commandsRaw {
-		cmdMap, ok := cmdRaw.(map[string]interface{})
-		if !ok {
-			log.Printf("[GL] WARNING: command %d/%d is not a map (type %T), skipping", i, len(commandsRaw), cmdRaw)
+		var cmd string
+		var args map[string]interface{}
+
+		switch v := cmdRaw.(type) {
+		case []interface{}:
+			// New format: [cmd, args]
+			if len(v) < 1 {
+				continue
+			}
+			cmd, ok = v[0].(string)
+			if !ok {
+				continue
+			}
+			if len(v) >= 2 {
+				args, _ = v[1].(map[string]interface{})
+			}
+		case map[string]interface{}:
+			// Legacy format: {cmd: ..., args: ...}
+			cmd, ok = v["cmd"].(string)
+			if !ok {
+				log.Printf("[GL] WARNING: command %d/%d missing 'cmd' field, skipping", i, len(commandsRaw))
+				continue
+			}
+			args, _ = v["args"].(map[string]interface{})
+		default:
+			log.Printf("[GL] WARNING: command %d/%d unexpected type %T, skipping", i, len(commandsRaw), cmdRaw)
 			continue
 		}
 
-		cmd, ok := cmdMap["cmd"].(string)
-		if !ok {
-			log.Printf("[GL] WARNING: command %d/%d missing 'cmd' field, skipping", i, len(commandsRaw))
-			continue
-		}
-
-		args, ok := cmdMap["args"].(map[string]interface{})
-		if !ok {
+		if args == nil {
 			args = make(map[string]interface{})
 		}
 
@@ -627,17 +750,53 @@ func (b *Bridge) handleExecuteBatch(msg Message) Response {
 	// Check if any command was readPixels — if so, set up the request before paint
 	var readPixelsChan <-chan canvasPkg.ReadPixelsResult
 	for _, cmdRaw := range commandsRaw {
-		if cmdMap, ok := cmdRaw.(map[string]interface{}); ok {
-			if cmd, ok := cmdMap["cmd"].(string); ok && cmd == "readPixels" {
-				args, _ := cmdMap["args"].(map[string]interface{})
-				x := int(toFloat32(args["x"]))
-				y := int(toFloat32(args["y"]))
-				w := int(toFloat32(args["width"]))
-				h := int(toFloat32(args["height"]))
-				readPixelsChan = canvas.ShaderObject.RequestReadPixels(x, y, w, h)
-				break // Only one readPixels per batch
+		var cmd string
+		var rpArgs map[string]interface{}
+		switch v := cmdRaw.(type) {
+		case []interface{}:
+			if len(v) >= 1 {
+				cmd, _ = v[0].(string)
 			}
+			if len(v) >= 2 {
+				rpArgs, _ = v[1].(map[string]interface{})
+			}
+		case map[string]interface{}:
+			cmd, _ = v["cmd"].(string)
+			rpArgs, _ = v["args"].(map[string]interface{})
 		}
+		if cmd == "readPixels" && rpArgs != nil {
+			x := int(toFloat32(rpArgs["x"]))
+			y := int(toFloat32(rpArgs["y"]))
+			w := int(toFloat32(rpArgs["width"]))
+			h := int(toFloat32(rpArgs["height"]))
+			readPixelsChan = canvas.ShaderObject.RequestReadPixels(x, y, w, h)
+			break // Only one readPixels per batch
+		}
+	}
+
+	// Release decoded payload/commands — they're fully processed now.
+	// This allows GC to collect the msgpack-decoded maps before the paint wait.
+	commandsRaw = nil
+	payload = nil
+
+	// Periodic map size diagnostics (env: TSYNE_MAP_DIAG=1)
+	if mapDiag && canvas.batchNum%mapDiagInterval == 0 {
+		s := canvas.ShaderObject
+		log.Printf("[MAP_DIAG] batch=%d | GLCanvas: programs=%d buffers=%d textures=%d shaders=%d uniformLocs=%d boundTex=%d samplerUni=%d cubemapTex=%d attribLocs=%d attribBindings=%d vaos=%d",
+			canvas.batchNum,
+			len(canvas.programs), len(canvas.buffers), len(canvas.textures), len(canvas.shaders),
+			len(canvas.uniformLocs), len(canvas.boundTextures), len(canvas.samplerUniforms),
+			len(canvas.cubemapTextures), len(canvas.attribLocations), len(canvas.attribBindings), len(canvas.vaos))
+		log.Printf("[MAP_DIAG] batch=%d | Shader: uniformLocs=%d texUnits=%d texCache=%d cubemapUnits=%d cubemapCache=%d attrLocs=%d progCache=%d fbo=%d rbo=%d gpuTex=%d jsTexSampler=%d cpuTexImg=%d gpuTexUploaded=%d gpuTexFmt=%d attribDiv=%d vboGen=%d renderCmds=%d lastRenderCmds=%d",
+			canvas.batchNum,
+			len(s.UniformLocs()), len(s.TextureUnits()), len(s.TextureCache()),
+			len(s.CubemapUnits()), len(s.CubemapCache()),
+			len(s.AttributeLocations()), len(s.GetProgramCache()),
+			len(s.FBOCache()), len(s.RBOCache()),
+			len(s.GPUTexCache()), len(s.JSTexForSampler()),
+			len(s.CPUTexImages()), len(s.GPUTexUploaded()), len(s.GPUTexFormats()),
+			len(s.AttribDivisors()), len(s.GetVBOUploadedGen()),
+			len(s.GetRenderCommandsNoSwap()), len(s.GetLastRenderCommands()))
 	}
 
 	// Signal that we're about to paint and want to wait for completion
@@ -657,30 +816,39 @@ func (b *Bridge) handleExecuteBatch(msg Message) Response {
 	// This prevents the next frame from overwriting render commands before they're painted
 	canvas.ShaderObject.WaitForPaint()
 
-	// Build response with optional data
-	result := make(map[string]interface{})
+	// Build response with optional data (lazily allocate result map)
+	var result map[string]interface{}
+	ensureResult := func() {
+		if result == nil {
+			result = make(map[string]interface{}, 4)
+		}
+	}
 
 	// Include coalesced mouse events in response
 	events := drainMouseEvents(canvasID)
 	if len(events) > 0 {
+		ensureResult()
 		result["mouseEvents"] = events
 	}
 
 	// Include keyboard events
 	keyEvents := drainKeyEvents(canvasID)
 	if len(keyEvents) > 0 {
+		ensureResult()
 		result["keyEvents"] = keyEvents
 	}
 
 	// Include scroll events
 	scrollEvents := drainScrollEvents(canvasID)
 	if len(scrollEvents) > 0 {
+		ensureResult()
 		result["scrollEvents"] = scrollEvents
 	}
 
 	// Include drag events
 	dragEvents := drainDragEvents(canvasID)
 	if len(dragEvents) > 0 {
+		ensureResult()
 		result["dragEvents"] = dragEvents
 	}
 
@@ -688,14 +856,14 @@ func (b *Bridge) handleExecuteBatch(msg Message) Response {
 	if readPixelsChan != nil {
 		select {
 		case rpResult := <-readPixelsChan:
-			// Encode as base64 for JSON transport
+			ensureResult()
 			result["pixelData"] = rpResult.Pixels
 		default:
 			// Paint didn't execute readPixels (shader might not have rendered)
 		}
 	}
 
-	if len(result) > 0 {
+	if result != nil {
 		return Response{Success: true, Result: result}
 	}
 	return Response{Success: true}
@@ -898,8 +1066,10 @@ func (b *Bridge) executeGLCommand(canvas *GLCanvas, cmd string, args map[string]
 		return b.glDrawElementsInstanced(canvas, args)
 
 	// Vertex attributes
-	case "enableVertexAttribArray", "disableVertexAttribArray":
-		return nil // Handled by painter
+	case "enableVertexAttribArray":
+		return b.glEnableVertexAttribArray(canvas, args)
+	case "disableVertexAttribArray":
+		return b.glDisableVertexAttribArray(canvas, args)
 	case "getAttribLocation":
 		return b.glGetAttribLocation(canvas, args)
 	case "vertexAttribPointer":
@@ -942,8 +1112,12 @@ func (b *Bridge) executeGLCommand(canvas *GLCanvas, cmd string, args map[string]
 	case "bindVertexArray":
 		return b.glBindVertexArray(canvas, args)
 
-	// 3D texture operations (no Three.js standard materials use 3D textures)
-	case "texImage3D", "texSubImage3D":
+	// 3D texture operations (texture arrays for raw WebGL2 games)
+	case "texStorage3D":
+		return b.glTexStorage3D(canvas, args)
+	case "texSubImage3D":
+		return b.glTexSubImage3D(canvas, args)
+	case "texImage3D":
 		return nil
 
 	// Draw/read buffer operations
@@ -1214,6 +1388,24 @@ func (b *Bridge) glUseProgram(canvas *GLCanvas, args map[string]interface{}) err
 // Vertex Attribute Operations
 // ═══════════════════════════════════════════════════════════════
 
+func (b *Bridge) glEnableVertexAttribArray(canvas *GLCanvas, args map[string]interface{}) error {
+	loc := int32(toFloat64(args["index"]))
+	canvas.enabledAttribs[loc] = true
+	if glDebug {
+		log.Printf("[GL] enableVertexAttribArray: loc=%d", loc)
+	}
+	return nil
+}
+
+func (b *Bridge) glDisableVertexAttribArray(canvas *GLCanvas, args map[string]interface{}) error {
+	loc := int32(toFloat64(args["index"]))
+	delete(canvas.enabledAttribs, loc)
+	if glDebug {
+		log.Printf("[GL] disableVertexAttribArray: loc=%d", loc)
+	}
+	return nil
+}
+
 func (b *Bridge) glGetAttribLocation(canvas *GLCanvas, args map[string]interface{}) error {
 	name, ok := args["name"].(string)
 	if !ok {
@@ -1267,46 +1459,39 @@ func (b *Bridge) glVertexAttribPointer(canvas *GLCanvas, args map[string]interfa
 			stride   int
 			offset   int
 		}{canvas.currentBuffer, size, stride, offset}
-		// log.Printf("[GL] vertexAttribPointer: bound location %d -> buffer %d, size %d, stride %d, offset %d", location, canvas.currentBuffer, size, stride, offset)
 	}
-	// else {
-	//	log.Printf("[GL] vertexAttribPointer: no currentBuffer bound!")
-	// }
 
 	return nil
 }
 
 func (b *Bridge) glVertexAttribFv(canvas *GLCanvas, cmd string, args map[string]interface{}) error {
-	index := uint32(toFloat32(args["index"]))
-	var values []float32
+	index := float32(toFloat32(args["index"]))
 
+	// Build packed slice (index + values) directly — single allocation instead of two
+	var packed []float32
 	switch cmd {
 	case "vertexAttrib1f":
-		values = []float32{toFloat32(args["x"])}
+		packed = []float32{index, toFloat32(args["x"])}
 	case "vertexAttrib2f":
-		values = []float32{toFloat32(args["x"]), toFloat32(args["y"])}
+		packed = []float32{index, toFloat32(args["x"]), toFloat32(args["y"])}
 	case "vertexAttrib3f":
-		values = []float32{toFloat32(args["x"]), toFloat32(args["y"]), toFloat32(args["z"])}
+		packed = []float32{index, toFloat32(args["x"]), toFloat32(args["y"]), toFloat32(args["z"])}
 	case "vertexAttrib4f":
-		values = []float32{toFloat32(args["x"]), toFloat32(args["y"]), toFloat32(args["z"]), toFloat32(args["w"])}
+		packed = []float32{index, toFloat32(args["x"]), toFloat32(args["y"]), toFloat32(args["z"]), toFloat32(args["w"])}
 	case "vertexAttrib1fv", "vertexAttrib2fv", "vertexAttrib3fv", "vertexAttrib4fv":
 		if valsRaw, ok := args["values"]; ok {
 			if arr, ok := valsRaw.([]interface{}); ok {
-				values = make([]float32, len(arr))
+				packed = make([]float32, 1+len(arr))
+				packed[0] = index
 				for i, v := range arr {
-					values[i] = toFloat32(v)
+					packed[1+i] = toFloat32(v)
 				}
 			}
 		}
 	}
-	if len(values) == 0 {
+	if len(packed) < 2 {
 		return nil
 	}
-
-	// Pack index + values into a single float32 slice for the render command
-	packed := make([]float32, 1+len(values))
-	packed[0] = float32(index)
-	copy(packed[1:], values)
 
 	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
 		Type:  cmd,
@@ -1326,8 +1511,9 @@ func (b *Bridge) saveCurrentVAOState(canvas *GLCanvas) {
 	vao := canvas.vaos[vaoId]
 	if vao == nil {
 		vao = &vaoState{
-			attribBindings: make(map[int32]struct{ bufferId uint32; size int; stride int; offset int }),
+			attribBindings:  make(map[int32]struct{ bufferId uint32; size int; stride int; offset int }),
 			attribLocations: make(map[int32]string),
+			enabledAttribs:  make(map[int32]bool),
 		}
 		canvas.vaos[vaoId] = vao
 	}
@@ -1339,28 +1525,44 @@ func (b *Bridge) saveCurrentVAOState(canvas *GLCanvas) {
 	for k, v := range canvas.attribLocations {
 		vao.attribLocations[k] = v
 	}
+	// Save enabled attribs
+	clear(vao.enabledAttribs)
+	for k, v := range canvas.enabledAttribs {
+		vao.enabledAttribs[k] = v
+	}
 	// Save element buffer binding
 	vao.elementBuffer = canvas.elementBuffer
+	if glDebug && len(canvas.attribBindings) > 0 {
+		log.Printf("[GL] saveVAOState: saving vao=%d attribs=%d enabled=%d elemBuf=%d",
+			vaoId, len(canvas.attribBindings), len(canvas.enabledAttribs), canvas.elementBuffer)
+	}
 }
 
 // restoreVAOState restores attrib bindings and element buffer from the given VAO.
 func (b *Bridge) restoreVAOState(canvas *GLCanvas, vaoId uint32) {
 	vao := canvas.vaos[vaoId]
 	if vao == nil {
-		// New/empty VAO — clear bindings
-		canvas.attribBindings = make(map[int32]struct{ bufferId uint32; size int; stride int; offset int })
+		// New/empty VAO — clear bindings (reuse existing map)
+		clear(canvas.attribBindings)
+		clear(canvas.enabledAttribs)
 		canvas.elementBuffer = 0
 		return
 	}
 
-	// Restore attrib bindings
-	canvas.attribBindings = make(map[int32]struct{ bufferId uint32; size int; stride int; offset int })
+	// Restore attrib bindings — clear and copy (reuses existing map capacity)
+	clear(canvas.attribBindings)
 	for k, v := range vao.attribBindings {
 		canvas.attribBindings[k] = v
 	}
-	// Restore attrib locations
+	// Restore attrib locations — clear and copy
+	clear(canvas.attribLocations)
 	for k, v := range vao.attribLocations {
 		canvas.attribLocations[k] = v
+	}
+	// Restore enabled attribs — clear and copy
+	clear(canvas.enabledAttribs)
+	for k, v := range vao.enabledAttribs {
+		canvas.enabledAttribs[k] = v
 	}
 	// Restore element buffer binding and its index data
 	canvas.elementBuffer = vao.elementBuffer
@@ -1378,8 +1580,12 @@ func (b *Bridge) glCreateVertexArray(canvas *GLCanvas, args map[string]interface
 	}
 	vaId := uint32(toFloat64(vaIdVal))
 	canvas.vaos[vaId] = &vaoState{
-		attribBindings: make(map[int32]struct{ bufferId uint32; size int; stride int; offset int }),
+		attribBindings:  make(map[int32]struct{ bufferId uint32; size int; stride int; offset int }),
 		attribLocations: make(map[int32]string),
+		enabledAttribs:  make(map[int32]bool),
+	}
+	if glDebug {
+		log.Printf("[GL] createVertexArray: vao=%d", vaId)
 	}
 	return nil
 }
@@ -1410,6 +1616,12 @@ func (b *Bridge) glBindVertexArray(canvas *GLCanvas, args map[string]interface{}
 	// Restore state from the new VAO
 	b.restoreVAOState(canvas, vaId)
 
+	if glDebug {
+		idxLen := len(canvas.indexData)
+		log.Printf("[GL] bindVertexArray: batch=%d vao=%d elemBuf=%d indexData=%d attribBindings=%d",
+			canvas.batchNum, vaId, canvas.elementBuffer, idxLen, len(canvas.attribBindings))
+	}
+
 	return nil
 }
 
@@ -1437,6 +1649,10 @@ func (b *Bridge) glDeleteBuffer(canvas *GLCanvas, args map[string]interface{}) e
 	}
 	bufferId := toFloat32(bufferIdVal)
 	delete(canvas.buffers, uint32(bufferId))
+	// Clean VBO upload generation cache to prevent unbounded map growth
+	if canvas.ShaderObject != nil {
+		canvas.ShaderObject.DeleteVBOUploadedGen(uint32(bufferId))
+	}
 	return nil
 }
 
@@ -1480,14 +1696,16 @@ func (b *Bridge) glBufferData(canvas *GLCanvas, args map[string]interface{}) err
 			buffer.indexData = indexData
 			canvas.indexData = indexData
 			canvas.indexDirty = true
+			if glDebug {
+				log.Printf("[GL] bufferData(ELEMENT): buf=%d indices=%d vao=%d",
+					canvas.elementBuffer, len(indexData), canvas.currentVAO)
+			}
 		}
 	} else if canvas.currentBuffer > 0 {
 		// Vertex buffer - reinterpret bytes as float32
 		if buffer, exists := canvas.buffers[canvas.currentBuffer]; exists {
 			floatData := bytesToFloat32(data)
 			buffer.data = floatData
-			canvas.vertexData = append(canvas.vertexData, floatData...)
-			canvas.vertexDirty = true
 		}
 	}
 
@@ -1535,7 +1753,6 @@ func (b *Bridge) glBufferSubData(canvas *GLCanvas, args map[string]interface{}) 
 				}
 			}
 			buffer.data = newData
-			canvas.vertexDirty = true
 		}
 	}
 
@@ -1595,7 +1812,10 @@ func (b *Bridge) glUniformInt(canvas *GLCanvas, cmd string, args map[string]inte
 		isSampler := strings.Contains(lowerName, "map") ||
 			strings.Contains(lowerName, "texture") ||
 			strings.Contains(lowerName, "sampler") ||
-			strings.Contains(lowerName, "tex")
+			strings.Contains(lowerName, "tex") ||
+			strings.Contains(lowerName, "skybox") ||
+			strings.Contains(lowerName, "cubemap") ||
+			strings.Contains(lowerName, "cube")
 
 		if isSampler {
 			// Track sampler → texture unit mapping
@@ -1608,11 +1828,21 @@ func (b *Bridge) glUniformInt(canvas *GLCanvas, cmd string, args map[string]inte
 			if canvas.boundTextures != nil {
 				textureId := canvas.boundTextures[textureUnit]
 				if textureId != 0 {
-					if texture, exists := canvas.textures[textureId]; exists && texture.image != nil {
+					if canvas.cubemapTextures[textureId] {
+						// Cubemap texture: queue activeTexture + bindTexture so the
+						// cubemap is bound every frame (the init-time bindTexture
+						// only runs in the first batch's render commands).
+						canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+							Type:  "activeTexture",
+							Value: uint32(0x84C0 + textureUnit), // GL_TEXTURE0 + unit
+						})
+						canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+							Type: "bindTexture",
+							Name: strconv.FormatUint(uint64(textureId), 10),
+							Value: uint32(0x8513), // TEXTURE_CUBE_MAP
+						})
+					} else if texture, exists := canvas.textures[textureId]; exists && texture.image != nil {
 						canvas.ShaderObject.SetTextureUniform(name, texture.image)
-						// log.Printf("[GL] uniform1i: setting texture %s = unit %d (texId=%d, %dx%d)",
-						//	name, textureUnit, textureId,
-						//	texture.image.Bounds().Dx(), texture.image.Bounds().Dy())
 					}
 				}
 			}
@@ -1680,26 +1910,30 @@ func (b *Bridge) glUniformFloatv(canvas *GLCanvas, cmd string, args map[string]i
 		return nil
 	}
 
-	// Convert bytes to float32 slice
-	floats := bytesToFloat32(decoded)
-
-	// Queue uniform (don't use SetUniform — it calls Refresh() which needs the main thread)
+	// Queue uniform using zero-alloc readFloat32At instead of bytesToFloat32
 	switch cmd {
 	case "uniform1fv":
-		if len(floats) >= 1 {
-			canvas.ShaderObject.QueueUniform(name, floats[0])
+		if len(decoded) >= 4 {
+			canvas.ShaderObject.QueueUniform(name, readFloat32At(decoded, 0))
 		}
 	case "uniform2fv":
-		if len(floats) >= 2 {
-			canvas.ShaderObject.QueueUniform(name, [2]float32{floats[0], floats[1]})
+		if len(decoded) >= 8 {
+			canvas.ShaderObject.QueueUniform(name, [2]float32{
+				readFloat32At(decoded, 0), readFloat32At(decoded, 1),
+			})
 		}
 	case "uniform3fv":
-		if len(floats) >= 3 {
-			canvas.ShaderObject.QueueUniform(name, [3]float32{floats[0], floats[1], floats[2]})
+		if len(decoded) >= 12 {
+			canvas.ShaderObject.QueueUniform(name, [3]float32{
+				readFloat32At(decoded, 0), readFloat32At(decoded, 1), readFloat32At(decoded, 2),
+			})
 		}
 	case "uniform4fv":
-		if len(floats) >= 4 {
-			canvas.ShaderObject.QueueUniform(name, [4]float32{floats[0], floats[1], floats[2], floats[3]})
+		if len(decoded) >= 16 {
+			canvas.ShaderObject.QueueUniform(name, [4]float32{
+				readFloat32At(decoded, 0), readFloat32At(decoded, 1),
+				readFloat32At(decoded, 2), readFloat32At(decoded, 3),
+			})
 		}
 	}
 	return nil
@@ -1717,22 +1951,19 @@ func (b *Bridge) glUniformMatrix(canvas *GLCanvas, cmd string, args map[string]i
 		return nil
 	}
 
-	// Convert bytes to float32 slice
-	floats := bytesToFloat32(decoded)
-
-	// Queue matrix uniform
+	// Queue matrix uniform using fixed-size arrays (zero heap allocation)
 	switch cmd {
 	case "uniformMatrix2fv":
-		if len(floats) >= 4 {
-			canvas.ShaderObject.QueueUniform(name, floats[:4])
+		if len(decoded) >= 16 {
+			canvas.ShaderObject.QueueUniform(name, readFloat32Array4(decoded))
 		}
 	case "uniformMatrix3fv":
-		if len(floats) >= 9 {
-			canvas.ShaderObject.QueueUniform(name, floats[:9])
+		if len(decoded) >= 36 {
+			canvas.ShaderObject.QueueUniform(name, readFloat32Array9(decoded))
 		}
 	case "uniformMatrix4fv":
-		if len(floats) >= 16 {
-			canvas.ShaderObject.QueueUniform(name, floats[:16])
+		if len(decoded) >= 64 {
+			canvas.ShaderObject.QueueUniform(name, readFloat32Array16(decoded))
 		}
 	}
 	return nil
@@ -1761,6 +1992,10 @@ func (b *Bridge) glDeleteTexture(canvas *GLCanvas, args map[string]interface{}) 
 	}
 	textureId := toFloat32(textureIdVal)
 	delete(canvas.textures, uint32(textureId))
+	// Clean ALL shader caches for this texture to prevent unbounded map growth
+	if canvas.ShaderObject != nil {
+		canvas.ShaderObject.DeleteTextureAllCaches(int(textureId))
+	}
 	return nil
 }
 
@@ -1783,7 +2018,7 @@ func (b *Bridge) glBindTexture(canvas *GLCanvas, args map[string]interface{}) er
 	// Also forward as render command for GPU-only textures (shadow maps, etc.)
 	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
 		Type: "bindTexture",
-		Name: fmt.Sprintf("%d", textureId),
+		Name: strconv.FormatUint(uint64(textureId), 10),
 		Value: target,
 	})
 	return nil
@@ -1834,7 +2069,7 @@ func (b *Bridge) glTexImage2D(canvas *GLCanvas, args map[string]interface{}) err
 		level := int(toFloat32(args["level"]))
 		canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
 			Type: "texImage2D_gpu",
-			Name: fmt.Sprintf("%d", textureId),
+			Name: strconv.FormatUint(uint64(textureId), 10),
 			Value: canvasPkg.TexImage2DGPUParams{
 				Target:         uint32(toFloat32(args["target"])),
 				Level:          level,
@@ -1976,15 +2211,27 @@ func (b *Bridge) glTexImage2D(canvas *GLCanvas, args map[string]interface{}) err
 	// Store the image in the texture
 	texture.image = img
 
+	target := uint32(toFloat32(args["target"]))
+	typeVal := uint32(toFloat32(args["type"]))
+
+	// Cubemap face detection: TEXTURE_CUBE_MAP_POSITIVE_X (0x8515) through NEGATIVE_Z (0x851A)
+	const cubeFaceBase = 0x8515
+	isCubemapFace := target >= cubeFaceBase && target <= 0x851A
+	if isCubemapFace {
+		// Store each face separately using compound key: textureId*10 + faceIndex
+		faceIndex := int(target - cubeFaceBase)
+		canvas.ShaderObject.SetCPUTexImage(int(textureId)*10+faceIndex, img)
+		// Track this texture as a cubemap
+		if canvas.cubemapTextures == nil {
+			canvas.cubemapTextures = make(map[uint32]bool)
+		}
+		canvas.cubemapTextures[textureId] = true
+	}
+
 	// Store CPU image for on-demand GPU upload via bindTexture render command.
-	// This is critical for multi-material rendering (e.g., skybox with 6 DataTextures)
-	// where each material has a different texture on the same sampler name.
-	// Phase 2.1 only uploads one texture per sampler name, but the render command
-	// loop's bindTexture can find and upload each texture by JS ID.
 	canvas.ShaderObject.SetCPUTexImage(int(textureId), img)
 
 	// Store format info for on-demand upload in the painter (same as GPU-only path)
-	typeVal := uint32(toFloat32(args["type"]))
 	canvas.ShaderObject.SetGPUTexFormat(int(textureId), canvasPkg.GPUTextureFormat{
 		Internalformat: uint32(internalformat),
 		Format:         uint32(format),
@@ -1995,9 +2242,9 @@ func (b *Bridge) glTexImage2D(canvas *GLCanvas, args map[string]interface{}) err
 	// that bindTexture render commands can find in gpuTexCache.
 	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
 		Type: "texImage2D_gpu",
-		Name: fmt.Sprintf("%d", textureId),
+		Name: strconv.FormatUint(uint64(textureId), 10),
 		Value: canvasPkg.TexImage2DGPUParams{
-			Target:         uint32(toFloat32(args["target"])),
+			Target:         target,
 			Level:          0,
 			Internalformat: uint32(internalformat),
 			Width:          w,
@@ -2007,13 +2254,13 @@ func (b *Bridge) glTexImage2D(canvas *GLCanvas, args map[string]interface{}) err
 		},
 	})
 
-	// Link sampler uniforms to this texture
-	// This handles the case where uniform1i is called before the texture is uploaded
-	for samplerName, unit := range canvas.samplerUniforms {
-		if canvas.boundTextures[unit] == textureId {
-			// This sampler uses the texture we just uploaded
-			canvas.ShaderObject.SetTextureUniform(samplerName, img)
-			canvas.ShaderObject.SetJSTexForSampler(samplerName, int(textureId))
+	// Link sampler uniforms to this texture (skip for cubemap faces — handled by cubemap path)
+	if !isCubemapFace {
+		for samplerName, unit := range canvas.samplerUniforms {
+			if canvas.boundTextures[unit] == textureId {
+				canvas.ShaderObject.SetTextureUniform(samplerName, img)
+				canvas.ShaderObject.SetJSTexForSampler(samplerName, int(textureId))
+			}
 		}
 	}
 
@@ -2180,7 +2427,7 @@ func (b *Bridge) glTexStorage2D(canvas *GLCanvas, args map[string]interface{}) e
 
 	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
 		Type: "texImage2D_gpu",
-		Name: fmt.Sprintf("%d", textureId),
+		Name: strconv.FormatUint(uint64(textureId), 10),
 		Value: canvasPkg.TexImage2DGPUParams{
 			Target:         target,
 			Level:          0,
@@ -2200,6 +2447,93 @@ func (b *Bridge) glTexStorage2D(canvas *GLCanvas, args map[string]interface{}) e
 			texture.image = image.NewRGBA(image.Rect(0, 0, w, h))
 		}
 	}
+	return nil
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 3D Texture Operations (Texture Arrays)
+// ═══════════════════════════════════════════════════════════════
+
+func (b *Bridge) glTexStorage3D(canvas *GLCanvas, args map[string]interface{}) error {
+	target := uint32(toFloat32(args["target"]))
+	levels := int(toFloat32(args["levels"]))
+	internalformat := uint32(toFloat32(args["internalformat"]))
+	w := int(toFloat32(args["width"]))
+	h := int(toFloat32(args["height"]))
+	depth := int(toFloat32(args["depth"]))
+
+	if canvas.boundTextures == nil {
+		return nil
+	}
+	textureId := canvas.boundTextures[canvas.activeTextureUnit]
+	if textureId == 0 {
+		return nil
+	}
+
+	// Queue GPU render command to allocate texture array storage
+	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+		Type: "texStorage3D",
+		Name: strconv.FormatUint(uint64(textureId), 10),
+		Value: canvasPkg.TexStorage3DGPUParams{
+			Target:         target,
+			Levels:         levels,
+			Internalformat: internalformat,
+			Width:          w,
+			Height:         h,
+			Depth:          depth,
+		},
+	})
+
+	// Store format info
+	canvas.ShaderObject.SetGPUTexFormat(int(textureId), canvasPkg.GPUTextureFormat{
+		Internalformat: internalformat,
+		Format:         0x1908, // GL_RGBA
+		Type:           0x1401, // UNSIGNED_BYTE
+	})
+
+	return nil
+}
+
+func (b *Bridge) glTexSubImage3D(canvas *GLCanvas, args map[string]interface{}) error {
+	target := uint32(toFloat32(args["target"]))
+	level := int(toFloat32(args["level"]))
+	xoffset := int(toFloat32(args["xoffset"]))
+	yoffset := int(toFloat32(args["yoffset"]))
+	zoffset := int(toFloat32(args["zoffset"]))
+	w := int(toFloat32(args["width"]))
+	h := int(toFloat32(args["height"]))
+	depth := int(toFloat32(args["depth"]))
+	format := uint32(toFloat32(args["format"]))
+	typ := uint32(toFloat32(args["type"]))
+	pixelData, _ := args["pixels"].([]byte)
+
+	if canvas.boundTextures == nil {
+		return nil
+	}
+	textureId := canvas.boundTextures[canvas.activeTextureUnit]
+	if textureId == 0 {
+		return nil
+	}
+
+	// Queue GPU render command to upload a layer of the texture array
+	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+		Type: "texSubImage3D",
+		Name: strconv.FormatUint(uint64(textureId), 10),
+		Value: canvasPkg.TexSubImage3DGPUParams{
+			Target:  target,
+			Level:   level,
+			Xoffset: xoffset,
+			Yoffset: yoffset,
+			Zoffset: zoffset,
+			Width:   w,
+			Height:  h,
+			Depth:   depth,
+			Format:  format,
+			Type:    typ,
+			Pixels:  pixelData,
+		},
+	})
+
 	return nil
 }
 
@@ -2399,7 +2733,22 @@ func (b *Bridge) glViewport(canvas *GLCanvas, args map[string]interface{}) error
 // attribBindings state. Called before QueueDrawArrays so the geometry snapshot
 // captures the correct buffers for each draw call (needed for multi-geometry scenes).
 func (b *Bridge) pushAttribBuffersToShader(canvas *GLCanvas) {
+	// Reuse scratch map to avoid per-draw allocation
+	if canvas.pushedAttrs == nil {
+		canvas.pushedAttrs = make(map[string]bool, 8)
+	}
+	pushed := canvas.pushedAttrs
+	for k := range pushed {
+		delete(pushed, k)
+	}
 	for location, binding := range canvas.attribBindings {
+		// Only push attributes that are currently enabled via enableVertexAttribArray.
+		// Without this check, stale bindings from previous draw calls persist and
+		// cause GPU out-of-bounds reads when the current draw has more vertices
+		// than the stale buffer contains.
+		if !canvas.enabledAttribs[location] {
+			continue
+		}
 		attrName, hasName := canvas.attribLocations[location]
 		if !hasName {
 			switch location {
@@ -2418,7 +2767,11 @@ func (b *Bridge) pushAttribBuffersToShader(canvas *GLCanvas) {
 			continue
 		}
 		canvas.ShaderObject.SetAttributeBuffer(attrName, buffer.data, binding.size, binding.stride, binding.offset)
+		pushed[attrName] = true
 	}
+	// Remove stale attribute buffers that were pushed by previous draw calls
+	// but are not enabled for this draw call.
+	canvas.ShaderObject.PruneAttributeBuffers(pushed)
 }
 
 func (b *Bridge) glDrawArrays(canvas *GLCanvas, args map[string]interface{}) error {
@@ -2429,6 +2782,10 @@ func (b *Bridge) glDrawArrays(canvas *GLCanvas, args map[string]interface{}) err
 	// Push current attribute buffers to shader before snapshotting
 	// so QueueDrawArrays captures the correct geometry for THIS draw call
 	b.pushAttribBuffersToShader(canvas)
+	if glDebug {
+		log.Printf("[GL] drawArrays: mode=%d first=%d count=%d vao=%d prog=%d",
+			mode, first, count, canvas.currentVAO, canvas.currentProgram)
+	}
 	canvas.ShaderObject.QueueDrawArrays(mode, first, count)
 	return nil
 }
@@ -2443,6 +2800,10 @@ func (b *Bridge) glDrawElements(canvas *GLCanvas, args map[string]interface{}) e
 	b.pushAttribBuffersToShader(canvas)
 	if len(canvas.indexData) > 0 {
 		canvas.ShaderObject.SetIndicesNoRefresh(canvas.indexData)
+	}
+	if glDebug {
+		log.Printf("[GL] drawElements: mode=%d count=%d vao=%d elemBuf=%d indexData=%d prog=%d",
+			mode, count, canvas.currentVAO, canvas.elementBuffer, len(canvas.indexData), canvas.currentProgram)
 	}
 	canvas.ShaderObject.QueueDrawElements(mode, count, offset)
 	return nil
@@ -2604,6 +2965,8 @@ func (b *Bridge) glDeleteFramebuffer(canvas *GLCanvas, args map[string]interface
 		Type: "deleteFramebuffer",
 		Name: fmt.Sprintf("%d", fbId),
 	})
+	// Eagerly clean FBO cache to prevent unbounded map growth
+	canvas.ShaderObject.DeleteFBOCache(fbId)
 	return nil
 }
 
@@ -2692,6 +3055,8 @@ func (b *Bridge) glDeleteRenderbuffer(canvas *GLCanvas, args map[string]interfac
 		Type: "deleteRenderbuffer",
 		Name: fmt.Sprintf("%d", rbId),
 	})
+	// Eagerly clean RBO cache to prevent unbounded map growth
+	canvas.ShaderObject.DeleteRBOCache(rbId)
 	return nil
 }
 

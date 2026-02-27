@@ -45,10 +45,37 @@ proto.texImage2D = function (
   width: GLsizei,
   height: GLsizei,
   border: GLint,
-  format: GLenum,
-  type: GLenum,
+  format?: GLenum,
+  type?: GLenum,
   pixels?: ArrayBufferView | null
 ): void {
+  // Detect 6-arg overload: texImage2D(target, level, internalformat, format, type, source)
+  // In this case 'width' is format, 'height' is type, 'border' is the source (ImageData/HTMLCanvasElement)
+  if (typeof border === 'object' && border !== null) {
+    const source = border as any;
+    const fmt = width as GLenum;   // width slot contains format
+    const typ = height as GLenum;  // height slot contains type
+    const sourceWidth = source.width ?? 0;
+    const sourceHeight = source.height ?? 0;
+    let pixelData: Uint8Array | null = null;
+    if (source.data) {
+      // ImageData — extract .data (Uint8ClampedArray) as Uint8Array
+      pixelData = encodeBufferData(new Uint8Array(source.data.buffer, source.data.byteOffset, source.data.byteLength));
+    }
+    this.pushCommand('texImage2D', {
+      target,
+      level,
+      internalformat,
+      width: sourceWidth,
+      height: sourceHeight,
+      border: 0,
+      format: fmt,
+      type: typ,
+      pixels: pixelData,
+    });
+    return;
+  }
+
   let pixelData: Uint8Array | null = null;
   if (pixels) {
     pixelData = encodeBufferData(pixels);
@@ -165,11 +192,16 @@ proto.texSubImage3D = function (
   depth: GLsizei,
   format: GLenum,
   type: GLenum,
-  pixels?: ArrayBufferView | null
+  pixels?: ArrayBufferView | any | null
 ): void {
   let pixelData: Uint8Array | null = null;
   if (pixels) {
-    pixelData = encodeBufferData(pixels);
+    // Handle ImageData objects (have .data property with Uint8ClampedArray)
+    if (pixels.data && pixels.data instanceof Uint8ClampedArray) {
+      pixelData = encodeBufferData(new Uint8Array(pixels.data.buffer, pixels.data.byteOffset, pixels.data.byteLength));
+    } else {
+      pixelData = encodeBufferData(pixels);
+    }
   }
   this.pushCommand('texSubImage3D', {
     target,

@@ -31,9 +31,10 @@ var shaderProfile = os.Getenv("TSYNE_SHADER_PROFILE") == "1"
 
 // shaderAttribute represents a parsed vertex attribute declaration
 type shaderAttribute struct {
-	name     string
-	glslType string  // vec2, vec3, vec4, float, etc.
-	size     int     // number of floats (2 for vec2, 3 for vec3, etc.)
+	name           string
+	glslType       string  // vec2, vec3, vec4, float, etc.
+	size           int     // number of floats (2 for vec2, 3 for vec3, etc.)
+	layoutLocation int     // layout(location=N) value, or -1 if not specified
 }
 
 
@@ -81,6 +82,252 @@ varying vec2 v_texCoord;
 `
 }
 
+// glValidate enables draw call validation to prevent GPU hangs.
+// Always on — the cost is negligible (O(indexCount) scan per draw) and
+// a skipped draw is infinitely better than a frozen machine.
+var glValidate = true
+
+// glDiag enables comprehensive draw-call diagnostics.
+// Set TSYNE_GL_DIAG=1 to log every draw call's full parameters before execution.
+// The last log line before a hang identifies the GPU-hanging draw call.
+// Also enables stride/offset buffer access validation.
+var glDiag = os.Getenv("TSYNE_GL_DIAG") == "1"
+
+// safeGL skips draws that fail buffer access validation (requires TSYNE_GL_DIAG=1 too).
+// Set TSYNE_SAFE_GL=1 to prevent GPU hangs during diagnosis.
+var safeGL = os.Getenv("TSYNE_SAFE_GL") == "1"
+
+// paintCounter counts paint cycles for slow-paint diagnostics.
+var paintCounter int
+
+// validateDrawElements checks that a drawElements call won't read out-of-bounds.
+// Returns true if safe to draw, false if the call should be skipped.
+func validateDrawElements(indices []uint16, count, byteOffset int, maxVertexCount int, instanceCount int, cmdIdx int, prog Program) bool {
+	// Check 0: must have indices to draw indexed geometry
+	if len(indices) == 0 {
+		log.Printf("[GL_VALIDATE] BLOCKED drawElements cmd#%d prog=%d: empty index buffer", cmdIdx, prog)
+		return false
+	}
+
+	idxOffset := byteOffset / 2 // byte offset → index offset (uint16 = 2 bytes)
+	if idxOffset < 0 {
+		idxOffset = 0
+	}
+
+	// Check 1: index buffer bounds
+	if idxOffset+count > len(indices) {
+		log.Printf("[GL_VALIDATE] BLOCKED drawElements cmd#%d prog=%d: index overrun idxOffset=%d count=%d indexBufLen=%d",
+			cmdIdx, prog, idxOffset, count, len(indices))
+		return false
+	}
+
+	// Check 2: scan drawn indices for max value vs vertex count
+	maxIdx := uint16(0)
+	for i := idxOffset; i < idxOffset+count; i++ {
+		if indices[i] > maxIdx {
+			maxIdx = indices[i]
+		}
+	}
+	if maxVertexCount > 0 && int(maxIdx) >= maxVertexCount {
+		log.Printf("[GL_VALIDATE] BLOCKED drawElements cmd#%d prog=%d: maxIndex=%d >= maxVertexCount=%d (inst=%d)",
+			cmdIdx, prog, maxIdx, maxVertexCount, instanceCount)
+		return false
+	}
+	// If we have no vertex count info at all (instanced-only), cap the max index
+	// at a conservative limit to prevent GPU from reading into unmapped memory.
+	// 100K is generous enough for any real geometry but catches runaway reads.
+	if maxVertexCount == 0 && int(maxIdx) > 100_000 {
+		log.Printf("[GL_VALIDATE] BLOCKED drawElements cmd#%d prog=%d: maxIndex=%d with unknown vertex count (inst=%d)",
+			cmdIdx, prog, maxIdx, instanceCount)
+		return false
+	}
+
+	// Check 3: sanity check count
+	if count > 10_000_000 {
+		log.Printf("[GL_VALIDATE] BLOCKED drawElements cmd#%d prog=%d: suspicious count=%d", cmdIdx, prog, count)
+		return false
+	}
+
+	return true
+}
+
+// validateDrawArrays checks that a drawArrays call won't read out-of-bounds.
+func validateDrawArrays(first, count, maxVertexCount int, instanceCount int, cmdIdx int, prog Program) bool {
+	if maxVertexCount > 0 && first+count > maxVertexCount {
+		log.Printf("[GL_VALIDATE] BLOCKED drawArrays cmd#%d prog=%d: first=%d+count=%d > maxVertexCount=%d (inst=%d)",
+			cmdIdx, prog, first, count, maxVertexCount, instanceCount)
+		return false
+	}
+	// If no vertex count info, cap at a conservative limit
+	if maxVertexCount == 0 && count > 100_000 {
+		log.Printf("[GL_VALIDATE] BLOCKED drawArrays cmd#%d prog=%d: count=%d with unknown vertex count (inst=%d)",
+			cmdIdx, prog, count, instanceCount)
+		return false
+	}
+	if count > 10_000_000 {
+		log.Printf("[GL_VALIDATE] BLOCKED drawArrays cmd#%d prog=%d: suspicious count=%d", cmdIdx, prog, count)
+		return false
+	}
+	return true
+}
+
+// getMaxIndex scans drawn indices and returns the maximum index value.
+func getMaxIndex(indices []uint16, count, byteOffset int) int {
+	idxOffset := byteOffset / 2
+	if idxOffset < 0 {
+		idxOffset = 0
+	}
+	maxIdx := 0
+	end := idxOffset + count
+	if end > len(indices) {
+		end = len(indices)
+	}
+	for i := idxOffset; i < end; i++ {
+		if int(indices[i]) > maxIdx {
+			maxIdx = int(indices[i])
+		}
+	}
+	return maxIdx
+}
+
+// validateBufferAccessForDraw checks that no attribute buffer would be overread
+// by a draw call with the given vertex/instance counts.
+// maxVertexIdx is the highest vertex index accessed (count-1 for arrays, maxIndex for elements).
+// Returns true if safe, false if any buffer would be overread.
+func validateBufferAccessForDraw(attrBuffers map[string]*canvas.AttributeBuffer, attribDivisors map[string]uint32, maxVertexIdx int, instanceCount int, cmdIdx int, prog Program) bool {
+	for name, buf := range attrBuffers {
+		if buf == nil || len(buf.Data) == 0 || buf.Size <= 0 {
+			continue
+		}
+		bufByteSize := len(buf.Data) * 4
+		stride := buf.Stride
+		if stride == 0 {
+			stride = buf.Size * 4 // tightly packed
+		}
+
+		div := uint32(0)
+		if attribDivisors != nil {
+			div = attribDivisors[name]
+		}
+
+		var maxIdx int
+		if div > 0 && instanceCount > 0 {
+			maxIdx = (instanceCount - 1) / int(div)
+		} else if div > 0 {
+			maxIdx = 0
+		} else {
+			maxIdx = maxVertexIdx
+		}
+		if maxIdx < 0 {
+			maxIdx = 0
+		}
+
+		// Last byte accessed: maxIdx * stride + offset + componentSize
+		lastByte := maxIdx*stride + buf.Offset + buf.Size*4
+		if lastByte > bufByteSize {
+			log.Printf("[GL_DIAG] OVERREAD buffer '%s' cmd#%d prog=%d: maxIdx=%d stride=%d offset=%d size*4=%d => lastByte=%d > bufSize=%d (inst=%d div=%d)",
+				name, cmdIdx, prog, maxIdx, stride, buf.Offset, buf.Size*4, lastByte, bufByteSize, instanceCount, div)
+			return false
+		}
+		if buf.Offset < 0 {
+			log.Printf("[GL_DIAG] NEGATIVE OFFSET buffer '%s' cmd#%d prog=%d: offset=%d",
+				name, cmdIdx, prog, buf.Offset)
+			return false
+		}
+	}
+	return true
+}
+
+// logDrawCall logs full parameters for a draw call (for TSYNE_GL_DIAG diagnosis).
+func logDrawCall(drawType string, cmdIdx int, prog Program, mode uint32, first int, count int, offset int, instanceCount int,
+	attrBuffers map[string]*canvas.AttributeBuffer, attribDivisors map[string]uint32, indices []uint16) {
+	log.Printf("[GL_DIAG] >>> %s cmd#%d prog=%d mode=%d first=%d count=%d offset=%d inst=%d",
+		drawType, cmdIdx, prog, mode, first, count, offset, instanceCount)
+	for name, buf := range attrBuffers {
+		if buf == nil {
+			continue
+		}
+		stride := buf.Stride
+		if stride == 0 {
+			stride = buf.Size * 4
+		}
+		div := uint32(0)
+		if attribDivisors != nil {
+			div = attribDivisors[name]
+		}
+		log.Printf("[GL_DIAG]   attr '%s': dataLen=%d size=%d stride=%d offset=%d VBO=%d gen=%d div=%d",
+			name, len(buf.Data), buf.Size, buf.Stride, buf.Offset, buf.VBO, buf.Generation, div)
+	}
+	if len(indices) > 0 {
+		maxIdx := getMaxIndex(indices, count, offset)
+		preview := 6
+		if len(indices) < preview {
+			preview = len(indices)
+		}
+		log.Printf("[GL_DIAG]   indices: len=%d maxIdx=%d first%d=%v", len(indices), maxIdx, preview, indices[:preview])
+	}
+}
+
+// glErrorCount tracks total GL errors for rate-limiting log output
+var glErrorCount int64
+
+// checkGLError logs any pending GL error after a draw call.
+// Drains ALL pending errors (GL can queue multiple).
+func (p *painter) checkGLError(drawType string, cmdIdx int, prog Program) {
+	for {
+		glErr := p.ctx.GetError()
+		if glErr == 0 {
+			break
+		}
+		glErrorCount++
+		// Log first 50, then every 100th
+		if glErrorCount <= 50 || glErrorCount%100 == 0 {
+			errName := "UNKNOWN"
+			switch glErr {
+			case 0x0500:
+				errName = "INVALID_ENUM"
+			case 0x0501:
+				errName = "INVALID_VALUE"
+			case 0x0502:
+				errName = "INVALID_OPERATION"
+			case 0x0505:
+				errName = "OUT_OF_MEMORY"
+			case 0x0506:
+				errName = "INVALID_FRAMEBUFFER_OPERATION"
+			}
+			log.Printf("[GL_VALIDATE] GL ERROR 0x%04X (%s) after %s cmd#%d prog=%d (total errors: %d)",
+				glErr, errName, drawType, cmdIdx, prog, glErrorCount)
+		}
+	}
+}
+
+// getMaxVertexCount finds the maximum vertex count from any non-instanced attribute buffer.
+// Tries "position" first, then falls back to any buffer — this prevents the case where
+// minified attribute names cause a "position" lookup miss, returning 0 and disabling
+// all bounds checking.
+func getMaxVertexCount(attrBuffers map[string]*canvas.AttributeBuffer, attribDivisors map[string]uint32) int {
+	// Fast path: check "position" buffer directly
+	if buf := attrBuffers["position"]; buf != nil && buf.Size > 0 && len(buf.Data) > 0 {
+		return len(buf.Data) / buf.Size
+	}
+	// Slow path: find the largest non-instanced buffer as our vertex count bound.
+	// If all buffers are instanced (divisor > 0), return 0 (instanced-only draws).
+	maxVtx := 0
+	for name, buf := range attrBuffers {
+		if buf == nil || buf.Size <= 0 || len(buf.Data) == 0 {
+			continue
+		}
+		if attribDivisors != nil && attribDivisors[name] > 0 {
+			continue // Skip instanced buffers
+		}
+		vtx := len(buf.Data) / buf.Size
+		if vtx > maxVtx {
+			maxVtx = vtx
+		}
+	}
+	return maxVtx
+}
+
 // shaderVBO is a dedicated vertex buffer for shader rendering
 var shaderVBO Buffer
 var shaderVBOInit bool
@@ -110,6 +357,8 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 		profileStart = time.Now()
 		phaseStart = profileStart
 	}
+	paintCounter++
+	paintStart := time.Now()
 
 	// If shader has a custom vertex source (3D/geometry mode), wait for attribute data
 	// This prevents rendering a white rectangle before geometry data arrives
@@ -275,6 +524,14 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 			p.ctx.Uniform3f(loc, v[0], v[1], v[2])
 		case [4]float32:
 			p.ctx.Uniform4f(loc, v[0], v[1], v[2], v[3])
+		case [9]float32:
+			p.ctx.UniformMatrix3fv(loc, false, v[:])
+		case [16]float32:
+			if shaderDebug {
+				log.Printf("[drawShader] uniform mat4 %s = [%.4f %.4f %.4f %.4f / ...] loc=%d",
+					name, v[0], v[1], v[2], v[3], loc)
+			}
+			p.ctx.UniformMatrix4fv(loc, false, v[:])
 		case []float32:
 			switch len(v) {
 			case 1:
@@ -551,6 +808,13 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 
 	// Check if we have separate attribute buffers (three.js style)
 	useSeparateBuffers := shader.HasAttributeBuffers()
+	// When render commands exist, the command loop handles all VBO/attrib
+	// setup per-draw. Phase 1's GL calls (CreateBuffer, BindBuffer,
+	// BufferData, EnableVertexAttribArray, VertexAttribPointer) are
+	// completely redundant — they create VBOs that the command loop
+	// never uses, and EnableVertexAttribArray calls that the command
+	// loop overrides. Skip them to avoid wasted GL traffic.
+	hasRenderCmds := shader.HasRenderHistory()
 	// if shaderDebug {
 	// 	log.Printf("[drawShader] useSeparateBuffers=%v, HasAttributeBuffers=%v", useSeparateBuffers, shader.HasAttributeBuffers())
 	// 	if shader.AttributeBuffers != nil {
@@ -575,8 +839,10 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 	// Get attribute divisors for instanced rendering (at function scope for command loop)
 	attribDivisors := shader.GetAttribDivisors()
 
-	if useSeparateBuffers {
-		// First, determine expected vertex count from position attribute
+	if useSeparateBuffers && !hasRenderCmds {
+		// Phase 1 attribute setup: create VBOs, upload data, enable attribs.
+		// ONLY runs when there are NO render commands — with render commands,
+		// the command loop handles all of this per-draw from snapshots.
 		positionBuf := attrBuffers["position"]
 		expectedVertexCount := 0
 		if positionBuf != nil && positionBuf.Size > 0 && len(positionBuf.Data) > 0 {
@@ -602,17 +868,46 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 		for _, attr := range attrs {
 			// Look for a buffer matching this attribute name
 			buf := attrBuffers[attr.name]
+			bufName := attr.name
 			if buf == nil || len(buf.Data) == 0 {
-				if shaderDebug {
-					log.Printf("[drawShader] Skipping attr %s: no buffer data", attr.name)
+				// Name didn't match — try layout location fallback.
+				// Custom engines (e.g. Charon Jr) use minified attribute names (o, i, t)
+				// but buffers are stored by conventional names (position, normal, uv).
+				// Map layout location → conventional buffer name.
+				if attr.layoutLocation >= 0 {
+					var fallbackName string
+					switch attr.layoutLocation {
+					case 0:
+						fallbackName = "position"
+					case 1:
+						fallbackName = "normal"
+					case 2:
+						fallbackName = "uv"
+					default:
+						fallbackName = fmt.Sprintf("attr_%d", attr.layoutLocation)
+					}
+					if fb := attrBuffers[fallbackName]; fb != nil && len(fb.Data) > 0 {
+						buf = fb
+						bufName = fallbackName
+						if shaderDebug {
+							log.Printf("[drawShader] attr %s: name miss, layout(%d) -> buf %s", attr.name, attr.layoutLocation, fallbackName)
+						}
+					}
 				}
-				continue
+				if buf == nil || len(buf.Data) == 0 {
+					if shaderDebug {
+						log.Printf("[drawShader] Skipping attr %s: no buffer data", attr.name)
+					}
+					continue
+				}
 			}
 
 			// Get attribute location - prefer GL query for the compiled program,
-			// fall back to JS-stored location only if GL returns -1 (optimized out)
-			// and the stored location doesn't conflict with a mat4 attribute's columns.
+			// fall back to layout location or JS-stored location.
 			attribLoc := p.ctx.GetAttribLocation(prog, attr.name)
+			if attribLoc < 0 && attr.layoutLocation >= 0 {
+				attribLoc = Attribute(attr.layoutLocation)
+			}
 			if attribLoc < 0 {
 				storedLoc := shader.GetAttributeLocation(attr.name)
 				if storedLoc >= 0 && !mat4Locs[int(storedLoc)] {
@@ -624,12 +919,12 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 			}
 
 			// Check if this is an instanced attribute (divisor > 0)
-			isInstanced := attribDivisors[attr.name] > 0
+			isInstanced := attribDivisors[bufName] > 0
 
 			// Validate buffer vertex count matches position (skip mismatched buffers)
 			// This prevents using stale buffers from previous geometry.
 			// Skip this check for instanced attributes which have instance count, not vertex count.
-			if !isInstanced && buf.Size > 0 && expectedVertexCount > 0 && attr.name != "position" {
+			if !isInstanced && buf.Size > 0 && expectedVertexCount > 0 && bufName != "position" {
 				bufferVertexCount := len(buf.Data) / buf.Size
 				if bufferVertexCount != expectedVertexCount {
 					continue
@@ -774,8 +1069,9 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 	}
 
 	// Create and upload IBO if we have indices for indexed drawing
+	// Skip when render commands exist — command loop manages its own IBOs per-draw.
 	useIndexedDrawing := false
-	if indexCount > 0 && useSeparateBuffers {
+	if indexCount > 0 && useSeparateBuffers && !hasRenderCmds {
 		indices := shader.GetIndices()
 		if len(indices) > 0 {
 			// Create IBO if needed
@@ -803,12 +1099,17 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 	}
 
 	// Process render command queue (immediate-mode: set uniform → draw → set uniform → draw)
+	var cmdLoopElapsed, flushElapsed time.Duration
 	renderCommands := shader.GetRenderCommands()
 	if len(renderCommands) > 0 {
 		// VBO upload cache is persistent across frames: the generation-based check
 		// at each upload site handles staleness correctly. If Phase 1 uploaded data
 		// with generation X for a VBO, command snapshots with the same generation
 		// can safely skip re-upload since the data is identical on the GPU.
+
+		// Drain any pre-existing GL errors before our command loop
+		for p.ctx.GetError() != 0 {
+		}
 
 		// Set up GL state for 3D rendering (three.js style)
 		p.ctx.Enable(depthTest)
@@ -845,7 +1146,10 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 		currentFBOId := 0
 
 		// Execute commands in order (three.js immediate-mode style)
+		cmdLoopStart := time.Now()
+		var cmdStallCount int
 		for cmdIdx := 0; cmdIdx < len(renderCommands); cmdIdx++ {
+			cmdStart := time.Now()
 			cmd := renderCommands[cmdIdx]
 			_ = cmdIdx
 			switch cmd.Type {
@@ -883,10 +1187,34 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 							// Re-upload geometry for this specific draw call
 							for _, attr := range attrs {
 								buf := cmdAttrBuffers[attr.name]
+								cmdBufName := attr.name
 								if buf == nil || len(buf.Data) == 0 {
-									continue
+									// Layout location fallback (same as initial setup)
+									if attr.layoutLocation >= 0 {
+										var fallbackName string
+										switch attr.layoutLocation {
+										case 0:
+											fallbackName = "position"
+										case 1:
+											fallbackName = "normal"
+										case 2:
+											fallbackName = "uv"
+										default:
+											fallbackName = fmt.Sprintf("attr_%d", attr.layoutLocation)
+										}
+										if fb := cmdAttrBuffers[fallbackName]; fb != nil && len(fb.Data) > 0 {
+											buf = fb
+											cmdBufName = fallbackName
+										}
+									}
+									if buf == nil || len(buf.Data) == 0 {
+										continue
+									}
 								}
 								attribLoc := p.ctx.GetAttribLocation(prog, attr.name)
+								if attribLoc < 0 && attr.layoutLocation >= 0 {
+									attribLoc = Attribute(attr.layoutLocation)
+								}
 								if attribLoc < 0 {
 									storedLoc := shader.GetAttributeLocation(attr.name)
 									if storedLoc >= 0 && !mat4Locs[int(storedLoc)] {
@@ -911,7 +1239,7 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 									}
 								// Handle mat4: 4 consecutive vec4 columns sharing one VBO
 								if attr.glslType == "mat4" {
-									div := attribDivisors[attr.name]
+									div := attribDivisors[cmdBufName]
 									for col := 0; col < 4; col++ {
 										loc := Attribute(int(attribLoc) + col)
 										p.ctx.EnableVertexAttribArray(loc)
@@ -924,7 +1252,7 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 									p.ctx.EnableVertexAttribArray(attribLoc)
 									p.ctx.VertexAttribPointerWithOffset(attribLoc, buf.Size, float, false, buf.Stride, buf.Offset)
 									// Set divisor for instanced attributes
-									if div := attribDivisors[attr.name]; div > 0 {
+									if div := attribDivisors[cmdBufName]; div > 0 {
 										p.ctx.VertexAttribDivisor(uint32(attribLoc), div)
 									}
 								}
@@ -954,24 +1282,62 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 									log.Printf("[drawShader] idx[0:6]: %d %d %d %d %d %d", cmdIndices[0], cmdIndices[1], cmdIndices[2], cmdIndices[3], cmdIndices[4], cmdIndices[5])
 								}
 								}
-							if params.InstanceCount > 0 {
-								p.ctx.DrawElementsInstanced(params.Mode, int32(params.Count), unsignedShort, params.Offset, int32(params.InstanceCount))
-								// Reset vertex attribute divisors so subsequent non-instanced draws work
-								for loc := uint32(0); loc < 16; loc++ {
-									p.ctx.VertexAttribDivisor(loc, 0)
-								}
+							// Validate before issuing draw call (prevents GPU hang from buffer overread)
+							vtxCount := getMaxVertexCount(cmdAttrBuffers, attribDivisors)
+							if glValidate && !validateDrawElements(cmdIndices, params.Count, params.Offset, vtxCount, params.InstanceCount, cmdIdx, prog) {
+								// Skip this draw — index bounds validation failed
 							} else {
-								p.ctx.DrawElements(params.Mode, int32(params.Count), unsignedShort, params.Offset)
+								// Buffer access validation (stride/offset check)
+								maxVtxIdx := getMaxIndex(cmdIndices, params.Count, params.Offset)
+								bufAccessOK := !glDiag || validateBufferAccessForDraw(cmdAttrBuffers, attribDivisors, maxVtxIdx, params.InstanceCount, cmdIdx, prog)
+								if glDiag {
+									logDrawCall("drawElements(cmd)", cmdIdx, prog, params.Mode, 0, params.Count, params.Offset, params.InstanceCount, cmdAttrBuffers, attribDivisors, cmdIndices)
+									if !bufAccessOK {
+										log.Printf("[GL_DIAG] ^^^ BUFFER ACCESS VIOLATION — %s draw", map[bool]string{true: "SKIPPING", false: "EXECUTING ANYWAY"}[safeGL])
+									}
+								}
+								if !bufAccessOK && safeGL {
+									// Skip — buffer access violation
+								} else if params.InstanceCount > 0 {
+									p.ctx.DrawElementsInstanced(params.Mode, int32(params.Count), unsignedShort, params.Offset, int32(params.InstanceCount))
+									for loc := uint32(0); loc < 16; loc++ {
+										p.ctx.VertexAttribDivisor(loc, 0)
+									}
+								} else {
+									p.ctx.DrawElements(params.Mode, int32(params.Count), unsignedShort, params.Offset)
+								}
 							}
 						} else if useIndexedDrawing {
-							// Fall back to pre-uploaded indices
-							if params.InstanceCount > 0 {
-								p.ctx.DrawElementsInstanced(params.Mode, int32(params.Count), unsignedShort, params.Offset, int32(params.InstanceCount))
-								for loc := uint32(0); loc < 16; loc++ {
-									p.ctx.VertexAttribDivisor(loc, 0)
-								}
+							// Fall back to pre-uploaded indices.
+							// Use cmdAttrBuffers for validation when available (attributes were
+							// re-uploaded from snapshot), otherwise fall back to Phase 1 attrBuffers.
+							preIndices := shader.GetIndices()
+							validationBufs := attrBuffers
+							if len(cmdAttrBuffers) > 0 {
+								validationBufs = cmdAttrBuffers
+							}
+							vtxCount2 := getMaxVertexCount(validationBufs, attribDivisors)
+							if glValidate && !validateDrawElements(preIndices, params.Count, params.Offset, vtxCount2, params.InstanceCount, cmdIdx, prog) {
+								// Skip this draw — index bounds validation failed
 							} else {
-								p.ctx.DrawElements(params.Mode, int32(params.Count), unsignedShort, params.Offset)
+								maxVtxIdx2 := getMaxIndex(preIndices, params.Count, params.Offset)
+								bufAccessOK2 := !glDiag || validateBufferAccessForDraw(validationBufs, attribDivisors, maxVtxIdx2, params.InstanceCount, cmdIdx, prog)
+								if glDiag {
+									logDrawCall("drawElements(pre)", cmdIdx, prog, params.Mode, 0, params.Count, params.Offset, params.InstanceCount, validationBufs, attribDivisors, preIndices)
+									if !bufAccessOK2 {
+										log.Printf("[GL_DIAG] ^^^ BUFFER ACCESS VIOLATION — %s draw", map[bool]string{true: "SKIPPING", false: "EXECUTING ANYWAY"}[safeGL])
+									}
+								}
+								if !bufAccessOK2 && safeGL {
+									// Skip — buffer access violation
+								} else if params.InstanceCount > 0 {
+									p.ctx.DrawElementsInstanced(params.Mode, int32(params.Count), unsignedShort, params.Offset, int32(params.InstanceCount))
+									for loc := uint32(0); loc < 16; loc++ {
+										p.ctx.VertexAttribDivisor(loc, 0)
+									}
+								} else {
+									p.ctx.DrawElements(params.Mode, int32(params.Count), unsignedShort, params.Offset)
+								}
 							}
 						}
 					}
@@ -988,10 +1354,34 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 							// Re-upload geometry for this specific draw call
 							for _, attr := range attrs {
 								buf := cmdAttrBuffers[attr.name]
+								daBufName := attr.name
 								if buf == nil || len(buf.Data) == 0 {
-									continue
+									// Layout location fallback (same as initial setup)
+									if attr.layoutLocation >= 0 {
+										var fallbackName string
+										switch attr.layoutLocation {
+										case 0:
+											fallbackName = "position"
+										case 1:
+											fallbackName = "normal"
+										case 2:
+											fallbackName = "uv"
+										default:
+											fallbackName = fmt.Sprintf("attr_%d", attr.layoutLocation)
+										}
+										if fb := cmdAttrBuffers[fallbackName]; fb != nil && len(fb.Data) > 0 {
+											buf = fb
+											daBufName = fallbackName
+										}
+									}
+									if buf == nil || len(buf.Data) == 0 {
+										continue
+									}
 								}
 								attribLoc := p.ctx.GetAttribLocation(prog, attr.name)
+								if attribLoc < 0 && attr.layoutLocation >= 0 {
+									attribLoc = Attribute(attr.layoutLocation)
+								}
 								if attribLoc < 0 {
 									storedLoc := shader.GetAttributeLocation(attr.name)
 									if storedLoc >= 0 && !mat4Locs[int(storedLoc)] {
@@ -1016,7 +1406,7 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 									}
 								// Handle mat4: 4 consecutive vec4 columns sharing one VBO
 								if attr.glslType == "mat4" {
-									div := attribDivisors[attr.name]
+									div := attribDivisors[daBufName]
 									for col := 0; col < 4; col++ {
 										loc := Attribute(int(attribLoc) + col)
 										p.ctx.EnableVertexAttribArray(loc)
@@ -1029,20 +1419,38 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 									p.ctx.EnableVertexAttribArray(attribLoc)
 									p.ctx.VertexAttribPointerWithOffset(attribLoc, buf.Size, float, false, buf.Stride, buf.Offset)
 									// Set divisor for instanced attributes
-									if div := attribDivisors[attr.name]; div > 0 {
+									if div := attribDivisors[daBufName]; div > 0 {
 										p.ctx.VertexAttribDivisor(uint32(attribLoc), div)
 									}
 								}
 							}
 						}
-						if params.InstanceCount > 0 {
-							p.ctx.DrawArraysInstanced(params.Mode, int32(params.First), int32(params.Count), int32(params.InstanceCount))
-							// Reset vertex attribute divisors so subsequent non-instanced draws work
-							for loc := uint32(0); loc < 16; loc++ {
-								p.ctx.VertexAttribDivisor(loc, 0)
-							}
+						// Validate before issuing draw call
+						daVtxCount := getMaxVertexCount(cmdAttrBuffers, attribDivisors)
+						if glValidate && !validateDrawArrays(params.First, params.Count, daVtxCount, params.InstanceCount, cmdIdx, prog) {
+							// Skip this draw — validation failed
 						} else {
-							p.ctx.DrawArrays(params.Mode, params.First, params.Count)
+							maxVtxIdx := params.First + params.Count - 1
+							if maxVtxIdx < 0 {
+								maxVtxIdx = 0
+							}
+							bufAccessOK := !glDiag || validateBufferAccessForDraw(cmdAttrBuffers, attribDivisors, maxVtxIdx, params.InstanceCount, cmdIdx, prog)
+							if glDiag {
+								logDrawCall("drawArrays", cmdIdx, prog, params.Mode, params.First, params.Count, 0, params.InstanceCount, cmdAttrBuffers, attribDivisors, nil)
+								if !bufAccessOK {
+									log.Printf("[GL_DIAG] ^^^ BUFFER ACCESS VIOLATION — %s draw", map[bool]string{true: "SKIPPING", false: "EXECUTING ANYWAY"}[safeGL])
+								}
+							}
+							if !bufAccessOK && safeGL {
+								// Skip — buffer access violation
+							} else if params.InstanceCount > 0 {
+								p.ctx.DrawArraysInstanced(params.Mode, int32(params.First), int32(params.Count), int32(params.InstanceCount))
+								for loc := uint32(0); loc < 16; loc++ {
+									p.ctx.VertexAttribDivisor(loc, 0)
+								}
+							} else {
+								p.ctx.DrawArrays(params.Mode, params.First, params.Count)
+							}
 						}
 					}
 				}
@@ -1121,6 +1529,26 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 					for k := range shader.UniformLocs() {
 						delete(shader.UniformLocs(), k)
 					}
+					// Rebuild mat4Locs for the new program — stale entries from the
+					// previous program can cause attribute location collisions.
+					for k := range mat4Locs {
+						delete(mat4Locs, k)
+					}
+					for _, a := range attrs {
+						if a.glslType == "mat4" {
+							glLoc := p.ctx.GetAttribLocation(prog, a.name)
+							if glLoc >= 0 {
+								for col := 0; col < 4; col++ {
+									mat4Locs[int(glLoc)+col] = true
+								}
+							}
+						}
+					}
+					// Reset divisors — the previous program may have set instanced
+					// divisors on locations that the new program uses differently.
+					for loc := uint32(0); loc < 16; loc++ {
+						p.ctx.VertexAttribDivisor(loc, 0)
+					}
 				}
 
 			// ═══ FBO render commands ═══
@@ -1148,6 +1576,15 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 					} else {
 						glId := shader.GetFBOCache(params.FramebufferId)
 						p.ctx.BindFramebuffer(params.Target, Framebuffer(glId))
+						// Check FBO completeness — drawing to an incomplete FBO is
+						// undefined behavior that can hang the GPU on some drivers.
+						if glValidate {
+							status := p.ctx.CheckFramebufferStatus(params.Target)
+							if status != 0x8CD5 { // GL_FRAMEBUFFER_COMPLETE
+								log.Printf("[GL_VALIDATE] WARNING: FBO %d (gl=%d) incomplete, status=0x%x — draws to this FBO will be skipped",
+									params.FramebufferId, glId, status)
+							}
+						}
 					}
 				}
 
@@ -1252,29 +1689,111 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 				// texture unit is active, making Phase 2.1 textures invisible.
 				jsTexId, _ := strconv.Atoi(cmd.Name)
 				if params, ok := cmd.Value.(canvas.TexImage2DGPUParams); ok {
-					// Skip if Phase 2.1 already created and uploaded a texture for this JS ID.
-					// This prevents overwriting a real texture with an empty one when
-					// texStorage2D render commands execute after Phase 2.1.
+					// Cubemap face targets: TEXTURE_CUBE_MAP_POSITIVE_X (0x8515) through NEGATIVE_Z (0x851A)
+					isCubeFace := params.Target >= 0x8515 && params.Target <= 0x851A
+					if isCubeFace {
+						// Cubemap face upload: create/reuse ONE GL cubemap texture and upload each face
+						faceIndex := int(params.Target - 0x8515)
+						p.ctx.ActiveTexture(texture0 + 15) // scratch unit
+						existingGlId := shader.GetGPUTexCache(jsTexId)
+						if existingGlId == 0 {
+							// First face — create the cubemap texture
+							tex := p.ctx.CreateTexture()
+							existingGlId = uint32(tex)
+							p.ctx.BindTexture(textureCubeMap, Texture(existingGlId))
+							p.ctx.TexParameteri(textureCubeMap, textureMinFilter, linear)
+							p.ctx.TexParameteri(textureCubeMap, textureMagFilter, linear)
+							p.ctx.TexParameteri(textureCubeMap, textureWrapS, clampToEdge)
+							p.ctx.TexParameteri(textureCubeMap, textureWrapT, clampToEdge)
+							shader.SetGPUTexCache(jsTexId, existingGlId)
+							if shaderDebug {
+								log.Printf("[drawShader] texImage2D_gpu: CUBEMAP created js=%d -> gl=%d", jsTexId, existingGlId)
+							}
+						} else {
+							p.ctx.BindTexture(textureCubeMap, Texture(existingGlId))
+						}
+						// Upload face pixel data from CPU image store (compound key: jsTexId*10 + faceIndex)
+						faceKey := jsTexId*10 + faceIndex
+						if cpuImg := shader.GetCPUTexImage(faceKey); cpuImg != nil {
+							rgba := p.textureToRGBA(cpuImg)
+							if rgba != nil && len(rgba.Pix) > 0 {
+								w := rgba.Rect.Size().X
+								h := rgba.Rect.Size().Y
+								p.ctx.TexImage2D(params.Target, 0, w, h, colorFormatRGBA, unsignedByte, rgba.Pix)
+								// Release CPU-side face data — it's on the GPU now
+								shader.ReleaseCPUTexImage(faceKey)
+								if shaderDebug {
+									log.Printf("[drawShader] texImage2D_gpu: CUBEMAP face %d (%dx%d) uploaded for js=%d", faceIndex, w, h, jsTexId)
+								}
+							}
+						} else if shaderDebug {
+							log.Printf("[drawShader] texImage2D_gpu: CUBEMAP face %d missing CPU image (key=%d)", faceIndex, faceKey)
+						}
+						p.ctx.BindTexture(textureCubeMap, Texture(0))
+						p.ctx.ActiveTexture(texture0)
+					} else {
+						// Standard 2D texture allocation
+						// Skip if Phase 2.1 already created and uploaded a texture for this JS ID.
+						if existingGlId := shader.GetGPUTexCache(jsTexId); existingGlId != 0 {
+							if shaderDebug {
+								log.Printf("[drawShader] texImage2D_gpu: SKIPPED js=%d (already have gl=%d)", jsTexId, existingGlId)
+							}
+						} else {
+							p.ctx.ActiveTexture(texture0 + 15) // scratch unit
+							tex := p.ctx.CreateTexture()
+							p.ctx.BindTexture(params.Target, tex)
+							p.ctx.TexParameteri(params.Target, textureMinFilter, nearest)
+							p.ctx.TexParameteri(params.Target, textureMagFilter, nearest)
+							p.ctx.TexParameteri(params.Target, textureWrapS, clampToEdge)
+							p.ctx.TexParameteri(params.Target, textureWrapT, clampToEdge)
+							p.ctx.TexImage2DEmpty(params.Target, params.Level, params.Internalformat, params.Width, params.Height, params.Format, params.Type)
+							p.ctx.BindTexture(params.Target, Texture(0)) // unbind from scratch unit
+							p.ctx.ActiveTexture(texture0) // restore to unit 0
+							shader.SetGPUTexCache(jsTexId, uint32(tex))
+							if shaderDebug {
+								log.Printf("[drawShader] texImage2D_gpu: js=%d -> gl=%d (%dx%d, fmt=0x%x)", jsTexId, tex, params.Width, params.Height, params.Format)
+							}
+						}
+					}
+				}
+
+			case "texStorage3D":
+				jsTexId, _ := strconv.Atoi(cmd.Name)
+				if params, ok := cmd.Value.(canvas.TexStorage3DGPUParams); ok {
 					if existingGlId := shader.GetGPUTexCache(jsTexId); existingGlId != 0 {
 						if shaderDebug {
-							log.Printf("[drawShader] texImage2D_gpu: SKIPPED js=%d (already have gl=%d)", jsTexId, existingGlId)
+							log.Printf("[drawShader] texStorage3D: SKIPPED js=%d (already have gl=%d)", jsTexId, existingGlId)
 						}
 					} else {
-						p.ctx.ActiveTexture(texture0 + 15) // scratch unit
+						p.ctx.ActiveTexture(texture0 + 15)
 						tex := p.ctx.CreateTexture()
 						p.ctx.BindTexture(params.Target, tex)
-						// Set appropriate filtering and wrapping
 						p.ctx.TexParameteri(params.Target, textureMinFilter, nearest)
 						p.ctx.TexParameteri(params.Target, textureMagFilter, nearest)
 						p.ctx.TexParameteri(params.Target, textureWrapS, clampToEdge)
 						p.ctx.TexParameteri(params.Target, textureWrapT, clampToEdge)
-						// Allocate texture storage without data
-						p.ctx.TexImage2DEmpty(params.Target, params.Level, params.Internalformat, params.Width, params.Height, params.Format, params.Type)
-						p.ctx.BindTexture(params.Target, Texture(0)) // unbind from scratch unit
-						p.ctx.ActiveTexture(texture0) // restore to unit 0
+						p.ctx.TexStorage3D(params.Target, int32(params.Levels), params.Internalformat, int32(params.Width), int32(params.Height), int32(params.Depth))
+						p.ctx.BindTexture(params.Target, Texture(0))
+						p.ctx.ActiveTexture(texture0)
 						shader.SetGPUTexCache(jsTexId, uint32(tex))
 						if shaderDebug {
-							log.Printf("[drawShader] texImage2D_gpu: js=%d -> gl=%d (%dx%d, fmt=0x%x)", jsTexId, tex, params.Width, params.Height, params.Format)
+							log.Printf("[drawShader] texStorage3D: js=%d -> gl=%d (%dx%dx%d, fmt=0x%x)", jsTexId, tex, params.Width, params.Height, params.Depth, params.Internalformat)
+						}
+					}
+				}
+
+			case "texSubImage3D":
+				jsTexId, _ := strconv.Atoi(cmd.Name)
+				if params, ok := cmd.Value.(canvas.TexSubImage3DGPUParams); ok {
+					glId := shader.GetGPUTexCache(jsTexId)
+					if glId != 0 && len(params.Pixels) > 0 {
+						p.ctx.ActiveTexture(texture0 + 15)
+						p.ctx.BindTexture(params.Target, Texture(glId))
+						p.ctx.TexSubImage3D(params.Target, int32(params.Level), int32(params.Xoffset), int32(params.Yoffset), int32(params.Zoffset), int32(params.Width), int32(params.Height), int32(params.Depth), params.Format, params.Type, params.Pixels)
+						p.ctx.BindTexture(params.Target, Texture(0))
+						p.ctx.ActiveTexture(texture0)
+						if shaderDebug {
+							log.Printf("[drawShader] texSubImage3D: js=%d gl=%d layer=%d (%dx%d, %d bytes)", jsTexId, glId, params.Zoffset, params.Width, params.Height, len(params.Pixels))
 						}
 					}
 				}
@@ -1300,8 +1819,9 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 					if glId := shader.GetGPUTexCache(jsTexId); glId != 0 {
 						p.ctx.BindTexture(target, Texture(glId))
 						// On-demand upload: if GPU texture was allocated empty (texStorage2D)
-						// and we have CPU image data, upload it now
-						if !shader.IsGPUTexUploaded(jsTexId) {
+						// and we have CPU image data, upload it now.
+						// Skip for cubemaps — faces are uploaded by texImage2D_gpu.
+						if target != textureCubeMap && !shader.IsGPUTexUploaded(jsTexId) {
 							cpuImg := shader.GetCPUTexImage(jsTexId)
 							if cpuImg != nil {
 								rgba := p.textureToRGBA(cpuImg)
@@ -1467,7 +1987,31 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 					p.ctx.ClearStencil(val)
 				}
 			}
+			// Per-command stall detection: log if any single command takes >100ms
+			if cmdElapsed := time.Since(cmdStart); cmdElapsed > 100*time.Millisecond {
+				cmdStallCount++
+				if cmdStallCount <= 10 {
+					log.Printf("[CMD_STALL] frame#%d cmd#%d/%d type=%s name=%s took %s",
+						paintCounter, cmdIdx, len(renderCommands), cmd.Type, cmd.Name, cmdElapsed)
+				}
+			}
 		}
+		if cmdStallCount > 10 {
+			log.Printf("[CMD_STALL] frame#%d: %d more stalled commands (>100ms each)", paintCounter, cmdStallCount-10)
+		}
+
+		// GPU pipeline sync — block until the GPU finishes all queued commands.
+		// This was previously Flush (non-blocking), but that allowed the GPU command
+		// queue to build up across frames when the CPU issued commands faster than
+		// the GPU could execute them, eventually causing a driver stall.
+		// glFinish was originally removed (Round 4) because it deadlocked when stale
+		// attribute bindings caused GPU out-of-bounds reads. That root cause was fixed
+		// in Round 6 (enableVertexAttribArray tracking + PruneAttributeBuffers).
+		// With validated draws, glFinish is safe and prevents GPU queue buildup.
+		cmdLoopElapsed = time.Since(cmdLoopStart)
+		flushStart := time.Now()
+		p.ctx.Finish()
+		flushElapsed = time.Since(flushStart)
 
 		if shaderProfile {
 			now := time.Now()
@@ -1488,13 +2032,46 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 		// Only for built-in vertex shader (2D effects). 3D shaders with custom
 		// vertex sources must use the render command queue — drawing a fullscreen
 		// quad through a 3D vertex shader produces garbage (white flash).
+		fbVtxCount := getMaxVertexCount(attrBuffers, attribDivisors)
 		if useIndexedDrawing && indexCount > 0 {
-			p.ctx.DrawElements(triangles, int32(indexCount), unsignedShort, 0)
+			fbIndices := shader.GetIndices()
+			if !glValidate || validateDrawElements(fbIndices, indexCount, 0, fbVtxCount, 0, -1, prog) {
+				drawOK := true
+				if glDiag {
+					maxVtxIdx := getMaxIndex(fbIndices, indexCount, 0)
+					bufAccessOK := validateBufferAccessForDraw(attrBuffers, attribDivisors, maxVtxIdx, 0, -1, prog)
+					logDrawCall("drawElements(fallback)", -1, prog, triangles, 0, indexCount, 0, 0, attrBuffers, attribDivisors, fbIndices)
+					if !bufAccessOK {
+						log.Printf("[GL_DIAG] ^^^ BUFFER ACCESS VIOLATION (fallback)")
+						if safeGL {
+							drawOK = false
+						}
+					}
+				}
+				if drawOK {
+					p.ctx.DrawElements(triangles, int32(indexCount), unsignedShort, 0)
+				}
+			}
 		} else if vertexCount > 0 {
-			if useSeparateBuffers || shader.GetVertexCount() > 0 {
-				p.ctx.DrawArrays(triangles, 0, vertexCount)
-			} else {
-				p.ctx.DrawArrays(triangleStrip, 0, vertexCount)
+			if !glValidate || validateDrawArrays(0, vertexCount, fbVtxCount, 0, -1, prog) {
+				drawOK := true
+				if glDiag {
+					bufAccessOK := validateBufferAccessForDraw(attrBuffers, attribDivisors, vertexCount-1, 0, -1, prog)
+					logDrawCall("drawArrays(fallback)", -1, prog, triangles, 0, vertexCount, 0, 0, attrBuffers, attribDivisors, nil)
+					if !bufAccessOK {
+						log.Printf("[GL_DIAG] ^^^ BUFFER ACCESS VIOLATION (fallback)")
+						if safeGL {
+							drawOK = false
+						}
+					}
+				}
+				if drawOK {
+					if useSeparateBuffers || shader.GetVertexCount() > 0 {
+						p.ctx.DrawArrays(triangles, 0, vertexCount)
+					} else {
+						p.ctx.DrawArrays(triangleStrip, 0, vertexCount)
+					}
+				}
 			}
 		}
 	}
@@ -1561,6 +2138,15 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 				profileAccum.drawCount/int(n),
 			)
 		}
+	}
+
+	// Log slow paint cycles to diagnose GPU hangs / driver stalls.
+	// This runs on the GL thread — any delay here blocks frame delivery.
+	paintElapsed := time.Since(paintStart)
+	if paintElapsed > 200*time.Millisecond {
+		log.Printf("[PAINT_SLOW] frame#%d took %s — cmdLoop=%s flush=%s cleanup=%s cmds=%d",
+			paintCounter, paintElapsed, cmdLoopElapsed, flushElapsed,
+			paintElapsed-cmdLoopElapsed-flushElapsed, len(renderCommands))
 	}
 
 	// Signal that paint is complete (for sync with JS frame loop)

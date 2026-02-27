@@ -193,12 +193,8 @@ func (s *Shader) SetAttributeBuffer(name string, data []float32, size int, strid
 	if s.AttributeBuffers == nil {
 		s.AttributeBuffers = make(map[string]*AttributeBuffer)
 	}
-	// Preserve existing VBO if we're just updating data
-	var vbo uint32
-	var gen uint64
+	// Reuse existing *AttributeBuffer struct to avoid per-frame allocation
 	if existing, ok := s.AttributeBuffers[name]; ok {
-		vbo = existing.VBO
-		gen = existing.Generation
 		// Only increment generation if the data actually changed.
 		// pushAttribBuffersToShader calls this repeatedly with the same buffer.data
 		// for shared geometry (e.g., 100 cubes using one BoxGeometry).
@@ -206,18 +202,21 @@ func (s *Shader) SetAttributeBuffer(name string, data []float32, size int, strid
 		sameData := len(existing.Data) == len(data) && len(data) > 0 &&
 			&existing.Data[0] == &data[0]
 		if !sameData {
-			gen++
+			existing.Generation++
 		}
+		existing.Data = data
+		existing.Size = size
+		existing.Stride = stride
+		existing.Offset = offset
+		// VBO is preserved (already set on the existing struct)
 	} else {
-		gen = 1 // First buffer for this attribute
-	}
-	s.AttributeBuffers[name] = &AttributeBuffer{
-		Data:       data,
-		Size:       size,
-		VBO:        vbo,
-		Stride:     stride,
-		Offset:     offset,
-		Generation: gen,
+		s.AttributeBuffers[name] = &AttributeBuffer{
+			Data:       data,
+			Size:       size,
+			Stride:     stride,
+			Offset:     offset,
+			Generation: 1,
+		}
 	}
 	// Update vertex count based on the number of vertices in this buffer
 	if size > 0 {
@@ -255,6 +254,19 @@ func (s *Shader) HasAttributeBuffers() bool {
 	s.attrBuffersMu.RLock()
 	defer s.attrBuffersMu.RUnlock()
 	return s.AttributeBuffers != nil && len(s.AttributeBuffers) > 0
+}
+
+// PruneAttributeBuffers removes attribute buffers not in the keep set.
+// Called before each draw to prevent stale attribute bindings from persisting
+// when different objects use different sets of attributes.
+func (s *Shader) PruneAttributeBuffers(keep map[string]bool) {
+	s.attrBuffersMu.Lock()
+	defer s.attrBuffersMu.Unlock()
+	for name := range s.AttributeBuffers {
+		if !keep[name] {
+			delete(s.AttributeBuffers, name)
+		}
+	}
 }
 
 // ClearAttributeBufferVBOs clears VBO IDs (called on recompile to force re-upload).
@@ -372,6 +384,26 @@ func (s *Shader) DeleteGPUTexCache(jsId int) {
 	delete(s.gpuTexCache, jsId)
 }
 
+// DeleteTextureAllCaches removes a JS texture ID from ALL texture-related caches.
+// Call this when a texture is deleted to prevent unbounded map growth.
+func (s *Shader) DeleteTextureAllCaches(jsId int) {
+	delete(s.gpuTexCache, jsId)
+	delete(s.cpuTexImages, jsId)
+	delete(s.gpuTexUploaded, jsId)
+	delete(s.gpuTexFormats, jsId)
+	// Also remove from jsTexForSampler (reverse lookup)
+	for k, v := range s.jsTexForSampler {
+		if v == jsId {
+			delete(s.jsTexForSampler, k)
+		}
+	}
+}
+
+// DeleteVBOUploadedGen removes a VBO from the upload generation cache.
+func (s *Shader) DeleteVBOUploadedGen(vboId uint32) {
+	delete(s.VBOUploadedGen, vboId)
+}
+
 // SetJSTexForSampler records that a JS texture ID is associated with a sampler uniform.
 // This allows the painter to populate gpuTexCache with Phase 2.1 uploaded textures.
 func (s *Shader) SetJSTexForSampler(samplerName string, jsTexId int) {
@@ -399,8 +431,16 @@ func (s *Shader) IsGPUTexUploaded(jsTexId int) bool {
 }
 
 // SetGPUTexUploaded marks a GPU texture as having been uploaded with real data.
+// Also releases the CPU-side image data to free memory — texture is on the GPU now.
 func (s *Shader) SetGPUTexUploaded(jsTexId int) {
 	s.gpuTexUploaded[jsTexId] = true
+	delete(s.cpuTexImages, jsTexId)
+}
+
+// ReleaseCPUTexImage removes the CPU image for a specific key.
+// Used for cubemap face cleanup (compound keys: jsTexId*10 + faceIndex).
+func (s *Shader) ReleaseCPUTexImage(key int) {
+	delete(s.cpuTexImages, key)
 }
 
 // SetGPUTexFormat stores the GL format info for a JS texture ID.
@@ -429,19 +469,7 @@ func (s *Shader) GetAttribDivisors() map[string]uint32 {
 // and glBufferSubData uses copy-on-write.
 func (s *Shader) QueueDrawArraysInstanced(mode uint32, first int, count int, instanceCount int) {
 	s.attrBuffersMu.RLock()
-	attrSnapshot := make(map[string]*AttributeBuffer)
-	for name, buf := range s.AttributeBuffers {
-		if buf != nil && len(buf.Data) > 0 {
-			attrSnapshot[name] = &AttributeBuffer{
-				Data:       buf.Data,
-				Size:       buf.Size,
-				VBO:        buf.VBO,
-				Stride:     buf.Stride,
-				Offset:     buf.Offset,
-				Generation: buf.Generation,
-			}
-		}
-	}
+	attrSnapshot := s.snapshotAttributeBuffers()
 	s.attrBuffersMu.RUnlock()
 
 	s.QueueRenderCommand(RenderCommand{
@@ -461,19 +489,7 @@ func (s *Shader) QueueDrawArraysInstanced(mode uint32, first int, count int, ins
 // and glBufferSubData uses copy-on-write.
 func (s *Shader) QueueDrawElementsInstanced(mode uint32, count int, offset int, instanceCount int) {
 	s.attrBuffersMu.RLock()
-	attrSnapshot := make(map[string]*AttributeBuffer)
-	for name, buf := range s.AttributeBuffers {
-		if buf != nil && len(buf.Data) > 0 {
-			attrSnapshot[name] = &AttributeBuffer{
-				Data:       buf.Data,
-				Size:       buf.Size,
-				VBO:        buf.VBO,
-				Stride:     buf.Stride,
-				Offset:     buf.Offset,
-				Generation: buf.Generation,
-			}
-		}
-	}
+	attrSnapshot := s.snapshotAttributeBuffers()
 	s.attrBuffersMu.RUnlock()
 
 	s.QueueRenderCommand(RenderCommand{
@@ -488,3 +504,24 @@ func (s *Shader) QueueDrawElementsInstanced(mode uint32, count int, offset int, 
 		},
 	})
 }
+
+// ═══════════════════════════════════════════════════════════════
+// Diagnostic accessors (for TSYNE_MAP_DIAG=1 map size logging)
+// ═══════════════════════════════════════════════════════════════
+
+func (s *Shader) TextureUnits() map[string]int          { return s.textureUnits }
+func (s *Shader) TextureCache() map[string]uint32        { return s.textureCache }
+func (s *Shader) CubemapUnits() map[string]int           { return s.cubemapUnits }
+func (s *Shader) CubemapCache() map[string]uint32        { return s.cubemapCache }
+func (s *Shader) AttributeLocations() map[string]int32   { return s.attributeLocations }
+func (s *Shader) FBOCache() map[int]uint32               { return s.fboCache }
+func (s *Shader) RBOCache() map[int]uint32               { return s.rboCache }
+func (s *Shader) GPUTexCache() map[int]uint32             { return s.gpuTexCache }
+func (s *Shader) JSTexForSampler() map[string]int         { return s.jsTexForSampler }
+func (s *Shader) CPUTexImages() map[int]interface{}       { return s.cpuTexImages }
+func (s *Shader) GPUTexUploaded() map[int]bool            { return s.gpuTexUploaded }
+func (s *Shader) GPUTexFormats() map[int]GPUTextureFormat  { return s.gpuTexFormats }
+func (s *Shader) AttribDivisors() map[string]uint32       { return s.attribDivisors }
+func (s *Shader) GetVBOUploadedGen() map[uint32]uint64    { return s.VBOUploadedGen }
+func (s *Shader) GetRenderCommandsNoSwap() []RenderCommand { return s.renderCommands }
+func (s *Shader) GetLastRenderCommands() []RenderCommand   { return s.lastRenderCommands }

@@ -372,7 +372,7 @@ export class MoldableCubeGeometry {
   }
 
   bindGeometry() {
-    this.buffer = gl.createBuffer()!;
+    // Reuse existing buffer from constructor (don't leak by creating a new one)
     this.populateFullBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
     gl.bufferData(gl.ARRAY_BUFFER, this.fullBuffer, gl.STATIC_DRAW);

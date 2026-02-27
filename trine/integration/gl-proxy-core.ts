@@ -34,7 +34,8 @@ export class TsyneGLProxy implements WebGL2RenderingContext {
   private nextObjectId = 1;
 
   // Command buffer - accumulate GL commands, send as batch
-  private commandBuffer: GLCommand[] = [];
+  // Public for diagnostics (command count per frame)
+  commandBuffer: GLCommand[] = [];
   private needsFlush = false;
 
   // Track GL state locally to avoid re-sending unchanged state
@@ -106,7 +107,7 @@ export class TsyneGLProxy implements WebGL2RenderingContext {
    * Push a command to the buffer
    */
   private pushCommand(cmd: string, args: Record<string, any> = {}): void {
-    this.commandBuffer.push({ cmd, args });
+    this.commandBuffer.push([cmd, args]);
     this.needsFlush = true;
   }
 
@@ -134,11 +135,22 @@ export class TsyneGLProxy implements WebGL2RenderingContext {
       return;
     }
 
+    // Atomically swap the command buffer before any awaits.
+    // Commands generated during the async send go into the new buffer
+    // and will be included in the next flush (not lost).
+    const commands = this.commandBuffer;
+    const cmdCount = commands.length;
+    this.commandBuffer = [];
+    this.needsFlush = false;
+
     const flushStart = this._profilingEnabled ? performance.now() : 0;
 
     try {
       const canvasId = await (this.canvas as any).getBridgeCanvasId();
-      const response = await this.bridge.executeBatch(canvasId, this.commandBuffer);
+      const response = await this.bridge.executeBatch(canvasId, commands);
+
+      // Arena views have been serialized by msgpack — safe to reclaim
+      resetEncodeArena();
 
       // Process any mouse events piggybacked on the response
       // Note: Go JSON uses capitalized field names (Type, X, Y, Button)
@@ -208,7 +220,7 @@ export class TsyneGLProxy implements WebGL2RenderingContext {
     if (this._profilingEnabled) {
       const flushTime = performance.now() - flushStart;
       this._totalFlushTime += flushTime;
-      this._commandsThisFrame = this.commandBuffer.length;
+      this._commandsThisFrame = cmdCount;
       this._frameCount++;
       if (this._frameCount % this._profilingInterval === 0) {
         const avgFlush = this._totalFlushTime / this._profilingInterval;
@@ -220,9 +232,6 @@ export class TsyneGLProxy implements WebGL2RenderingContext {
         this._commandsSkipped = 0;
       }
     }
-
-    this.commandBuffer = [];
-    this.needsFlush = false;
   }
 
   /**
@@ -817,24 +826,67 @@ export class TsyneGLProxy implements WebGL2RenderingContext {
 // Apply WebGL2 constants to the prototype
 applyGLConstants(TsyneGLProxy.prototype);
 
+// ═══════════════════════════════════════════════════════════════
+// ARENA ALLOCATOR — eliminates per-call Uint8Array allocations
+// ═══════════════════════════════════════════════════════════════
+// encodeBufferData is called ~200+ times per frame. Without the arena,
+// each call allocates a new Uint8Array, producing ~6 MB/s of short-lived
+// objects whose backing ArrayBuffers inflate RSS even after GC.
+// The arena pre-allocates a single large buffer and hands out views.
+// Reset it once per flush (after msgpack has serialized the batch).
+
+let arenaBuffer = new ArrayBuffer(8 * 1024 * 1024); // 8 MB
+let arenaView = new Uint8Array(arenaBuffer);
+let arenaOffset = 0;
+
+function arenaAlloc(size: number): Uint8Array {
+  // Align to 8 bytes for typed-array compatibility
+  const aligned = (size + 7) & ~7;
+  if (arenaOffset + aligned > arenaBuffer.byteLength) {
+    // Arena full — grow for this + future frames
+    const newSize = Math.max(arenaBuffer.byteLength * 2, arenaOffset + aligned);
+    arenaBuffer = new ArrayBuffer(newSize);
+    arenaView = new Uint8Array(arenaBuffer);
+    arenaOffset = 0;
+  }
+  const view = new Uint8Array(arenaBuffer, arenaOffset, size);
+  arenaOffset += aligned;
+  return view;
+}
+
+/**
+ * Reset the arena allocator. Call after msgpack has serialized the batch
+ * so that all previously returned views have been consumed.
+ */
+export function resetEncodeArena(): void {
+  arenaOffset = 0;
+}
+
 /**
  * Encode buffer data for transmission.
- * Returns a Uint8Array which msgpack natively encodes as binary (bin type).
+ * Returns a Uint8Array view into the arena buffer.
+ * msgpack natively encodes Uint8Array as binary (bin type).
  */
 export function encodeBufferData(data: ArrayBufferView | ArrayBuffer | number[]): Uint8Array {
   if (data instanceof ArrayBuffer) {
-    // Copy — source may be mutated before msgpack serializes the batch
-    return new Uint8Array(data.slice(0));
+    const src = new Uint8Array(data);
+    const dst = arenaAlloc(src.byteLength);
+    dst.set(src);
+    return dst;
   } else if (ArrayBuffer.isView(data)) {
     // Must copy — Three.js reuses typed arrays (e.g. matrix.elements) across
     // objects. A view would see the LAST object's values at serialize time.
-    const copy = new Uint8Array(data.byteLength);
-    copy.set(new Uint8Array(data.buffer, data.byteOffset, data.byteLength));
-    return copy;
+    const src = new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+    const dst = arenaAlloc(src.byteLength);
+    dst.set(src);
+    return dst;
   } else if (Array.isArray(data)) {
     // Handle plain number arrays (common from three.js)
     const float32 = new Float32Array(data);
-    return new Uint8Array(float32.buffer);
+    const src = new Uint8Array(float32.buffer);
+    const dst = arenaAlloc(src.byteLength);
+    dst.set(src);
+    return dst;
   } else {
     console.warn('[encodeBufferData] Unhandled data type:', typeof data);
     return new Uint8Array(0);

@@ -1,4 +1,3 @@
-import { draw2d } from '@/engine/draw-2d';
 import { coinAudio } from '@/sound-effects';
 
 class Hud {
@@ -46,26 +45,8 @@ class Hud {
   draw() {
     this.timeRemaining -= 0.0166;
 
-    draw2d.clear();
-
-    draw2d.context.filter = 'grayscale(100%)';
-
-    draw2d.context.save();
-    draw2d.context.translate(50, 58);
-    if (this.isTimeBonusActive) {
-      draw2d.context.rotate(Math.max(this.timeBonusRotator -= 0.1, 0));
-    }
-
-    draw2d.drawText('⏳', 'monospace', 50, 0, 0, 1, 'center', false);
-    draw2d.context.restore();
-
-    draw2d.drawText(this.timeRemaining.toFixed(1), 'Times New Roman', 70, 160, 60, 2);
-
-    draw2d.drawText('$' + this.score.toString(), 'monospace', 70, 1240, 60, 1, 'right');
-
     if (this.isTimeBonusActive) {
       this.timeBonusTimer -= 0.0166;
-      draw2d.drawText('+' + this.currentTimeBonus.toFixed(0), 'Times New Roman', 50, 175, 120, 1, 'right');
       if (this.timeBonusTimer <= 0) {
         this.isTimeBonusActive = false;
       }
@@ -73,8 +54,6 @@ class Hud {
 
     if (this.isScoreBonusActive) {
       this.scoreBonusTimer -= 0.0166;
-
-      draw2d.drawText('+$' + this.currentScoreBonus.toString(), 'monospace', 50, 1235, 120, 1, 'right');
 
       if (this.scoreBonusTimer <= 0) {
         this.score += this.currentScoreBonus;

@@ -1,12 +1,71 @@
 package canvas
 
 import (
+	"log"
 	"strings"
+	"sync"
 	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/driver/desktop"
 )
+
+// attrMapPool pools maps used for attribute buffer snapshots in draw calls.
+var attrMapPool = sync.Pool{
+	New: func() interface{} {
+		m := make(map[string]*AttributeBuffer, 8)
+		return &m
+	},
+}
+
+// attrBufPool pools AttributeBuffer structs used in draw call snapshots.
+var attrBufPool = sync.Pool{
+	New: func() interface{} {
+		return &AttributeBuffer{}
+	},
+}
+
+// snapshotAttributeBuffers creates a pooled snapshot of the current attribute buffers.
+// The returned map and its AttributeBuffer values come from sync.Pool and must be
+// returned via RecycleAttrSnapshot after the painter consumes them.
+func (s *Shader) snapshotAttributeBuffers() map[string]*AttributeBuffer {
+	mp := attrMapPool.Get().(*map[string]*AttributeBuffer)
+	m := *mp
+	// Clear any leftover entries from previous use (Go 1.19 compat — no clear())
+	for k := range m {
+		delete(m, k)
+	}
+	for name, buf := range s.AttributeBuffers {
+		if buf != nil && len(buf.Data) > 0 {
+			ab := attrBufPool.Get().(*AttributeBuffer)
+			ab.Data = buf.Data
+			ab.Size = buf.Size
+			ab.VBO = buf.VBO
+			ab.Stride = buf.Stride
+			ab.Offset = buf.Offset
+			ab.Generation = buf.Generation
+			m[name] = ab
+		}
+	}
+	return m
+}
+
+// RecycleAttrSnapshot returns a snapshot map and its AttributeBuffer entries to
+// the pool. Called by the painter after consuming a draw command.
+func RecycleAttrSnapshot(m map[string]*AttributeBuffer) {
+	if m == nil {
+		return
+	}
+	for k, buf := range m {
+		if buf != nil {
+			// Zero out slice reference to avoid pinning data
+			buf.Data = nil
+			attrBufPool.Put(buf)
+		}
+		delete(m, k)
+	}
+	attrMapPool.Put(&m)
+}
 
 // QueueRenderCommand adds a render command to the queue.
 // Commands are executed in order during the paint cycle.
@@ -30,19 +89,7 @@ func (s *Shader) QueueUniform(name string, value interface{}) {
 // and glBufferSubData uses copy-on-write.
 func (s *Shader) QueueDrawElements(mode uint32, count int, offset int) {
 	s.attrBuffersMu.RLock()
-	attrSnapshot := make(map[string]*AttributeBuffer)
-	for name, buf := range s.AttributeBuffers {
-		if buf != nil && len(buf.Data) > 0 {
-			attrSnapshot[name] = &AttributeBuffer{
-				Data:       buf.Data,
-				Size:       buf.Size,
-				VBO:        buf.VBO,
-				Stride:     buf.Stride,
-				Offset:     buf.Offset,
-				Generation: buf.Generation,
-			}
-		}
-	}
+	attrSnapshot := s.snapshotAttributeBuffers()
 	s.attrBuffersMu.RUnlock()
 
 	s.QueueRenderCommand(RenderCommand{
@@ -62,19 +109,7 @@ func (s *Shader) QueueDrawElements(mode uint32, count int, offset int) {
 // and glBufferSubData uses copy-on-write.
 func (s *Shader) QueueDrawArrays(mode uint32, first int, count int) {
 	s.attrBuffersMu.RLock()
-	attrSnapshot := make(map[string]*AttributeBuffer)
-	for name, buf := range s.AttributeBuffers {
-		if buf != nil && len(buf.Data) > 0 {
-			attrSnapshot[name] = &AttributeBuffer{
-				Data:       buf.Data,
-				Size:       buf.Size,
-				VBO:        buf.VBO,
-				Stride:     buf.Stride,
-				Offset:     buf.Offset,
-				Generation: buf.Generation,
-			}
-		}
-	}
+	attrSnapshot := s.snapshotAttributeBuffers()
 	s.attrBuffersMu.RUnlock()
 
 	s.QueueRenderCommand(RenderCommand{
@@ -104,9 +139,31 @@ func (s *Shader) GetRenderCommands() []RenderCommand {
 	s.renderMu.Lock()
 	defer s.renderMu.Unlock()
 	if len(s.renderCommands) > 0 {
-		// New frame — swap into lastRenderCommands for future replays
+		// New frame — recycle pooled attribute snapshots from the old frame's
+		// commands before we lose the reference. These were already consumed
+		// by the painter in the previous paint cycle.
+		old := s.lastRenderCommands
+		for _, cmd := range old {
+			switch cmd.Type {
+			case "drawElements":
+				if params, ok := cmd.Value.(DrawElementsParams); ok {
+					RecycleAttrSnapshot(params.AttributeBuffers)
+				}
+			case "drawArrays":
+				if params, ok := cmd.Value.(DrawArraysParams); ok {
+					RecycleAttrSnapshot(params.AttributeBuffers)
+				}
+			}
+		}
+		// Swap slices so the old lastRenderCommands backing array gets reused.
+		// The painter fully consumes lastRenderCommands before the next
+		// GetRenderCommands() call.
 		s.lastRenderCommands = s.renderCommands
-		s.renderCommands = nil
+		if old != nil {
+			s.renderCommands = old[:0] // reuse capacity
+		} else {
+			s.renderCommands = nil
+		}
 		s.LastGetWasNew = true
 		return s.lastRenderCommands
 	}
@@ -161,12 +218,19 @@ func (s *Shader) WaitForPaint() {
 		return
 	}
 
-	// Wait with short timeout to avoid deadlock
+	// Wait for paint to complete, with a generous timeout.
+	// CRITICAL: A short timeout (e.g., 16ms) causes the caller to return early
+	// and send the next batch before the current paint finishes. The new batch's
+	// render commands APPEND to the queue, doubling the GPU work per paint cycle.
+	// This creates a positive feedback loop: more commands → longer paint →
+	// more timeouts → more coalescing → GPU falls behind → machine freeze.
+	// 5 seconds is long enough for even the worst paint cycle but short enough
+	// to recover from a truly hung GPU.
 	select {
 	case <-ch:
 		// Paint completed
-	case <-time.After(16 * time.Millisecond):
-		// Timeout - roughly one frame at 60fps
+	case <-time.After(5 * time.Second):
+		log.Printf("[PAINT_WAIT_TIMEOUT] Paint did not complete within 5s — possible GPU stall")
 	}
 }
 

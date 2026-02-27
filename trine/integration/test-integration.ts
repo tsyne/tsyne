@@ -172,7 +172,7 @@ void main() {
   }
 
   const shaderSourceCmd = commandsMsg.payload.commands.find(
-    (cmd: any) => cmd.cmd === 'shaderSource'
+    (cmd: any) => (Array.isArray(cmd) ? cmd[0] : cmd.cmd) === 'shaderSource'
   );
   if (shaderSourceCmd) {
     console.log('✓ Shader source command found in batch');

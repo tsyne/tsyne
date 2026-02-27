@@ -135,6 +135,37 @@ func convertGLSL300toGLSL110WithType(source string, shaderType ShaderType) strin
 
 	// Standard conversion path (for shaders without three.js macros)
 
+	// Check if shader is raw GLSL 300 ES (not from Three.js).
+	// Raw WebGL2 shaders use features like layout qualifiers, sampler2DArray,
+	// samplerCube with texture(), in/out syntax — all native to GLSL 330.
+	// Converting to GLSL 330 is the closest match and avoids broken downgrades.
+	hasVersion300ES := regexp.MustCompile(`(?i)#version\s+300\s+es`).MatchString(source)
+
+	if hasVersion300ES {
+		// Raw WebGL2 shader — convert to GLSL 330 (close to GLSL 300 ES)
+		// Just change version and strip precision qualifiers; everything else is compatible
+		versionRegex := regexp.MustCompile(`(?i)#version\s+300\s+es\s*\n?`)
+		result = versionRegex.ReplaceAllString(result, "")
+
+		// Remove precision statements
+		precisionRegex := regexp.MustCompile(`(?m)^[\t ]*precision\s+(highp|mediump|lowp)\s+\w+;\s*\n?`)
+		for precisionRegex.MatchString(result) {
+			result = precisionRegex.ReplaceAllString(result, "")
+		}
+
+		// Remove precision prefixes
+		precisionPrefixRegex := regexp.MustCompile(`\b(highp|mediump|lowp)\s+`)
+		result = precisionPrefixRegex.ReplaceAllString(result, "")
+
+		// Remove //[ and //] comment markers (precision block delimiters)
+		result = strings.ReplaceAll(result, "//[", "")
+		result = strings.ReplaceAll(result, "//]", "")
+
+		return "#version 330\n// Converted from GLSL 300 ES to GLSL 330\n" + result
+	}
+
+	// Legacy conversion path (GLSL 300 ES → GLSL 110)
+
 	// Remove version directive
 	versionRegex := regexp.MustCompile(`(?i)#version\s+300\s+es\s*`)
 	result = versionRegex.ReplaceAllString(result, "")
