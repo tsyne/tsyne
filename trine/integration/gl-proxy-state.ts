@@ -35,15 +35,21 @@ proto.deleteVertexArray = function (vertexArray: WebGLVertexArrayObject | null):
 
 proto.bindVertexArray = function (array: WebGLVertexArrayObject | null): void {
   const vaId = array ? (array as any).__tsyneId : 0;
+  if (vaId === this.boundVertexArray) { this._commandsSkipped++; return; }
+  this.boundVertexArray = vaId;
+  // VAO switch restores the VAO's ELEMENT_ARRAY_BUFFER binding, which may
+  // differ from our tracked value.  Invalidate so the next bindBuffer(EAB,...)
+  // is never incorrectly skipped.
+  this.boundElementArrayBuffer = undefined;
   this.pushCommand('bindVertexArray', { vaId });
 };
 
 proto.enableVertexAttribArray = function (index: GLuint): void {
-  this.pushCommand('enableVertexAttribArray', { index });
+  this.pushFlat('enableVertexAttribArray', index);
 };
 
 proto.disableVertexAttribArray = function (index: GLuint): void {
-  this.pushCommand('disableVertexAttribArray', { index });
+  this.pushFlat('disableVertexAttribArray', index);
 };
 
 proto.vertexAttribPointer = function (
@@ -57,14 +63,8 @@ proto.vertexAttribPointer = function (
   // Track this location as used (prevents getAttribLocation from reusing it,
   // important for mat4 attributes that occupy 4 consecutive locations)
   this.usedAttribLocations.add(index);
-  this.pushCommand('vertexAttribPointer', {
-    location: index,  // Go expects 'location', not 'index'
-    size,
-    type,
-    normalized,
-    stride,
-    offset,
-  });
+  // Flat format: [cmd, location, size, type, normalized, stride, offset]
+  this.pushFlat('vertexAttribPointer', index, size, type, normalized ? 1 : 0, stride, offset);
 };
 
 proto.vertexAttribIPointer = function (
@@ -84,7 +84,7 @@ proto.vertexAttribIPointer = function (
 };
 
 proto.vertexAttribDivisor = function (index: GLuint, divisor: GLuint): void {
-  this.pushCommand('vertexAttribDivisor', { index, divisor });
+  this.pushFlat('vertexAttribDivisor', index, divisor);
 };
 
 // Constant attribute value methods (used when attribute is disabled)
@@ -148,15 +148,15 @@ proto.vertexAttribI4uiv = function (index: GLuint, values: Uint32List): void {
 // ═══════════════════════════════════════════════════════════════
 
 proto.drawArrays = function (mode: GLenum, first: GLint, count: GLsizei): void {
-  this.pushCommand('drawArrays', { mode, first, count });
+  this.pushFlat('drawArrays', mode, first, count);
 };
 
 proto.drawElements = function (mode: GLenum, count: GLsizei, type: GLenum, offset: GLintptr): void {
-  this.pushCommand('drawElements', { mode, count, type, offset });
+  this.pushFlat('drawElements', mode, count, type, offset);
 };
 
 proto.drawArraysInstanced = function (mode: GLenum, first: GLint, count: GLsizei, instancecount: GLsizei): void {
-  this.pushCommand('drawArraysInstanced', { mode, first, count, instancecount });
+  this.pushFlat('drawArraysInstanced', mode, first, count, instancecount);
 };
 
 proto.drawElementsInstanced = function (
@@ -166,7 +166,7 @@ proto.drawElementsInstanced = function (
   offset: GLintptr,
   instancecount: GLsizei
 ): void {
-  this.pushCommand('drawElementsInstanced', { mode, count, type, offset, instancecount });
+  this.pushFlat('drawElementsInstanced', mode, count, type, offset, instancecount);
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -174,19 +174,19 @@ proto.drawElementsInstanced = function (
 // ═══════════════════════════════════════════════════════════════
 
 proto.clear = function (mask: GLbitfield): void {
-  this.pushCommand('clear', { mask });
+  this.pushFlat('clear', mask);
 };
 
 proto.clearColor = function (red: GLclampf, green: GLclampf, blue: GLclampf, alpha: GLclampf): void {
-  this.pushCommand('clearColor', { red, green, blue, alpha });
+  this.pushFlat('clearColor', red, green, blue, alpha);
 };
 
 proto.clearDepth = function (depth: GLclampf): void {
-  this.pushCommand('clearDepth', { depth });
+  this.pushFlat('clearDepth', depth);
 };
 
 proto.clearStencil = function (s: GLint): void {
-  this.pushCommand('clearStencil', { s });
+  this.pushFlat('clearStencil', s);
 };
 
 // WebGL2 clear buffer methods (for MRT / integer framebuffers)
@@ -210,6 +210,11 @@ proto.clearBufferfi = function (buffer: GLenum, drawbuffer: GLint, depth: GLfloa
 };
 
 proto.viewport = function (x: GLint, y: GLint, width: GLsizei, height: GLsizei): void {
+  const cv = this.currentViewport;
+  if (cv[0] === x && cv[1] === y && cv[2] === width && cv[3] === height) {
+    this._commandsSkipped++; return;
+  }
+  cv[0] = x; cv[1] = y; cv[2] = width; cv[3] = height;
   this.pushCommand('viewport', { x, y, width, height });
 };
 

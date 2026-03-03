@@ -33,6 +33,12 @@ export class ThirdPersonPlayer {
 
   constructor(camera: Camera) {
     this.mesh = makeTruck();
+    // Tag truck meshes for draw call identification
+    const tagChildren = (obj: any, prefix: string) => {
+      if (obj.geometry) obj._drawTag = prefix;
+      (obj.children || []).forEach((child: any, i: number) => tagChildren(child, `${prefix}_${i}`));
+    };
+    tagChildren(this.mesh, 'truck');
     this.chassisCenter.y = 10;
     this.camera = camera;
     this.listener = audioCtx.listener;

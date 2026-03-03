@@ -2,6 +2,7 @@
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
+  roots: ['<rootDir>', '<rootDir>/../ported-apps'],
   testMatch: ['**/*.test.ts'],
   transform: {
     // Transform three.js ES modules (src and examples/jsm) using babel

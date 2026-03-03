@@ -45,6 +45,10 @@ export class TsyneGLProxy implements WebGL2RenderingContext {
   private activeTextureUnit = 0;
 
   // GL state deduplication — track current state to skip redundant commands
+  private boundTextures = new Map<number, number>();  // key: unit*0x10000+target → textureId
+  private currentViewport = [0, 0, 0, 0];
+  private boundVertexArray: number = 0;
+  private uniformCache = new Map<number, any>();       // locId → cached value
   private enabledCaps = new Set<number>();
   private currentDepthFunc: number = 0x0201; // LESS
   private currentDepthMask: boolean = true;
@@ -104,10 +108,20 @@ export class TsyneGLProxy implements WebGL2RenderingContext {
   }
 
   /**
-   * Push a command to the buffer
+   * Push a command to the buffer (map format: [cmd, {key: val}])
    */
   private pushCommand(cmd: string, args: Record<string, any> = {}): void {
     this.commandBuffer.push([cmd, args]);
+    this.needsFlush = true;
+  }
+
+  /**
+   * Push a flat command to the buffer: [cmd, arg1, arg2, ...]
+   * Eliminates the map allocation on the Go side for high-frequency commands.
+   */
+  pushFlat(cmd: string, ...args: any[]): void {
+    args.unshift(cmd);
+    this.commandBuffer.push(args);
     this.needsFlush = true;
   }
 
@@ -281,10 +295,12 @@ export class TsyneGLProxy implements WebGL2RenderingContext {
   bindBuffer(target: GLenum, buffer: WebGLBuffer | null): void {
     const bufferId = buffer ? (buffer as any).__tsyneId : 0;
 
-    // Update local state
+    // Dedup for the two high-frequency targets
     if (target === this.ARRAY_BUFFER) {
+      if ((bufferId || null) === this.boundArrayBuffer) { this._commandsSkipped++; return; }
       this.boundArrayBuffer = bufferId || null;
     } else if (target === this.ELEMENT_ARRAY_BUFFER) {
+      if ((bufferId || null) === this.boundElementArrayBuffer) { this._commandsSkipped++; return; }
       this.boundElementArrayBuffer = bufferId || null;
     }
 
@@ -459,7 +475,9 @@ export class TsyneGLProxy implements WebGL2RenderingContext {
 
   useProgram(program: WebGLProgram | null): void {
     const programId = program ? (program as any).__tsyneId : 0;
+    if ((programId || null) === this.boundProgram) { this._commandsSkipped++; return; }
     this.boundProgram = programId || null;
+    this.uniformCache.clear();
     this.pushCommand('useProgram', { programId });
   }
 

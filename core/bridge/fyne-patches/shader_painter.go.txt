@@ -100,6 +100,14 @@ var safeGL = os.Getenv("TSYNE_SAFE_GL") == "1"
 // paintCounter counts paint cycles for slow-paint diagnostics.
 var paintCounter int
 
+// GPU resource creation counters for leak detection.
+// Reset each frame; if >0 after warmup (frame >60), we have a leak.
+var paintVBOCreates int
+var paintIBOCreates int
+var paintTexCreates int
+var paintFBOCreates int
+var paintRBOCreates int
+
 // validateDrawElements checks that a drawElements call won't read out-of-bounds.
 // Returns true if safe to draw, false if the call should be skipped.
 func validateDrawElements(indices []uint16, count, byteOffset int, maxVertexCount int, instanceCount int, cmdIdx int, prog Program) bool {
@@ -348,6 +356,11 @@ var profileAccum struct {
 
 // drawShader renders a Shader canvas object
 func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyne.Size) {
+	// Always signal paint done, even on early returns.
+	// Without this, WaitForPaint blocks for 5s on every frame when geometry
+	// isn't ready yet (race on ~1-in-10 launches), permanently stuck at 1fps.
+	defer shader.SignalPaintDone()
+
 	if shader.FragmentSource == "" {
 		return
 	}
@@ -357,6 +370,13 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 		profileStart = time.Now()
 		phaseStart = profileStart
 	}
+
+	// Reset per-frame GPU resource creation counters
+	paintVBOCreates = 0
+	paintIBOCreates = 0
+	paintTexCreates = 0
+	paintFBOCreates = 0
+	paintRBOCreates = 0
 	paintCounter++
 	paintStart := time.Now()
 
@@ -627,6 +647,7 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 		texID, cached := shader.GetTextureCache()[texName]
 		if !cached {
 			tex := p.ctx.CreateTexture()
+			paintTexCreates++
 			texID = uint32(tex)
 			shader.SetTextureCache(texName, texID)
 		}
@@ -693,6 +714,7 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 		if !cached {
 			// Create new cubemap texture
 			tex := p.ctx.CreateTexture()
+			paintTexCreates++
 			cubemapTexID = uint32(tex)
 			shader.SetCubemapCache(cubemapName, cubemapTexID)
 		}
@@ -934,6 +956,7 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 			// Create VBO for this attribute if needed
 			if buf.VBO == 0 {
 				buf.VBO = uint32(p.ctx.CreateBuffer())
+				paintVBOCreates++
 			}
 
 			// Bind and upload data for this attribute
@@ -1001,6 +1024,7 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 		vbo := shader.GetVBO()
 		if vbo == 0 {
 			vbo = uint32(p.ctx.CreateBuffer())
+			paintVBOCreates++
 			shader.SetVBO(vbo)
 		}
 		p.ctx.BindBuffer(arrayBuffer, Buffer(vbo))
@@ -1048,6 +1072,7 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 		vbo := shader.GetVBO()
 		if vbo == 0 {
 			vbo = uint32(p.ctx.CreateBuffer())
+			paintVBOCreates++
 			shader.SetVBO(vbo)
 		}
 		p.ctx.BindBuffer(arrayBuffer, Buffer(vbo))
@@ -1078,6 +1103,7 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 			ibo := shader.GetIBO()
 			if ibo == 0 {
 				ibo = uint32(p.ctx.CreateBuffer())
+				paintIBOCreates++
 				shader.SetIBO(ibo)
 			}
 			p.ctx.BindBuffer(elementArrayBuffer, Buffer(ibo))
@@ -1100,6 +1126,7 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 
 	// Process render command queue (immediate-mode: set uniform → draw → set uniform → draw)
 	var cmdLoopElapsed, flushElapsed time.Duration
+	var budgetExceeded bool
 	renderCommands := shader.GetRenderCommands()
 	if len(renderCommands) > 0 {
 		// VBO upload cache is persistent across frames: the generation-based check
@@ -1148,7 +1175,20 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 		// Execute commands in order (three.js immediate-mode style)
 		cmdLoopStart := time.Now()
 		var cmdStallCount int
+		const paintBudget = 300 * time.Millisecond // break out if command loop exceeds this
 		for cmdIdx := 0; cmdIdx < len(renderCommands); cmdIdx++ {
+			// Paint budget: if the command loop is taking too long, break out.
+			// This clips the tail of slow frames (some draw calls missing for
+			// one frame) but prevents the GPU driver from hanging the machine.
+			// Check every 32 commands to avoid per-command time.Now() overhead.
+			if cmdIdx&31 == 31 {
+				if time.Since(cmdLoopStart) > paintBudget {
+					log.Printf("[PAINT_BUDGET] frame#%d breaking at cmd %d/%d after %s",
+						paintCounter, cmdIdx, len(renderCommands), time.Since(cmdLoopStart))
+					budgetExceeded = true
+					break
+				}
+			}
 			cmdStart := time.Now()
 			cmd := renderCommands[cmdIdx]
 			_ = cmdIdx
@@ -1227,6 +1267,15 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 								// Create VBO if needed
 								if buf.VBO == 0 {
 									buf.VBO = uint32(p.ctx.CreateBuffer())
+									paintVBOCreates++
+									// Write back so future snapshots inherit this VBO.
+									// Try live buffer first; fall back to vboCache which
+									// survives PruneAttributeBuffers (the prune for the NEXT
+									// object may have already deleted this entry).
+									if liveBuf := shader.GetAttributeBuffer(cmdBufName); liveBuf != nil {
+										liveBuf.VBO = buf.VBO
+									}
+									shader.CacheVBO(cmdBufName, buf.VBO)
 								}
 								p.ctx.BindBuffer(arrayBuffer, Buffer(buf.VBO))
 								// Generation-based cache: skip BufferData if this VBO already has this generation
@@ -1263,6 +1312,7 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 							ibo := shader.GetIBO()
 							if ibo == 0 {
 								ibo = uint32(p.ctx.CreateBuffer())
+								paintIBOCreates++
 								shader.SetIBO(ibo)
 							}
 							p.ctx.BindBuffer(elementArrayBuffer, Buffer(ibo))
@@ -1394,6 +1444,12 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 								// Create VBO if needed
 								if buf.VBO == 0 {
 									buf.VBO = uint32(p.ctx.CreateBuffer())
+									paintVBOCreates++
+									// Write back so future snapshots inherit this VBO.
+									if liveBuf := shader.GetAttributeBuffer(daBufName); liveBuf != nil {
+										liveBuf.VBO = buf.VBO
+									}
+									shader.CacheVBO(daBufName, buf.VBO)
 								}
 								p.ctx.BindBuffer(arrayBuffer, Buffer(buf.VBO))
 								// Generation-based cache: skip BufferData if this VBO already has this generation
@@ -1555,6 +1611,7 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 			case "createFramebuffer":
 				jsId, _ := strconv.Atoi(cmd.Name)
 				fb := p.ctx.CreateFramebuffer()
+				paintFBOCreates++
 				shader.SetFBOCache(jsId, uint32(fb))
 				if shaderDebug {
 					log.Printf("[drawShader] createFramebuffer: js=%d -> gl=%d", jsId, fb)
@@ -1612,6 +1669,7 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 			case "createRenderbuffer":
 				jsId, _ := strconv.Atoi(cmd.Name)
 				rb := p.ctx.CreateRenderbuffer()
+				paintRBOCreates++
 				shader.SetRBOCache(jsId, uint32(rb))
 				if shaderDebug {
 					log.Printf("[drawShader] createRenderbuffer: js=%d -> gl=%d", jsId, rb)
@@ -1699,6 +1757,7 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 						if existingGlId == 0 {
 							// First face — create the cubemap texture
 							tex := p.ctx.CreateTexture()
+							paintTexCreates++
 							existingGlId = uint32(tex)
 							p.ctx.BindTexture(textureCubeMap, Texture(existingGlId))
 							p.ctx.TexParameteri(textureCubeMap, textureMinFilter, linear)
@@ -1741,6 +1800,7 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 						} else {
 							p.ctx.ActiveTexture(texture0 + 15) // scratch unit
 							tex := p.ctx.CreateTexture()
+							paintTexCreates++
 							p.ctx.BindTexture(params.Target, tex)
 							p.ctx.TexParameteri(params.Target, textureMinFilter, nearest)
 							p.ctx.TexParameteri(params.Target, textureMagFilter, nearest)
@@ -1767,6 +1827,7 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 					} else {
 						p.ctx.ActiveTexture(texture0 + 15)
 						tex := p.ctx.CreateTexture()
+						paintTexCreates++
 						p.ctx.BindTexture(params.Target, tex)
 						p.ctx.TexParameteri(params.Target, textureMinFilter, nearest)
 						p.ctx.TexParameteri(params.Target, textureMagFilter, nearest)
@@ -1858,6 +1919,7 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 						rgba := p.textureToRGBA(cpuImg)
 						if rgba != nil && len(rgba.Pix) > 0 {
 							tex := p.ctx.CreateTexture()
+							paintTexCreates++
 							p.ctx.BindTexture(target, tex)
 							p.ctx.TexParameteri(target, textureMinFilter, linear)
 							p.ctx.TexParameteri(target, textureMagFilter, linear)
@@ -1991,8 +2053,21 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 			if cmdElapsed := time.Since(cmdStart); cmdElapsed > 100*time.Millisecond {
 				cmdStallCount++
 				if cmdStallCount <= 10 {
-					log.Printf("[CMD_STALL] frame#%d cmd#%d/%d type=%s name=%s took %s",
+					log.Printf("[CMD_STALL] frame#%d cmd#%d/%d type=%s name=%q took %s",
 						paintCounter, cmdIdx, len(renderCommands), cmd.Type, cmd.Name, cmdElapsed)
+					// Dump full geometry stats for draw calls that stall
+					switch cmd.Type {
+					case "drawElements":
+						if params, ok := cmd.Value.(canvas.DrawElementsParams); ok {
+							logDrawCall("drawElements(STALL)", cmdIdx, prog, params.Mode, 0, params.Count, params.Offset,
+								params.InstanceCount, params.AttributeBuffers, shader.GetAttribDivisors(), params.Indices)
+						}
+					case "drawArrays":
+						if params, ok := cmd.Value.(canvas.DrawArraysParams); ok {
+							logDrawCall("drawArrays(STALL)", cmdIdx, prog, params.Mode, params.First, params.Count, 0,
+								params.InstanceCount, params.AttributeBuffers, shader.GetAttribDivisors(), nil)
+						}
+					}
 				}
 			}
 		}
@@ -2144,12 +2219,30 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 	// This runs on the GL thread — any delay here blocks frame delivery.
 	paintElapsed := time.Since(paintStart)
 	if paintElapsed > 200*time.Millisecond {
-		log.Printf("[PAINT_SLOW] frame#%d took %s — cmdLoop=%s flush=%s cleanup=%s cmds=%d",
+		budgetStr := ""
+		if budgetExceeded {
+			budgetStr = " BUDGET_CLIPPED"
+		}
+		log.Printf("[PAINT_SLOW] frame#%d took %s — cmdLoop=%s flush=%s cleanup=%s cmds=%d%s",
 			paintCounter, paintElapsed, cmdLoopElapsed, flushElapsed,
-			paintElapsed-cmdLoopElapsed-flushElapsed, len(renderCommands))
+			paintElapsed-cmdLoopElapsed-flushElapsed, len(renderCommands), budgetStr)
 	}
 
-	// Signal that paint is complete (for sync with JS frame loop)
-	shader.SignalPaintDone()
+	// GPU resource leak detection: log if any VBOs/textures/FBOs were created after warmup.
+	// After the first ~60 frames all resources should be cached. New creates = leak.
+	if paintCounter > 60 && (paintVBOCreates > 0 || paintTexCreates > 0 || paintFBOCreates > 0 || paintRBOCreates > 0) {
+		log.Printf("[GPU_LEAK] frame#%d: VBO=%d IBO=%d tex=%d FBO=%d RBO=%d — resources created after warmup",
+			paintCounter, paintVBOCreates, paintIBOCreates, paintTexCreates, paintFBOCreates, paintRBOCreates)
+	}
+
+	// Periodic glGetError check (every ~5s at 30fps) — catch GL errors that precede hangs.
+	if paintCounter%150 == 0 {
+		glErr := p.ctx.GetError()
+		if glErr != 0 {
+			log.Printf("[GL_ERR] frame#%d: glGetError()=0x%04X after paint", paintCounter, glErr)
+		}
+	}
+
+	// SignalPaintDone is handled by defer at function entry
 
 }

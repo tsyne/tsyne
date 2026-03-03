@@ -70,6 +70,7 @@ export class Level {
       new PlaneGeometry(2047, 2047, 255, 255, heightmap.map(val => Math.max(val, waterLevel - 2.6))),
       groundMaterial
     );
+    (this.floorMesh as any)._drawTag = 'floor';
 
     let path: number[] = [];
     // Draw Paths
@@ -90,6 +91,7 @@ export class Level {
       new PlaneGeometry(2047, 2047, 1, 1),
       waterMaterial
     );
+    (lake as any)._drawTag = 'lake';
     lake.position.y = waterLevel;
     this.waterLevel = waterLevel;
     this.meshesToRender.push(this.floorMesh, lake);
@@ -187,12 +189,16 @@ export class Level {
     });
 
     const plants = new InstancedMesh(makePlantGeo(), grassTransforms, grassTransforms.length, plantMaterial);
+    (plants as any)._drawTag = 'plants';
     const trees = new InstancedMesh(makeLargeTreeGeo(), treeTransforms, treeTransforms.length, treeMaterial);
+    (trees as any)._drawTag = 'trees';
     if (isTreeLeavesShowing) {
       const treeLeaves = new InstancedMesh(makeTreeLeavesGeo(), treeTransforms, treeTransforms.length, materials.treeLeaves);
+      (treeLeaves as any)._drawTag = 'treeLeaves';
       this.meshesToRender.push(treeLeaves);
     }
     const rocks = new InstancedMesh(makeRock(), rockTransforms, rockTransforms.length, rockMaterial);
+    (rocks as any)._drawTag = 'rocks';
 
     this.facesToCollideWith.floorFaces.sort((faceA, faceB) => faceB.upperY - faceA.upperY);
     this.meshesToRender.push(plants, trees, rocks);
@@ -208,6 +214,7 @@ export class Level {
       materials.tombstoneFront.texture!,
     );
     const tombstone = new Mesh(makeTombstoneGeo(35, 50, 6, 30, 8, 1).translate(0, 7, 15).done(), materials.tombstoneFront);
+    (tombstone as any)._drawTag = 'tombstone';
     tombstone.geometry.setAttribute(AttributeLocation.TextureDepth, new Float32Array(texturesPerSide), 1);
     tombstone.position.set(rampPosition);
     tombstone.rotate(0, rampYRotation, 0);

@@ -36,42 +36,66 @@ proto.getUniformName = function(locId: number): string {
 
 proto.uniform1f = function(location: WebGLUniformLocation, x: GLfloat): void {
   const locId = (location as any).__tsyneId;
-  this.pushCommand('uniform1f', { locationId: locId, name: this.getUniformName(locId), x });
+  const cached = this.uniformCache.get(locId);
+  if (cached !== undefined && cached === x) { this._commandsSkipped++; return; }
+  this.uniformCache.set(locId, x);
+  this.pushFlat('uniform1f', locId, this.getUniformName(locId), x);
 };
 
 proto.uniform2f = function(location: WebGLUniformLocation, x: GLfloat, y: GLfloat): void {
   const locId = (location as any).__tsyneId;
-  this.pushCommand('uniform2f', { locationId: locId, name: this.getUniformName(locId), x, y });
+  const cached = this.uniformCache.get(locId);
+  if (cached !== undefined && cached[0] === x && cached[1] === y) { this._commandsSkipped++; return; }
+  this.uniformCache.set(locId, [x, y]);
+  this.pushFlat('uniform2f', locId, this.getUniformName(locId), x, y);
 };
 
 proto.uniform3f = function(location: WebGLUniformLocation, x: GLfloat, y: GLfloat, z: GLfloat): void {
   const locId = (location as any).__tsyneId;
-  this.pushCommand('uniform3f', { locationId: locId, name: this.getUniformName(locId), x, y, z });
+  const cached = this.uniformCache.get(locId);
+  if (cached !== undefined && cached[0] === x && cached[1] === y && cached[2] === z) { this._commandsSkipped++; return; }
+  this.uniformCache.set(locId, [x, y, z]);
+  this.pushFlat('uniform3f', locId, this.getUniformName(locId), x, y, z);
 };
 
 proto.uniform4f = function(location: WebGLUniformLocation, x: GLfloat, y: GLfloat, z: GLfloat, w: GLfloat): void {
   const locId = (location as any).__tsyneId;
-  this.pushCommand('uniform4f', { locationId: locId, name: this.getUniformName(locId), x, y, z, w });
+  const cached = this.uniformCache.get(locId);
+  if (cached !== undefined && cached[0] === x && cached[1] === y && cached[2] === z && cached[3] === w) { this._commandsSkipped++; return; }
+  this.uniformCache.set(locId, [x, y, z, w]);
+  this.pushFlat('uniform4f', locId, this.getUniformName(locId), x, y, z, w);
 };
 
 proto.uniform1i = function(location: WebGLUniformLocation, x: GLint): void {
   const locId = (location as any).__tsyneId;
-  this.pushCommand('uniform1i', { locationId: locId, name: this.getUniformName(locId), x });
+  const cached = this.uniformCache.get(locId);
+  if (cached !== undefined && cached === x) { this._commandsSkipped++; return; }
+  this.uniformCache.set(locId, x);
+  this.pushFlat('uniform1i', locId, this.getUniformName(locId), x);
 };
 
 proto.uniform2i = function(location: WebGLUniformLocation, x: GLint, y: GLint): void {
   const locId = (location as any).__tsyneId;
-  this.pushCommand('uniform2i', { locationId: locId, name: this.getUniformName(locId), x, y });
+  const cached = this.uniformCache.get(locId);
+  if (cached !== undefined && cached[0] === x && cached[1] === y) { this._commandsSkipped++; return; }
+  this.uniformCache.set(locId, [x, y]);
+  this.pushFlat('uniform2i', locId, this.getUniformName(locId), x, y);
 };
 
 proto.uniform3i = function(location: WebGLUniformLocation, x: GLint, y: GLint, z: GLint): void {
   const locId = (location as any).__tsyneId;
-  this.pushCommand('uniform3i', { locationId: locId, name: this.getUniformName(locId), x, y, z });
+  const cached = this.uniformCache.get(locId);
+  if (cached !== undefined && cached[0] === x && cached[1] === y && cached[2] === z) { this._commandsSkipped++; return; }
+  this.uniformCache.set(locId, [x, y, z]);
+  this.pushFlat('uniform3i', locId, this.getUniformName(locId), x, y, z);
 };
 
 proto.uniform4i = function(location: WebGLUniformLocation, x: GLint, y: GLint, z: GLint, w: GLint): void {
   const locId = (location as any).__tsyneId;
-  this.pushCommand('uniform4i', { locationId: locId, name: this.getUniformName(locId), x, y, z, w });
+  const cached = this.uniformCache.get(locId);
+  if (cached !== undefined && cached[0] === x && cached[1] === y && cached[2] === z && cached[3] === w) { this._commandsSkipped++; return; }
+  this.uniformCache.set(locId, [x, y, z, w]);
+  this.pushFlat('uniform4i', locId, this.getUniformName(locId), x, y, z, w);
 };
 
 proto.uniform1fv = function(location: WebGLUniformLocation, data: Float32List): void {
@@ -131,13 +155,37 @@ proto.uniformMatrix2fv = function(location: WebGLUniformLocation, transpose: GLb
 proto.uniformMatrix3fv = function(location: WebGLUniformLocation, transpose: GLboolean, data: Float32List): void {
   const locId = (location as any).__tsyneId;
   const encoded = encodeBufferData(data);
-  this.pushCommand('uniformMatrix3fv', { locationId: locId, name: this.getUniformName(locId), transpose, data: encoded });
+  const cached = this.uniformCache.get(locId) as Uint8Array | undefined;
+  if (cached !== undefined && cached.byteLength === encoded.byteLength) {
+    let same = true;
+    for (let i = 0; i < encoded.byteLength; i++) {
+      if (cached[i] !== encoded[i]) { same = false; break; }
+    }
+    if (same) { this._commandsSkipped++; return; }
+  }
+  // Cache a copy — encoded is an arena view that gets recycled
+  const copy = new Uint8Array(encoded.byteLength);
+  copy.set(encoded);
+  this.uniformCache.set(locId, copy);
+  this.pushFlat('uniformMatrix3fv', locId, this.getUniformName(locId), transpose, encoded);
 };
 
 proto.uniformMatrix4fv = function(location: WebGLUniformLocation, transpose: GLboolean, data: Float32List): void {
   const locId = (location as any).__tsyneId;
   const encoded = encodeBufferData(data);
-  this.pushCommand('uniformMatrix4fv', { locationId: locId, name: this.getUniformName(locId), transpose, data: encoded });
+  const cached = this.uniformCache.get(locId) as Uint8Array | undefined;
+  if (cached !== undefined && cached.byteLength === encoded.byteLength) {
+    let same = true;
+    for (let i = 0; i < encoded.byteLength; i++) {
+      if (cached[i] !== encoded[i]) { same = false; break; }
+    }
+    if (same) { this._commandsSkipped++; return; }
+  }
+  // Cache a copy — encoded is an arena view that gets recycled
+  const copy = new Uint8Array(encoded.byteLength);
+  copy.set(encoded);
+  this.uniformCache.set(locId, copy);
+  this.pushFlat('uniformMatrix4fv', locId, this.getUniformName(locId), transpose, encoded);
 };
 
 // ═══════════════════════════════════════════════════════════════

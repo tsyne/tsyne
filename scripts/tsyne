@@ -72,11 +72,24 @@ fi
 
 # Prevent V8 lazy GC: cap max-old-space-size to keep RSS low.
 # Also shrink semi-space (young gen) — reduces RSS overhead by ~28MB.
-# Cap Go heap via GOMEMLIMIT to prevent unbounded growth.
 if ! echo "${NODE_OPTIONS:-}" | grep -q 'max-old-space-size'; then
     export NODE_OPTIONS="${NODE_OPTIONS:+$NODE_OPTIONS }--max-old-space-size=384 --max-semi-space-size=2"
 fi
-export GOMEMLIMIT="${GOMEMLIMIT:-384MiB}"
+
+# GOGC: delay GC to prevent the scavenger from returning heap pages via
+# MADV_DONTNEED.  At GOGC=100 (default), GC runs every ~10s and the scavenger
+# returns ~150MB of pages.  Re-accessing them causes minor page faults that
+# stall the GL paint thread for 100ms+, cascading into a GPU driver hang.
+# GOGC=400 means GC triggers at 5× live heap (~750MB).  On a 15GB machine
+# this is fine and keeps pages resident for the entire play session.
+if [ -z "$GOGC" ]; then
+    export GOGC=400
+fi
+
+# GOMEMLIMIT: only set when explicitly requested or for diagnostics.
+if [ -n "$GOMEMLIMIT" ]; then
+    export GOMEMLIMIT
+fi
 
 # When TSYNE_MEM_DIAG=1, enable --expose-gc for forced GC in diagnostics
 # NODE_OPTIONS propagates to tsx subprocess (unlike CLI flags)

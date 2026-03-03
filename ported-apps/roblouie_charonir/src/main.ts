@@ -35,6 +35,13 @@ setFetchBasePath(APP_DIR);
 export const WIDTH = 960;
 export const HEIGHT = 540;
 
+// GPU hang elimination: skip specific draw calls by tag name
+// Usage: CHARON_SKIP=floor,spirit ./scripts/tsyne ...
+if (process.env.CHARON_SKIP) {
+  (globalThis as any).__CHARON_SKIP = process.env.CHARON_SKIP.split(',');
+  console.log('[Charon Jr.] Skipping objects:', (globalThis as any).__CHARON_SKIP);
+}
+
 export async function buildCharonJr(a: App, win: ITsyneWindow) {
   // 1. Create bridge and inject globals
   const coreBridge = (a as any).getBridge();
@@ -135,68 +142,81 @@ export async function buildCharonJr(a: App, win: ITsyneWindow) {
 
   console.log('[Charon Jr.] Starting game loop...');
 
-  while (running) {
-    const frameStart = performance.now();
+  // Resolve when loop actually exits
+  let loopDone: () => void;
+  const loopDonePromise = new Promise<void>(r => { loopDone = r; });
 
-    try {
-      controls.queryController();
-      gameStateMachine.getState().onUpdate(16);
-    } catch (e) {
-      console.error('[Charon Jr.] Game loop error:', e);
-      break;
-    }
+  // Run loop in background so buildCharonJr can return immediately
+  (async () => {
+    while (running) {
+      const frameStart = performance.now();
 
-    // Count commands before flush (commandBuffer is swapped during flush)
-    const cmdCount = (gl as any).commandBuffer?.length ?? 0;
-    totalCmds += cmdCount;
-
-    // Flush GL commands to the bridge
-    let flushMs = 0;
-    if (gl?.flush) {
       try {
-        const t0 = performance.now();
-        await gl.flush();
-        flushMs = performance.now() - t0;
+        controls.queryController();
+        gameStateMachine.getState().onUpdate(16);
       } catch (e) {
-        console.error('[Charon Jr.] GL flush error:', e);
+        console.error('[Charon Jr.] Game loop error:', e);
+        break;
       }
-    }
 
-    // Update HUD in window title (every 500ms to reduce bridge chatter)
-    frameCount++;
-    const now = performance.now();
-    maxFlushMs = Math.max(maxFlushMs, flushMs);
-    if (now - fpsTimer >= 1000) {
-      fps = frameCount;
-      // Force GC before measuring to distinguish real leak from lazy GC
-      if (gc) gc();
-      const mem = process.memoryUsage();
-      const avgCmds = fps > 0 ? Math.round(totalCmds / fps) : 0;
-      console.log(`[MEM] heap: ${(mem.heapUsed/1024/1024).toFixed(1)}MB ext: ${(mem.external/1024/1024).toFixed(1)}MB rss: ${(mem.rss/1024/1024).toFixed(1)}MB | ${fps}fps ${avgCmds}cmds/f | flush: max=${maxFlushMs.toFixed(0)}ms last=${flushMs.toFixed(0)}ms`);
-      frameCount = 0;
-      totalCmds = 0;
-      fpsTimer = now;
-      maxFlushMs = 0;
-    }
-    if (now - lastHudUpdate >= 500) {
-      lastHudUpdate = now;
-      try {
-        const { hud } = require('@/hud');
-        const time = hud.timeRemaining.toFixed(1);
-        const score = hud.score + (hud.isScoreBonusActive ? hud.currentScoreBonus : 0);
-        win.setTitle(`Charon Jr. [${fps} FPS] Time: ${time} | Score: $${score}`);
-      } catch {
-        win.setTitle(`Charon Jr. [${fps} FPS]`);
+      // Count commands before flush (commandBuffer is swapped during flush)
+      const cmdCount = (gl as any).commandBuffer?.length ?? 0;
+      totalCmds += cmdCount;
+
+      // Flush GL commands to the bridge
+      let flushMs = 0;
+      if (gl?.flush) {
+        try {
+          const t0 = performance.now();
+          await gl.flush();
+          flushMs = performance.now() - t0;
+        } catch (e) {
+          console.error('[Charon Jr.] GL flush error:', e);
+        }
       }
+
+      // Update HUD in window title (every 500ms to reduce bridge chatter)
+      frameCount++;
+      const now = performance.now();
+      maxFlushMs = Math.max(maxFlushMs, flushMs);
+      if (now - fpsTimer >= 1000) {
+        fps = frameCount;
+        // Force GC before measuring to distinguish real leak from lazy GC
+        if (gc) gc();
+        const mem = process.memoryUsage();
+        const avgCmds = fps > 0 ? Math.round(totalCmds / fps) : 0;
+        console.log(`[MEM] heap: ${(mem.heapUsed/1024/1024).toFixed(1)}MB ext: ${(mem.external/1024/1024).toFixed(1)}MB rss: ${(mem.rss/1024/1024).toFixed(1)}MB | ${fps}fps ${avgCmds}cmds/f | flush: max=${maxFlushMs.toFixed(0)}ms last=${flushMs.toFixed(0)}ms`);
+        frameCount = 0;
+        totalCmds = 0;
+        fpsTimer = now;
+        maxFlushMs = 0;
+      }
+      if (now - lastHudUpdate >= 500) {
+        lastHudUpdate = now;
+        try {
+          const { hud } = require('@/hud');
+          const time = hud.timeRemaining.toFixed(1);
+          const score = hud.score + (hud.isScoreBonusActive ? hud.currentScoreBonus : 0);
+          win.setTitle(`Charon Jr. [${fps} FPS] Time: ${time} | Score: $${score}`);
+        } catch {
+          win.setTitle(`Charon Jr. [${fps} FPS]`);
+        }
+      }
+
+      // Adaptive frame pacing: wait longer if frames are slow
+      const elapsed = performance.now() - frameStart;
+      const delay = Math.max(MIN_DELAY_MS, TARGET_FRAME_MS - elapsed);
+      await new Promise(resolve => setTimeout(resolve, delay));
     }
+    loopDone!();
+  })();
 
-    // Adaptive frame pacing: wait longer if frames are slow
-    const elapsed = performance.now() - frameStart;
-    const delay = Math.max(MIN_DELAY_MS, TARGET_FRAME_MS - elapsed);
-    await new Promise(resolve => setTimeout(resolve, delay));
-  }
-
-  return { stop: () => { running = false; } };
+  return {
+    stop: async () => {
+      running = false;
+      await loopDonePromise;
+    },
+  };
 }
 
 // --- Standalone entry point (only when run directly, not when require()'d) ---
@@ -205,6 +225,11 @@ if (require.main === module) {
     console.warn('[Charon Jr.] Unhandled rejection:', reason);
   });
 
+  // When CHARON_SKIP is set, auto-start level 0 (bypass menu)
+  if (process.env.CHARON_SKIP) {
+    (globalThis as any).__CHARON_AUTO_LEVEL = 0;
+  }
+
   const appInstance = app(
     resolveTransport(),
     { title: 'Charon Jr.' },
@@ -212,42 +237,45 @@ if (require.main === module) {
       a.window(
         { title: 'Charon Jr.', width: WIDTH, height: HEIGHT },
         (win) => {
-          win.setContent(() => {
-            a.vbox(() => {
-              a.spacer();
-              a.label('Charon Jr.', { textSize: 24, textStyle: { bold: true }, alignment: 'center' });
-              a.label('');
-              a.label(
-                'The river Styx has become overrun with monsters! As the new intern ferryman, ' +
-                'it\'s your job to transport souls across — but your boat broke down on day one.',
-                { wrapping: 'word', alignment: 'center' },
-              );
-              a.label('');
-              a.label(
-                'So you did what anyone would do: you built a monster truck.',
-                { wrapping: 'word', alignment: 'center' },
-              );
-              a.label('');
-              a.label(
-                'Drive across the underworld, dodge and smash through obstacles, ' +
-                'and deliver your passengers to the other side in one piece.',
-                { wrapping: 'word', alignment: 'center' },
-              );
-              a.label('');
-              a.label(
-                'Collect coins to upgrade your truck. Hit ramps for big air. ' +
-                'Try not to flip — your passengers are already dead, but they can still complain.',
-                { wrapping: 'word', alignment: 'center' },
-              );
-              a.label('');
-              a.label('Controls', { textSize: 18, textStyle: { bold: true }, alignment: 'center' });
-              a.label('Arrow Keys / WASD — Drive and tilt', { alignment: 'center' });
-              a.label('Space — Brake', { alignment: 'center' });
-              a.label('');
-              a.label('Loading...', { alignment: 'center' });
-              a.spacer();
+          // Skip the story splash when doing elimination testing
+          if (!process.env.CHARON_SKIP) {
+            win.setContent(() => {
+              a.vbox(() => {
+                a.spacer();
+                a.label('Charon Jr.', { textSize: 24, textStyle: { bold: true }, alignment: 'center' });
+                a.label('');
+                a.label(
+                  'The river Styx has become overrun with monsters! As the new intern ferryman, ' +
+                  'it\'s your job to transport souls across — but your boat broke down on day one.',
+                  { wrapping: 'word', alignment: 'center' },
+                );
+                a.label('');
+                a.label(
+                  'So you did what anyone would do: you built a monster truck.',
+                  { wrapping: 'word', alignment: 'center' },
+                );
+                a.label('');
+                a.label(
+                  'Drive across the underworld, dodge and smash through obstacles, ' +
+                  'and deliver your passengers to the other side in one piece.',
+                  { wrapping: 'word', alignment: 'center' },
+                );
+                a.label('');
+                a.label(
+                  'Collect coins to upgrade your truck. Hit ramps for big air. ' +
+                  'Try not to flip — your passengers are already dead, but they can still complain.',
+                  { wrapping: 'word', alignment: 'center' },
+                );
+                a.label('');
+                a.label('Controls', { textSize: 18, textStyle: { bold: true }, alignment: 'center' });
+                a.label('Arrow Keys / WASD — Drive and tilt', { alignment: 'center' });
+                a.label('Space — Brake', { alignment: 'center' });
+                a.label('');
+                a.label('Loading...', { alignment: 'center' });
+                a.spacer();
+              });
             });
-          });
+          }
           win.show();
 
           setTimeout(async () => {

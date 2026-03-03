@@ -143,6 +143,14 @@ export class MenuState implements State {
 
     render(this.camera, this.scene!);
 
+    // Auto-start for elimination tests: __CHARON_AUTO_LEVEL = 0|1|2
+    const autoLevel = (globalThis as any).__CHARON_AUTO_LEVEL;
+    if (autoLevel !== undefined) {
+      delete (globalThis as any).__CHARON_AUTO_LEVEL;
+      gameStateMachine.setState(gameStates.gameState, autoLevel);
+      return;
+    }
+
     if (controls.isSelect && !controls.previousState.isSelect) {
       gameStateMachine.setState(gameStates.gameState, 2 - this.selectedOption);
     }

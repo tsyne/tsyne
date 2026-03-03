@@ -47,7 +47,7 @@ export let gl: WebGL2RenderingContext = undefined as any;
 
 export function initLilGl() {
   lilgl.init();
-  gl = lilgl.gl;
+  try { gl = lilgl.gl; } catch { /* getter-only under ts-jest CJS transform */ }
 }
 
 // Make gl a live getter on exports so CommonJS consumers always get the current value.

@@ -165,6 +165,7 @@ type Shader struct {
 	// Separate attribute buffers (for three.js style rendering)
 	AttributeBuffers map[string]*AttributeBuffer // Map of attribute name → buffer data
 	attrBuffersMu    sync.RWMutex                // Protects concurrent access to AttributeBuffers
+	vboCache         map[string]uint32           // Survives PruneAttributeBuffers; prevents VBO leak
 
 	// Time tracking for u_time uniform (only updates on Refresh, not every paint pass)
 	startTime       time.Time              // When the shader was created
@@ -216,6 +217,9 @@ type Shader struct {
 	gpuTexCache      map[int]uint32       // JS texture ID → GL texture ID (for GPU-only textures)
 	jsTexForSampler  map[string]int       // sampler uniform name → JS texture ID
 	cpuTexImages     map[int]interface{}  // JS texture ID → CPU image (image.Image)
+
+	// Draw call tagging — JS side sets this before each draw call to identify the mesh
+	CurrentDrawTag string
 	gpuTexUploaded   map[int]bool         // JS texture ID → whether GPU texture has real data
 	gpuTexFormats    map[int]GPUTextureFormat // JS texture ID → format info for upload
 

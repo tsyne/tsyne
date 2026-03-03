@@ -70,6 +70,19 @@ export function setupRenderer() {
 // Reusable 2-element array for texture repeat
 const _texRepeat = [1, 1];
 
+// Skip list for GPU hang elimination testing.
+// Set via: globalThis.__CHARON_SKIP = ['floor', 'spirit', ...]
+// Or env: CHARON_SKIP=floor,spirit
+// Supports exact matches and prefix matches (e.g., 'spirit' skips 'spirit_0_body', 'spirit_1_icon', etc.)
+function _shouldSkip(tag: string): boolean {
+  const skipList: string[] | undefined = (globalThis as any).__CHARON_SKIP;
+  if (!skipList) return false;
+  for (const skip of skipList) {
+    if (tag === skip || tag.startsWith(skip + '_')) return true;
+  }
+  return false;
+}
+
 export function render(camera: Camera, scene: Scene) {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
@@ -84,6 +97,8 @@ export function render(camera: Camera, scene: Scene) {
   _scratchViewProj.copyFrom(camera.projection).multiplySelf(_scratchViewMatrix);
 
   const renderSkybox = (skybox: Skybox) => {
+    if (_shouldSkip('skybox')) return;
+    (gl as any).pushFlat('_drawTag', 'skybox');
     gl.useProgram(lilgl.skyboxProgram);
     skybox.bindForRendering();
     gl.uniform1i(skyboxLocation, 0);
@@ -99,6 +114,12 @@ export function render(camera: Camera, scene: Scene) {
   }
 
   const renderMesh = (mesh: Mesh | InstancedMesh) => {
+    // Tag draw call with mesh name for GPU hang diagnosis
+    const tag = (mesh as any)._drawTag;
+    if (tag) {
+      if (_shouldSkip(tag)) return; // Skip this draw call entirely
+      (gl as any).pushFlat('_drawTag', tag);
+    }
     // @ts-ignore
     const isInstancedMesh = mesh.count !== undefined;
     gl.useProgram(isInstancedMesh ? lilgl.instancedProgram : lilgl.program);

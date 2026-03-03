@@ -214,6 +214,27 @@ var memDiag = os.Getenv("TSYNE_MEM_DIAG") == "1"
 var memDiagInterval = 30 // log every N batches (~1 second at 30fps)
 var memDiagStats runtime.MemStats
 var pprofStarted sync.Once
+var diagBannerOnce sync.Once
+
+// Lightweight always-on Go memory diagnostics (every ~5s)
+var goMemInterval = 150 // log every N batches (~5s at 30fps)
+var goMemStats runtime.MemStats
+var goMemLastNumGC uint32
+var goMemLastHeapReleased uint64
+
+// getProcessRSSMB reads the Go bridge process RSS from /proc/self/statm (Linux only, very cheap).
+func getProcessRSSMB() float64 {
+	data, err := os.ReadFile("/proc/self/statm")
+	if err != nil {
+		return 0
+	}
+	fields := strings.Fields(string(data))
+	if len(fields) < 2 {
+		return 0
+	}
+	rss, _ := strconv.ParseInt(fields[1], 10, 64)
+	return float64(rss) * float64(os.Getpagesize()) / 1e6
+}
 
 // GLCommandBatch represents a batch of GL commands to execute
 type GLCommandBatch struct {
@@ -610,6 +631,13 @@ func (b *Bridge) handleExecuteBatch(msg Message) Response {
 
 	canvas.batchNum++
 	batchNum := canvas.batchNum
+	diagBannerOnce.Do(func() {
+		goMemLimit := os.Getenv("GOMEMLIMIT")
+		if goMemLimit == "" {
+			goMemLimit = "(unset)"
+		}
+		log.Printf("[GL] diagnostics: memDiag=%v mapDiag=%v GOMEMLIMIT=%s", memDiag, mapDiag, goMemLimit)
+	})
 	if glDebug {
 		log.Printf("[GL] === executeBatch #%d: %d commands for canvas %s ===", batchNum, len(commandsRaw), canvasID)
 	}
@@ -639,7 +667,9 @@ func (b *Bridge) handleExecuteBatch(msg Message) Response {
 	}
 
 	// Parse and execute each command.
-	// Commands arrive as [cmd, args] arrays (not maps) to reduce Go allocations.
+	// Commands arrive in two formats:
+	//   Map format:  [cmd, {key: val, ...}]  — for complex/infrequent commands
+	//   Flat format: [cmd, arg1, arg2, ...]  — for high-frequency commands (no map allocation)
 	errCount := 0
 	for i, cmdRaw := range commandsRaw {
 		var cmd string
@@ -647,7 +677,6 @@ func (b *Bridge) handleExecuteBatch(msg Message) Response {
 
 		switch v := cmdRaw.(type) {
 		case []interface{}:
-			// New format: [cmd, args]
 			if len(v) < 1 {
 				continue
 			}
@@ -655,8 +684,20 @@ func (b *Bridge) handleExecuteBatch(msg Message) Response {
 			if !ok {
 				continue
 			}
+			// Detect flat vs map format by checking if v[1] is a map
 			if len(v) >= 2 {
-				args, _ = v[1].(map[string]interface{})
+				if m, isMap := v[1].(map[string]interface{}); isMap {
+					args = m
+				} else {
+					// Flat format — positional args in v[1:]
+					if err := b.executeGLCommandFlat(canvas, cmd, v); err != nil {
+						errCount++
+						if errCount <= 5 {
+							log.Printf("[GL] flat command error (cmd=%s): %v", cmd, err)
+						}
+					}
+					continue
+				}
 			}
 		case map[string]interface{}:
 			// Legacy format: {cmd: ..., args: ...}
@@ -675,7 +716,7 @@ func (b *Bridge) handleExecuteBatch(msg Message) Response {
 			args = make(map[string]interface{})
 		}
 
-		// Execute the GL command
+		// Execute the GL command (map format)
 		if err := b.executeGLCommand(canvas, cmd, args); err != nil {
 			errCount++
 			if errCount <= 5 { // Cap error logging to prevent flood
@@ -797,6 +838,27 @@ func (b *Bridge) handleExecuteBatch(msg Message) Response {
 			len(s.CPUTexImages()), len(s.GPUTexUploaded()), len(s.GPUTexFormats()),
 			len(s.AttribDivisors()), len(s.GetVBOUploadedGen()),
 			len(s.GetRenderCommandsNoSwap()), len(s.GetLastRenderCommands()))
+	}
+
+	// Lightweight Go memory + GPU resource diagnostics (always on, every ~5s)
+	if batchNum%goMemInterval == 0 {
+		runtime.ReadMemStats(&goMemStats)
+		rss := getProcessRSSMB()
+		gcDelta := goMemStats.NumGC - goMemLastNumGC
+		releasedDelta := goMemStats.HeapReleased - goMemLastHeapReleased
+		goMemLastNumGC = goMemStats.NumGC
+		goMemLastHeapReleased = goMemStats.HeapReleased
+		s := canvas.ShaderObject
+		log.Printf("[GO_MEM] batch=%d | heap: alloc=%.0fMB sys=%.0fMB released=%.0fMB(+%.0fMB) | GC: total=%d(+%d) | RSS=%.0fMB | GPU: bufs=%d tex=%d progs=%d fbo=%d rbo=%d vboGens=%d",
+			batchNum,
+			float64(goMemStats.HeapAlloc)/1e6,
+			float64(goMemStats.HeapSys)/1e6,
+			float64(goMemStats.HeapReleased)/1e6,
+			float64(releasedDelta)/1e6,
+			goMemStats.NumGC, gcDelta,
+			rss,
+			len(canvas.buffers), len(canvas.textures), len(canvas.programs),
+			len(s.FBOCache()), len(s.RBOCache()), len(s.GetVBOUploadedGen()))
 	}
 
 	// Signal that we're about to paint and want to wait for completion
@@ -1055,6 +1117,13 @@ func (b *Bridge) executeGLCommand(canvas *GLCanvas, cmd string, args map[string]
 	case "hint":
 		return nil // Hints - ignored
 
+	// Draw call tagging (JS sets this before each draw call to identify the mesh)
+	case "_drawTag":
+		if tag, ok := args["name"].(string); ok {
+			canvas.ShaderObject.CurrentDrawTag = tag
+		}
+		return nil
+
 	// Drawing operations
 	case "drawArrays":
 		return b.glDrawArrays(canvas, args)
@@ -1150,6 +1219,305 @@ func (b *Bridge) executeGLCommand(canvas *GLCanvas, cmd string, args map[string]
 
 	default:
 		return fmt.Errorf("unknown GL command: %s", cmd)
+	}
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Flat Command Dispatch (positional args — no map allocation)
+// ═══════════════════════════════════════════════════════════════
+
+func (b *Bridge) executeGLCommandFlat(canvas *GLCanvas, cmd string, v []interface{}) error {
+	switch cmd {
+
+	// --- Vertex attribute operations ---
+
+	case "enableVertexAttribArray":
+		// v = [cmd, index]
+		loc := int32(toFloat64(v[1]))
+		canvas.enabledAttribs[loc] = true
+		return nil
+
+	case "disableVertexAttribArray":
+		// v = [cmd, index]
+		loc := int32(toFloat64(v[1]))
+		delete(canvas.enabledAttribs, loc)
+		return nil
+
+	case "vertexAttribPointer":
+		// v = [cmd, location, size, type, normalized, stride, offset]
+		location := int32(toFloat64(v[1]))
+		size := int(toFloat64(v[2]))
+		stride := int(toFloat64(v[5]))
+		offset := int(toFloat64(v[6]))
+		if canvas.currentBuffer > 0 {
+			canvas.attribBindings[location] = struct {
+				bufferId uint32
+				size     int
+				stride   int
+				offset   int
+			}{canvas.currentBuffer, size, stride, offset}
+		}
+		return nil
+
+	case "vertexAttribDivisor":
+		// v = [cmd, index, divisor]
+		index := int32(toFloat64(v[1]))
+		divisor := uint32(toFloat64(v[2]))
+		attrName := ""
+		if name, ok := canvas.attribLocations[index]; ok {
+			attrName = name
+		} else {
+			for off := int32(1); off <= 3; off++ {
+				if name, ok := canvas.attribLocations[index-off]; ok {
+					attrName = name
+					break
+				}
+			}
+		}
+		if attrName == "" {
+			attrName = fmt.Sprintf("attr_%d", index)
+		}
+		canvas.ShaderObject.SetAttribDivisor(attrName, divisor)
+		return nil
+
+	// --- Draw call tagging ---
+	case "_drawTag":
+		// v = [cmd, name]
+		if len(v) > 1 {
+			if tag, ok := v[1].(string); ok {
+				canvas.ShaderObject.CurrentDrawTag = tag
+			}
+		}
+		return nil
+
+	// --- Drawing operations ---
+
+	case "drawElements":
+		// v = [cmd, mode, count, type, offset]
+		mode := uint32(toFloat64(v[1]))
+		count := int(toFloat64(v[2]))
+		offset := int(toFloat64(v[4]))
+		b.pushAttribBuffersToShader(canvas)
+		if len(canvas.indexData) > 0 {
+			canvas.ShaderObject.SetIndicesNoRefresh(canvas.indexData)
+		}
+		canvas.ShaderObject.QueueDrawElements(mode, count, offset)
+		return nil
+
+	case "drawArrays":
+		// v = [cmd, mode, first, count]
+		mode := uint32(toFloat64(v[1]))
+		first := int(toFloat64(v[2]))
+		count := int(toFloat64(v[3]))
+		b.pushAttribBuffersToShader(canvas)
+		canvas.ShaderObject.QueueDrawArrays(mode, first, count)
+		return nil
+
+	case "drawArraysInstanced":
+		// v = [cmd, mode, first, count, instancecount]
+		mode := uint32(toFloat64(v[1]))
+		first := int(toFloat64(v[2]))
+		count := int(toFloat64(v[3]))
+		instanceCount := int(toFloat64(v[4]))
+		b.pushAttribBuffersToShader(canvas)
+		canvas.ShaderObject.QueueDrawArraysInstanced(mode, first, count, instanceCount)
+		return nil
+
+	case "drawElementsInstanced":
+		// v = [cmd, mode, count, type, offset, instancecount]
+		mode := uint32(toFloat64(v[1]))
+		count := int(toFloat64(v[2]))
+		offset := int(toFloat64(v[4]))
+		instanceCount := int(toFloat64(v[5]))
+		b.pushAttribBuffersToShader(canvas)
+		if len(canvas.indexData) > 0 {
+			canvas.ShaderObject.SetIndicesNoRefresh(canvas.indexData)
+		}
+		canvas.ShaderObject.QueueDrawElementsInstanced(mode, count, offset, instanceCount)
+		return nil
+
+	// --- State operations ---
+
+	case "clear":
+		// v = [cmd, mask]
+		mask := uint32(toFloat64(v[1]))
+		canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+			Type:  "clear",
+			Value: mask,
+		})
+		return nil
+
+	case "clearColor":
+		// v = [cmd, r, g, b, a]
+		r := float32(toFloat64(v[1]))
+		g := float32(toFloat64(v[2]))
+		bVal := float32(toFloat64(v[3]))
+		a := float32(toFloat64(v[4]))
+		canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+			Type:  "clearColor",
+			Value: [4]float32{r, g, bVal, a},
+		})
+		return nil
+
+	case "clearDepth":
+		// v = [cmd, depth]
+		depth := float32(toFloat64(v[1]))
+		canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+			Type:  "clearDepth",
+			Value: depth,
+		})
+		return nil
+
+	case "clearStencil":
+		// v = [cmd, s]
+		s := int32(toFloat64(v[1]))
+		canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+			Type:  "clearStencil",
+			Value: s,
+		})
+		return nil
+
+	// --- Uniform operations (float) ---
+
+	case "uniform1f":
+		// v = [cmd, locId, name, x]
+		name, _ := v[2].(string)
+		if name == "" {
+			name = fmt.Sprintf("u_uniform_%v", v[1])
+		}
+		canvas.ShaderObject.QueueUniform(name, float32(toFloat64(v[3])))
+		return nil
+
+	case "uniform2f":
+		// v = [cmd, locId, name, x, y]
+		name, _ := v[2].(string)
+		if name == "" {
+			name = fmt.Sprintf("u_uniform_%v", v[1])
+		}
+		canvas.ShaderObject.QueueUniform(name, [2]float32{float32(toFloat64(v[3])), float32(toFloat64(v[4]))})
+		return nil
+
+	case "uniform3f":
+		// v = [cmd, locId, name, x, y, z]
+		name, _ := v[2].(string)
+		if name == "" {
+			name = fmt.Sprintf("u_uniform_%v", v[1])
+		}
+		canvas.ShaderObject.QueueUniform(name, [3]float32{float32(toFloat64(v[3])), float32(toFloat64(v[4])), float32(toFloat64(v[5]))})
+		return nil
+
+	case "uniform4f":
+		// v = [cmd, locId, name, x, y, z, w]
+		name, _ := v[2].(string)
+		if name == "" {
+			name = fmt.Sprintf("u_uniform_%v", v[1])
+		}
+		canvas.ShaderObject.QueueUniform(name, [4]float32{float32(toFloat64(v[3])), float32(toFloat64(v[4])), float32(toFloat64(v[5])), float32(toFloat64(v[6]))})
+		return nil
+
+	// --- Uniform operations (int) ---
+
+	case "uniform1i":
+		// v = [cmd, locId, name, x]
+		name, _ := v[2].(string)
+		if name == "" {
+			name = fmt.Sprintf("u_uniform_%v", v[1])
+		}
+		x := toFloat64(v[3])
+		textureUnit := uint32(x)
+
+		// Sampler detection (same logic as glUniformInt)
+		lowerName := strings.ToLower(name)
+		isSampler := strings.Contains(lowerName, "map") ||
+			strings.Contains(lowerName, "texture") ||
+			strings.Contains(lowerName, "sampler") ||
+			strings.Contains(lowerName, "tex") ||
+			strings.Contains(lowerName, "skybox") ||
+			strings.Contains(lowerName, "cubemap") ||
+			strings.Contains(lowerName, "cube")
+
+		if isSampler {
+			if canvas.samplerUniforms == nil {
+				canvas.samplerUniforms = make(map[string]uint32)
+			}
+			canvas.samplerUniforms[name] = textureUnit
+			if canvas.boundTextures != nil {
+				textureId := canvas.boundTextures[textureUnit]
+				if textureId != 0 {
+					if canvas.cubemapTextures[textureId] {
+						canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+							Type:  "activeTexture",
+							Value: uint32(0x84C0 + textureUnit),
+						})
+						canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+							Type:  "bindTexture",
+							Name:  strconv.FormatUint(uint64(textureId), 10),
+							Value: uint32(0x8513),
+						})
+					} else if texture, exists := canvas.textures[textureId]; exists && texture.image != nil {
+						canvas.ShaderObject.SetTextureUniform(name, texture.image)
+					}
+				}
+			}
+		}
+		canvas.ShaderObject.QueueUniform(name, int32(x))
+		return nil
+
+	case "uniform2i":
+		// v = [cmd, locId, name, x, y]
+		name, _ := v[2].(string)
+		if name == "" {
+			name = fmt.Sprintf("u_uniform_%v", v[1])
+		}
+		canvas.ShaderObject.QueueUniform(name, [2]int32{int32(toFloat64(v[3])), int32(toFloat64(v[4]))})
+		return nil
+
+	case "uniform3i":
+		// v = [cmd, locId, name, x, y, z]
+		name, _ := v[2].(string)
+		if name == "" {
+			name = fmt.Sprintf("u_uniform_%v", v[1])
+		}
+		canvas.ShaderObject.QueueUniform(name, [3]int32{int32(toFloat64(v[3])), int32(toFloat64(v[4])), int32(toFloat64(v[5]))})
+		return nil
+
+	case "uniform4i":
+		// v = [cmd, locId, name, x, y, z, w]
+		name, _ := v[2].(string)
+		if name == "" {
+			name = fmt.Sprintf("u_uniform_%v", v[1])
+		}
+		canvas.ShaderObject.QueueUniform(name, [4]int32{int32(toFloat64(v[3])), int32(toFloat64(v[4])), int32(toFloat64(v[5])), int32(toFloat64(v[6]))})
+		return nil
+
+	// --- Matrix uniforms ---
+
+	case "uniformMatrix3fv":
+		// v = [cmd, locId, name, transpose, data]
+		name, _ := v[2].(string)
+		if name == "" {
+			name = fmt.Sprintf("u_uniform_%v", v[1])
+		}
+		decoded, _ := v[4].([]byte)
+		if len(decoded) >= 36 {
+			canvas.ShaderObject.QueueUniform(name, readFloat32Array9(decoded))
+		}
+		return nil
+
+	case "uniformMatrix4fv":
+		// v = [cmd, locId, name, transpose, data]
+		name, _ := v[2].(string)
+		if name == "" {
+			name = fmt.Sprintf("u_uniform_%v", v[1])
+		}
+		decoded, _ := v[4].([]byte)
+		if len(decoded) >= 64 {
+			canvas.ShaderObject.QueueUniform(name, readFloat32Array16(decoded))
+		}
+		return nil
+
+	default:
+		return fmt.Errorf("unknown flat GL command: %s", cmd)
 	}
 }
 

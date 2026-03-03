@@ -59,10 +59,15 @@ export class GameState implements State {
     this.groupedFaces = { floorFaces: [], wallFaces: [], ceilingFaces: [] }
 
     this.arrowGuide = new Mesh(arrowGuideGeo, new Material());
+    (this.arrowGuide as any)._drawTag = 'arrowGuide';
     this.arrowGuideWrapper = new Object3d(this.arrowGuide);
 
     this.currentLevel = {} as Level;
     this.dynamicBody = makeDynamicBody();
+    // Tag all child meshes of the dynamic body
+    [this.dynamicBody, ...this.dynamicBody.allChildren()].forEach((obj, i) => {
+      if ((obj as any).geometry) (obj as any)._drawTag = `dynamicBody_${i}`;
+    });
     this.dynamicBody.position.set(-10000, -10000, -10000);
     this.dropoffs = [];
   }
@@ -214,7 +219,13 @@ export class GameState implements State {
     if (levelNumber === 1) {
       this.currentLevel.spiritPositions = this.currentLevel.spiritPositions.filter((spirit, index) => index % 2 === 0);
     }
-    this.spirits = this.currentLevel.spiritPositions.map(position => new Spirit(position));
+    this.spirits = this.currentLevel.spiritPositions.map((position, i) => {
+      const spirit = new Spirit(position);
+      // Tag spirit child meshes for draw call identification
+      if (spirit.children[0]) (spirit.children[0] as any)._drawTag = `spirit_${i}_body`;
+      if (spirit.children[1]) (spirit.children[1] as any)._drawTag = `spirit_${i}_icon`;
+      return spirit;
+    });
 
     this.scene = new Scene();
 
@@ -248,17 +259,30 @@ export class GameState implements State {
     this.dropoffs = [];
     this.currentLevel.dropOffs.forEach((dropOff, index) => {
       const dropOffMesh = new Mesh(new MoldableCubeGeometry(1, 5, 1, 4, 1, 4).cylindrify(40).done(), new Material({ texture: materials.dropOff.texture, emissive: Spirit.Colors[index], isTransparent: true }));
+      (dropOffMesh as any)._drawTag = `dropoff_${index}_front`;
       dropOffMesh.position.set(dropOff);
       this.dropoffs.push(dropOffMesh);
       const dropOffGeo = new MoldableCubeGeometry(1, 5, 1, 4, 1, 4).cylindrify(40).done();
       dropOffGeo.getIndices()?.reverse();
       const dropOffMesh2 = new Mesh(dropOffGeo, new Material({ texture: materials.dropOff.texture, emissive: Spirit.Colors[index], isTransparent: true }));
+      (dropOffMesh2 as any)._drawTag = `dropoff_${index}_back`;
       dropOffMesh2.position.set(dropOff);
       this.dropoffs.push(dropOffMesh2);
     })
 
     this.scene.add(this.player.mesh, ...this.spirits, ...this.dropoffs);
     this.scene.add(...this.currentLevel.meshesToRender, this.dynamicBody);
+
+    // Dump scene inventory for GPU hang diagnosis
+    const allMeshes = [...this.scene.solidMeshes, ...this.scene.transparentMeshes];
+    console.log(`[SCENE] ${allMeshes.length} meshes, ${this.scene.solidMeshes.length} solid, ${this.scene.transparentMeshes.length} transparent`);
+    for (const mesh of allMeshes) {
+      const tag = (mesh as any)._drawTag || '(untagged)';
+      const indices = (mesh as any).geometry?.getIndices?.()?.length ?? 0;
+      const isInst = (mesh as any).count !== undefined;
+      const inst = isInst ? ` ×${(mesh as any).count}` : '';
+      console.log(`[SCENE]   ${tag}: ${indices} indices${inst}`);
+    }
 
     this.scene.skybox = this.currentLevel.skybox;
     this.scene.skybox.bindGeometry();

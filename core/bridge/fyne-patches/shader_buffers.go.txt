@@ -210,12 +210,18 @@ func (s *Shader) SetAttributeBuffer(name string, data []float32, size int, strid
 		existing.Offset = offset
 		// VBO is preserved (already set on the existing struct)
 	} else {
+		// Restore VBO from cache if available (saved by PruneAttributeBuffers)
+		var cachedVBO uint32
+		if s.vboCache != nil {
+			cachedVBO = s.vboCache[name]
+		}
 		s.AttributeBuffers[name] = &AttributeBuffer{
 			Data:       data,
 			Size:       size,
 			Stride:     stride,
 			Offset:     offset,
 			Generation: 1,
+			VBO:        cachedVBO,
 		}
 	}
 	// Update vertex count based on the number of vertices in this buffer
@@ -259,14 +265,36 @@ func (s *Shader) HasAttributeBuffers() bool {
 // PruneAttributeBuffers removes attribute buffers not in the keep set.
 // Called before each draw to prevent stale attribute bindings from persisting
 // when different objects use different sets of attributes.
+// VBOs are preserved in vboCache so they can be reused when the attribute
+// is re-added next frame (prevents VBO leak: prune deletes entry, painter
+// writeback finds nil, next frame creates new VBO=0 → 11 VBOs/frame leaked).
 func (s *Shader) PruneAttributeBuffers(keep map[string]bool) {
 	s.attrBuffersMu.Lock()
 	defer s.attrBuffersMu.Unlock()
-	for name := range s.AttributeBuffers {
+	for name, buf := range s.AttributeBuffers {
 		if !keep[name] {
+			// Save VBO to cache before deleting so SetAttributeBuffer can reuse it
+			if buf != nil && buf.VBO != 0 {
+				if s.vboCache == nil {
+					s.vboCache = make(map[string]uint32, 8)
+				}
+				s.vboCache[name] = buf.VBO
+			}
 			delete(s.AttributeBuffers, name)
 		}
 	}
+}
+
+// CacheVBO stores a VBO ID in the cache for an attribute name.
+// Called by the painter after creating a VBO, so that future SetAttributeBuffer
+// calls can reuse it even if PruneAttributeBuffers deleted the live entry.
+func (s *Shader) CacheVBO(name string, vbo uint32) {
+	s.attrBuffersMu.Lock()
+	defer s.attrBuffersMu.Unlock()
+	if s.vboCache == nil {
+		s.vboCache = make(map[string]uint32, 8)
+	}
+	s.vboCache[name] = vbo
 }
 
 // ClearAttributeBufferVBOs clears VBO IDs (called on recompile to force re-upload).
@@ -472,8 +500,11 @@ func (s *Shader) QueueDrawArraysInstanced(mode uint32, first int, count int, ins
 	attrSnapshot := s.snapshotAttributeBuffers()
 	s.attrBuffersMu.RUnlock()
 
+	tag := s.CurrentDrawTag
+	s.CurrentDrawTag = ""
 	s.QueueRenderCommand(RenderCommand{
 		Type: "drawArrays",
+		Name: tag,
 		Value: DrawArraysParams{
 			Mode:             mode,
 			First:            first,
@@ -492,8 +523,11 @@ func (s *Shader) QueueDrawElementsInstanced(mode uint32, count int, offset int, 
 	attrSnapshot := s.snapshotAttributeBuffers()
 	s.attrBuffersMu.RUnlock()
 
+	tag := s.CurrentDrawTag
+	s.CurrentDrawTag = ""
 	s.QueueRenderCommand(RenderCommand{
 		Type: "drawElements",
+		Name: tag,
 		Value: DrawElementsParams{
 			Mode:             mode,
 			Count:            count,

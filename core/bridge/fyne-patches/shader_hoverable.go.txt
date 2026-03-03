@@ -92,8 +92,11 @@ func (s *Shader) QueueDrawElements(mode uint32, count int, offset int) {
 	attrSnapshot := s.snapshotAttributeBuffers()
 	s.attrBuffersMu.RUnlock()
 
+	tag := s.CurrentDrawTag
+	s.CurrentDrawTag = ""
 	s.QueueRenderCommand(RenderCommand{
 		Type: "drawElements",
+		Name: tag,
 		Value: DrawElementsParams{
 			Mode:             mode,
 			Count:            count,
@@ -112,8 +115,11 @@ func (s *Shader) QueueDrawArrays(mode uint32, first int, count int) {
 	attrSnapshot := s.snapshotAttributeBuffers()
 	s.attrBuffersMu.RUnlock()
 
+	tag := s.CurrentDrawTag
+	s.CurrentDrawTag = ""
 	s.QueueRenderCommand(RenderCommand{
 		Type: "drawArrays",
+		Name: tag,
 		Value: DrawArraysParams{
 			Mode:             mode,
 			First:            first,

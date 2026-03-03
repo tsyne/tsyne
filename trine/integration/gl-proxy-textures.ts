@@ -30,11 +30,16 @@ proto.deleteTexture = function (texture: WebGLTexture | null): void {
 
 proto.bindTexture = function (target: GLenum, texture: WebGLTexture | null): void {
   const textureId = texture ? (texture as any).__tsyneId : 0;
+  const key = this.activeTextureUnit * 0x10000 + target;
+  if (this.boundTextures.get(key) === textureId) { this._commandsSkipped++; return; }
+  this.boundTextures.set(key, textureId);
   this.pushCommand('bindTexture', { target, textureId });
 };
 
 proto.activeTexture = function (texture: GLenum): void {
-  this.activeTextureUnit = texture - this.TEXTURE0;
+  const unit = texture - this.TEXTURE0;
+  if (unit === this.activeTextureUnit) { this._commandsSkipped++; return; }
+  this.activeTextureUnit = unit;
   this.pushCommand('activeTexture', { texture });
 };
 

@@ -7,10 +7,10 @@
  * The sendFn should be an async function that returns the response from the bridge.
  */
 
-// Commands are sent as [cmd, args] arrays — msgpack encodes these as arrays
-// instead of maps, saving ~26% of Go-side allocations (no map+key overhead
-// for the outer wrapper).
-export type GLCommand = [string, Record<string, any>];
+// Commands are sent as arrays. Two formats:
+//   Map format:  [cmd, {key: val, ...}]  — for complex/infrequent commands
+//   Flat format: [cmd, arg1, arg2, ...]  — for high-frequency commands (no map allocation on Go side)
+export type GLCommand = any[];
 
 export interface BridgeMessage {
   type: string;
