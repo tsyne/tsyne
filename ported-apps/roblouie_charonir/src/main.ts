@@ -106,7 +106,7 @@ export async function buildCharonJr(a: App, win: ITsyneWindow) {
   if (gl?.flush) await gl.flush();
 
   // 7. Create game states and wire overlay to menu
-  const { GameState } = require('@/game-states/game.state');
+  const { GameState, setGameOverlay } = require('@/game-states/game.state');
   const { MenuState, setMenuOverlay } = require('@/game-states/menu.state');
   const { LevelOverState } = require('@/game-states/level-over.state');
 
@@ -114,8 +114,9 @@ export async function buildCharonJr(a: App, win: ITsyneWindow) {
   gameStates.menuState = new MenuState();
   gameStates.levelOverState = new LevelOverState();
 
-  // Wire overlay to menu state
+  // Wire overlay to menu and game states
   setMenuOverlay(overlayApp);
+  setGameOverlay(overlayApp);
 
   // Flush game state constructor GL commands (truck geometry, etc.)
   console.log('[Charon Jr.] Game states created, flushing...');

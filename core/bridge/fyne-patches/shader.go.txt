@@ -166,6 +166,7 @@ type Shader struct {
 	AttributeBuffers map[string]*AttributeBuffer // Map of attribute name → buffer data
 	attrBuffersMu    sync.RWMutex                // Protects concurrent access to AttributeBuffers
 	vboCache         map[string]uint32           // Survives PruneAttributeBuffers; prevents VBO leak
+	attrGenCounter   uint64                      // Monotonic counter for attribute buffer generations
 
 	// Time tracking for u_time uniform (only updates on Refresh, not every paint pass)
 	startTime       time.Time              // When the shader was created
@@ -217,6 +218,7 @@ type Shader struct {
 	gpuTexCache      map[int]uint32       // JS texture ID → GL texture ID (for GPU-only textures)
 	jsTexForSampler  map[string]int       // sampler uniform name → JS texture ID
 	cpuTexImages     map[int]interface{}  // JS texture ID → CPU image (image.Image)
+	texMu            sync.RWMutex         // protects gpuTexCache, jsTexForSampler, cpuTexImages, gpuTexUploaded, gpuTexFormats
 
 	// Draw call tagging — JS side sets this before each draw call to identify the mesh
 	CurrentDrawTag string
@@ -324,6 +326,7 @@ func NewShader(width, height float32, fragmentSrc string) *Shader {
 		gpuTexUploaded:     make(map[int]bool),
 		gpuTexFormats:      make(map[int]GPUTextureFormat),
 		attribDivisors:     make(map[string]uint32),
+		clearColor:         [4]float32{0, 0, 0, 1}, // Opaque black — prevents Fyne's white theme from bleeding through
 	}
 	s.size = fyne.NewSize(width, height)
 	s.minSize = s.size

@@ -22,6 +22,14 @@ import { hud } from '@/hud';
 import { gameStates } from '@/index';
 import { ghostFlyAwayAudio, ghostThankYouAudio } from '@/sound-effects';
 import { makeDynamicBody } from '@/modeling/spirit.modeling';
+import type { GLOverlayApp, OverlayWidget } from '../../../../trine/integration/gl-overlay';
+
+// Module-level overlay reference, set from main.ts
+let overlayApp: GLOverlayApp | null = null;
+
+export function setGameOverlay(app: GLOverlayApp) {
+  overlayApp = app;
+}
 
 const arrowGuideGeo = new MoldableCubeGeometry(2, 0.3, 5)
   .selectBy(vertex => vertex.z < 0)
@@ -50,8 +58,20 @@ export class GameState implements State {
 
   dropoffs: Mesh[];
 
+  // HUD overlay widgets (created once, updated in-place)
+  private hudTimeText: OverlayWidget | null = null;
+  private hudScoreText: OverlayWidget | null = null;
+  private hudTimeBonusText: OverlayWidget | null = null;
+  private hudScoreBonusText: OverlayWidget | null = null;
+  private prevTimeStr = '';
+  private prevScoreStr = '';
+  private prevTimeBonusActive = false;
+  private prevScoreBonusActive = false;
+  private prevTimeBonusStr = '';
+  private prevScoreBonusStr = '';
+
   constructor() {
-    const camera = new Camera(1.68, 16 / 9, 1, 1700);
+    const camera = new Camera(1.68, 16 / 9, 2, 1700);
     camera.position = new EnhancedDOMPoint(0, 5, -17);
     this.player = new ThirdPersonPlayer(camera);
     this.scene = new Scene();
@@ -75,15 +95,22 @@ export class GameState implements State {
   private levelNumber = 0;
   private isLoaded = false;
   onEnter(levelNumber: 0 | 1 | 2) {
+    const t0 = performance.now();
     this.gridFaces = [];
     this.groupedFaces = { floorFaces: [], wallFaces: [], ceilingFaces: [] }
     this.levelNumber = levelNumber;
     if (levelNumber === 0) {
       noiseMaker.seed(22);
+      let t = performance.now();
       const sampleHeightMap = noiseMaker.noiseLandscape(256, 1 / 64, 4, NoiseType.Perlin, 100);
+      console.log(`[LOAD] heightmap noise: ${(performance.now()-t).toFixed(0)}ms`);
+      t = performance.now();
+      const skybox = createSkybox(drawEarthSky);
+      console.log(`[LOAD] skybox: ${(performance.now()-t).toFixed(0)}ms`);
+      t = performance.now();
       this.currentLevel = new Level(
         sampleHeightMap,
-        createSkybox(drawEarthSky),
+        skybox,
         -12,
         39,
         26,
@@ -100,6 +127,7 @@ export class GameState implements State {
         new EnhancedDOMPoint(-556, 11, -760),
         []
       );
+      console.log(`[LOAD] Level constructor: ${(performance.now()-t).toFixed(0)}ms`);
     } else if (levelNumber === 1) {
       noiseMaker.seed(75);
       const sampleHeightMap2 = noiseMaker.noiseLandscape(256, 1 / 64, 2, NoiseType.Perlin, 30)
@@ -219,6 +247,7 @@ export class GameState implements State {
     if (levelNumber === 1) {
       this.currentLevel.spiritPositions = this.currentLevel.spiritPositions.filter((spirit, index) => index % 2 === 0);
     }
+    let tSpirits = performance.now();
     this.spirits = this.currentLevel.spiritPositions.map((position, i) => {
       const spirit = new Spirit(position);
       // Tag spirit child meshes for draw call identification
@@ -226,6 +255,7 @@ export class GameState implements State {
       if (spirit.children[1]) (spirit.children[1] as any)._drawTag = `spirit_${i}_icon`;
       return spirit;
     });
+    console.log(`[LOAD] spirits (${this.spirits.length}): ${(performance.now()-tSpirits).toFixed(0)}ms`);
 
     this.scene = new Scene();
 
@@ -234,6 +264,7 @@ export class GameState implements State {
       return array.indexOf(value) === index;
     }
 
+    let tGrid = performance.now();
     this.currentLevel.facesToCollideWith.floorFaces.forEach(face => {
       const gridPositions = face.points.map(getGridPosition);
 
@@ -256,6 +287,9 @@ export class GameState implements State {
       });
     });
 
+    console.log(`[LOAD] grid face bucketing: ${(performance.now()-tGrid).toFixed(0)}ms`);
+
+    let tDropoffs = performance.now();
     this.dropoffs = [];
     this.currentLevel.dropOffs.forEach((dropOff, index) => {
       const dropOffMesh = new Mesh(new MoldableCubeGeometry(1, 5, 1, 4, 1, 4).cylindrify(40).done(), new Material({ texture: materials.dropOff.texture, emissive: Spirit.Colors[index], isTransparent: true }));
@@ -270,8 +304,12 @@ export class GameState implements State {
       this.dropoffs.push(dropOffMesh2);
     })
 
+    console.log(`[LOAD] dropoffs: ${(performance.now()-tDropoffs).toFixed(0)}ms`);
+
+    let tScene = performance.now();
     this.scene.add(this.player.mesh, ...this.spirits, ...this.dropoffs);
     this.scene.add(...this.currentLevel.meshesToRender, this.dynamicBody);
+    console.log(`[LOAD] scene.add: ${(performance.now()-tScene).toFixed(0)}ms`);
 
     // Dump scene inventory for GPU hang diagnosis
     const allMeshes = [...this.scene.solidMeshes, ...this.scene.transparentMeshes];
@@ -284,14 +322,41 @@ export class GameState implements State {
       console.log(`[SCENE]   ${tag}: ${indices} indices${inst}`);
     }
 
+    let tSkyBind = performance.now();
     this.scene.skybox = this.currentLevel.skybox;
     this.scene.skybox.bindGeometry();
-
+    console.log(`[LOAD] skybox.bindGeometry: ${(performance.now()-tSkyBind).toFixed(0)}ms`);
 
     this.spiritsTransported = 0;
     hud.reset();
+
+    // Build HUD overlay — create widgets once, update text in-place
+    if (overlayApp) {
+      overlayApp.clear();
+      // Background bar
+      overlayApp.canvasRectangle({ x: 0, y: 0, width: 960, height: 45, fillColor: 'rgba(48, 16, 48, 0.5)' });
+      // "Time" label (static)
+      overlayApp.canvasText('Time', { x: 15, y: 7, color: '#cccccc', textSize: 20 });
+      // Time value
+      this.hudTimeText = overlayApp.canvasText('100.0', { x: 70, y: 3, color: '#ffffff', textSize: 28, bold: true });
+      // Score (right-aligned via x position)
+      this.hudScoreText = overlayApp.canvasText('$0', { x: 870, y: 3, color: '#ffffff', textSize: 28, bold: true });
+      // Time bonus popup (initially hidden)
+      this.hudTimeBonusText = overlayApp.canvasText('', { x: 70, y: 30, color: '#44ff44', textSize: 16 });
+      this.hudTimeBonusText.hide();
+      // Score bonus popup (initially hidden)
+      this.hudScoreBonusText = overlayApp.canvasText('', { x: 870, y: 30, color: '#ffff44', textSize: 16 });
+      this.hudScoreBonusText.hide();
+      // Reset tracking
+      this.prevTimeStr = '100.0';
+      this.prevScoreStr = '$0';
+      this.prevTimeBonusActive = false;
+      this.prevScoreBonusActive = false;
+    }
+
     this.isLoaded = true;
     this.player.engineGain.gain.value = 0.4;
+    console.log(`[LOAD] TOTAL onEnter: ${(performance.now()-t0).toFixed(0)}ms`);
   }
 
   private resetSpiritBody() {
@@ -303,6 +368,11 @@ export class GameState implements State {
     this.player.drivingThroughWaterGain.gain.value = 0;
     this.spirits.forEach(spirit => spirit.audioPlayer?.stop());
     this.resetSpiritBody();
+    if (overlayApp) overlayApp.clear();
+    this.hudTimeText = null;
+    this.hudScoreText = null;
+    this.hudTimeBonusText = null;
+    this.hudScoreBonusText = null;
   }
 
   private spiritPlayerDistance = new EnhancedDOMPoint();
@@ -371,6 +441,39 @@ export class GameState implements State {
     }
 
     hud.draw();
+
+    // Update HUD overlay — only send bridge commands when displayed values change
+    if (this.hudTimeText) {
+      const timeStr = hud.timeRemaining.toFixed(1);
+      if (timeStr !== this.prevTimeStr) {
+        this.prevTimeStr = timeStr;
+        this.hudTimeText.update({ text: timeStr });
+      }
+      const score = hud.score + (hud.isScoreBonusActive ? hud.currentScoreBonus : 0);
+      const scoreStr = '$' + score;
+      if (scoreStr !== this.prevScoreStr) {
+        this.prevScoreStr = scoreStr;
+        this.hudScoreText!.update({ text: scoreStr });
+      }
+      if (hud.isTimeBonusActive !== this.prevTimeBonusActive) {
+        this.prevTimeBonusActive = hud.isTimeBonusActive;
+        if (hud.isTimeBonusActive) {
+          this.hudTimeBonusText!.update({ text: '+' + hud.currentTimeBonus.toFixed(0) });
+          this.hudTimeBonusText!.show();
+        } else {
+          this.hudTimeBonusText!.hide();
+        }
+      }
+      if (hud.isScoreBonusActive !== this.prevScoreBonusActive) {
+        this.prevScoreBonusActive = hud.isScoreBonusActive;
+        if (hud.isScoreBonusActive) {
+          this.hudScoreBonusText!.update({ text: '+$' + hud.currentScoreBonus });
+          this.hudScoreBonusText!.show();
+        } else {
+          this.hudScoreBonusText!.hide();
+        }
+      }
+    }
 
     this.player.update(this.gridFaces, this.currentLevel.waterLevel);
     this.handleDropOffPickUp();

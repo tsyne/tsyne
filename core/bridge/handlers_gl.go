@@ -1353,6 +1353,9 @@ func (b *Bridge) executeGLCommandFlat(canvas *GLCanvas, cmd string, v []interfac
 		g := float32(toFloat64(v[2]))
 		bVal := float32(toFloat64(v[3]))
 		a := float32(toFloat64(v[4]))
+		// Persist so the "clear" handler's re-apply uses the correct value
+		// (Fyne's painter.Clear() resets glClearColor to the theme bg each frame)
+		canvas.ShaderObject.SetClearColor(r, g, bVal, a)
 		canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
 			Type:  "clearColor",
 			Value: [4]float32{r, g, bVal, a},
@@ -2873,7 +2876,23 @@ func (b *Bridge) glTexSubImage3D(canvas *GLCanvas, args map[string]interface{}) 
 	depth := int(toFloat32(args["depth"]))
 	format := uint32(toFloat32(args["format"]))
 	typ := uint32(toFloat32(args["type"]))
-	pixelData, _ := args["pixels"].([]byte)
+	// Handle both binary []byte and array []interface{} from msgpack
+	var pixelData []byte
+	pixelsArg := args["pixels"]
+	if pixelsBytes, ok := pixelsArg.([]byte); ok && len(pixelsBytes) > 0 {
+		pixelData = pixelsBytes
+	} else if pixelsArr, ok := pixelsArg.([]interface{}); ok {
+		pixelData = make([]byte, len(pixelsArr))
+		for i, v := range pixelsArr {
+			pixelData[i] = byte(toFloat32(v))
+		}
+		log.Printf("[GL] texSubImage3D: converted %d-element array to []byte (layer %d)", len(pixelsArr), zoffset)
+	}
+
+	if len(pixelData) == 0 {
+		log.Printf("[GL] texSubImage3D: WARNING no pixel data for layer %d (arg type=%T)", zoffset, pixelsArg)
+		return nil
+	}
 
 	if canvas.boundTextures == nil {
 		return nil

@@ -142,7 +142,7 @@ export class GLOverlayApp {
    */
   canvasRectangle(opts: any): OverlayWidget {
     // Sizing shim — transparent rectangle just for layout, skip it
-    if (!opts.fillColor && !opts.strokeColor) {
+    if ((!opts.fillColor || opts.fillColor === 'transparent') && !opts.strokeColor) {
       return new OverlayWidget(this.bridge, '', 'rectangle');
     }
 

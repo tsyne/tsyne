@@ -477,18 +477,19 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 	}
 	p.ctx.Viewport(viewportX, viewportY, viewportW, viewportH)
 
-	// For 3D shaders: pre-clear the COLOR buffer only with the stored
+	// For 3D shaders: pre-clear COLOR and DEPTH buffers with the stored
 	// clear color.  Fyne's painter.Clear() clears the entire framebuffer
 	// to the theme background (white) before painting widgets.  This
 	// restores the shader's region to the correct scene background so
-	// white never bleeds through.  Only clear color — depth is cleared
-	// by the render commands' own clear call.
+	// white never bleeds through.  We also clear depth to ensure a clean
+	// slate even if the paint budget skips the app's own clear command.
 	if shader.VertexSource != "" {
 		cc := shader.GetClearColor()
 		p.ctx.ClearColor(cc[0], cc[1], cc[2], cc[3])
+		p.ctx.DepthMask(true) // Ensure depth writes are enabled for clear
 		p.ctx.Enable(scissorTest)
 		p.ctx.Scissor(int32(viewportX), int32(viewportY), int32(viewportW), int32(viewportH))
-		p.ctx.Clear(colorBufferBit)
+		p.ctx.Clear(colorBufferBit | depthBufferBit)
 		p.ctx.Disable(scissorTest)
 	}
 
@@ -2213,6 +2214,14 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 				profileAccum.drawCount/int(n),
 			)
 		}
+	}
+
+	// When the paint budget clips a NEW frame, schedule an immediate repaint.
+	// On replay, VBO data is already cached on the GPU so the same commands
+	// execute much faster and won't exceed the budget again.
+	// Only retry for new frames to avoid infinite refresh loops on replays.
+	if budgetExceeded && shader.LastGetWasNew {
+		go shader.Refresh()
 	}
 
 	// Log slow paint cycles to diagnose GPU hangs / driver stalls.

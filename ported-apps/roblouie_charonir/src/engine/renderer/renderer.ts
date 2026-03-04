@@ -50,6 +50,7 @@ let instancedTextureRepeatLocation: WebGLUniformLocation | null;
 /** Must be called after lilgl.init() */
 export function setupRenderer() {
   const g = gl;
+  g.clearColor(0, 0, 0, 1); // Opaque black — prevents Fyne's white theme from bleeding through
   g.enable(g.CULL_FACE);
   g.enable(g.DEPTH_TEST);
   g.enable(g.BLEND);

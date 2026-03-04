@@ -47,6 +47,8 @@ export class Level {
     orangeDropOff: EnhancedDOMPoint,
     rampData: { position: EnhancedDOMPoint, rotation: number }[]
   ) {
+    const _lt0 = performance.now();
+    let _lt = _lt0;
     doTimes(256, y => {
       doTimes(256, x => {
         if (y === 0 || y === 255 || x === 0 || x === 255) {
@@ -66,25 +68,31 @@ export class Level {
     const treeCollisionMesh = new Mesh(treeCollision, new Material({color: '#0000'}));
     this.facesToCollideWith = { floorFaces: [], wallFaces: [], ceilingFaces: [] };
 
+    _lt = performance.now();
     this.floorMesh = new Mesh(
       new PlaneGeometry(2047, 2047, 255, 255, heightmap.map(val => Math.max(val, waterLevel - 2.6))),
       groundMaterial
     );
     (this.floorMesh as any)._drawTag = 'floor';
+    console.log(`[LOAD:Level] PlaneGeometry+Mesh: ${(performance.now()-_lt).toFixed(0)}ms`);
 
     let path: number[] = [];
     // Draw Paths
     if (pathSeed) {
+      _lt = performance.now();
       noiseMaker.seed(pathSeed);
       path = noiseMaker.noiseLandscape(256, 1 / 128, 2, NoiseType.Lines,8)
         .map(noiseValue => clamp(noiseValue * 4, 0, 1));
 
       const pathTextureIds = path.map(val => val + pathMaterial!.texture!.id);
       this.floorMesh.geometry.setAttribute(AttributeLocation.TextureDepth, new Float32Array(pathTextureIds), 1);
+      console.log(`[LOAD:Level] path noise: ${(performance.now()-_lt).toFixed(0)}ms`);
     }
 
+    _lt = performance.now();
     const floorFaces = meshToFaces([this.floorMesh]);
     getGroupedFaces(floorFaces, this.facesToCollideWith);
+    console.log(`[LOAD:Level] meshToFaces(floor): ${(performance.now()-_lt).toFixed(0)}ms`);
 
     // Draw water
     const lake = new Mesh(
@@ -104,6 +112,7 @@ export class Level {
     });
 
     // Draw Scenery
+    _lt = performance.now();
     noiseMaker.seed(scenerySeed);
     const landscapeItemPositionNoise = noiseMaker.noiseLandscape(256, 1 / 16, 4, NoiseType.Perlin,3);
     const grassTransforms: DOMMatrix[] = [];
@@ -188,6 +197,8 @@ export class Level {
       }
     });
 
+    console.log(`[LOAD:Level] scenery placement (${grassTransforms.length} grass, ${treeTransforms.length} trees, ${rockTransforms.length} rocks): ${(performance.now()-_lt).toFixed(0)}ms`);
+    _lt = performance.now();
     const plants = new InstancedMesh(makePlantGeo(), grassTransforms, grassTransforms.length, plantMaterial);
     (plants as any)._drawTag = 'plants';
     const trees = new InstancedMesh(makeLargeTreeGeo(), treeTransforms, treeTransforms.length, treeMaterial);
@@ -200,8 +211,10 @@ export class Level {
     const rocks = new InstancedMesh(makeRock(), rockTransforms, rockTransforms.length, rockMaterial);
     (rocks as any)._drawTag = 'rocks';
 
+    console.log(`[LOAD:Level] instanced meshes: ${(performance.now()-_lt).toFixed(0)}ms`);
     this.facesToCollideWith.floorFaces.sort((faceA, faceB) => faceB.upperY - faceA.upperY);
     this.meshesToRender.push(plants, trees, rocks);
+    console.log(`[LOAD:Level] TOTAL constructor: ${(performance.now()-_lt0).toFixed(0)}ms`);
   }
 
   placeRamps(rampPosition: EnhancedDOMPoint, rampYRotation: number) {

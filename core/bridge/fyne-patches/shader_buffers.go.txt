@@ -215,12 +215,15 @@ func (s *Shader) SetAttributeBuffer(name string, data []float32, size int, strid
 		if s.vboCache != nil {
 			cachedVBO = s.vboCache[name]
 		}
+		// Use monotonic counter so recreated entries with cached VBOs
+		// always force a re-upload (VBOUploadedGen won't match).
+		s.attrGenCounter++
 		s.AttributeBuffers[name] = &AttributeBuffer{
 			Data:       data,
 			Size:       size,
 			Stride:     stride,
 			Offset:     offset,
-			Generation: 1,
+			Generation: s.attrGenCounter,
 			VBO:        cachedVBO,
 		}
 	}
@@ -399,22 +402,30 @@ func (s *Shader) DeleteRBOCache(jsId int) {
 
 // GetGPUTexCache returns the GL texture ID for a JS texture ID (GPU-only textures).
 func (s *Shader) GetGPUTexCache(jsId int) uint32 {
-	return s.gpuTexCache[jsId]
+	s.texMu.RLock()
+	v := s.gpuTexCache[jsId]
+	s.texMu.RUnlock()
+	return v
 }
 
 // SetGPUTexCache stores a GL texture ID for a JS texture ID (GPU-only textures).
 func (s *Shader) SetGPUTexCache(jsId int, glId uint32) {
+	s.texMu.Lock()
 	s.gpuTexCache[jsId] = glId
+	s.texMu.Unlock()
 }
 
 // DeleteGPUTexCache removes a GPU texture from the cache.
 func (s *Shader) DeleteGPUTexCache(jsId int) {
+	s.texMu.Lock()
 	delete(s.gpuTexCache, jsId)
+	s.texMu.Unlock()
 }
 
 // DeleteTextureAllCaches removes a JS texture ID from ALL texture-related caches.
 // Call this when a texture is deleted to prevent unbounded map growth.
 func (s *Shader) DeleteTextureAllCaches(jsId int) {
+	s.texMu.Lock()
 	delete(s.gpuTexCache, jsId)
 	delete(s.cpuTexImages, jsId)
 	delete(s.gpuTexUploaded, jsId)
@@ -425,6 +436,7 @@ func (s *Shader) DeleteTextureAllCaches(jsId int) {
 			delete(s.jsTexForSampler, k)
 		}
 	}
+	s.texMu.Unlock()
 }
 
 // DeleteVBOUploadedGen removes a VBO from the upload generation cache.
@@ -435,51 +447,73 @@ func (s *Shader) DeleteVBOUploadedGen(vboId uint32) {
 // SetJSTexForSampler records that a JS texture ID is associated with a sampler uniform.
 // This allows the painter to populate gpuTexCache with Phase 2.1 uploaded textures.
 func (s *Shader) SetJSTexForSampler(samplerName string, jsTexId int) {
+	s.texMu.Lock()
 	s.jsTexForSampler[samplerName] = jsTexId
+	s.texMu.Unlock()
 }
 
 // GetJSTexForSampler returns the JS texture ID for a sampler uniform name (0 if not set).
 func (s *Shader) GetJSTexForSampler(samplerName string) int {
-	return s.jsTexForSampler[samplerName]
+	s.texMu.RLock()
+	v := s.jsTexForSampler[samplerName]
+	s.texMu.RUnlock()
+	return v
 }
 
 // SetCPUTexImage stores a CPU image for a JS texture ID (for on-demand GPU upload).
 func (s *Shader) SetCPUTexImage(jsTexId int, img interface{}) {
+	s.texMu.Lock()
 	s.cpuTexImages[jsTexId] = img
+	s.texMu.Unlock()
 }
 
 // GetCPUTexImage returns the CPU image for a JS texture ID (nil if not set).
 func (s *Shader) GetCPUTexImage(jsTexId int) interface{} {
-	return s.cpuTexImages[jsTexId]
+	s.texMu.RLock()
+	v := s.cpuTexImages[jsTexId]
+	s.texMu.RUnlock()
+	return v
 }
 
 // IsGPUTexUploaded returns whether a GPU texture has been uploaded with real data.
 func (s *Shader) IsGPUTexUploaded(jsTexId int) bool {
-	return s.gpuTexUploaded[jsTexId]
+	s.texMu.RLock()
+	v := s.gpuTexUploaded[jsTexId]
+	s.texMu.RUnlock()
+	return v
 }
 
 // SetGPUTexUploaded marks a GPU texture as having been uploaded with real data.
 // Also releases the CPU-side image data to free memory — texture is on the GPU now.
 func (s *Shader) SetGPUTexUploaded(jsTexId int) {
+	s.texMu.Lock()
 	s.gpuTexUploaded[jsTexId] = true
 	delete(s.cpuTexImages, jsTexId)
+	s.texMu.Unlock()
 }
 
 // ReleaseCPUTexImage removes the CPU image for a specific key.
 // Used for cubemap face cleanup (compound keys: jsTexId*10 + faceIndex).
 func (s *Shader) ReleaseCPUTexImage(key int) {
+	s.texMu.Lock()
 	delete(s.cpuTexImages, key)
+	s.texMu.Unlock()
 }
 
 // SetGPUTexFormat stores the GL format info for a JS texture ID.
 func (s *Shader) SetGPUTexFormat(jsTexId int, fmt GPUTextureFormat) {
+	s.texMu.Lock()
 	s.gpuTexFormats[jsTexId] = fmt
+	s.texMu.Unlock()
 }
 
 // GetGPUTexFormat returns the GL format info for a JS texture ID.
 // Returns a zero value if not set (caller should default to RGBA).
 func (s *Shader) GetGPUTexFormat(jsTexId int) GPUTextureFormat {
-	return s.gpuTexFormats[jsTexId]
+	s.texMu.RLock()
+	v := s.gpuTexFormats[jsTexId]
+	s.texMu.RUnlock()
+	return v
 }
 
 // SetAttribDivisor stores a vertex attribute divisor value by attribute name.
