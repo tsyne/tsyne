@@ -12,6 +12,7 @@ import { clamp, getRankFromScore } from '@/engine/helpers';
 import { Mesh } from '@/engine/renderer/mesh';
 import { makeTombstoneGeo } from '@/modeling/stone.modeling';
 import type { GLOverlayApp } from '../../../../trine/integration/gl-overlay';
+import { canvasWidth, canvasHeight, setResizeCallback } from '@/main';
 
 // Module-level overlay reference, set from main.ts
 let overlayApp: GLOverlayApp | null = null;
@@ -20,11 +21,11 @@ export function setMenuOverlay(app: GLOverlayApp) {
   overlayApp = app;
 }
 
-// Level names and their layout positions (960x540 canvas)
+// Level names and their vertical positions as fractions of canvas height
 const LEVELS = [
-  { name: 'EARTH', y: 190 },
-  { name: 'PURGATORY', y: 290 },
-  { name: 'UNDERWORLD', y: 390 },
+  { name: 'EARTH', yFrac: 190 / 540 },
+  { name: 'PURGATORY', yFrac: 290 / 540 },
+  { name: 'UNDERWORLD', yFrac: 390 / 540 },
 ];
 
 const SELECTED_COLOR = '#ffffff';
@@ -61,18 +62,27 @@ export class MenuState implements State {
 
     // Render overlay text on first frame
     this.renderOverlay();
+
+    // Re-render overlay and update camera on window resize
+    setResizeCallback((w, h) => {
+      this.camera.updateProjection(w / h);
+      this.renderOverlay();
+    });
   }
 
   private renderOverlay() {
     if (!overlayApp) return;
     this.lastRenderedOption = this.selectedOption;
 
+    const w = canvasWidth;
+    const h = canvasHeight;
+
     // Clear previous overlay
     overlayApp.clear();
 
     // Title text
     overlayApp.canvasText('CHARON JR.', {
-      x: 340, y: 40,
+      x: Math.round(w * 0.354), y: Math.round(h * 0.074),
       color: '#ffffff',
       textSize: 60,
       bold: true,
@@ -85,10 +95,11 @@ export class MenuState implements State {
       const level = LEVELS[i];
       const isSelected = i === this.selectedOption;
       const color = isSelected ? SELECTED_COLOR : UNSELECTED_COLOR;
+      const y = Math.round(h * level.yFrac);
 
       // Level name
       overlayApp.canvasText(level.name, {
-        x: 380, y: level.y,
+        x: Math.round(w * 0.396), y,
         color,
         textSize: 36,
         bold: isSelected,
@@ -101,7 +112,7 @@ export class MenuState implements State {
       const scoreText = score ? `Best: $${score}` : '';
       if (scoreText) {
         overlayApp.canvasText(scoreText, {
-          x: 410, y: level.y + 40,
+          x: Math.round(w * 0.427), y: y + 40,
           color: isSelected ? '#cccccc' : '#666666',
           textSize: 18,
           alignment: 'center',
@@ -111,7 +122,7 @@ export class MenuState implements State {
       // Selection indicator
       if (isSelected) {
         overlayApp.canvasText('>', {
-          x: 340, y: level.y,
+          x: Math.round(w * 0.354), y,
           color: '#ffffff',
           textSize: 36,
           bold: true,
@@ -157,6 +168,7 @@ export class MenuState implements State {
   }
 
   onLeave() {
+    setResizeCallback(null);
     if (overlayApp) {
       overlayApp.clear();
     }

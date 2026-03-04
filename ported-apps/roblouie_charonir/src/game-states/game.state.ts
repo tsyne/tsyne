@@ -23,6 +23,7 @@ import { gameStates } from '@/index';
 import { ghostFlyAwayAudio, ghostThankYouAudio } from '@/sound-effects';
 import { makeDynamicBody } from '@/modeling/spirit.modeling';
 import type { GLOverlayApp, OverlayWidget } from '../../../../trine/integration/gl-overlay';
+import { canvasWidth, canvasHeight, setResizeCallback } from '@/main';
 
 // Module-level overlay reference, set from main.ts
 let overlayApp: GLOverlayApp | null = null;
@@ -330,33 +331,42 @@ export class GameState implements State {
     this.spiritsTransported = 0;
     hud.reset();
 
-    // Build HUD overlay — create widgets once, update text in-place
-    if (overlayApp) {
-      overlayApp.clear();
-      // Background bar
-      overlayApp.canvasRectangle({ x: 0, y: 0, width: 960, height: 45, fillColor: 'rgba(48, 16, 48, 0.5)' });
-      // "Time" label (static)
-      overlayApp.canvasText('Time', { x: 15, y: 7, color: '#cccccc', textSize: 20 });
-      // Time value
-      this.hudTimeText = overlayApp.canvasText('100.0', { x: 70, y: 3, color: '#ffffff', textSize: 28, bold: true });
-      // Score (right-aligned via x position)
-      this.hudScoreText = overlayApp.canvasText('$0', { x: 870, y: 3, color: '#ffffff', textSize: 28, bold: true });
-      // Time bonus popup (initially hidden)
-      this.hudTimeBonusText = overlayApp.canvasText('', { x: 70, y: 30, color: '#44ff44', textSize: 16 });
-      this.hudTimeBonusText.hide();
-      // Score bonus popup (initially hidden)
-      this.hudScoreBonusText = overlayApp.canvasText('', { x: 870, y: 30, color: '#ffff44', textSize: 16 });
-      this.hudScoreBonusText.hide();
-      // Reset tracking
-      this.prevTimeStr = '100.0';
-      this.prevScoreStr = '$0';
-      this.prevTimeBonusActive = false;
-      this.prevScoreBonusActive = false;
-    }
+    this.buildHud();
+
+    // Re-build HUD and update camera on window resize
+    setResizeCallback((w, h) => {
+      this.buildHud();
+      this.player.camera.updateProjection(w / h);
+    });
 
     this.isLoaded = true;
     this.player.engineGain.gain.value = 0.4;
     console.log(`[LOAD] TOTAL onEnter: ${(performance.now()-t0).toFixed(0)}ms`);
+  }
+
+  private buildHud() {
+    if (!overlayApp) return;
+    overlayApp.clear();
+    const w = canvasWidth;
+    // Background bar
+    overlayApp.canvasRectangle({ x: 0, y: 0, width: w, height: 45, fillColor: 'rgba(48, 16, 48, 0.5)' });
+    // "Time" label (static)
+    overlayApp.canvasText('Time', { x: 15, y: 7, color: '#cccccc', textSize: 20 });
+    // Time value
+    this.hudTimeText = overlayApp.canvasText('100.0', { x: 70, y: 3, color: '#ffffff', textSize: 28, bold: true });
+    // Score (right-aligned via x position)
+    this.hudScoreText = overlayApp.canvasText('$0', { x: w - 90, y: 3, color: '#ffffff', textSize: 28, bold: true });
+    // Time bonus popup (initially hidden)
+    this.hudTimeBonusText = overlayApp.canvasText('', { x: 70, y: 30, color: '#44ff44', textSize: 16 });
+    this.hudTimeBonusText.hide();
+    // Score bonus popup (initially hidden)
+    this.hudScoreBonusText = overlayApp.canvasText('', { x: w - 90, y: 30, color: '#ffff44', textSize: 16 });
+    this.hudScoreBonusText.hide();
+    // Reset tracking
+    this.prevTimeStr = '100.0';
+    this.prevScoreStr = '$0';
+    this.prevTimeBonusActive = false;
+    this.prevScoreBonusActive = false;
   }
 
   private resetSpiritBody() {
@@ -364,6 +374,7 @@ export class GameState implements State {
   }
 
   onLeave() {
+    setResizeCallback(null);
     this.player.engineGain.gain.value = 0;
     this.player.drivingThroughWaterGain.gain.value = 0;
     this.spirits.forEach(spirit => spirit.audioPlayer?.stop());

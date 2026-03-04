@@ -32,8 +32,23 @@ const originalResolveFilename = (Module as any)._resolveFilename;
 };
 setFetchBasePath(APP_DIR);
 
-export const WIDTH = 960;
-export const HEIGHT = 540;
+const INITIAL_WIDTH = 960;
+const INITIAL_HEIGHT = 540;
+const ASPECT_RATIO = INITIAL_WIDTH / INITIAL_HEIGHT; // 16:9
+
+// Mutable canvas dimensions (updated on resize)
+export let canvasWidth = INITIAL_WIDTH;
+export let canvasHeight = INITIAL_HEIGHT;
+
+// Keep original exports for test files
+export const WIDTH = INITIAL_WIDTH;
+export const HEIGHT = INITIAL_HEIGHT;
+
+type ResizeCallback = (w: number, h: number) => void;
+let resizeCallback: ResizeCallback | null = null;
+export function setResizeCallback(cb: ResizeCallback | null) {
+  resizeCallback = cb;
+}
 
 // GPU hang elimination: skip specific draw calls by tag name
 // Usage: CHARON_SKIP=floor,spirit ./scripts/tsyne ...
@@ -52,8 +67,8 @@ export async function buildCharonJr(a: App, win: ITsyneWindow) {
 
   // 2. Create the 3D canvas (WebGL2) and set as global c3d
   const tsyneCanvas = new TsyneCanvas(bridge, { interactive: true });
-  tsyneCanvas.width = WIDTH;
-  tsyneCanvas.height = HEIGHT;
+  tsyneCanvas.width = canvasWidth;
+  tsyneCanvas.height = canvasHeight;
   tsyneCanvas.setWindowId(win.id);
   (globalThis as any).c3d = tsyneCanvas;
 
@@ -87,6 +102,33 @@ export async function buildCharonJr(a: App, win: ITsyneWindow) {
   // Create overlay app for 2D HUD elements (menu text, loading screen, etc.)
   // The canvas must be created on the bridge first (flush above triggers that).
   const overlayApp = new GLOverlayApp(bridge, tsyneCanvas.overlayId);
+
+  // Wire up window resize: maintain 16:9 aspect ratio
+  let resizeTimer: ReturnType<typeof setTimeout> | null = null;
+  win.onResize((winW: number, winH: number) => {
+    if (resizeTimer) clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(async () => {
+      // Compute largest 16:9 rect that fits in the window
+      let newW: number, newH: number;
+      if (winW / winH > ASPECT_RATIO) {
+        newH = winH;
+        newW = Math.round(winH * ASPECT_RATIO);
+      } else {
+        newW = winW;
+        newH = Math.round(winW / ASPECT_RATIO);
+      }
+      // Clamp to even numbers (GPU alignment)
+      newW = newW & ~1;
+      newH = newH & ~1;
+      if (newW < 2 || newH < 2) return;
+      if (newW === canvasWidth && newH === canvasHeight) return;
+
+      canvasWidth = newW;
+      canvasHeight = newH;
+      await tsyneCanvas.resizeBridge(newW, newH);
+      resizeCallback?.(newW, newH);
+    }, 100);
+  });
 
   // 5. Now import game code (safe because GL is initialized)
   const { populateMaterials } = require('@/texture-maker');
@@ -236,7 +278,7 @@ if (require.main === module) {
     { title: 'Charon Jr.' },
     (a) => {
       a.window(
-        { title: 'Charon Jr.', width: WIDTH, height: HEIGHT },
+        { title: 'Charon Jr.', width: INITIAL_WIDTH, height: INITIAL_HEIGHT },
         (win) => {
           // Skip the story splash when doing elimination testing
           if (!process.env.CHARON_SKIP) {
