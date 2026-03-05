@@ -1,0 +1,6 @@
+.build/
+.swiftpm/
+*.zip
+ClaudeUsageBar.app/
+.DS_Store
+xcuserdata/

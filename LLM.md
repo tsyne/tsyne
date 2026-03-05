@@ -66,6 +66,8 @@ SVG-inspired vector graphics system — not an SVG renderer, but shares SVG's el
 
 **What CVG adds beyond SVG:** Reactive bindings (`.bindFill()`, `.bindPos()`), data-driven lists (`.bindTo()` with D3-style enter/update/exit), perspective transforms (`cosynePerspective` on groups), hit testing + events, animation, conditional rendering (`.when()`), named element lookup (`.name()` + `ctx.find()`).
 
+**Preference:** The primary and preferred way to use CVG is through its **TypeScript builder API**, which allows for full IDE support, reactivity, and direct event handling (e.g., `.onClick()`). Loading from SVG strings via `loadSvg()` is supported but considered a secondary convenience feature for initial assets.
+
 **Two entry points:** `cvg(app, { viewBox, width, height }, (s) => { ... })` for standalone, `cvgBuilder(app)` for builder-style.
 
 **SVG import pipeline:** `loadSvg(app, svgString)` for runtime, `transpileSvg()` for SVG → editable TypeScript. All path commands normalized to absolute M/L/C/Z. Tested against 199 W3C SVG files.

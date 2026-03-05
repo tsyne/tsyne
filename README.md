@@ -20,6 +20,40 @@
 
 ---
 
+## Constituent Modules (all Alpha)
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  Designer       Launchers (Desktop, PhoneTop)           │
+├───────────┬───────────┬───────────┬─────────────────────┤
+│  Cosyne   │    CVG    │ Cosyne 3D │       Trine         │
+│   (2D)    │   (SVG)   │   (3D)    │     (Three.js)      │
+├───────────┴───────────┴───────────┴─────────────────────┤
+│                     Tsyne Core                          │
+└─────────────────────────────────────────────────────────┘
+              ↕ IPC (stdio / gRPC / msgpack-uds)
+┌─────────────────────────────────────────────────────────┐
+│                     Tsyne Bridge                        │
+│  ┌───────────────────────────────────────────────────┐  │
+│  │                   Fyne Fork                       │  │
+│  │  ┌─────────────────────────────────────────────┐  │  │
+│  │  │  Shader Canvas, HoverableShader, BlendModes │  │  │
+│  │  │  Pointer Lock, Window.Move — OpenGL         │  │  │
+│  │  └─────────────────────────────────────────────┘  │  │
+│  └───────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────┘
+```
+
+- **Tsyne Core** (`core/`) — Pseudo-declarative TypeScript API: widgets, App/Window, state management, TsyneTest, browser mode
+- **Tsyne Bridge** (`core/bridge/`) — Go process: IPC routing, widget creation, dialogs, canvas, audio. The IPC gap means a non-TypeScript client could connect too
+- **Cosyne** (`cosyne/`) — Declarative 2D canvas: bindings, animations, events. Overlaps with CVG — older, has unique primitives (heatmap, gauge, dial, sprite)
+- **CVG** (`cosyne/src/cvg/`) — SVG-peer vector graphics: reactivity, perspective transforms, SVG import/transpile. Newer, may subsume Cosyne over time
+- **Cosyne 3D** (`cosyne/src/primitives3d/`) — Declarative 3D scene graphs: cameras, lights, materials, ray-cast hit detection. Software-rendered currently
+- **Trine** (`trine/`) — Three.js integration: WebGL2 proxy routing GL calls through Bridge to native OpenGL. 80+ example ports
+- **Fyne Fork** (`core/bridge/fyne-patches/`) — Patched Fyne v2.7.0 with Shader canvas, HoverableShader, blend modes, pointer lock, Window.Move()
+- **Designer** (`designer/`) — WYSIWYG visual UI builder with widget palette, property inspector, live preview
+- **Launchers** (`launchers/`) — Desktop (MDI, sandboxing) and PhoneTop (phone-style grid) hosting shells
+
 ## What is Tsyne?
 
 **Primarily**, Tsyne is an all-in-one markup and logic technology for building desktop applications on **Windows, Mac, and Linux** (including Chromebook). Phones too (Android via an apk, and PostmarketOS - as a linux launcher, iOS - TODO). It brings the power of [Fyne](https://fyne.io/), a modern Go UI toolkit, to the TypeScript/Node.js ecosystem with an elegant, pseudo-declarative API that I've been [thinking about for 20+ years](https://paulhammant.com/ui-markup-nirvana/). Lisp is the holy grail here, and y'all should check out [Chris Hinsleys' ChrysaLisp](https://github.com/vygr/ChrysaLisp) for that, but I'm trying to work out how close we can get with TypeScript and without [S-expressions](https://en.wikipedia.org/wiki/S-expression).

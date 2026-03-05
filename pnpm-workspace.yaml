@@ -37,6 +37,7 @@ packages:
   - 'ported-apps/alteredqualia-cars'
   - 'ported-apps/calcudoku'
   - 'ported-apps/chess'
+  - 'ported-apps/claude-usage-bar'
   - 'ported-apps/colordodge-kaleidoscope'
   - 'ported-apps/disk-tree'
   - 'ported-apps/edlin'
