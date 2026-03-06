@@ -128,6 +128,22 @@ TSYNE_HEADED=1 pnpm test ported-apps/trajans-column/index.tsyne.test.ts
 - `index.test.ts` - 15 unit tests (geometry rendering, state logic, click handlers)
 - `index.tsyne.test.ts` - Visual CosyneTest (renders diagram, tests wireframe toggling)
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 5/10 | `vbox > cosyne(column diagram) + label(status)`. The CVG diagram IS the UI |
+| **Core declarative** | Fluent method chaining | 3/10 | No `.withId()`. But 15 `.when()` predicates on `g()` groups for conditional wireframe overlays |
+| **Core declarative** | Programmatic generation | 6/10 | SVG geometry paths generated procedurally. Block sections with `onClick` handlers |
+| **State architecture** | Observable store | 3/10 | No Observable store. Block selection state managed via simple object |
+| **Declarative updates** | `.when()` + `.bindTo()` | 7/10 | **15 `when()` predicates** on SVG groups — clicking blocks toggles wireframe visibility via `refreshAllCosyneContexts()`. Strong reactive pattern |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | -1 | 1 `setContent()` call |
+| **Testing** | `.withId()` coverage | 1/10 | No widget IDs. Tests verify `when()` predicate evaluation directly |
+| **Design** | Separation of concerns | 7/10 | `column-geometry.ts` (750+ lines of SVG paths) cleanly separated from `index.ts` (thin UI wrapper) |
+| | **Overall** | **5/10** | Excellent use of `when()` for conditional visibility — 15 reactive predicates toggling wireframe overlays on click. Clean separation between geometry data and UI. A CVG showcase for the `when()` pattern |
+
 ## Attribution
 
 Original SVG diagram: [Trajans-Column-lower-animated.svg](https://commons.wikimedia.org/wiki/File:Trajans-Column-lower-animated.svg) by [Hk kng](https://commons.wikimedia.org/wiki/User:Hk_kng), licensed under the [Creative Commons Attribution-Share Alike 3.0 Unported](https://creativecommons.org/licenses/by-sa/3.0/deed.en) license. The SVG used SMIL animations which are a W3C standard but have limited browser support (deprecated in Chrome, re-enabled later). This port demonstrates that CVG's `onClick` + `when()` pattern provides a more portable equivalent.

@@ -229,6 +229,22 @@ a.window({ title: 'Food Truck Manager' }, (win) => {
 
 The entire application is contained in a single `index.ts` file (~450 lines), demonstrating Tsyne's ability to build complex, feature-rich applications without the overhead of webpack, build chains, or component frameworks. This is a direct contrast to the original Apple SwiftUI sample, which requires Xcode, Swift Package Manager, and multi-file project structure.
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 9/10 | Clean `hbox > vbox(sidebar, 220px) + vbox(viewStack)` split. Sidebar with nav buttons, spacer, and status label. Main area has 3 view containers. `buildContent()` reads as a complete layout spec |
+| **Core declarative** | Fluent method chaining | 8/10 | `.withId()` on sidebar buttons (`btn-orders`, `btn-sales`, `btn-weather`), section titles, per-order elements (`order-id-{id}`, `order-items-{id}`, `order-total-{id}`, `btn-ready-{id}`, `btn-complete-{id}`), per-sales elements (`sales-item-{id}`, `sales-bar-{id}`), weather fields. `.when()` on all 3 view containers |
+| **Core declarative** | Programmatic generation | 7/10 | Sales bar chart generated via `.bindTo()` with `Math.ceil(salesCount / 5)` for bar length calculation. Quick-add buttons manually listed (could be generated from menu items). Weather conditions array with random selection |
+| **State architecture** | Observable store | 8/10 | Full `FoodTruckStore` with `subscribe()`/`notifyChange()`. 3 data model types (`MenuItem`, `Order`, `WeatherData`). Defensive copies on `getOrders()`, `getMenuItems()`, `getWeather()`. Counter-based IDs (`order-004`). Analytics methods (`getTotalSales()`, `getTopSalesItems()`) |
+| **Declarative updates** | `.when()` + `.bindTo()` | 8/10 | 3 view containers (orders, sales, weather) use `.when()`. 3 lists use `.bindTo()` with `trackBy` + `empty` — pending orders, ready orders, top sales items. `viewStack.refresh()` in store subscription. Two `setText()` escapes: `statusSummary` and `totalSalesLabel`. Vestigial `rebuildOrdersView()` function exists but is unused |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | 1 | Uses `win.setContent(buildContent)` for initial render only. All subsequent updates via `.when()`, `.bindTo()`, and `viewStack.refresh()`. Minor penalty |
+| **Testing** | `.withId()` coverage | 9/10 | Excellent per-item IDs: `order-id-{id}`, `order-items-{id}`, `order-total-{id}`, `btn-ready-{id}`, `btn-complete-{id}`, `sales-item-{id}`, `sales-bar-{id}`. Also IDs on sidebar buttons, section titles, weather fields, status summary |
+| **Design** | Separation of concerns | 8/10 | `FoodTruckStore` is 140 lines of pure order/menu/weather logic. `buildFoodTruckApp()` is purely presentational. Sidebar+main layout cleanly separated. `showView()` helper is slightly imperative (updates `totalSalesLabel` directly) |
+| | **Overall** | **8/10** | Solid pseudo-declarative implementation with sidebar+main layout, 3 `.when()` containers, 3 `.bindTo()` lists with `trackBy` + `empty`, and excellent per-item `.withId()` coverage. ASCII bar charts in sales view are a nice touch. Gaps: two `setText()` escapes, vestigial `rebuildOrdersView()`, and quick-add buttons could be generated from menu items array |
+
 ## License
 
 Portions copyright Apple Inc and portions copyright Paul Hammant 2025

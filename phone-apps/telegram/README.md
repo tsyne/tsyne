@@ -73,6 +73,22 @@ The `MockTelegramService` initializes with sample data:
 - Pre-populated messages demonstrating conversation flows
 - Realistic timestamps and unread counts
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 8/10 | `hsplit > border(sidebar: search + chatList) + vbox(header + messages + input)` nesting. Rich messaging layout |
+| **Core declarative** | Fluent method chaining | 8/10 | `.withId()` on 52 elements — excellent coverage across all UI areas |
+| **Core declarative** | Programmatic generation | 7/10 | Loop-based chat list and message rendering |
+| **State architecture** | Observable store | 6/10 | `subscribe()`/`notifyChange()` pattern (5 subscribe, multiple notifyChange). Store-driven updates |
+| **Declarative updates** | `.when()` + `.bindTo()` | 4/10 | 2 `.bindTo()` for dynamic list rendering. No `.when()` or `.bindText()`. 3 `setText()` calls |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | 0 | No `removeAll()`/`setContent()` |
+| **Testing** | `.withId()` coverage | 8/10 | 52 IDs — comprehensive coverage |
+| **Design** | Separation of concerns | 7/10 | Store with subscribe pattern. API client separated. Builder methods well-organized |
+| | **Overall** | **7/10** | Strong store-driven architecture with excellent `.withId()` coverage (52) and `.bindTo()` for dynamic lists. The subscribe/notifyChange pattern drives reactive updates |
+
 ## License
 
 GNU General Public License v3.0

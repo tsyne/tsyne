@@ -82,6 +82,22 @@ ported-apps/gem-guesser/
 6. Reveal all gems before running out of 3 lives to win
 7. The game auto-selects the next available color when one is fully revealed
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 6/10 | `vbox > hbox(header) + cosyne(game grid) + hbox(color indicators)` nesting |
+| **Core declarative** | Fluent method chaining | 3/10 | No `.withId()`. No `.when()` or `.bindTo()` |
+| **Core declarative** | Programmatic generation | 8/10 | Nested loops creating 64 cell rects + color indicator boxes with `bindFill()`/`bindText()` |
+| **State architecture** | Observable store | 4/10 | Pure functional game state — all functions return new state. `refreshAllCosyneContexts()` triggers re-evaluation |
+| **Declarative updates** | `.when()` + `.bindTo()` | 7/10 | **`.bindFill()`** on all cells and indicators, **`.bindText()`** on score/status labels, **`.bindStroke()`** for selection highlighting. Heavy reactive binding usage |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | -2 | 2 `setContent()` calls |
+| **Testing** | `.withId()` coverage | 1/10 | No widget IDs |
+| **Design** | Separation of concerns | 8/10 | Pure functional game logic (no mutations) cleanly separated from Cosyne rendering layer |
+| | **Overall** | **5/10** | Strong reactive Cosyne bindings (`bindFill`, `bindText`, `bindStroke`) and pure functional game logic. Excellent programmatic grid generation. Weak on `.withId()` coverage. The binding pattern here is a good showcase for Cosyne's reactive model |
+
 ## Technical Notes
 
 - Game logic is pure functional (no mutations, all functions return new state)

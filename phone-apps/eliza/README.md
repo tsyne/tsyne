@@ -82,6 +82,22 @@ ELIZA was groundbreaking in demonstrating:
 
 Many users became emotionally attached to ELIZA, revealing insights about human-computer interaction that remain relevant today.
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 6/10 | `vbox > scroll(messages) + hbox(input + send button)` nesting. Chat UI layout |
+| **Core declarative** | Fluent method chaining | 5/10 | `.withId()` on 9 elements. No `.when()` or `.bindTo()` |
+| **Core declarative** | Programmatic generation | 3/10 | Messages appended imperatively, not loop-generated |
+| **State architecture** | Observable store | 2/10 | No Observable store. Chat state managed directly |
+| **Declarative updates** | `.when()` + `.bindTo()` | 1/10 | No reactive bindings. 3 `setText()` calls |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | -1 | 1 `removeAll()` for clearing chat |
+| **Testing** | `.withId()` coverage | 5/10 | IDs on input, send button, message container |
+| **Design** | Separation of concerns | 6/10 | ELIZA pattern matching engine separated from chat UI |
+| | **Overall** | **4/10** | Simple chat UI with ELIZA engine. No reactive patterns — messages appended imperatively |
+
 ## References
 
 - Weizenbaum, Joseph (1966). "ELIZA—A Computer Program For the Study of Natural Language Communication Between Man And Machine". *Communications of the ACM*. 9 (1): 36–45.

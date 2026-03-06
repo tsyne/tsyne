@@ -241,3 +241,19 @@ For large contact lists (1000+):
 - `contacts-service.ts` - Contacts service interface and mock implementation
 - `contacts.test.ts` - Comprehensive tests (13 UI + 34 unit)
 - `README.md` - This file
+
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 7/10 | `vbox > hbox(search) + scroll(contact list)` nesting. List-detail contact layout |
+| **Core declarative** | Fluent method chaining | 6/10 | `.withId()` on 13 elements: search, contact items, action buttons. No `.when()` or `.bindTo()` |
+| **Core declarative** | Programmatic generation | 7/10 | Loop-based contact list rendering via `forEach`. Contact cards built from data |
+| **State architecture** | Observable store | 5/10 | `subscribe()` pattern (3 calls). Store-driven contact list updates |
+| **Declarative updates** | `.when()` + `.bindTo()` | 1/10 | No reactive bindings. No `setText()` — rebuilds via `destroyChildren()` |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | -1 | 1 `destroyChildren()` for list refresh |
+| **Testing** | `.withId()` coverage | 6/10 | IDs on search, contact items, action buttons |
+| **Design** | Separation of concerns | 7/10 | Service injection (IContactsService) with mock. 47 tests (13 UI + 34 unit) |
+| | **Overall** | **5/10** | Good service injection and contact list generation. Uses `destroyChildren()` rebuild rather than `.bindTo()` |

@@ -57,6 +57,22 @@ cd ported-apps/calcudoku
 npx jest --forceExit
 ```
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 7/10 | Clean `vbox > hbox(header buttons) + separator + grid(NxN cells) + separator + hbox(number buttons)` nesting. Grid size adapts to puzzle level |
+| **Core declarative** | Fluent method chaining | 6/10 | `.withId()` on resetBtn, solveBtn, prevBtn, levelLabel, nextBtn, cell-*, numBtn*, clearBtn. No `.when()` or `.bindTo()` |
+| **Core declarative** | Programmatic generation | 8/10 | Nested loops generating NxN grid cells with dynamic styling. Number buttons generated from array. Grid size driven by puzzle data |
+| **State architecture** | Observable store | 5/10 | Game callbacks (`onUpdate`/`onWin`) rather than full Observable store. No `subscribe()`/`notifyChange()` pattern. Game state managed in separate class |
+| **Declarative updates** | `.when()` + `.bindTo()` | 1/10 | No `.when()`, `.bindTo()`, or `.bindText()`. 2+ `setText()` calls. Cell updates via direct widget reference mutation |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | 0 | No penalty — initial setup only |
+| **Testing** | `.withId()` coverage | 7/10 | IDs on all buttons, level label, and per-cell elements (`cell-*`). Good for testing grid interactions |
+| **Design** | Separation of concerns | 7/10 | Game logic separated from UI. Puzzle generation, validation, and solving in game class. UI builder is presentational |
+| | **Overall** | **5/10** | Strong programmatic grid generation from puzzle data. Good `.withId()` coverage. But uses callback pattern instead of Observable store, and no reactive bindings (`.when()`, `.bindTo()`, `.bindText()`). The grid puzzle paradigm naturally suits loop-based generation but misses declarative update patterns |
+
 ## Credits
 
 Portions copyright Paul Hammant 2026

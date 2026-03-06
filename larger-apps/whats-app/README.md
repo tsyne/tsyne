@@ -149,6 +149,22 @@ TSYNE_HEADED=1 TAKE_SCREENSHOTS=1 npm test
 - Event subscriptions
 - Login/logout flow
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 8/10 | `hsplit > border(sidebar: search + chatList) + vbox(header + messages + input)` nesting. Rich messaging layout |
+| **Core declarative** | Fluent method chaining | 8/10 | `.withId()` on 43 elements — excellent coverage. `.when()` for conditional rendering. `.bindTo()` for dynamic lists |
+| **Core declarative** | Programmatic generation | 7/10 | Loop-based filter button generation. Message list and contact list built dynamically |
+| **State architecture** | Observable store | 4/10 | No formal Observable store. State managed via class properties with `rebuildUI()` |
+| **Declarative updates** | `.when()` + `.bindTo()` | 5/10 | 1 `.when()` for conditional rendering. 2 `.bindTo()` for dynamic list rendering with `items`/`render`/`trackBy`. No `.bindText()` |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | -2 | 2 `setContent()`/`rebuildUI()` calls for full UI rebuilds |
+| **Testing** | `.withId()` coverage | 8/10 | 43 IDs — excellent coverage across sidebar, chat area, message input, filter buttons |
+| **Design** | Separation of concerns | 6/10 | UI builder methods well-organized. API client separated. But state and UI in same class |
+| | **Overall** | **6/10** | Strong `.withId()` coverage (43) and uses `.bindTo()` for list rendering and `.when()` for conditional views. The `rebuildUI()` pattern prevents higher score — moving to Observable store with granular bindings would push this to 8/10 |
+
 ## Credits
 
 This is a port of [waha-tui](https://github.com/muhammedaksam/waha-tui) from terminal UI to Tsyne's native desktop GUI framework.

@@ -89,6 +89,22 @@ export const DeDE: KeyboardLayout = {
 npm test -- phone-apps/keyboard/keyboard.test.ts
 ```
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 7/10 | `vbox > hbox(row1) + hbox(row2) + hbox(row3)` keyboard rows |
+| **Core declarative** | Fluent method chaining | 2/10 | No `.withId()`. No `.when()` or `.bindTo()` |
+| **Core declarative** | Programmatic generation | 9/10 | **Textbook example** — each row generated from character arrays via loop. "The logic for creating a button is written once and reused for every key in the row" |
+| **State architecture** | Observable store | 1/10 | No state management — pure UI scaffold |
+| **Declarative updates** | `.when()` + `.bindTo()` | 1/10 | No reactive bindings |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | 0 | No penalty |
+| **Testing** | `.withId()` coverage | 1/10 | No IDs |
+| **Design** | Separation of concerns | 5/10 | Minimal app — keyboard layout only |
+| | **Overall** | **4/10** | The canonical example of programmatic row generation from the pseudo-declarative docs. Tiny app (49 lines) that demonstrates the loop pattern perfectly, but no other patterns present |
+
 ## License
 
 MIT License - see [LICENSE](LICENSE)

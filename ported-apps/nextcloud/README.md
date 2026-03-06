@@ -418,6 +418,22 @@ interface SyncItem {
 - Conflict resolution UI
 - Two-factor authentication support
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 9/10 | Clean `vbox > hbox(header) + separator + hbox(tabs) + separator + hbox(status) + separator + vbox(viewStack)` nesting. `buildContent()` defines header, tab bar, status area, and 4 tab containers in a single tree |
+| **Core declarative** | Fluent method chaining | 8/10 | `.withId()` on all tab buttons (`tab-files`, `tab-sync`, `tab-shared`, `tab-account`), action buttons (`btn-upload`, `btn-new-folder`, `btn-search`), per-file elements (`file-{id}`, `file-date-{id}`, `btn-share-{id}`, `btn-delete-{id}`), status labels, section titles. `.when()` on all 4 containers |
+| **Core declarative** | Programmatic generation | 6/10 | Lists driven by `.bindTo()` but no loop-based UI generation for structural elements. Tab buttons and status labels are manually listed. Sync status icon derived from object lookup |
+| **State architecture** | Observable store | 9/10 | Full `NextCloudStore` with `subscribe()`/`notifyChange()`. 3 data model types (`CloudFile`, `Account`, `SyncItem`). Defensive copies on `getFiles()`, `getAllFiles()`, `getSyncItems()`, `getAccount()`. Counter-based IDs (`sync-003`). Rich analytics methods (`formatBytes()`, `getStoragePercentage()`) |
+| **Declarative updates** | `.when()` + `.bindTo()` | 9/10 | 4 tab containers (files, sync, shared, account) use `.when()`. 3 lists use `.bindTo()` with `trackBy` + `empty` callbacks — files, sync items, shared files. `viewStack.refresh()` in store subscription. Four `setText()` escapes for `accountStatusLabel`, `storageLabel`, `fileCountLabel`, `syncProgressLabel`. `showForm()` and `showEntryDialog()` for CRUD |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | 1 | Uses `win.setContent(buildContent)` for initial render only. All subsequent updates via `.when()`, `.bindTo()`, and `viewStack.refresh()`. Minor penalty |
+| **Testing** | `.withId()` coverage | 9/10 | Excellent per-item IDs: `file-{id}`, `file-date-{id}`, `btn-share-{id}`, `btn-delete-{id}`, `sync-{id}`, `sync-progress-{id}`, `shared-{id}`, `shared-size-{id}`, `btn-unshare-{id}`. Also IDs on all tab buttons, action buttons, status labels, account fields. 37 Jest tests |
+| **Design** | Separation of concerns | 9/10 | `NextCloudStore` is 250 lines of pure file/sync logic (no UI). `buildNextCloudApp()` is purely presentational. Store handles files, sync items, account, storage analytics — all with `notifyChange()`. `formatBytes()` utility in store |
+| | **Overall** | **9/10** | Strong pseudo-declarative implementation with 4 tabs, 3 `.bindTo()` lists with `trackBy` + `empty`, `showForm()`/`showEntryDialog()` for CRUD, and excellent per-item `.withId()` coverage. The main gap is four `setText()` escapes on status labels (could use `.bindText()`). The per-item ID pattern (`file-{id}`, `sync-{id}`) is exemplary |
+
 ## License
 
 Portions copyright NextCloud Inc and portions copyright Paul Hammant 2025

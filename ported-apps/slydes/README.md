@@ -120,3 +120,19 @@ This port demonstrates:
 - [ ] Export to PDF
 - [ ] Keyboard shortcuts in editor
 - [ ] Auto-save functionality
+
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 7/10 | Uses `hsplit()` for editor/preview panes. Editor panel with toolbar buttons. Preview panel with heading/subheading/content labels. Separate presentation window with similar layout. `buildContent()` defines clear split-pane structure |
+| **Core declarative** | Fluent method chaining | 7/10 | `.withId()` on 24+ elements: btn-new, btn-open, btn-save, btn-add-slide, btn-present, editor-label, preview-label, editor, slide-count, current-slide, preview-heading/subheading/content, presentation-heading/subheading/content, presentation-status, and navigation buttons |
+| **Core declarative** | Programmatic generation | 3/10 | No loop-based UI generation for widgets. Slides are rendered one at a time in the preview pane, not as a list |
+| **State architecture** | Observable store | 7/10 | `SlideStore` with `subscribe()`/`notifyChange()`. Manages slides array, current index, config. Markdown parsing via `parsePresentation()`. Navigation methods (next/previous/goTo). No defensive copies (returns slide references directly) |
+| **Declarative updates** | `.when()` + `.bindTo()` | 2/10 | No `.when()`, no `.bindTo()`, no `.bindText()`. 10 `setText()` calls in `refreshPreview()` — updates heading, subheading, content, slide count, current slide, editor, and presentation labels. All imperative widget updates |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | 0 | No penalty — initial setup only. All subsequent updates via `setText()` |
+| **Testing** | `.withId()` coverage | 8/10 | Excellent coverage with 24+ IDs on all interactive elements, labels, and presentation window widgets. Good for TsyneTest assertions |
+| **Design** | Separation of concerns | 7/10 | `SlideStore` handles slide parsing and navigation (no UI). `parser.ts` is pure markdown parsing. `buildSlydesApp()` is presentational. Minor concern: `refreshPreview()` has 10 imperative `setText()` calls |
+| | **Overall** | **5/10** | Good Observable store with markdown parsing and clean split-pane layout. Excellent `.withId()` coverage (24+ IDs). But heavily reliant on `setText()` for all updates (10 calls). No `.when()`, `.bindTo()`, or reactive bindings. The presentation paradigm (one slide at a time) doesn't naturally lend itself to list-based declarative patterns, but `.bindText()` on heading/content labels would improve the score significantly |

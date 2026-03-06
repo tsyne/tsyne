@@ -270,6 +270,22 @@ True color (24-bit) is converted to nearest 256-color value.
 - **Tsyne Framework**: Paul Hammant and contributors
 - **Fyne GUI Toolkit**: fyne.io team
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 3/10 | Minimal widget layout — monolithic TextGrid widget IS the entire UI |
+| **Core declarative** | Fluent method chaining | 1/10 | 0 `.withId()` calls. No `.when()` or `.bindTo()` |
+| **Core declarative** | Programmatic generation | 5/10 | Extensive loop-based terminal cell rendering (127+ loops) but these are character-level output, not widget generation |
+| **State architecture** | Observable store | 2/10 | No Observable store. Terminal state managed via ANSI escape code parser and PTY process |
+| **Declarative updates** | `.when()` + `.bindTo()` | 1/10 | No reactive bindings. 1 `setText()` call. Updates via direct TextGrid cell manipulation |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | -1 | 1 `setContent()` call |
+| **Testing** | `.withId()` coverage | 1/10 | No IDs at all |
+| **Design** | Separation of concerns | 6/10 | ANSI parser, PTY management, and rendering are reasonably separated within the 4000+ line codebase |
+| | **Overall** | **2/10** | A terminal emulator is fundamentally imperative — character-by-character cell rendering with ANSI escape codes doesn't map to pseudo-declarative patterns. The TextGrid widget IS the entire UI |
+
 ## License
 
 See the original [fyne-io/terminal](https://github.com/fyne-io/terminal) repository for licensing information.

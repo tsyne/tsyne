@@ -46,6 +46,22 @@ cd ported-apps/peg-solitaire
 npx jest --forceExit
 ```
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 7/10 | Clean `vbox > hbox(buttons) + separator + grid(7x7 board) + separator + label(status)` nesting. Cross-shaped board with invalid positions filtered |
+| **Core declarative** | Fluent method chaining | 5/10 | `.withId()` on resetBtn, undoBtn, cell-*, statusLabel. No `.when()` or `.bindTo()` |
+| **Core declarative** | Programmatic generation | 8/10 | Nested loop generating 49 cells, filtering invalid positions for cross shape. Cell appearance driven by game state |
+| **State architecture** | Observable store | 5/10 | Game callbacks (`onUpdate`/`onWin`) rather than full Observable store. Board state managed in game class |
+| **Declarative updates** | `.when()` + `.bindTo()` | 1/10 | No `.when()`, `.bindTo()`, or `.bindText()`. 1 `setText()` call. Cell color updates via direct widget mutation |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | 0 | No penalty |
+| **Testing** | `.withId()` coverage | 6/10 | IDs on buttons, per-cell elements, status label |
+| **Design** | Separation of concerns | 7/10 | Game logic (board state, move validation, undo) separated from UI. Builder is presentational |
+| | **Overall** | **5/10** | Good programmatic grid generation with cross-shape filtering. Clean layout. But no Observable store or reactive bindings |
+
 ## Credits
 
 Ported from [ChrysaLisp](https://github.com/vygr/ChrysaLisp) solitaire app by **Chris Hinsley**.

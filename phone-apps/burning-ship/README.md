@@ -23,3 +23,19 @@ The dramatic Burning Ship fractal with its distinctive ship-like shape.
 ## Algorithm
 
 The Burning Ship uses `z = (|Re(z)| + i|Im(z)|)² + c`, where the absolute values of the real and imaginary parts create the distinctive "burning ship" appearance with its hull and masts.
+
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 6/10 | `vbox > hbox(controls) + center(canvasRaster)` nesting |
+| **Core declarative** | Fluent method chaining | 5/10 | `.withId()` on 8 elements. No `.when()` or `.bindTo()` |
+| **Core declarative** | Programmatic generation | 2/10 | No loop-based widget generation. Fractal rendered via GPU shader |
+| **State architecture** | Observable store | 3/10 | No Observable store. Fractal parameters managed directly |
+| **Declarative updates** | `.when()` + `.bindTo()` | 1/10 | No reactive bindings. 2 `setText()` calls |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | 0 | No penalty |
+| **Testing** | `.withId()` coverage | 5/10 | IDs on controls |
+| **Design** | Separation of concerns | 5/10 | Shared fractal utilities via `fractal-utils.ts` |
+| | **Overall** | **4/10** | Same fractal app pattern — control panel wrapping GPU shader |

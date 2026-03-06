@@ -223,6 +223,22 @@ a.vbox(() => {})
   });
 ```
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 9/10 | Clean `hbox > vbox(sidebar) + vbox(main)` split. `buildContent()` defines sidebar (profile, nav, user label) and main area (stats, viewStack with 4 containers) in a single readable tree. Room detail view nested inline with message compose bar |
+| **Core declarative** | Fluent method chaining | 8/10 | `.withId()` on tab buttons (`tab-rooms`, `tab-directs`, `tab-settings`), section titles, stats/user labels, message input. `.withBold()`, `.withSize()`, `.withPadding()`, `.withMinWidth()` for styling. `.when()` on all 4 containers. `.bindTo()` with `trackBy` on 5 lists |
+| **Core declarative** | Programmatic generation | 6/10 | Lists driven by `.bindTo()` but tab buttons and sidebar elements are manually listed. Reactions rendered via `.map().join()` inside message renderer. No loop-based UI generation for structural elements |
+| **State architecture** | Observable store | 9/10 | Full `ElementStore` with `subscribe()`/`notifyChange()`. 6 data model types (`MatrixUser`, `MatrixRoom`, `MatrixMessage`, `NotificationRule`, `DirectChat`, `UserSession`). Defensive copies on `getRooms()`, `getDirectChats()`, `getNotificationRules()`, `getSessions()`, `getCurrentUser()`. Counter-based IDs (`msg-003`) |
+| **Declarative updates** | `.when()` + `.bindTo()` | 8/10 | 4 containers use `.when()` — rooms list, room detail (with compound condition `currentRoom !== null`), direct messages, settings. 5 lists use `.bindTo()` with `trackBy` — rooms, room messages, direct chats, notification rules, sessions. Two `setText()` escapes for `userLabel` and `statsLabel`. Room detail uses `if (currentRoom)` guard inside `buildContent` — imperative but necessary for capturing the room reference |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | 1 | Uses `win.setContent(buildContent)` for initial render only. All subsequent updates via `.when()`, `.bindTo()`, and `viewStack.refresh()`. Minor penalty for initial setContent pattern |
+| **Testing** | `.withId()` coverage | 7/10 | IDs on tab buttons, section titles (`rooms-title`, `directs-title`, `settings-title`), stats/user labels, message input. Per-item IDs not present in list renderers (items identified by `trackBy` instead) |
+| **Design** | Separation of concerns | 9/10 | `ElementStore` is 290 lines of pure Matrix protocol logic (rooms, messages, users, notifications, sessions) with no UI imports. `buildElementApp()` is purely presentational. Store drives all state transitions via `notifyChange()`. Sidebar + main content layout cleanly separated |
+| | **Overall** | **8/10** | Strong pseudo-declarative implementation with sidebar+main layout, 4 `.when()` containers (including compound room detail condition), 5 `.bindTo()` lists with `trackBy`, and a rich Observable store covering 6 data types. The gaps are two `setText()` escapes on header labels (could use `.bindText()`) and per-item `.withId()` missing in list renderers. The `if (currentRoom)` guard for room detail is a pragmatic compromise for capturing the selected room reference |
+
 ## License
 
 Copyright (c) 2013–2025 Matrix Foundation

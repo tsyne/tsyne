@@ -113,6 +113,22 @@ Features:
 - Control button responses
 - Canvas rendering verification
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 7/10 | Rich `vbox > hbox(controls) + canvasRaster(map)` nesting with 13 layout containers |
+| **Core declarative** | Fluent method chaining | 6/10 | `.withId()` on 14 elements: simulation controls, stat labels, mode toggles. No `.when()` or `.bindTo()` |
+| **Core declarative** | Programmatic generation | 3/10 | Minimal loop-based widget generation. Map rendered via GPU shader |
+| **State architecture** | Observable store | 3/10 | No Observable store. Simulation state managed directly in class |
+| **Declarative updates** | `.when()` + `.bindTo()` | 1/10 | No reactive bindings. 13 `setText()` calls for simulation stats |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | -1 | 1 `setContent()` call |
+| **Testing** | `.withId()` coverage | 6/10 | Good coverage on simulation controls and stat displays |
+| **Design** | Separation of concerns | 6/10 | GPU shader computation separated from UI controls. Heavy use of imperative `setText()` for real-time stats |
+| | **Overall** | **4/10** | Rich control panel with good `.withId()` coverage wrapping a GPU shader simulation. No Observable store or reactive bindings — 13 `setText()` calls drive all updates |
+
 ## License
 
 **CC0-1.0 (Public Domain)**

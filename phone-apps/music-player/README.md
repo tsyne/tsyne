@@ -199,3 +199,19 @@ To implement actual playback:
 - `music-service.ts` - Music service interface and mock implementation
 - `music-player.test.ts` - Comprehensive tests
 - `README.md` - This file
+
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 7/10 | `vbox > hbox(now playing) + scroll(track list) + hbox(controls)` nesting. Media player layout |
+| **Core declarative** | Fluent method chaining | 6/10 | `.withId()` on 11 elements: play/pause/skip buttons, track items, search. No `.when()` or `.bindTo()` |
+| **Core declarative** | Programmatic generation | 6/10 | Loop-based track list rendering via `forEach` |
+| **State architecture** | Observable store | 5/10 | `subscribe()` pattern (3 calls). Store-driven playlist updates |
+| **Declarative updates** | `.when()` + `.bindTo()` | 1/10 | No reactive bindings. 3 `setText()` calls for track info/time display |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | -1 | 1 `destroyChildren()` for track list refresh |
+| **Testing** | `.withId()` coverage | 6/10 | IDs on playback controls and track items |
+| **Design** | Separation of concerns | 7/10 | Service injection (IMusicService) with mock for testing |
+| | **Overall** | **5/10** | Good service injection and subscribe pattern. Uses `destroyChildren()` for list updates rather than `.bindTo()` |

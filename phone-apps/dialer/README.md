@@ -260,3 +260,19 @@ mmcli -m 0 --call=<id> --hangup
 - `modemmanager-service.ts` - ModemManager service interface and mock implementation
 - `dialer.test.ts` - Comprehensive tests
 - `README.md` - This file
+
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 7/10 | `vbox > label(display) + grid(numpad) + hbox(call buttons)` nesting. Phone dialer layout |
+| **Core declarative** | Fluent method chaining | 6/10 | `.withId()` on 12 elements: numpad digits, call/hangup buttons, display. No `.when()` or `.bindTo()` |
+| **Core declarative** | Programmatic generation | 8/10 | Nested `forEach` loops generating 4x3 numpad grid from digit arrays |
+| **State architecture** | Observable store | 3/10 | No Observable store. Dialer state managed directly |
+| **Declarative updates** | `.when()` + `.bindTo()` | 1/10 | No reactive bindings. 2 `setText()` calls for phone number display |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | 0 | No penalty |
+| **Testing** | `.withId()` coverage | 6/10 | IDs on all numpad buttons and display |
+| **Design** | Separation of concerns | 7/10 | Service injection (IModemManagerService) with mock for testing |
+| | **Overall** | **5/10** | Good programmatic numpad generation (nested loops from arrays) and service injection. No reactive bindings |

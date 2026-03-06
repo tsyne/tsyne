@@ -84,6 +84,22 @@ private renderCell(index: number): void {
 
 Both achieve declarative UI composition - Lisp through S-expressions, TypeScript through fluent callbacks.
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 7/10 | `vbox > hbox(header) + scroll(grid) + hbox(controls)` nesting |
+| **Core declarative** | Fluent method chaining | 7/10 | `.withId()` on 23 elements: mine cells, control buttons, stat labels. No `.when()` or `.bindTo()` |
+| **Core declarative** | Programmatic generation | 8/10 | Nested loops generating grid cells dynamically. Board size configurable |
+| **State architecture** | Observable store | 3/10 | No Observable store. Game state managed directly with `refreshUI()` rebuilds |
+| **Declarative updates** | `.when()` + `.bindTo()` | 1/10 | No reactive bindings. 2 `setText()` calls |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | 0 | No `removeAll()`/`setContent()` |
+| **Testing** | `.withId()` coverage | 7/10 | Good coverage on cells and controls |
+| **Design** | Separation of concerns | 6/10 | Game logic (mine placement, flood fill, win detection) in same class but reasonably organized |
+| | **Overall** | **5/10** | Strong programmatic grid generation with good `.withId()` coverage. No reactive bindings — uses `refreshUI()` for updates |
+
 ## License
 
 Portions copyright ChrysaLisp contributors.

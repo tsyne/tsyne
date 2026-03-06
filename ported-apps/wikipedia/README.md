@@ -277,6 +277,22 @@ interface LanguageOption {
 }
 ```
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 9/10 | Clean `vbox > hbox + separator + vbox` nesting. `buildContent()` defines header, search bar, tab bar, and 4 tab containers in a single tree. Each tab container is self-contained with title, stats, and `.bindTo()` list |
+| **Core declarative** | Fluent method chaining | 8/10 | `.withId()` on tab buttons, section titles, search input, stats/language labels. `.withBold()`, `.withSize()`, `.withPadding()` for styling. `.when()` on all 4 tab containers. `.bindTo()` with `trackBy` on 4 lists |
+| **Core declarative** | Programmatic generation | 6/10 | Lists driven by `.bindTo()` but no loop-based UI generation. Tab buttons and header elements are manually listed. Mock search generates results programmatically |
+| **State architecture** | Observable store | 9/10 | Full `WikipediaStore` with `subscribe()`/`notifyChange()`. 6 data model types. Defensive copies on `getSearchHistory()`, `getReadingList()`, `getReadingHistory()`, `getFeaturedContent()`, `getLanguages()`, `getCurrentLanguage()`. Counter-based IDs (`article-004`, `saved-003`, `history-004`) |
+| **Declarative updates** | `.when()` + `.bindTo()` | 9/10 | 4 tab containers (search, explore, saved, history) use `.when()`. 4 lists use `.bindTo()` with `trackBy` — search results, featured content, saved articles, reading history. `viewStack.refresh()` in store subscription. Two `setText()` escapes for `statsLabel` and `languageLabel` |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | 1 | Uses `win.setContent(buildContent)` for initial render, but all subsequent updates go through `.when()`, `.bindTo()`, and `viewStack.refresh()`. Minor penalty |
+| **Testing** | `.withId()` coverage | 7/10 | IDs on tab buttons, section titles, search input, stats/language labels. Per-item IDs not present in list renderers (items identified by `trackBy` instead) |
+| **Design** | Separation of concerns | 9/10 | `WikipediaStore` is 445 lines of pure data logic (search, reading lists, history, featured content, languages, statistics). `buildWikipediaApp()` is purely presentational. Complex data model (6 interfaces) cleanly separated from UI |
+| | **Overall** | **8/10** | Solid pseudo-declarative implementation with 4 tabs, 4 dynamic lists, and a rich Observable store covering 6 data types. The main gaps are two `setText()` escapes and lack of per-item `.withId()` in list renderers. Using `.bindText()` for the header labels and adding IDs to rendered items would push this to 9/10 |
+
 ## License
 
 Copyright (c) 2013–2025 Wikimedia Foundation

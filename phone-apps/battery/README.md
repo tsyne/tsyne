@@ -61,3 +61,19 @@ Reads from standard Linux power supply sysfs interface:
 cd phone-apps/battery
 npm test
 ```
+
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 5/10 | VBox/HBox nesting via JSX-like functional components |
+| **Core declarative** | Fluent method chaining | 1/10 | No `.withId()`. No `.when()` or `.bindTo()`. Uses JSX-like function pattern instead of fluent API |
+| **Core declarative** | Programmatic generation | 2/10 | No loop-based widget generation. Static battery display |
+| **State architecture** | Observable store | 2/10 | No Observable store. Battery state updated via `setInterval` |
+| **Declarative updates** | `.when()` + `.bindTo()` | 1/10 | No reactive bindings. 8 `setText()` calls for battery stats |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | 0 | No penalty |
+| **Testing** | `.withId()` coverage | 1/10 | No IDs |
+| **Design** | Separation of concerns | 4/10 | Battery reading and UI mixed together |
+| | **Overall** | **2/10** | Uses JSX-like functional component pattern instead of Tsyne's fluent API. Heavy `setText()` usage for stats. No reactive bindings or IDs |

@@ -120,6 +120,22 @@ npx tsx ported-apps/script-schmiede-fractals/index.ts
 pnpm test ported-apps/script-schmiede-fractals/index.test.ts
 ```
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 7/10 | `vbox > hbox(controls) + center(canvasRaster) + hbox(fractal buttons)` nesting. Multiple control rows |
+| **Core declarative** | Fluent method chaining | 6/10 | `.withId()` on 16 elements: fractal type buttons, parameter controls, zoom buttons. No `.when()` or `.bindTo()` |
+| **Core declarative** | Programmatic generation | 7/10 | Loop-based fractal button grid generation from array of fractal types |
+| **State architecture** | Observable store | 3/10 | No Observable store. Fractal parameters managed directly in class |
+| **Declarative updates** | `.when()` + `.bindTo()` | 1/10 | No reactive bindings. 7 `setText()` calls for parameter/status labels |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | -1 | 1 `setContent()` call |
+| **Testing** | `.withId()` coverage | 7/10 | Good coverage on fractal buttons and parameter controls |
+| **Design** | Separation of concerns | 6/10 | Fractal computation separated from UI controls. Canvas rendering via `setPixelBuffer()` |
+| | **Overall** | **5/10** | Good programmatic button generation and `.withId()` coverage. Canvas-rendered fractals with imperative parameter updates |
+
 ## License
 
 BSD-3-Clause

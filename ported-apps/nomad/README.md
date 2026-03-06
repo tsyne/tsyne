@@ -72,6 +72,22 @@ Tests cover:
 - `nomad-tsyne.test.ts` - TsyneTest UI rendering verification
 - `nomad.tsyne-interactivity.test.ts` - Interactive UI flow tests
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 6/10 | `border > vbox(header) + stack(city cards)` nesting. Multiple layout containers |
+| **Core declarative** | Fluent method chaining | 5/10 | `.withId()` on 8 elements. No `.when()` or `.bindTo()` |
+| **Core declarative** | Programmatic generation | 7/10 | Loop-based city card generation — iterates timezone data to build card widgets dynamically |
+| **State architecture** | Observable store | 3/10 | No Observable store. City/timezone data managed directly |
+| **Declarative updates** | `.when()` + `.bindTo()` | 1/10 | No reactive bindings. 2 `setText()` calls for time updates |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | -2 | 2 `setContent()` calls for UI rebuilds |
+| **Testing** | `.withId()` coverage | 5/10 | IDs on key elements but limited coverage |
+| **Design** | Separation of concerns | 6/10 | Timezone logic somewhat separated from UI builder |
+| | **Overall** | **4/10** | Good programmatic city card generation but no Observable store, no reactive bindings, and uses `setContent()` for rebuilds |
+
 ## License
 
 Original: BSD 3-Clause (Fyne Labs)

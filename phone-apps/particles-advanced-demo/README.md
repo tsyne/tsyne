@@ -256,6 +256,22 @@ TSYNE_HEADED=1 pnpm test -- particles-advanced-demo/particles-advanced-demo.test
 - 45 = narrow cone
 - 0 = single direction (no spread)
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 6/10 | `vbox > hbox(controls) + canvasStack(particles)` nesting |
+| **Core declarative** | Fluent method chaining | 5/10 | `.withId()` on 6 elements. 2 `.when()` for conditional rendering |
+| **Core declarative** | Programmatic generation | 5/10 | Particle system generated programmatically |
+| **State architecture** | Observable store | 3/10 | No full Observable store. Animation state managed directly |
+| **Declarative updates** | `.when()` + `.bindTo()` | 4/10 | **2 `.when()` predicates** for conditional section visibility. `clearAllCosyneContexts()` for reactive updates |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | 0 | No `removeAll()`/`setContent()` |
+| **Testing** | `.withId()` coverage | 4/10 | Limited IDs |
+| **Design** | Separation of concerns | 5/10 | Particle physics and rendering in same file |
+| | **Overall** | **4/10** | Uses `.when()` for conditional visibility. Particle animation with Cosyne canvas |
+
 ## See Also
 
 - [D3/P5 Components Guide](../../cosyne/D3_P5_COMPONENTS.md)

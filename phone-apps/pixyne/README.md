@@ -158,6 +158,22 @@ Settings are automatically persisted:
 - `pixyne.test.ts` - Jest unit tests (phone-apps)
 - `pixyne-tsyne.test.ts` - Tsyne UI tests (phone-apps and core/src)
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 7/10 | `vbox > hbox(toolbar) + scroll(photo grid)` nesting. Photo gallery layout |
+| **Core declarative** | Fluent method chaining | 6/10 | `.withId()` on 12 elements. No `.when()` or `.bindTo()` |
+| **Core declarative** | Programmatic generation | 7/10 | Loop-based photo thumbnail generation from data array |
+| **State architecture** | Observable store | 3/10 | No Observable store. Photo state managed with `refreshUI()` |
+| **Declarative updates** | `.when()` + `.bindTo()` | 1/10 | No reactive bindings. No `setText()` calls |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | 0 | No `removeAll()`/`setContent()` |
+| **Testing** | `.withId()` coverage | 6/10 | IDs on toolbar buttons and photo items |
+| **Design** | Separation of concerns | 5/10 | Photo management and UI in single file |
+| | **Overall** | **5/10** | Good loop-based photo grid generation. Clean layout but no reactive bindings |
+
 ## License
 
 MIT License

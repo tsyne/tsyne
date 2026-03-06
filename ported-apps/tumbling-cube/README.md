@@ -22,6 +22,22 @@ A 3D cube with Rubik's-colored faces (3 opaque, 3 translucent) continuously rota
 
 The CVG version creates its polygons at `(0, 0)` with vertices in absolute screen coordinates, which is a slight abuse of the relative-vertex model. It works because `x=0, y=0` means the offset is zero. A purist might want the vertices relative to a center point, but for a rotating cube where every vertex changes every frame, absolute coordinates are simpler and there's no meaningful "center" to be relative to.
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 3/10 | Single `canvasStack` scaffold. No widget chrome |
+| **Core declarative** | Fluent method chaining | 1/10 | No `.withId()`, no `.when()`. `index.ts` is purely imperative |
+| **Core declarative** | Programmatic generation | 6/10 | Loop + map for 6 face paths and 12 edge lines |
+| **State architecture** | Observable store | 2/10 | No Observable store. Rotation state in local variables |
+| **Declarative updates** | `.when()` + `.bindTo()` | 1/10 | `index.ts`: no bindings, manual `.update()` per frame. `index-cvg.ts`: uses `bindVertices()`, `bindFill()`, `bindEndpoint()` — full reactive bindings (see README sections above for comparison) |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | -1 | 1 `setContent()` call |
+| **Testing** | `.withId()` coverage | 1/10 | No IDs |
+| **Design** | Separation of concerns | 5/10 | Two implementations showcase imperative vs. declarative approaches. CVG version cleanly separates state from rendering |
+| | **Overall** | **3/10** | Scored for `index.ts` (imperative baseline). The companion `index-cvg.ts` would score ~7/10 — it's a textbook example of the binding pattern. Together they demonstrate the delta between imperative and pseudo-declarative approaches |
+
 ## Running
 
 ```bash

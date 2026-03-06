@@ -436,6 +436,22 @@ copies or substantial portions of the Software.
 - **Treemap Visualization**: https://en.wikipedia.org/wiki/Treemapping
 - **Squarified Treemap Algorithm**: https://www.win.tue.nl/~vanwijk/stm.pdf
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 6/10 | `vbox > hbox(header buttons) + label(info) + canvasStack(cosyne)` nesting. `buildContent()` defines header controls and canvas area. Cosyne rendering callback handles treemap drawing |
+| **Core declarative** | Fluent method chaining | 6/10 | `.withId()` on title-label, parent-btn, color-size-btn, color-depth-btn, color-type-btn, info-label, per-rect `rect-{id}` and `text-{id}`. No `.when()` or `.bindTo()` |
+| **Core declarative** | Programmatic generation | 7/10 | Treemap rects generated via `state.allRects.forEach()` inside cosyne callback — each rect gets `renderShadedRect()`, transparent overlay for events, and text label. Data-driven rendering from layout algorithm output |
+| **State architecture** | Observable store | 7/10 | `GrandPerspectiveStore` with `subscribe()`/`notifyChange()`. 3 data types (`FileEntry`, `TreemapRect`, `AppState`). Counter-based IDs (`file-${nextId}`). Handles scan, drill-down/up, color scheme, selection, hover |
+| **Declarative updates** | `.when()` + `.bindTo()` | 2/10 | No `.when()`, no `.bindTo()`, no `.bindText()`. Updates via `refreshAllCosyneContexts()` which re-runs the cosyne callback. One `setText()` escape on infoLabel. Store subscriber doesn't update UI directly |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | 0 | No penalty — `win.setContent(buildContent)` called once. Canvas redraws via cosyne refresh cycle |
+| **Testing** | `.withId()` coverage | 7/10 | IDs on all control buttons, info label, and per-rect elements (`rect-{id}`, `text-{id}`). Good coverage for a canvas-based app. 50+ Jest tests |
+| **Design** | Separation of concerns | 7/10 | `GrandPerspectiveStore` manages file tree, layout, and state. `buildGrandPerspectiveApp()` is presentational. Color utilities are pure functions. Minor concern: `updateHoverInfo()` directly calls `setText()` |
+| | **Overall** | **5/10** | A canvas-heavy app where the treemap visualization dominates the UI. The Observable store is solid with proper data types and counter-based IDs. Programmatic rect generation inside cosyne is data-driven. But no `.when()`, `.bindTo()`, or reactive text bindings — all updates flow through `refreshAllCosyneContexts()`. Appropriate for a Cosyne/canvas visualization app |
+
 ## See Also
 
 Other ported apps in the Tsyne repository demonstrate similar patterns:

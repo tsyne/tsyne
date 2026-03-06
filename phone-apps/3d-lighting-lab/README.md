@@ -88,3 +88,19 @@ pnpm test
 
 - `tsyne`: Core framework
 - `cosyne`: 3D rendering library
+
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 7/10 | `hbox > vbox(control panel with sliders) + tappableCanvasRaster(3d scene)` nesting. Rich control panel |
+| **Core declarative** | Fluent method chaining | 7/10 | `.withId()` on 14 elements: light controls, material selectors, sliders. No `.when()` |
+| **Core declarative** | Programmatic generation | 4/10 | No significant loop-based generation. Static control panel |
+| **State architecture** | Observable store | 3/10 | No Observable store. Light/material parameters managed directly |
+| **Declarative updates** | `.when()` + `.bindTo()` | 6/10 | **3 `bindPosition()` + `bindMaterial()`** for reactive 3D transforms and material updates. `refreshBindings()` triggers updates |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | 0 | No penalty |
+| **Testing** | `.withId()` coverage | 7/10 | Good coverage on light and material controls |
+| **Design** | Separation of concerns | 6/10 | 3D scene construction separated from control handlers |
+| | **Overall** | **5/10** | Good `.withId()` coverage and reactive 3D bindings (`bindPosition`, `bindMaterial`). Rich control panel for experimenting with lighting parameters |

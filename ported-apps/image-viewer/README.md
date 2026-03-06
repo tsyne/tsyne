@@ -302,6 +302,22 @@ Since we now have real image editing, we could add:
 - **Tsyne Framework**: TypeScript-to-Fyne bridge
 - **Fyne** (v2): Go GUI toolkit
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 7/10 | `hsplit > border(toolbar + image) + tabs(properties/adjustments)` nesting. Rich multi-panel layout |
+| **Core declarative** | Fluent method chaining | 5/10 | `.withId()` on 11 elements. No `.when()` or `.bindTo()` |
+| **Core declarative** | Programmatic generation | 3/10 | No significant loop-based widget generation. Image processing loops are data, not UI |
+| **State architecture** | Observable store | 3/10 | No Observable store. Image state managed via Jimp library directly |
+| **Declarative updates** | `.when()` + `.bindTo()` | 1/10 | No reactive bindings. 7 `setText()` calls for property/status updates |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | -1 | 1 `setContent()` call |
+| **Testing** | `.withId()` coverage | 5/10 | IDs on key controls but limited for an app this size |
+| **Design** | Separation of concerns | 6/10 | Image processing via Jimp library provides some separation. File dialogs (`showFileOpen`, `showFileSave`) for persistence |
+| | **Overall** | **4/10** | Rich layout structure with `hsplit`/`border`/`tabs` but no Observable store, no reactive bindings, and heavy `setText()` usage |
+
 ## Attribution
 
 - **Original Image Viewer**: Palexer

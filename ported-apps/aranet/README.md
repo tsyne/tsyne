@@ -268,6 +268,22 @@ This port adapts the functionality to the Tsyne cross-platform framework:
 - **Observable Pattern**: Clean state management, easy to test
 - **No Global State**: All state encapsulated in AranetStore class
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 8/10 | Clean `vbox > hbox + separator + vbox` nesting in main window. Settings window is a separate `a.window()` with its own `setContent()` — cleanly composed but adds a second layout tree |
+| **Core declarative** | Fluent method chaining | 8/10 | `.withId()` on all reading labels (`co2Level`, `temperature`, `humidity`, `pressure`, `battery`), connection controls, settings controls. `.when()` on connect/disconnect/refresh buttons for conditional visibility |
+| **Core declarative** | Programmatic generation | 8/10 | Device selector buttons generated via `store.getAvailableDevices().forEach()` with per-device `.when()` for selection state. Alert sound buttons generated via `for...of` loop with `.when()` toggle pattern. Both show/hide button vs checkmark based on selection state |
+| **State architecture** | Observable store | 8/10 | Full `AranetStore` with `subscribe()`/`notifyChange()`. `subscribe()` calls listener immediately on registration (eager initialization pattern). Defensive copies on `getSettings()`, `getAvailableDevices()`. File-based state persistence for device list |
+| **Declarative updates** | `.when()` + `.bindTo()` | 6/10 | Multiple `.when()` calls for conditional button visibility (connect/disconnect/refresh, device selection, alert sound selection). No `.bindTo()` — device list and settings are built imperatively via loops inside `buildContent()`. Five `setText()` escapes for reading labels (`co2Label`, `tempLabel`, `humidityLabel`, `pressureLabel`, `batteryLabel`) + `statusLabel` + `connectionLabel` |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | 1 | Two `setContent()` calls (main window + settings window). The `updateStatusDisplay()` function calls `refreshButton.when()` imperatively — mixing `.when()` as an update mechanism rather than using it declaratively in `buildContent()` |
+| **Testing** | `.withId()` coverage | 8/10 | IDs on all reading labels, connection buttons, settings controls, device buttons (`device-btn-{id}`, `device-selected-{id}`), alert sound buttons (`sound-{type}`, `soundSelected-{type}`). 40 Jest + 28 TsyneTest = 68 total tests |
+| **Design** | Separation of concerns | 8/10 | `AranetStore` is 300 lines of pure sensor/connection logic (no UI). `buildAranetApp()` is purely presentational. Settings window cleanly separated. File persistence in store only. Minor concern: `refreshButton.when()` called imperatively in `updateStatusDisplay()` blurs the boundary |
+| | **Overall** | **7/10** | Good Observable store with defensive copies and file persistence. Programmatic loop generation for device/sound selectors is a strong point. The main gaps are: no `.bindTo()` usage (device list rebuilt via `setContent`), heavy use of `setText()` for reading updates (7 labels), and imperative `.when()` calls in `updateStatusDisplay()`. Moving reading labels to `.bindText()` and using `.bindTo()` for the device list would push this to 9/10 |
+
 ## Credits & Attribution
 
 ### Original Aranet4MenuBar

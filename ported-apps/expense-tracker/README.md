@@ -343,6 +343,22 @@ interface Category {
 - iCloud sync (Tsyne browser mode)
 - Mobile-optimized responsive layout
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 9/10 | Clean `vbox > hbox + separator + vbox` nesting. `buildContent()` defines header, tab bar, and 3 tab containers in a single readable tree. `win.showForm()` for CRUD dialogs keeps the main layout clean |
+| **Core declarative** | Fluent method chaining | 8/10 | `.withId()` on all tab buttons, action buttons, and per-item elements (`exp-category-{id}`, `exp-desc-{id}`, `budget-cat-{id}`). `.when()` on all 3 tab containers. `.bindTo()` with `trackBy` on 3 lists |
+| **Core declarative** | Programmatic generation | 7/10 | Analytics tab uses `entries.slice(0, 5).forEach()` to generate category breakdown. Category options for forms derived from `store.getCategories().map()`. Tab buttons manually listed |
+| **State architecture** | Observable store | 9/10 | Full `ExpenseStore` with `subscribe()`/`notifyChange()`. Defensive copies on `getExpenses()`, `getBudgets()`, `getCategories()`. Counter-based IDs (`exp-005`). Event handlers only call store methods. `empty` callback on `.bindTo()` for empty-state rendering |
+| **Declarative updates** | `.when()` + `.bindTo()` | 9/10 | 3 tab containers (expenses, budgets, analytics) use `.when()`. 3 lists use `.bindTo()` with `trackBy` — expenses, budgets, recurring. `viewStack.refresh()` in store subscription. Two `setText()` escapes for summary labels (`total-today`, `total-month`) |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | 1 | Uses `win.setContent(buildContent)` for initial render, but all subsequent updates go through `.when()`, `.bindTo()`, and `viewStack.refresh()`. Minor penalty for initial setContent pattern |
+| **Testing** | `.withId()` coverage | 8/10 | IDs on all tab buttons, add/filter buttons, per-expense fields (category, desc, date, amount, delete), per-budget fields (cat, bar, stats). Comprehensive coverage for UI testing |
+| **Design** | Separation of concerns | 9/10 | `ExpenseStore` is 240 lines of pure finance logic (expenses, budgets, categories, analytics). `buildExpenseTrackerApp()` is purely presentational. Store drives all state transitions via `notifyChange()` |
+| | **Overall** | **9/10** | Strong pseudo-declarative implementation. 3 tabs with `.when()`, 3 lists with `.bindTo()` + `trackBy`, `empty` callbacks, `showForm()` for dialogs, and a clean Observable store with defensive copies. The only gap is two `setText()` calls on summary labels that could use `.bindText()` |
+
 ## License
 
 Portions copyright Rafael Soh and portions copyright Paul Hammant 2025

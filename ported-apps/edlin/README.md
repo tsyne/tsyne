@@ -120,6 +120,22 @@ The TypeScript port uses Tsyne's built-in `MultilineEntry` widget for text editi
 
 The line-marking feature (Begin ^M, End ^E) from the Go version is not implemented, as `MultilineEntry` handles text selection natively.
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 6/10 | Uses `border(top: toolbar, center: editor)` layout for document view. DocTabs for multi-document editing. Menu system with File/Edit/Help menus |
+| **Core declarative** | Fluent method chaining | 4/10 | `.withId()` on path label (`path-{docId}`) and editor (`editor-{docId}`). Limited IDs overall. No `.when()` or `.bindTo()` |
+| **Core declarative** | Programmatic generation | 3/10 | No loop-based UI generation. Menu items manually listed. Tabs managed by DocTabs widget |
+| **State architecture** | Observable store | 8/10 | Two-level store: `EdlinStore` (multi-document manager) + `DocumentStore` (per-document). Both with `subscribe()`/`notifyChange()`. Defensive copies via `getDocument()`. Counter-based IDs (`doc-${nextDocId}`). Undo/redo stacks, clipboard, search/replace |
+| **Declarative updates** | `.when()` + `.bindTo()` | 2/10 | No `.when()`, no `.bindTo()`, no `.bindText()`. 4 `setText()` calls for path label and editor content. Tab switching managed by DocTabs onChange. `showForm()` used for Find/Replace dialog |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | 0 | No penalty — initial setup only. Editor widgets stored in Map for incremental updates |
+| **Testing** | `.withId()` coverage | 4/10 | Per-document IDs on path label and editor. Minimal but sufficient for tab-based testing |
+| **Design** | Separation of concerns | 8/10 | `EdlinStore` + `DocumentStore` handle all document/clipboard/search logic (no UI). `buildEdlinApp()` is purely presentational. Menu handlers delegate to store. Clean two-level store hierarchy |
+| | **Overall** | **5/10** | Strong two-level Observable store with undo/redo, clipboard, and search. `showForm()` for Find/Replace is a good declarative dialog pattern. But no `.when()`, `.bindTo()`, or reactive bindings — updates flow through `setText()` and manual widget management. The text editor paradigm (single large MultiLineEntry per document) limits opportunities for declarative list/view patterns |
+
 ## License
 
 MIT License - Same as the original edlin project.

@@ -454,19 +454,70 @@ Test files for browser mode features.
 
 ## Sub-Project Documentation
 
-Several examples are full sub-projects with their own documentation:
+Sub-projects still in this directory:
 
 | Directory | Description | README |
 |-----------|-------------|--------|
-| [**fyles/**](fyles/) | File manager application | [fyles/README.md](fyles/README.md) |
-| [**slydes/**](slydes/) | Presentation slides app | See source files |
 | [**svg-rendering/**](svg-rendering/) | SVG rendering utilities | [svg-rendering/README.md](svg-rendering/README.md) |
-| [**terminal/**](terminal/) | Terminal emulator | [terminal/README.md](terminal/README.md) |
-| [**image-viewer/**](image-viewer/) | Image viewer application | See source files |
-| [**game-of-life/**](game-of-life/) | Conway's Game of Life | See source files |
-| [**chess/**](chess/) | Chess game | See source files |
-| [**solitaire/**](solitaire/) | Solitaire card game | See source files |
-| [**pixeledit/**](pixeledit/) | Pixel editor | See source files |
+| [**waveform-visualizer/**](waveform-visualizer/) | Audio waveform visualization (786 lines + tests) | [waveform-visualizer/README.md](waveform-visualizer/README.md) |
+| [**smallest-calculator/**](smallest-calculator/) | Minimal calculator example | See source files |
+
+Previously extracted to `ported-apps/`: fyles, slydes, terminal, image-viewer, game-of-life, chess, solitaire, pixeledit.
+
+---
+
+## TODO: Apps to Extract
+
+The following examples are substantial standalone applications that should be extracted to `ported-apps/` or `phone-apps/`. They go beyond teaching a framework concept — they have real functionality, state management, and in many cases their own test suites.
+
+### Extract to `ported-apps/`
+
+| App | Lines | Has Tests | Why Extract |
+|-----|-------|-----------|-------------|
+| **todomvc.ts** + **todomvc-when.ts** | 407 + 458 | Yes | Full TodoMVC with filesystem persistence. `todomvc-when.ts` showcases `.when()` declarative visibility. Canonical Tsyne app |
+| **full-calculator.ts** | 398 | Yes | Multi-base programmer's calculator (dec/hex/bin/oct) with bitwise ops and memory. ChrysaLisp-inspired |
+| **daily-checklist.ts** + **daily-checklist-mvc.ts** | 390 + 338 | Yes | Task manager with file persistence. Two variants (MVVM + MVC) show architectural patterns |
+| **animation-elegant.ts** | 794 | Yes | QML-inspired Spring physics animation engine. Tsyne's most sophisticated animation example |
+| **waveform-visualizer/** | 786 (source) | Yes | Multi-file audio waveform visualization with canvas widget |
+| **drawing-app.ts** | 216 | Yes | Paint app with color picker and grid canvas |
+| **text-editor.ts** | 173 | Yes | Multi-document editor with DocTabs |
+| **kanban-board.ts** | 179 | Yes | Drag-and-drop task board |
+| **download-manager.ts** | 255 | Yes | Download queue manager with progress bars |
+| **terminal-emulator.ts** | 226 | Yes | Standalone terminal (lighter than ported-apps/terminal) |
+| **pixel-art.ts** | 161 | No | Pixel art editor (lighter than ported-apps/pixeledit) |
+
+### Extract to `phone-apps/`
+
+| App | Lines | Has Tests | Why Extract |
+|-----|-------|-----------|-------------|
+| **weather-viewer-standalone.ts** | 208 | No | Live weather from Open-Meteo API. Similar pattern to existing phone-apps/weather but standalone |
+| **stock-ticker-standalone.ts** | 173 | No | Live stock prices from Yahoo Finance. Real-world API integration |
+| **21-quiz-app.ts** | 233 | Yes | Multi-screen quiz game with scoring. Mobile-friendly |
+| **clipboard-manager.ts** | 149 | No | Clipboard history tracker. Desktop utility |
+| **diagram-editor.ts** | 121 | No | Simple diagram/flowchart drawing |
+
+### Keep as Accessible Tic-Tac-Toe Variants (teaching examples)
+
+These are architectural/accessibility teaching examples rather than standalone apps:
+
+| App | Lines | Reason to Keep |
+|-----|-------|---------------|
+| **tictactoe.ts** | 146 | Simple baseline game example |
+| **tictactoe-accessible.ts** | 687 | Teaches 10 accessibility patterns (TTS, keyboard nav, high contrast, ARIA) |
+| **tictactoe-braille.ts** | 417 | Teaches Braille display integration |
+
+### Keep as Architecture Pattern Examples
+
+| App | Lines | Reason to Keep |
+|-----|-------|---------------|
+| **mvc-counter.ts** | 72 | MVC pattern teaching |
+| **mvp-login.ts** | 248 | MVP pattern teaching |
+| **mvvm-todo.ts** | 227 | MVVM pattern teaching |
+| **reactive-form.ts** | 224 | Reactive binding patterns |
+
+### Stale References to Clean Up
+
+The calculator variants section (line 96-104) references `../test-apps/calculator-advanced/` — verify this path still exists.
 
 ---
 

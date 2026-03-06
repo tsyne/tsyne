@@ -174,6 +174,22 @@ TSYNE_HEADED=1 pnpm test -- line-chart-demo/line-chart-demo.test.ts
 - Zoom/Pan: O(1) transform updates
 - Typical: 1000+ points at 60fps
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 6/10 | `vbox > hbox(controls) + canvasStack(chart)` nesting |
+| **Core declarative** | Fluent method chaining | 5/10 | `.withId()` on 7 elements. 1 `.when()` for conditional rendering |
+| **Core declarative** | Programmatic generation | 5/10 | Chart data points generated programmatically |
+| **State architecture** | Observable store | 5/10 | `subscribe()` pattern. Store-driven chart updates |
+| **Declarative updates** | `.when()` + `.bindTo()` | 4/10 | 1 `.when()` for conditional visibility. `clearAllCosyneContexts()` + subscribe for reactive updates |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | 0 | No `removeAll()`/`setContent()` |
+| **Testing** | `.withId()` coverage | 5/10 | IDs on chart controls |
+| **Design** | Separation of concerns | 6/10 | Chart data generation separated from rendering |
+| | **Overall** | **5/10** | Uses subscribe pattern and `.when()` for chart configuration. D3-style charting component |
+
 ## See Also
 
 - [D3/P5 Components Guide](../../cosyne/D3_P5_COMPONENTS.md)

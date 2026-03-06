@@ -101,3 +101,19 @@ No authentication required, no rate limits for fair use.
 - `weather.ts` - Main app UI
 - `weather.test.ts` - Comprehensive tests
 - `README.md` - This file
+
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 6/10 | `vbox > hbox(search) + vbox(current weather) + scroll(forecast)` nesting |
+| **Core declarative** | Fluent method chaining | 4/10 | `.withId()` on 5 elements. No `.when()` or `.bindTo()` |
+| **Core declarative** | Programmatic generation | 3/10 | Minimal loop-based generation. Weather data displayed statically |
+| **State architecture** | Observable store | 3/10 | No Observable store. Weather data managed directly |
+| **Declarative updates** | `.when()` + `.bindTo()` | 1/10 | No reactive bindings. 4 `setText()` calls for weather data display |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | 0 | No penalty |
+| **Testing** | `.withId()` coverage | 4/10 | Limited IDs for search and temperature |
+| **Design** | Separation of concerns | 6/10 | Open-Meteo API integration separated from UI rendering |
+| | **Overall** | **4/10** | Simple weather display with API integration. No reactive bindings |

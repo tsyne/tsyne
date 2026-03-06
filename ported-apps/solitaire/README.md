@@ -175,6 +175,22 @@ To make this a fully interactive solitaire game, the following enhancements woul
 - Hand and draw piles
 - Methods: `newGame()`, `drawThree()`, `canMoveToBuild()`, `canMoveToStack()`, `hasWon()`
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 6/10 | `vbox > hbox(buttons) + cvg(game board)` nesting. CVG canvas dominates the layout — card rendering is the main UI |
+| **Core declarative** | Fluent method chaining | 4/10 | `.withId()` on new-game-btn, shuffle-btn, draw-btn. No `.when()` or `.bindTo()` |
+| **Core declarative** | Programmatic generation | 7/10 | Nested loops for foundation piles, tableau columns, and card stacks. Card rendering functions draw suits/ranks procedurally |
+| **State architecture** | Observable store | 5/10 | Game callbacks (`onUpdate`/`onGameEnd`) rather than Observable store. 1056 lines of game logic with drag-and-drop card mechanics |
+| **Declarative updates** | `.when()` + `.bindTo()` | 1/10 | No `.when()`, `.bindTo()`, or `.bindText()`. 1 `setText()` on status label. Board redraws via CVG refresh |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | 0 | No penalty |
+| **Testing** | `.withId()` coverage | 4/10 | IDs on 3 action buttons. Card interaction via CVG drag/click handlers |
+| **Design** | Separation of concerns | 7/10 | Card game logic (shuffling, rules, stacks) separated from CVG rendering. Drag-and-drop mechanics cleanly implemented |
+| | **Overall** | **4/10** | A CVG-heavy card game where rendering dominates. Good programmatic card generation via loops but no Observable store, reactive bindings, or `.withId()` on game elements. The card game paradigm doesn't naturally map to pseudo-declarative widget patterns |
+
 ## Credits
 
 - **Original Solitaire**: Fyne.io contributors

@@ -71,3 +71,19 @@ pnpm test
 - `bindPosition()` and `bindRotation()` for reactive updates
 - `renderer3d.renderToBuffer()` for efficient pixel buffer rendering
 - `tappableCanvasRaster` for camera orbit/zoom controls
+
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 6/10 | `vbox > hbox(sliders) + tappableCanvasRaster(3d view)` nesting |
+| **Core declarative** | Fluent method chaining | 5/10 | `.withId()` on 6 elements. No `.when()` |
+| **Core declarative** | Programmatic generation | 7/10 | Loop-based ground tile generation. Joint segments from array |
+| **State architecture** | Observable store | 3/10 | No Observable store. Joint angles managed directly |
+| **Declarative updates** | `.when()` + `.bindTo()` | 7/10 | **10 `bindPosition()` + `bindRotation()`** for reactive 3D transforms. `refreshBindings()` triggers updates. Declarative 3D scene graph |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | 0 | No penalty |
+| **Testing** | `.withId()` coverage | 4/10 | Limited IDs |
+| **Design** | Separation of concerns | 6/10 | Forward kinematics math separated from scene construction |
+| | **Overall** | **5/10** | Strong reactive 3D bindings (`bindPosition`, `bindRotation`) — the cosyne3d equivalent of `.bindTo()`. Declarative scene graph with reactive transforms |

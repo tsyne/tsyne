@@ -307,6 +307,22 @@ TSYNE_HEADED=1 pnpm test -- effects-gradients-clipping-demo/demo.test.ts
 
 > **Note**: Screenshot generation requires the Tsyne GUI to be available. This works in environments with a display (desktop) or through screenshots captured during headed test runs.
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 7/10 | `vbox > hbox(controls) + canvasStack(demo)` nesting with multiple demo sections |
+| **Core declarative** | Fluent method chaining | 7/10 | `.withId()` on 14 elements. **4 `.when()`** for conditional demo section visibility |
+| **Core declarative** | Programmatic generation | 7/10 | Loop-based demo element generation via `forEach` |
+| **State architecture** | Observable store | 5/10 | `subscribe()`/`notifyChange()` pattern. Store-driven section toggling |
+| **Declarative updates** | `.when()` + `.bindTo()` | 6/10 | **4 `.when()` predicates** for conditional visibility. 1 `.bindText()`. `refreshAllCosyneContexts()` for reactive updates |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | 0 | No `removeAll()`/`setContent()` |
+| **Testing** | `.withId()` coverage | 7/10 | Good coverage on toggle buttons and demo elements |
+| **Design** | Separation of concerns | 6/10 | Demo sections organized with store-driven visibility |
+| | **Overall** | **6/10** | Good use of `.when()` for conditional section visibility and subscribe/notifyChange for reactive state. A Cosyne demo that showcases the pseudo-declarative pattern well |
+
 ## See Also
 
 - [Effects Documentation](../../cosyne/EFFECTS_GRADIENTS_CLIPPING.md)

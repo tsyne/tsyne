@@ -126,6 +126,22 @@ Plus significant enhancements not in the original:
 - ✅ Clipboard operations
 - ✅ Layer system
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 7/10 | Complex menu-driven layout with toolbar, canvas, color palette, layers panel. Programmatic menu construction |
+| **Core declarative** | Fluent method chaining | 4/10 | `.withId()` on 5 elements. No `.when()` or `.bindTo()`. Limited IDs for a 5000+ line app |
+| **Core declarative** | Programmatic generation | 7/10 | Extensive programmatic menu generation. Color palette grid built from loops |
+| **State architecture** | Observable store | 3/10 | No Observable store. Canvas/layer state managed directly. 5000+ line monolithic class |
+| **Declarative updates** | `.when()` + `.bindTo()` | 1/10 | No reactive bindings. 17 `setText()` calls for tool/color/layer status |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | 0 | No `removeAll()`/`setContent()` |
+| **Testing** | `.withId()` coverage | 3/10 | Only 5 IDs despite being the largest app |
+| **Design** | Separation of concerns | 5/10 | 51 `showForm()`/dialog calls for CRUD operations — good dialog pattern but all in one massive class |
+| | **Overall** | **4/10** | Impressive scope (5000+ lines, 51 dialogs) with good programmatic menu generation, but monolithic architecture with no Observable store or reactive bindings |
+
 ## See Also
 
 - [PLAN.md](./PLAN.md) - Detailed implementation plan and test coverage

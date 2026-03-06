@@ -196,6 +196,22 @@ UI integration tests verifying:
 
 Total: 25+ test cases covering UI interactions
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 7/10 | `vbox > scroll(conversationList) + vbox(messages + input)` nesting. Messaging UI |
+| **Core declarative** | Fluent method chaining | 7/10 | `.withId()` on 21 elements. No `.when()` or `.bindTo()` |
+| **Core declarative** | Programmatic generation | 6/10 | Loop-based conversation list and message rendering via `forEach` |
+| **State architecture** | Observable store | 5/10 | `subscribe()` pattern (2 calls). Store-driven conversation updates |
+| **Declarative updates** | `.when()` + `.bindTo()` | 1/10 | No reactive bindings. 2 `setText()` calls |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | -1 | 1 `removeAll()` for message list refresh |
+| **Testing** | `.withId()` coverage | 7/10 | Good coverage on conversation items, message input, send button |
+| **Design** | Separation of concerns | 6/10 | Subscribe pattern for state updates. API logic separated |
+| | **Overall** | **5/10** | Good `.withId()` coverage and subscribe pattern. Uses `removeAll()` + rebuild for message updates rather than `.bindTo()` |
+
 ## License
 
 This project is licensed under the GNU General Public License v3.0 or later.

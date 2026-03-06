@@ -248,3 +248,19 @@ To implement actual recording:
 - `recording-service.ts` - Recording service interface and mock implementation
 - `audio-recorder.test.ts` - Comprehensive tests
 - `README.md` - This file
+
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 6/10 | `vbox > hbox(controls) + scroll(recording list)` nesting |
+| **Core declarative** | Fluent method chaining | 5/10 | `.withId()` on 8 elements. No `.when()` or `.bindTo()` |
+| **Core declarative** | Programmatic generation | 6/10 | Loop-based recording list rendering via `forEach` |
+| **State architecture** | Observable store | 5/10 | `subscribe()` pattern (3 calls). Store-driven recording updates |
+| **Declarative updates** | `.when()` + `.bindTo()` | 1/10 | No reactive bindings. 5 `setText()` calls for status/time display |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | -1 | 1 `destroyChildren()` for list refresh |
+| **Testing** | `.withId()` coverage | 5/10 | IDs on record/play buttons, recording items |
+| **Design** | Separation of concerns | 7/10 | Service injection (IRecordingService) with mock for testing. Clean separation |
+| | **Overall** | **5/10** | Good service injection and subscribe pattern. Uses `destroyChildren()` for list updates rather than `.bindTo()` |

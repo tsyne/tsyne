@@ -68,6 +68,22 @@ Run tests:
 cd core && pnpm test -- "sokol-arcade"
 ```
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 8/10 | Clean `vbox > hbox(header) + separator + vbox(contentContainer)` nesting. Each game view is a self-contained `vbox` with canvas, controls, and help text. Launcher view has game buttons generated via `for...of` loop |
+| **Core declarative** | Fluent method chaining | 7/10 | `.withId()` on title, back button, game buttons (`btn-fps-voxel`, `btn-pacman`, `btn-chip8`), per-game labels, canvases (`fps-canvas`, `pacman-canvas`, `chip8-canvas`), score/lives labels. `.when()` on 4 view containers + back button |
+| **Core declarative** | Programmatic generation | 8/10 | Game launcher buttons generated via `for (const game of GAMES)` loop — icon buttons and labels derived from `GAMES` array. Keyboard mappings use object lookup tables. Direction button grid manually listed |
+| **State architecture** | Observable store | 7/10 | `ArcadeStore` with `subscribe()`/`notifyChange()`. Manages game lifecycle (launch, stop, back to launcher). Game instances (`FPSVoxelGame`, `PacmanGame`, `Chip8`) created on demand. No defensive copies needed (game instances are mutable by design) |
+| **Declarative updates** | `.when()` + `.bindTo()` | 7/10 | 4 `.when()` containers: launcher, fps-voxel, pacman, chip8. Back button conditionally visible via `.when()`. Two `.bindTo({ text: ... })` bindings on Pacman score and lives labels — reactive text bindings. `contentContainer.refresh()` in store subscription. Canvas rendering via separate `setInterval` render loop |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | 0 | No penalty — uses `win.setContent()` only once at initialization. All subsequent updates via `.when()`, `.bindTo()`, and `contentContainer.refresh()` |
+| **Testing** | `.withId()` coverage | 8/10 | IDs on all game buttons, canvases, score/lives labels, help text, direction buttons. 53 Jest tests covering game logic |
+| **Design** | Separation of concerns | 8/10 | `ArcadeStore` manages game switching and lifecycle. Individual game classes (`FPSVoxelGame`, `PacmanGame`, `Chip8`) are self-contained with their own logic and rendering. `buildSokolArcadeApp()` is purely presentational. Render loop and keyboard handling cleanly wired to store/game instances |
+| | **Overall** | **7/10** | Good pseudo-declarative implementation for a game launcher with 4 `.when()` views, programmatic button generation from data, and reactive `.bindTo({ text })` on score labels. The gaps are: render loop is imperative (`setInterval` with `setPixelBuffer`), keyboard handling is a large imperative block, and game instances are mutable rather than Observable. The launcher pattern (data-driven game grid) and view switching are solid |
+
 ## Credits
 
 - **Andre Weissflog (floooh)** - pacman.zig, chipz

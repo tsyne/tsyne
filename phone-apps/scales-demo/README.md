@@ -137,6 +137,22 @@ TSYNE_HEADED=1 pnpm test -- scales-demo/scales-demo.test.ts
 
 > **Note**: Screenshot generation requires the Tsyne GUI to be available. This works in environments with a display (desktop) or through screenshots captured during headed test runs.
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 6/10 | `vbox > hbox(controls) + canvasStack(chart)` nesting |
+| **Core declarative** | Fluent method chaining | 5/10 | `.withId()` on 8 elements. 1 `.when()` for conditional rendering |
+| **Core declarative** | Programmatic generation | 6/10 | Loop-based data point generation for scale demonstrations |
+| **State architecture** | Observable store | 5/10 | `subscribe()` pattern. Store-driven scale updates |
+| **Declarative updates** | `.when()` + `.bindTo()` | 4/10 | 1 `.when()` for conditional visibility. `clearAllCosyneContexts()` + subscribe for reactive updates |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | 0 | No `removeAll()`/`setContent()` |
+| **Testing** | `.withId()` coverage | 5/10 | IDs on scale controls |
+| **Design** | Separation of concerns | 6/10 | D3-style scale configuration separated from rendering |
+| | **Overall** | **5/10** | Uses subscribe pattern and `.when()`. Demonstrates D3-style scale types with reactive configuration |
+
 ## See Also
 
 - [D3/P5 Components Guide](../../cosyne/D3_P5_COMPONENTS.md)

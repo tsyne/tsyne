@@ -145,6 +145,22 @@ pnpm test -- ported-apps/tsyet-another-doom-clone/index.tsyne.test.ts
 - **Original Game**: Nicholas Carlini (https://nicholas.carlini.com)
 - **Tsyne Port**: Paul Hammant
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 4/10 | Minimal UI chrome — primarily a full-screen `tappableCanvasRaster` with HUD rendered directly into the pixel buffer. Game state labels (score, health, level) are overlay text drawn in the render pass, not Tsyne widgets |
+| **Core declarative** | Fluent method chaining | 3/10 | Limited `.withId()` usage on canvas and any wrapper elements. The game's UI is the rendered pixel buffer, not widget-based |
+| **Core declarative** | Programmatic generation | 5/10 | Enemy spawning from level spawn point arrays (`for...of` loops). Body parts and hit particles generated procedurally from factory functions. Map geometry from encoded data |
+| **State architecture** | Observable store | 7/10 | `DoomGame` with `subscribe()`/`notifyChange()`. Manages game state, enemies, particles, player, map. Multiple entity types (`Enemy`, `BodyPart`, `HitParticle`, `LightFlash`, `Chaingun`). Multi-level system with `loadLevel()` |
+| **Declarative updates** | `.when()` + `.bindTo()` | 1/10 | No `.when()`, no `.bindTo()`, no `.bindText()`. All rendering via `setPixelBuffer()`. Store notifications used only for game state changes (won/gameover), not UI binding |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | 0 | No penalty — canvas-only app with single initial setup |
+| **Testing** | `.withId()` coverage | 3/10 | Minimal widget IDs needed — the game is a single canvas. Game logic tested via `DoomGame` class methods |
+| **Design** | Separation of concerns | 8/10 | Excellent multi-file decomposition: `DoomGame` (orchestrator), `Player`, `Enemy`/`WalkingEnemy`/`FlyingEnemy`, `GameMap`, `RaycastRenderer`, `Chaingun`, `BodyPart`, `HitParticle`, `ScreenShake`. Each class is self-contained |
+| | **Overall** | **4/10** | This is a full-screen raycasting FPS — the pixel buffer IS the entire UI. Pseudo-declarative patterns don't apply to software-rendered game engines. The Observable store exists for game state management, and the code separation is excellent, but there are no Tsyne widgets to bind to. Appropriate architecture for this type of app |
+
 ## License
 
 This program is free software: you can redistribute it and/or modify it under the terms of the **GNU General Public License** as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.

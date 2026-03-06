@@ -322,6 +322,22 @@ Requires SVG files in `examples/chess/pieces/` directory:
 
 Pieces are pre-rendered to 80x80 PNG images and cached for performance.
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 6/10 | `vbox` wrapper with CVG canvas for game board. Minimal widget chrome — the board IS the UI |
+| **Core declarative** | Fluent method chaining | 5/10 | `.withId()` on status label. `.bindText()` on status label for reactive game state display |
+| **Core declarative** | Programmatic generation | 8/10 | Nested loops rendering 64 squares with alternating colors. Piece drawing functions for each chess piece type. Board state drives rendering |
+| **State architecture** | Observable store | 5/10 | Event-based callbacks (`onUpdate`) rather than full Observable store. Game state managed via chess.js library |
+| **Declarative updates** | `.when()` + `.bindTo()` | 3/10 | `.bindText()` on status label — one reactive text binding. No `.when()` or `.bindTo()`. Board redraws via `refreshAllCosyneContexts()` |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | 0 | No penalty — CVG canvas redraws via refresh cycle |
+| **Testing** | `.withId()` coverage | 3/10 | Limited IDs (status only). Board interaction via CVG click handlers |
+| **Design** | Separation of concerns | 7/10 | Chess.js handles game rules. CVG handles rendering. Clean delegation between game logic and visual layer |
+| | **Overall** | **5/10** | Notable for using `.bindText()` on the status label — a reactive text binding. Strong programmatic board generation via nested loops. But fundamentally a CVG canvas app where the board rendering dominates |
+
 ## Credits
 
 - **Original Chess Game**: Andy Williams (andydotxyz)

@@ -246,6 +246,22 @@ For large n, the "prime number theorem" tells us the density of primes near n is
 5. **Statistics Panel**: More detailed prime distribution analysis
 6. **Themes**: Custom color schemes for primes/composites
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 6/10 | `vbox > hbox(controls) + center(canvasRaster) + label(status)` nesting. Control panel with grid display |
+| **Core declarative** | Fluent method chaining | 6/10 | `.withId()` on 10 elements: grid size input, prime count label, buttons. No `.when()` or `.bindTo()` |
+| **Core declarative** | Programmatic generation | 4/10 | Grid rendered to pixel buffer via `setPixelBuffer()`. Sieve algorithm generates data, not widgets |
+| **State architecture** | Observable store | 3/10 | No Observable store. Prime sieve data managed directly |
+| **Declarative updates** | `.when()` + `.bindTo()` | 1/10 | No reactive bindings. 5 `setText()` calls for stats/status updates |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | -1 | 1 `setContent()` or `removeAll()` call |
+| **Testing** | `.withId()` coverage | 6/10 | Good coverage on controls and stat labels |
+| **Design** | Separation of concerns | 6/10 | Sieve of Eratosthenes algorithm separated from rendering logic |
+| | **Overall** | **4/10** | Control panel with `.withId()` coverage wrapping a canvas-rendered grid. No Observable store or reactive bindings — similar pattern to other raster visualization apps |
+
 ## Attribution
 
 - **Original Visualization**: [Abhrankan Chakrabarti's Prime Grid Visualizer](https://github.com/abhrankan-chakrabarti/prime-grid-visualizer)

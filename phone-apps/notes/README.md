@@ -173,6 +173,22 @@ Settings are automatically persisted:
 - `notes.test.ts` - Jest unit tests (phone-apps)
 - `notes-tsyne.test.ts` - Tsyne UI tests (phone-apps and core/src)
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 7/10 | `hsplit > scroll(notesList) + vbox(editor)` nesting. Split-pane notes UI |
+| **Core declarative** | Fluent method chaining | 6/10 | `.withId()` on 14 elements. No `.when()` or `.bindTo()` |
+| **Core declarative** | Programmatic generation | 6/10 | Loop-based note list rendering from data array |
+| **State architecture** | Observable store | 3/10 | No Observable store. Notes managed directly with `refreshUI()` |
+| **Declarative updates** | `.when()` + `.bindTo()` | 1/10 | No reactive bindings. 1 `setText()` call |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | 0 | No `removeAll()`/`setContent()` |
+| **Testing** | `.withId()` coverage | 6/10 | IDs on note list items, editor, toolbar buttons |
+| **Design** | Separation of concerns | 5/10 | Notes logic and UI in single file |
+| | **Overall** | **5/10** | Clean split-pane layout with loop-based note list. No reactive bindings — uses `refreshUI()` for updates |
+
 ## License
 
 MIT License

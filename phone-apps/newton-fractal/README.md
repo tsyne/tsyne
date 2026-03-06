@@ -24,3 +24,19 @@ Visualization of Newton's method convergence basins for the equation z³-1=0.
 ## Algorithm
 
 Newton's method iterates `z = z - f(z)/f'(z)` to find roots. For z³-1=0, this becomes `z = z - (z³-1)/(3z²)`. The fractal shows which root each starting point converges to, with colors indicating the number of iterations needed.
+
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 6/10 | `vbox > hbox(controls) + center(canvasRaster)` nesting |
+| **Core declarative** | Fluent method chaining | 5/10 | `.withId()` on 9 elements. No `.when()` or `.bindTo()` |
+| **Core declarative** | Programmatic generation | 2/10 | No loop-based widget generation. Fractal rendered via GPU shader |
+| **State architecture** | Observable store | 3/10 | No Observable store. Fractal parameters managed directly |
+| **Declarative updates** | `.when()` + `.bindTo()` | 1/10 | No reactive bindings. 2 `setText()` calls |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | 0 | No penalty |
+| **Testing** | `.withId()` coverage | 5/10 | IDs on controls |
+| **Design** | Separation of concerns | 5/10 | Shared fractal utilities via `fractal-utils.ts` |
+| | **Overall** | **4/10** | Same fractal app pattern — control panel wrapping GPU shader |

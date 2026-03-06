@@ -486,6 +486,22 @@ await layer3.drawText(stats);
 
 **Recommendation for Tsyne:** Keep current minimal design. None of these enhancements are needed for typical applications. Add them only if a critical use case demands them and the benefit outweighs the added complexity.
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 9/10 | Clean `border(top: vbox, center: aspectRatio > canvasStack, bottom: hbox)` nesting. `a.border()` ensures center canvas expands to fill. `a.aspectRatio(1.0)` maintains square canvas. `a.canvasStack()` layers raster grid under CVG overlay |
+| **Core declarative** | Fluent method chaining | 7/10 | `.withId()` on title, score/status labels, grid canvas. CVG elements use `.name()` for identification (`pellet`, `leftArrow`, `rightArrow`). `.bindPos()` and `.bindFill()` on pellet circle for reactive position/color updates. `.bindTo()` with `trackBy` + `update` on snake nodes |
+| **Core declarative** | Programmatic generation | 9/10 | Snake nodes generated via `s.bindTo()` with dynamic collection — grows as pellets are eaten. Grid dots rendered programmatically (1600 Fibonacci sphere points). Arrow buttons defined with computed SVG path data. Color computation (`snakeColor`) derives from item index/total |
+| **State architecture** | Observable store | 5/10 | `SphericalSnake` game class is the model but doesn't follow Observable `subscribe()`/`notifyChange()` pattern. Game loop drives updates via `setInterval` + manual `cvgCtx.refresh()`. No `subscribe()` method on game class |
+| **Declarative updates** | `.when()` + `.bindTo()` | 7/10 | CVG `s.bindTo()` with `items`, `trackBy`, `render`, and `update` callbacks — full declarative collection rendering for snake nodes. `.bindPos()` and `.bindFill()` on pellet — reactive bindings updated on `cvgCtx.refresh()`. No `.when()` usage (single view, no tab switching). Two `setText()` escapes for `scoreLabel` and `statusLabel` |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | 0 | No penalty — uses `win.setContent()` once. CVG bindings handle all dynamic updates. Grid pixel buffer updated via `setPixelBuffer()` (inherently imperative but appropriate for raster rendering) |
+| **Testing** | `.withId()` coverage | 6/10 | IDs on title, score/status labels, grid canvas. CVG elements use `.name()` but no per-snake-node IDs. Game logic has separate Jest tests |
+| **Design** | Separation of concerns | 8/10 | `SphericalSnake` game class is pure logic (movement, collision, scoring). `drawGrid()` is a pure function (buffer in, no side effects). `buildSphericalSnakeCvgApp()` is purely presentational. CVG overlay cleanly separated from raster grid. Game loop isolated in `startGameLoop()` |
+| | **Overall** | **7/10** | Interesting hybrid: CVG declarative primitives (`bindTo`, `bindPos`, `bindFill`) on top of a raster pixel buffer. The snake collection rendering with `trackBy` + `update` is a strong example of dynamic CVG lists. Main gaps: game class doesn't follow Observable store pattern (`subscribe`/`notifyChange`), no `.when()` usage, and `setText()` escapes for labels. This is more of a CVG showcase than a pseudo-declarative UI app |
+
 ## License
 
 This port is licensed under the **MIT License**.

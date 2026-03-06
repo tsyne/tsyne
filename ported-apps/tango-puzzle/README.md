@@ -47,6 +47,22 @@ cd ported-apps/tango-puzzle
 npx jest --forceExit
 ```
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 7/10 | `vbox > hbox(nav buttons) + separator + grid(NxN) + separator + label(status)` nesting. Grid size adapts to level |
+| **Core declarative** | Fluent method chaining | 6/10 | `.withId()` on resetBtn, undoBtn, prevBtn, levelLabel, nextBtn, cell-*. No `.when()` or `.bindTo()` |
+| **Core declarative** | Programmatic generation | 8/10 | Loop generating NxN grid cells with constraint-driven styling |
+| **State architecture** | Observable store | 5/10 | Game callbacks (`onUpdate`/`onWin`) rather than full Observable store |
+| **Declarative updates** | `.when()` + `.bindTo()` | 1/10 | No reactive bindings. `setText()` for status updates |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | 0 | No penalty |
+| **Testing** | `.withId()` coverage | 6/10 | IDs on nav buttons, per-cell elements, level label |
+| **Design** | Separation of concerns | 7/10 | Game logic separated from UI builder |
+| | **Overall** | **5/10** | Clean programmatic grid generation. Same pattern as other grid puzzles — strong loop-based UI but no Observable store or reactive bindings |
+
 ## Credits
 
 Portions copyright Paul Hammant 2026

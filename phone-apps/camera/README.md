@@ -271,3 +271,19 @@ To implement actual camera:
 - `camera-service.ts` - Camera service interface and mock implementation
 - `camera.test.ts` - Comprehensive tests (21 tests)
 - `README.md` - This file
+
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 7/10 | `vbox > padded(viewfinder) + hbox(controls) + scroll(gallery)` nesting. Camera UI with photo gallery |
+| **Core declarative** | Fluent method chaining | 7/10 | `.withId()` on 19 elements: shutter, mode buttons, gallery items. No `.when()` or `.bindTo()` |
+| **Core declarative** | Programmatic generation | 7/10 | Loop-based photo gallery rendering via `forEach`. Gallery thumbnails generated from data |
+| **State architecture** | Observable store | 5/10 | `subscribe()` pattern (2 calls). Store-driven gallery updates |
+| **Declarative updates** | `.when()` + `.bindTo()` | 1/10 | No reactive bindings. 4 `setText()` calls for mode/status |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | -1 | 1 `removeAll()` for gallery refresh |
+| **Testing** | `.withId()` coverage | 7/10 | Good coverage on camera controls and gallery |
+| **Design** | Separation of concerns | 7/10 | Service injection (ICameraService) with mock for testing. 21 tests |
+| | **Overall** | **5/10** | Good `.withId()` coverage and service injection. Loop-based gallery generation. Uses `removeAll()` for gallery updates |

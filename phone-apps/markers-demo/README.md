@@ -365,6 +365,22 @@ TSYNE_HEADED=1 pnpm test -- markers-demo/markers-demo.test.ts
 
 > **Note**: Screenshot generation requires the Tsyne GUI to be available. This works in environments with a display (desktop) or through screenshots captured during headed test runs.
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 7/10 | `vbox > hbox(controls) + canvasStack(chart)` nesting with multiple control rows |
+| **Core declarative** | Fluent method chaining | 7/10 | `.withId()` on 25 elements. 1 `.when()` for conditional rendering |
+| **Core declarative** | Programmatic generation | 7/10 | Loop-based marker and data point generation via `forEach` |
+| **State architecture** | Observable store | 5/10 | `subscribe()` pattern. Store-driven chart updates |
+| **Declarative updates** | `.when()` + `.bindTo()` | 4/10 | 1 `.when()` for conditional visibility. `clearAllCosyneContexts()` + subscribe for reactive updates |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | 0 | No `removeAll()`/`setContent()` |
+| **Testing** | `.withId()` coverage | 7/10 | Good coverage on marker controls and chart elements |
+| **Design** | Separation of concerns | 6/10 | D3-style marker configuration separated from rendering |
+| | **Overall** | **6/10** | Strong `.withId()` coverage (25) with subscribe pattern and `.when()` for conditional rendering. Good marker demo |
+
 ## See Also
 
 - [Markers API Documentation](../../cosyne/D3_MARKERS.md)

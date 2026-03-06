@@ -333,6 +333,22 @@ Original Fyles implementation: [FyshOS/fyles](https://github.com/FyshOS/fyles)
 
 Ported to Tsyne as an educational example of MVC architecture and file system interaction.
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 8/10 | Clean `border(top: hbox(toolbar), left: scroll(vbox(navPanel)), center: scroll(vbox(fileGrid)))` per panel. Multi-panel uses nested `hsplit()` for side-by-side layout. Recursive `buildTreeNode()` for directory tree |
+| **Core declarative** | Fluent method chaining | 7/10 | `.withId()` on panel toolbar buttons (`panel-{idx}-home`, `panel-{idx}-newfolder`, `panel-{idx}-hidden`, `panel-{idx}-split`, `panel-{idx}-close`), navigation elements (`parent-dir-btn`, `collapse-all-btn`), tree nodes (`panel-{idx}-expand-{name}`, `panel-{idx}-nav-folder-{name}`), grid items (`panel-{idx}-grid-{type}-{name}`). Per-item IDs with panel index |
+| **Core declarative** | Programmatic generation | 8/10 | Three `forEach` loops generating UI: `dirs.forEach()` → `buildTreeNode()` for directory tree, `childDirs.forEach()` → recursive tree expansion, `items.forEach()` → `buildFileItem()` for file grid. All data-driven from store |
+| **State architecture** | Observable store | 8/10 | `FylesStore` with `subscribe()`/`notifyChange()`. File operations (navigate, create, move, copy). Tree expansion state with persistence (`~/.tsyne/fyles-state.json`). Hidden file filtering. Per-panel independent stores. `showEntryDialog()` for new folder |
+| **Declarative updates** | `.when()` + `.bindTo()` | 2/10 | No `.when()`, no `.bindTo()`, no `.bindText()`. 1 `setText()` on pathLabel. Store subscription triggers full `refreshUI()` rebuild. `showEntryDialog()` for folder creation dialog |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | 3 | `refreshUI()` rebuilds the navigation tree and file grid on every store change. This is a significant imperative rebuild pattern, though understandable for a dynamic file browser |
+| **Testing** | `.withId()` coverage | 8/10 | Excellent per-panel, per-item IDs: `panel-{idx}-grid-{type}-{name}`, `panel-{idx}-expand-{name}`, `panel-{idx}-nav-folder-{name}`. Also IDs on all toolbar buttons. Multi-panel test coverage |
+| **Design** | Separation of concerns | 8/10 | `FylesStore` handles all file operations and persistence (no UI). `FylesPanel` is purely presentational. `FylesMultiPanel` manages panel lifecycle. `file-item.ts`, `file-utils.ts`, `folder-metadata.ts` are clean utility modules. Drag-and-drop wired through panel coordination |
+| | **Overall** | **6/10** | Strong programmatic UI generation with 3 data-driven loops for tree nodes and file grid. Excellent per-item `.withId()` with panel indexing. Rich Observable store with file persistence. Main gaps: no `.when()` or `.bindTo()` — file grid and tree use imperative `refreshUI()` rebuild instead of `.bindTo()` with `trackBy`. Using `.bindTo()` for the file list and tree would push this to 8/10 |
+
 ## License
 
 See original repository for license information.

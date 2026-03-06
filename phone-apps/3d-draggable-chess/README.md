@@ -41,3 +41,19 @@ Cosyne 3D demo showcasing raycasting, object picking, and drag-and-drop on a 3D 
 cd phone-apps/3d-draggable-chess
 pnpm test
 ```
+
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 6/10 | `vbox > hbox(controls) + tappableCanvasRaster(3d board)` nesting |
+| **Core declarative** | Fluent method chaining | 6/10 | `.withId()` on 10 elements. No `.when()` |
+| **Core declarative** | Programmatic generation | 8/10 | Loop-based board square generation (8x8) and piece placement from arrays |
+| **State architecture** | Observable store | 3/10 | No Observable store. Chess state via chess.js |
+| **Declarative updates** | `.when()` + `.bindTo()` | 6/10 | **4 `bindPosition()` + `bindMaterial()` + `bindScale()`** for reactive 3D transforms. Drag-and-drop with reactive position updates |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | 0 | No penalty |
+| **Testing** | `.withId()` coverage | 6/10 | IDs on controls and status |
+| **Design** | Separation of concerns | 6/10 | Chess.js handles game rules. 3D scene handles rendering |
+| | **Overall** | **5/10** | Good programmatic board generation and reactive 3D bindings for piece dragging. Declarative cosyne3d scene graph |

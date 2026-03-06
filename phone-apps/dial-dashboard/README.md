@@ -125,6 +125,22 @@ cd phone-apps/dial-dashboard
 pnpm test
 ```
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 7/10 | `vbox > hbox(controls) + canvasStack(dials)` nesting with multiple dial gauges |
+| **Core declarative** | Fluent method chaining | 6/10 | `.withId()` on 12 elements. No `.when()` but `.bindTo()` usage |
+| **Core declarative** | Programmatic generation | 5/10 | Dial tick marks generated programmatically |
+| **State architecture** | Observable store | 4/10 | No formal Observable store. Value state drives dial rendering |
+| **Declarative updates** | `.when()` + `.bindTo()` | 4/10 | 1 `.bindTo()`. `bindValue()` for reactive dial updates. `refreshAllCosyneContexts()`. 4 `setText()` calls |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | 0 | No `removeAll()`/`setContent()` |
+| **Testing** | `.withId()` coverage | 6/10 | IDs on controls and dial elements |
+| **Design** | Separation of concerns | 6/10 | Dial rendering logic separated from control handlers |
+| | **Overall** | **5/10** | Uses `bindValue()` for reactive dial updates and `.bindTo()`. Good Cosyne gauge component pattern |
+
 ## Inspired By
 
 - Fyne RotaryControl widget

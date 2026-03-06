@@ -150,6 +150,22 @@ pnpm test ported-apps/fps-advanced/index.tsyne.test.ts
 - **Original Repository**: https://github.com/lizard-demon/fps-advanced
 - **Tsyne Port**: Paul Hammant
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 7/10 | Clean `vbox > hbox(header) + separator + hbox(vbox(viewport + instructions), vbox(stats + controls))` nesting. Two-column layout with viewport and stats panel. Control buttons in nested hboxes |
+| **Core declarative** | Fluent method chaining | 7/10 | `.withId()` on title, btn-reset, viewport, instructions, stats-header, pos-label, vel-label, grounded-label, map-label, controls-header, ctrl-ws/ad/space/arrows, btn-look-left/right/up/down. 16+ IDs total |
+| **Core declarative** | Programmatic generation | 3/10 | No loop-based UI generation. All buttons and labels manually listed. Map brush data is procedural but that's game data, not UI |
+| **State architecture** | Observable store | 7/10 | `FPSStore` with `subscribe()`/`notifyChange()`. Rich physics system with `Physics`, `World`, `BVH`, `GameMap`. Defensive copies via `getPosition().clone()`, `getVelocity().clone()`. Game loop managed by store |
+| **Declarative updates** | `.when()` + `.bindTo()` | 2/10 | No `.when()`, no `.bindTo()`, no `.bindText()`. Store subscription updates 3 labels via `setText()`. Viewport updates via `setPixelBuffer()` in render loop. All imperative |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | 0 | No penalty — `win.setContent()` called once. All subsequent updates via `setText()` and `setPixelBuffer()` |
+| **Testing** | `.withId()` coverage | 8/10 | Excellent ID coverage on all interactive elements, stats labels, and control descriptions. 16+ IDs for a focused app |
+| **Design** | Separation of concerns | 8/10 | `FPSStore` manages game state and physics. `buildFPSAdvancedApp()` is purely presentational. Physics engine (`Physics`, `World`, `BVH`) is fully independent. Render function is separate from game logic |
+| | **Overall** | **5/10** | Good separation of concerns with a rich Observable store and physics engine. Excellent `.withId()` coverage for testing. But this is a raster rendering app — the 3D viewport dominates the UI and all visual updates are imperative (`setPixelBuffer()` + `setText()`). No declarative data binding patterns needed for this type of app |
+
 ## License
 
 See LICENSE file. Portions copyright Spyware (lizard-demon), portions copyright Paul Hammant.

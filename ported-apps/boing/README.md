@@ -40,6 +40,22 @@ npx tsx ported-apps/boing/boing.ts
 
 Ported from: https://github.com/vygr/ChrysaLisp/blob/master/apps/boing/app.lisp
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 3/10 | `vbox > canvasRaster(ball animation)`. Minimal widget chrome |
+| **Core declarative** | Fluent method chaining | 2/10 | `.withId()` on 1 element. No `.when()` or `.bindTo()` |
+| **Core declarative** | Programmatic generation | 5/10 | Loops for grid rendering and sprite composition, but these are pixel-level operations not widget generation |
+| **State architecture** | Observable store | 2/10 | No Observable store. Animation state in local variables |
+| **Declarative updates** | `.when()` + `.bindTo()` | 1/10 | No reactive bindings. 1 `setText()`. All updates via sprite system (`moveSprite`, `setSpriteResource`, `flush`) |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | -1 | 1 `setContent()` call |
+| **Testing** | `.withId()` coverage | 1/10 | Only 1 ID |
+| **Design** | Separation of concerns | 5/10 | Ball physics and rendering in single file. Sprite-based animation system |
+| | **Overall** | **2/10** | Classic Amiga ball demo — entirely raster-based with sprite system. The canvas IS the UI; pseudo-declarative patterns don't naturally apply |
+
 ## License
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License version 2 as published by the Free Software Foundation.

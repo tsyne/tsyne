@@ -206,6 +206,22 @@ Or in plain English:
 - **Birth**: Dead cells with exactly 3 neighbors become alive
 - **Death**: All other cells die or stay dead
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 7/10 | `vbox > hbox(control buttons) + separator + canvasRaster(board) + separator + hbox(speed controls) + label(status)` nesting. Rich toolbar with multiple control groups |
+| **Core declarative** | Fluent method chaining | 7/10 | `.withId()` on 10+ elements: startBtn, pauseBtn, stepBtn, resetBtn, clearBtn, generationNum, statusText, speedLabel, speed buttons. No `.when()` or `.bindTo()` |
+| **Core declarative** | Programmatic generation | 3/10 | No loop-based widget generation. Board rendered to pixel buffer via `setPixels()`. Pattern presets manually listed |
+| **State architecture** | Observable store | 5/10 | Game callback (`setUpdateCallback`) rather than full Observable store. 1102 lines with file I/O, pattern loading, generation stepping |
+| **Declarative updates** | `.when()` + `.bindTo()` | 1/10 | No `.when()`, `.bindTo()`, or `.bindText()`. 5+ `setText()` calls for generation count, status, speed label |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | 0 | No penalty |
+| **Testing** | `.withId()` coverage | 7/10 | Good coverage on all control buttons, stats labels, speed controls |
+| **Design** | Separation of concerns | 7/10 | Game logic (cell rules, generation stepping, file I/O) separated from UI. File dialogs (`showFileOpen`, `showFileSave`, `showConfirm`) for persistence |
+| | **Overall** | **5/10** | Rich toolbar with good `.withId()` coverage and file dialogs. But the board is a canvas with pixel-level rendering, and no Observable store or reactive bindings. `setText()` used heavily for stats updates |
+
 ## Credits
 
 - **Original Game of Life**: Fyne.io contributors

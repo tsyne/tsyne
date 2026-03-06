@@ -66,25 +66,18 @@ wave2.ts
     └── PhoneTop embedded      - ITsyneWindow support
 ```
 
-## Pseudo-Declarative Pattern
+## Pseudo-Declarative Scorecard
 
-Following the patterns from `docs/pseudo-declarative-ui-composition.md`:
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
 
-```typescript
-// Declarative iteration - one path per wave line
-for (let i = 0; i < lines.length; i++) {
-  paths.push(
-    a.canvasPath({
-      width: W, height: H,
-      path: pointsToSvgPath(lines[i].points),
-      strokeColor: colors[colorIdx][1],
-      strokeWidth: 6,
-      lineCap: 'round',
-      lineJoin: 'round',
-    })
-  );
-}
-```
-
-This mirrors the keyboard example's programmatic row generation:
-> "The logic for creating a button is written once and reused for every key in the row."
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 4/10 | `vbox > canvasStack(wave paths)` — minimal widget chrome around canvas |
+| **Core declarative** | Fluent method chaining | 2/10 | No `.withId()`. No `.when()` or `.bindTo()` |
+| **Core declarative** | Programmatic generation | 7/10 | Loop generating one `canvasPath` per wave line — mirrors keyboard row generation pattern |
+| **State architecture** | Observable store | 2/10 | No Observable store. Wave state managed directly |
+| **Declarative updates** | `.when()` + `.bindTo()` | 2/10 | 1 `.bindFill()` for background color toggle. Otherwise imperative `.update()` per frame |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | -1 | 1 `setContent()` call |
+| **Testing** | `.withId()` coverage | 1/10 | No IDs |
+| **Design** | Separation of concerns | 4/10 | Wave physics and rendering mixed in single file |
+| | **Overall** | **3/10** | Good loop-based path generation but predominantly imperative animation with per-frame `.update()` calls. One `.bindFill()` for color toggle |

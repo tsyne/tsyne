@@ -155,6 +155,22 @@ pnpm test ported-apps/torus/torus.test.ts
 | Depth Testing | Alpha visibility via `getAlpha()` |
 | Wireframe Rendering | Line primitives from projections |
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 7/10 | Clean `border(center: aspectRatio(canvasRaster), bottom: hbox(buttons + spacer + label))` nesting. `buildContent()` reads as a compact layout spec. `aspectRatio()` wrapper maintains 4:3 ratio |
+| **Core declarative** | Fluent method chaining | 5/10 | `.withId()` on autoRotateBtn, resetBtn, hintLabel. No `.when()` or `.bindTo()`. Limited widget IDs for a simple app |
+| **Core declarative** | Programmatic generation | 3/10 | No loop-based UI generation. Buttons manually listed. Torus mesh generated procedurally but that's rendering, not UI |
+| **State architecture** | Observable store | 6/10 | `TorusStore` with `subscribe()`/`notifyChange()`. 1 data type (`TorusState`). Defensive copies via `getState()`. `incrementRotation()` skips notification (optimized for animation loop) |
+| **Declarative updates** | `.when()` + `.bindTo()` | 1/10 | No `.when()`, no `.bindTo()`, no `.bindText()`. All updates happen in the animation loop via `raster.setPixelBuffer()`. Store subscription exists but no UI elements are bound to it |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | 0 | No penalty — `win.setContent(buildContent)` called once. All subsequent updates via `setPixelBuffer()` |
+| **Testing** | `.withId()` coverage | 4/10 | IDs on 3 controls (autoRotateBtn, resetBtn, hintLabel). No per-item IDs needed (no lists). Canvas identified by variable reference |
+| **Design** | Separation of concerns | 7/10 | `TorusStore` manages rotation state. `TorusProjection` handles 3D math. `renderTorusToBuffer()` is pure rendering. `createTorusApp()` wires UI. Clean split but store is thin |
+| | **Overall** | **4/10** | Minimal pseudo-declarative usage — this is fundamentally a raster rendering app. The `border()` layout is clean and the Observable store exists, but all visual updates go through the imperative `setPixelBuffer()` pipeline. No `.when()`, `.bindTo()`, or reactive bindings. Appropriate for a GPU-style rendering app where the canvas IS the entire UI |
+
 ## License
 
 MIT

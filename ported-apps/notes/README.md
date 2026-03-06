@@ -294,6 +294,22 @@ getPreferences(): NotesPreferences {
 5. **Theme Persistence**: Store preferences for application state
 6. **Reactive Updates**: `store.subscribe()` triggers UI refresh
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 8/10 | Clean `themeoverride > max > rectangle + hsplit(sidebar, border(top/center/bottom))` nesting. Uses `a.border()` for expanding editor layout and `a.hsplit()` with 0.25 ratio for sidebar. `a.max()` with background rectangle for full-window theming |
+| **Core declarative** | Fluent method chaining | 7/10 | `.withId()` on key elements (`notes-title`, `add-note-btn`, `delete-note-btn`, `notes-list`, `title-entry`, `content-entry`, `save-content-btn`, `status-label`, theme buttons). `.bindTo()` with `trackBy` on notes list. Per-note IDs (`note-btn-{id}`, `note-label-{id}`) |
+| **Core declarative** | Programmatic generation | 5/10 | Notes list driven by `.bindTo()` but no loop-based UI generation for structural elements. Theme buttons manually listed. No `.when()` usage |
+| **State architecture** | Observable store | 8/10 | Full `NotesStore` with `subscribe()`/`notifyChange()`. 2 data model types (`Note`, `NotesPreferences`). Defensive copies on `getNotes()`, `getPreferences()`. Counter-based IDs (`note-004`). Search method for filtering |
+| **Declarative updates** | `.when()` + `.bindTo()` | 5/10 | Notes list uses `.bindTo()` with `trackBy` — one dynamic list. No `.when()` usage at all. Selected note shown via conditional `if/else` inside render callback. Three `setText()` escapes (`titleEntry`, `contentEntry`, `statusLabel`). `notesList.update()` called explicitly. Theme change triggers full `winRef.setContent(buildContent)` rebuild |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | 3 | Theme switching calls `winRef.setContent(buildContent)` for full UI rebuild on each theme change. This is by design (theme colors flow through `a.themeoverride()` wrapping everything) but is a significant use of imperative rebuild |
+| **Testing** | `.withId()` coverage | 8/10 | IDs on all interactive elements, per-note IDs in list renderer. 40+ Jest unit tests + 20+ TsyneTest widget tests |
+| **Design** | Separation of concerns | 8/10 | `NotesStore` is 160 lines of pure note/preference logic (no UI). `buildNotesApp()` is presentational. Store handles CRUD, search, preferences. Theme colors defined as const objects. Minor concern: `updateUI()` manually syncs multiple widgets |
+| | **Overall** | **6/10** | Solid Observable store with defensive copies and `.bindTo()` for the notes list. The dual-pane layout using `hsplit` + `border` is architecturally clean. Main gaps: no `.when()` usage, theme switching requires full `setContent()` rebuild, heavy reliance on `setText()` for editor sync, and `updateUI()` is an imperative catch-all. Using `.bindText()` for labels and `.when()` for conditional views would push this higher |
+
 ## Related Files
 
 - **Original Fyne Implementation**: [github.com/fynelabs/notes](https://github.com/fynelabs/notes)

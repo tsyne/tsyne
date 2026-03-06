@@ -27,6 +27,22 @@ A festive snowflake visualization application for enjoying animated snowflakes w
 
 **8 Jest tests** covering density, speed, and animation controls.
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 6/10 | `vbox > hbox(controls) + canvasStack(snowflakes)` nesting |
+| **Core declarative** | Fluent method chaining | 6/10 | `.withId()` on 16 elements: density/speed sliders, animation controls. No `.when()` or `.bindTo()` |
+| **Core declarative** | Programmatic generation | 7/10 | Loop generating snowflake particles with per-flake canvasPath elements |
+| **State architecture** | Observable store | 3/10 | No Observable store. Animation state managed directly |
+| **Declarative updates** | `.when()` + `.bindTo()` | 1/10 | No reactive bindings. Updates via `refreshUI()` |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | 0 | No `removeAll()`/`setContent()` |
+| **Testing** | `.withId()` coverage | 6/10 | Good coverage on controls |
+| **Design** | Separation of concerns | 5/10 | Animation and UI in single file |
+| | **Overall** | **5/10** | Good programmatic snowflake generation with `.withId()` coverage. No reactive bindings |
+
 ## License
 
 MIT - Portions copyright Paul Hammant 2025

@@ -429,6 +429,22 @@ interface BangAction {
 - iCloud/cloud sync support
 - Encrypted vault for sensitive bookmarks
 
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 9/10 | Clean `vbox > hbox(header) + hbox(search bar) + hbox(tabs) + separator + vbox(viewStack)` nesting. `buildContent()` defines header, search bar, tab navigation, and 4 tab containers in a single readable tree |
+| **Core declarative** | Fluent method chaining | 8/10 | `.withId()` on all tab buttons (`tab-search`, `tab-privacy`, `tab-bookmarks`, `tab-settings`), section titles, stats labels, search input. `.when()` on all 4 tab containers. `.bindTo()` with `trackBy` on 4 lists. `.withBold()`, `.withSize()`, `.withPadding()` for styling |
+| **Core declarative** | Programmatic generation | 7/10 | Privacy tab uses `store.getTopBlockedDomains(3)` with `for...of` loop to generate blocked domain labels. Bangs list in settings rendered via `.bindTo()`. Tab buttons manually listed. `showForm()` for bookmark creation keeps layout clean |
+| **State architecture** | Observable store | 9/10 | Full `DuckDuckGoStore` with `subscribe()`/`notifyChange()`. 6 data model types (`SearchResult`, `Bookmark`, `TrackerBlock`, `PrivacyStats`, `BangAction`, `AppSettings`). Defensive copies on `getSearchHistory()`, `getBookmarks()`, `getTrackerBlocks()`, `getSettings()`, `getBangs()`. Counter-based IDs (`search-004`, `bookmark-005`) |
+| **Declarative updates** | `.when()` + `.bindTo()` | 9/10 | 4 tab containers (search, privacy, bookmarks, settings) use `.when()`. 4 lists use `.bindTo()` with `trackBy` — search history, tracker activity, bookmarks, bangs. `viewStack.refresh()` in store subscription. Two `setText()` escapes for `privacyLabel` and `statsLabel`. `showForm()` for bookmark CRUD |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | 1 | Uses `win.setContent(buildContent)` for initial render only. All subsequent updates via `.when()`, `.bindTo()`, and `viewStack.refresh()`. Minor penalty for initial setContent pattern |
+| **Testing** | `.withId()` coverage | 7/10 | IDs on tab buttons, section titles, stats/privacy labels, search input. Per-item IDs not present in list renderers (items identified by `trackBy`). 58 Jest tests |
+| **Design** | Separation of concerns | 9/10 | `DuckDuckGoStore` is 380 lines of pure privacy/search logic (search, bookmarks, trackers, settings, bangs, analytics). `buildDuckDuckGoApp()` is purely presentational. Store drives all state transitions via `notifyChange()`. Rich analytics methods (privacy score, most searched queries, averages) |
+| | **Overall** | **8/10** | Strong pseudo-declarative implementation with 4 tabs, 4 `.bindTo()` lists, `showForm()` for dialogs, and a rich Observable store covering 6 data types with comprehensive analytics. The gaps are two `setText()` escapes on header labels and lack of per-item `.withId()` in list renderers. Using `.bindText()` for the header labels would push this to 9/10 |
+
 ## License
 
 Portions copyright Duck Duck Go Inc and portions copyright Paul Hammant 2025

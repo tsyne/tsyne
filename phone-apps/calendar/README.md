@@ -251,3 +251,19 @@ For real implementation:
 - `calendar-service.ts` - Calendar service interface and mock implementation
 - `calendar.test.ts` - Comprehensive tests (18 tests)
 - `README.md` - This file
+
+## Pseudo-Declarative Scorecard
+
+How well does this implementation follow [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md) patterns?
+
+| Category | Pattern | Score | Notes |
+|----------|---------|-------|-------|
+| **Core declarative** | Nested builder layout | 7/10 | `vbox > hbox(nav) + grid(calendar days) + scroll(events)` nesting. Month grid + event list |
+| **Core declarative** | Fluent method chaining | 7/10 | `.withId()` on 17 elements: day cells, nav buttons, event items. No `.when()` or `.bindTo()` |
+| **Core declarative** | Programmatic generation | 8/10 | Double loop — calendar day grid generated from month data, event list from daily events |
+| **State architecture** | Observable store | 5/10 | `subscribe()` pattern (3 calls). Store-driven calendar updates |
+| **Declarative updates** | `.when()` + `.bindTo()` | 1/10 | No reactive bindings. No `setText()` calls — rebuilds via `destroyChildren()` |
+| **Anti-declarative** | No `removeAll()`/`setContent()` | -2 | 2 `destroyChildren()` calls for calendar and event list refresh |
+| **Testing** | `.withId()` coverage | 7/10 | Good coverage on day cells and navigation |
+| **Design** | Separation of concerns | 7/10 | Service injection (ICalendarService) with mock for testing |
+| | **Overall** | **5/10** | Strong programmatic calendar grid generation and service injection. Uses `destroyChildren()` rebuild pattern rather than reactive bindings |
